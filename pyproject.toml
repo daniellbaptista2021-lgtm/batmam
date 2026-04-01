@@ -39,7 +39,7 @@ dev = ["pytest", "black", "mypy"]
 batmam = "batmam.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/daniel/batmam"
+Homepage = "https://github.com/daniellbaptista2021-lgtm/batmam"
 
 [tool.setuptools.packages.find]
 include = ["batmam*"]
