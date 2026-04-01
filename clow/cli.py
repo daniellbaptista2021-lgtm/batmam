@@ -132,14 +132,14 @@ def _inf_stop_now() -> None:
 _streaming_buffer: list[str] = []
 _in_streaming = False
 _thinking_active = False
-_stream_line_count = 0
-_stream_collapsed = False
-MAX_VISIBLE_LINES = 20
+
+# Colapsamento APENAS para output de tools (nunca para resposta textual)
+TOOL_OUTPUT_MAX_LINES = 8
 
 
 def on_text_delta(delta: str) -> None:
-    """Streaming token por token com indentação de 2 espaços."""
-    global _in_streaming, _thinking_active, _stream_line_count, _stream_collapsed
+    """Streaming da resposta do agente — NUNCA colapsa, mostra 100% do texto."""
+    global _in_streaming, _thinking_active
 
     if _thinking_active:
         _inf_stop_now()
@@ -148,50 +148,22 @@ def on_text_delta(delta: str) -> None:
 
     if not _in_streaming:
         _in_streaming = True
-        _stream_line_count = 0
-        _stream_collapsed = False
-        sys.stdout.write("  ")  # indentação inicial
+        sys.stdout.write("  ")
 
-    _streaming_buffer.append(delta)
-
-    # Conta quebras de linha
-    for ch in delta:
-        if ch == "\n":
-            _stream_line_count += 1
-
-    # Exibe com indentação em cada nova linha
-    if not _stream_collapsed:
-        if _stream_line_count <= MAX_VISIBLE_LINES:
-            # Adiciona indentação após cada \n
-            indented = delta.replace("\n", "\n  ")
-            sys.stdout.write(indented)
-            sys.stdout.flush()
-        else:
-            # Corta no limite
-            parts = delta.split("\n", 1)
-            sys.stdout.write(parts[0])
-            sys.stdout.flush()
-            _stream_collapsed = True
+    # Exibe TUDO com indentação após cada quebra de linha
+    indented = delta.replace("\n", "\n  ")
+    sys.stdout.write(indented)
+    sys.stdout.flush()
 
 
 def on_text_done(text: str) -> None:
-    """Finaliza streaming — mostra contagem se colapsou."""
-    global _in_streaming, _stream_collapsed, _stream_line_count
-
-    full_text = "".join(_streaming_buffer)
-    total_lines = full_text.count("\n") + 1
+    """Finaliza streaming — sem colapsamento."""
+    global _in_streaming
 
     if _in_streaming:
-        if _stream_collapsed and total_lines > MAX_VISIBLE_LINES:
-            hidden = total_lines - MAX_VISIBLE_LINES
-            sys.stdout.write(f"\n  {_DIM}⎿ ... +{hidden} lines{_RESET}")
         sys.stdout.write("\n\n")
         sys.stdout.flush()
         _in_streaming = False
-
-    _streaming_buffer.clear()
-    _stream_line_count = 0
-    _stream_collapsed = False
 
 
 def _tool_label(name: str, args: dict) -> str:
@@ -257,13 +229,13 @@ def on_tool_result(name: str, status: str, output: str) -> None:
             _show_diff(output)
         elif output:
             lines = output.strip().splitlines()
-            if len(lines) <= 5:
+            if len(lines) <= TOOL_OUTPUT_MAX_LINES:
                 for line in lines:
                     sys.stdout.write(f"  {_DIM}⎿ {line[:150]}{_RESET}\n")
             else:
-                for line in lines[:3]:
+                for line in lines[:4]:
                     sys.stdout.write(f"  {_DIM}⎿ {line[:150]}{_RESET}\n")
-                sys.stdout.write(f"  {_DIM}⎿ ... +{len(lines) - 3} lines{_RESET}\n")
+                sys.stdout.write(f"  {_DIM}⎿ ... +{len(lines) - 4} lines{_RESET}\n")
         sys.stdout.write("\n")
         sys.stdout.flush()
 
