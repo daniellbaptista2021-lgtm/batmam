@@ -173,34 +173,68 @@ _in_streaming = False
 _agent_box_open = False
 _streaming_tool_args: dict[str, str] = {}
 _thinking_active = False
+_stream_line_count = 0
+_stream_collapsed = False
+MAX_VISIBLE_LINES = 4  # Linhas visíveis antes de compactar
 
 
 def on_text_delta(delta: str) -> None:
-    """Streaming em tempo real — imprime cada pedaço conforme chega."""
-    global _in_streaming, _agent_box_open, _thinking_active
+    """Streaming em tempo real — compacta após MAX_VISIBLE_LINES linhas."""
+    global _in_streaming, _agent_box_open, _thinking_active, _stream_line_count, _stream_collapsed
     # Para o spinner na primeira resposta
     if _thinking_active:
         _stop_thinking_spinner()
         _thinking_active = False
     if not _in_streaming:
         _in_streaming = True
+        _stream_line_count = 0
+        _stream_collapsed = False
         if not _agent_box_open:
             _agent_header()
             _agent_box_open = True
         sys.stdout.write("  ")
-    sys.stdout.write(delta)
-    sys.stdout.flush()
+
     _streaming_buffer.append(delta)
+
+    # Conta newlines no delta
+    newlines = delta.count("\n")
+    if newlines > 0:
+        _stream_line_count += newlines
+
+    # Se ainda não colapsou, exibe normalmente
+    if not _stream_collapsed:
+        if _stream_line_count <= MAX_VISIBLE_LINES:
+            sys.stdout.write(delta)
+            sys.stdout.flush()
+        else:
+            # Acabou de passar o limite — exibe o que falta da linha atual e colapsa
+            # Pega só até o ponto de corte
+            parts = delta.split("\n", 1)
+            sys.stdout.write(parts[0])
+            sys.stdout.flush()
+            _stream_collapsed = True
+    # Se já colapsou, não exibe nada (acumula no buffer)
 
 
 def on_text_done(text: str) -> None:
-    """Chamado quando o texto completo está pronto."""
-    global _in_streaming
+    """Chamado quando o texto completo está pronto — mostra resumo se colapsou."""
+    global _in_streaming, _stream_collapsed, _stream_line_count
+
+    full_text = "".join(_streaming_buffer)
+    total_lines = full_text.count("\n") + 1
+
     if _in_streaming:
+        if _stream_collapsed and total_lines > MAX_VISIBLE_LINES:
+            # Mostra indicador de linhas ocultas
+            hidden = total_lines - MAX_VISIBLE_LINES
+            sys.stdout.write(f"\n  [dim]{_DIM}  ... +{hidden} linhas (resposta compactada){_RESET}")
         sys.stdout.write("\n")
         sys.stdout.flush()
         _in_streaming = False
+
     _streaming_buffer.clear()
+    _stream_line_count = 0
+    _stream_collapsed = False
 
 
 def _close_agent_box() -> None:
@@ -1108,7 +1142,7 @@ def run_repl(args: argparse.Namespace) -> None:
                 except (EOFError, KeyboardInterrupt):
                     break
 
-            _show_user_message(user_input)
+            # Não repete a mensagem — o usuário já viu o que digitou no prompt
             _run_agent_turn(agent, user_input)
 
         except KeyboardInterrupt:
