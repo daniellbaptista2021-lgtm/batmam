@@ -1,7 +1,7 @@
 """Base para todas as ferramentas do Clow v0.2.0.
 
-Registro de 14 tools (antes eram 10):
-+task_create, +task_update, +task_list, +task_get
+Registro de 24 tools: 10 core + 4 task + 10 novas
+(whatsapp, http, supabase, n8n, docker, git_advanced, scraper, image_gen, pdf, spreadsheet)
 """
 
 from __future__ import annotations
@@ -61,7 +61,7 @@ class ToolRegistry:
 
 
 def create_default_registry() -> ToolRegistry:
-    """Cria registro com todas as 14 ferramentas padrão."""
+    """Cria registro com todas as 24 ferramentas padrão."""
     from .bash import BashTool
     from .read import ReadTool
     from .write import WriteTool
@@ -73,6 +73,16 @@ def create_default_registry() -> ToolRegistry:
     from .web_fetch import WebFetchTool
     from .notebook import NotebookEditTool
     from .task_tool import TaskCreateTool, TaskUpdateTool, TaskListTool, TaskGetTool
+    from .whatsapp import WhatsAppSendTool
+    from .http_request import HttpRequestTool
+    from .supabase_query import SupabaseQueryTool
+    from .n8n_workflow import N8nWorkflowTool
+    from .docker_manage import DockerManageTool
+    from .git_advanced import GitAdvancedTool
+    from .scraper import ScraperTool
+    from .image_gen import ImageGenTool
+    from .pdf_tool import PdfTool
+    from .spreadsheet import SpreadsheetTool
 
     registry = ToolRegistry()
     # Core tools (10 originais)
@@ -86,9 +96,20 @@ def create_default_registry() -> ToolRegistry:
     registry.register(WebSearchTool())
     registry.register(WebFetchTool())
     registry.register(NotebookEditTool())
-    # Task tools (4 novas)
+    # Task tools (4)
     registry.register(TaskCreateTool())
     registry.register(TaskUpdateTool())
     registry.register(TaskListTool())
     registry.register(TaskGetTool())
+    # Novas tools (10)
+    registry.register(WhatsAppSendTool())
+    registry.register(HttpRequestTool())
+    registry.register(SupabaseQueryTool())
+    registry.register(N8nWorkflowTool())
+    registry.register(DockerManageTool())
+    registry.register(GitAdvancedTool())
+    registry.register(ScraperTool())
+    registry.register(ImageGenTool())
+    registry.register(PdfTool())
+    registry.register(SpreadsheetTool())
     return registry

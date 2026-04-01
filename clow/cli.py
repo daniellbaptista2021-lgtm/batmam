@@ -307,6 +307,26 @@ def _tool_label(name: str, args: dict) -> str:
     elif name.startswith("task_"):
         action = name.replace("task_", "").capitalize()
         return f"Task {action}: {args.get('title', args.get('task_id', ''))}"
+    elif name == "whatsapp_send":
+        return f"WhatsApp: {args.get('phone', '')} — {args.get('message', '')[:60]}"
+    elif name == "http_request":
+        return f"HTTP {args.get('method', 'GET')}: {args.get('url', '')[:80]}"
+    elif name == "supabase_query":
+        return f"SQL: {args.get('query', '')[:80]}"
+    elif name == "n8n_workflow":
+        return f"n8n {args.get('action', '')}: {args.get('workflow_id', '')}"
+    elif name == "docker_manage":
+        return f"Docker {args.get('action', '')}: {args.get('container', '')}"
+    elif name == "git_advanced":
+        return f"Git {args.get('action', '')}: {args.get('target', '')}"
+    elif name == "scraper":
+        return f"Scrape: {args.get('url', '')[:80]}"
+    elif name == "image_gen":
+        return f"Image gen: {args.get('prompt', '')[:60]}"
+    elif name == "pdf_tool":
+        return f"PDF {args.get('action', '')}: {args.get('input_path', args.get('output_path', ''))}"
+    elif name == "spreadsheet":
+        return f"Spreadsheet {args.get('action', '')}: {args.get('file_path', '')}"
     elif name.startswith("mcp__"):
         return f"MCP: {name.split('__')[-1]}"
     return f"{name}"
@@ -990,7 +1010,7 @@ def _show_help() -> None:
     help_text = f"""
   {_BOLD}{_PURPLE_B}∞{_RESET} {_BOLD}System Clow{_RESET} {_DIM}v{__version__}{_RESET}
 
-  {_BOLD}Skills{_RESET}
+  {_BOLD}Skills — Dev{_RESET}
     /commit          Smart commit
     /review          Code review
     /test            Generate tests
@@ -998,6 +1018,18 @@ def _show_help() -> None:
     /explain         Explain code
     /fix             Find & fix bugs
     /simplify        Review quality
+
+  {_BOLD}Skills — Business{_RESET}
+    /cotacao         Cotação seguro/funerário PDF
+    /proposta        Proposta comercial PDF
+    /relatorio       Relatório de vendas
+    /leads           Gerencia leads
+    /ads             Meta Ads campaigns
+
+  {_BOLD}Skills — Ops{_RESET}
+    /deploy          Deploy automatizado
+    /backup          Backup VPS completo
+    /monitor         Status dos serviços
     /skills          List all skills
 
   {_BOLD}Navigation{_RESET}
@@ -1074,7 +1106,7 @@ def _print_banner() -> None:
 {purple}   ╚═══════════════════════════════════════╝{r}
 
   {dim}{os.getcwd()}{r}
-  {dim}14 tools · 8 skills · 4 agent types · /help{r}
+  {dim}24 tools · 16 skills · 8 agent types · /help{r}
 
 """)
     sys.stdout.flush()

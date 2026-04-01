@@ -42,12 +42,25 @@ def needs_confirmation(tool_name: str, arguments: dict) -> bool:
         return not config.AUTO_APPROVE_WRITE
 
     # Web tools: normalmente livres
-    if tool_name in ("web_search", "web_fetch"):
+    if tool_name in ("web_search", "web_fetch", "scraper"):
         return False
 
     # Agent tool: livre
     if tool_name == "agent":
         return False
+
+    # Tools que sempre pedem confirmação (ações externas/destrutivas)
+    if tool_name in ("whatsapp_send", "docker_manage", "n8n_workflow",
+                      "supabase_query", "image_gen"):
+        return True
+
+    # Tools de escrita de arquivo
+    if tool_name in ("pdf_tool", "spreadsheet"):
+        return not config.AUTO_APPROVE_WRITE
+
+    # HTTP request e git_advanced: pede confirmação
+    if tool_name in ("http_request", "git_advanced"):
+        return not config.AUTO_APPROVE_BASH
 
     # Default: pede confirmação
     return True
@@ -161,6 +174,7 @@ ACTION_CLASSIFICATIONS = {
     "grep": {"reversible": True, "external": False, "level": "safe"},
     "web_search": {"reversible": True, "external": False, "level": "safe"},
     "web_fetch": {"reversible": True, "external": False, "level": "safe"},
+    "scraper": {"reversible": True, "external": False, "level": "safe"},
     "task_list": {"reversible": True, "external": False, "level": "safe"},
     "task_get": {"reversible": True, "external": False, "level": "safe"},
     "write": {"reversible": True, "external": False, "level": "write"},
@@ -168,8 +182,17 @@ ACTION_CLASSIFICATIONS = {
     "task_create": {"reversible": True, "external": False, "level": "write"},
     "task_update": {"reversible": True, "external": False, "level": "write"},
     "notebook_edit": {"reversible": True, "external": False, "level": "write"},
+    "pdf_tool": {"reversible": True, "external": False, "level": "write"},
+    "spreadsheet": {"reversible": True, "external": False, "level": "write"},
+    "image_gen": {"reversible": True, "external": True, "level": "write"},
+    "git_advanced": {"reversible": False, "external": False, "level": "dangerous"},
     "bash": {"reversible": None, "external": None, "level": "varies"},
     "agent": {"reversible": None, "external": None, "level": "varies"},
+    "whatsapp_send": {"reversible": False, "external": True, "level": "dangerous"},
+    "http_request": {"reversible": None, "external": True, "level": "varies"},
+    "supabase_query": {"reversible": False, "external": True, "level": "dangerous"},
+    "n8n_workflow": {"reversible": False, "external": True, "level": "dangerous"},
+    "docker_manage": {"reversible": False, "external": False, "level": "dangerous"},
 }
 
 BASH_RISK_LEVELS = {

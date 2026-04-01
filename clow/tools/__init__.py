@@ -10,6 +10,16 @@ from .agent_tool import AgentTool
 from .web_search import WebSearchTool
 from .web_fetch import WebFetchTool
 from .notebook import NotebookEditTool
+from .whatsapp import WhatsAppSendTool
+from .http_request import HttpRequestTool
+from .supabase_query import SupabaseQueryTool
+from .n8n_workflow import N8nWorkflowTool
+from .docker_manage import DockerManageTool
+from .git_advanced import GitAdvancedTool
+from .scraper import ScraperTool
+from .image_gen import ImageGenTool
+from .pdf_tool import PdfTool
+from .spreadsheet import SpreadsheetTool
 from .base import BaseTool, ToolRegistry
 
 __all__ = [
@@ -25,4 +35,14 @@ __all__ = [
     "WebSearchTool",
     "WebFetchTool",
     "NotebookEditTool",
+    "WhatsAppSendTool",
+    "HttpRequestTool",
+    "SupabaseQueryTool",
+    "N8nWorkflowTool",
+    "DockerManageTool",
+    "GitAdvancedTool",
+    "ScraperTool",
+    "ImageGenTool",
+    "PdfTool",
+    "SpreadsheetTool",
 ]
