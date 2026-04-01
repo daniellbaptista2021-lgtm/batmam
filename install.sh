@@ -96,11 +96,19 @@ install_system_deps() {
         esac
     fi
 
-    # venv
+    # venv — instala o pacote correto para a versão do Python
     if ! python3 -m venv --help &>/dev/null 2>&1; then
         log_warn "python3-venv não encontrado. Instalando..."
+        PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
         case "$OS_NAME" in
-            ubuntu|debian) sudo apt-get install -y -qq python3-venv ;;
+            ubuntu|debian)
+                sudo apt-get update -qq
+                sudo apt-get install -y -qq "python${PY_VER}-venv" python3-venv 2>/dev/null || \
+                sudo apt-get install -y -qq python3-venv
+                ;;
+            fedora|rhel|centos)
+                sudo dnf install -y python3-libs
+                ;;
         esac
     fi
 
