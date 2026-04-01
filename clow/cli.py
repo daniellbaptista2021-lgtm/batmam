@@ -139,7 +139,7 @@ TOOL_OUTPUT_MAX_LINES = 8
 
 
 def on_text_delta(delta: str) -> None:
-    """Streaming da resposta do agente — NUNCA colapsa, mostra 100% do texto."""
+    """Acumula tokens da resposta. Streaming visual mostra texto cru, Markdown renderizado no final."""
     global _in_streaming, _thinking_active
 
     if _thinking_active:
@@ -151,19 +151,37 @@ def on_text_delta(delta: str) -> None:
         _in_streaming = True
         sys.stdout.write("  ")
 
-    # Exibe TUDO com indentação após cada quebra de linha
+    _streaming_buffer.append(delta)
+
+    # Streaming visual: mostra texto cru com indentação (typewriter effect)
     indented = delta.replace("\n", "\n  ")
     sys.stdout.write(indented)
     sys.stdout.flush()
 
 
 def on_text_done(text: str) -> None:
-    """Finaliza streaming — sem colapsamento."""
+    """Finaliza streaming — re-renderiza como Markdown formatado."""
     global _in_streaming
 
+    full_text = "".join(_streaming_buffer)
+    _streaming_buffer.clear()
+
     if _in_streaming:
-        sys.stdout.write("\n\n")
+        # Conta linhas exibidas pelo streaming cru para apagar
+        raw_lines = full_text.count("\n") + 1
+
+        # Apaga o texto cru do streaming (move cursor para cima e limpa)
+        sys.stdout.write("\r")
+        for _ in range(raw_lines):
+            sys.stdout.write(f"\033[A{_CLEAR_LINE}")
         sys.stdout.flush()
+
+        # Re-renderiza como Markdown formatado com rich
+        if full_text.strip():
+            md = Markdown(full_text.strip())
+            console.print(md, width=min(console.width - 4, 100))
+
+        console.print()
         _in_streaming = False
 
 
