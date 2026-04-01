@@ -36,28 +36,34 @@ from .logging import log_action
 from .agent_types import list_agent_types
 from . import config
 
-# ── Tema estilo Claude Code — limpo, minimal ────────────────
+# ── Tema System Clow — amarelo, branco, roxo ─────────────────
 GOLD = "#FFD700"
 DARK_GOLD = "#B8860B"
+PURPLE = "#A855F7"
+DARK_PURPLE = "#7C3AED"
+LIGHT_PURPLE = "#C084FC"
 
 clow_theme = Theme({
     "info": "cyan",
     "warning": "yellow",
     "error": "bold red",
     "success": "bold green",
-    "tool": "bold magenta",
-    "tool.name": "bold #87CEEB",
+    "tool": f"bold {PURPLE}",
+    "tool.name": f"bold {LIGHT_PURPLE}",
     "muted": "dim",
-    "accent": "bold cyan",
-    "bat": f"bold {GOLD}",
+    "accent": f"bold {PURPLE}",
     "gold": GOLD,
     "dark_gold": DARK_GOLD,
+    "purple": PURPLE,
+    "light_purple": LIGHT_PURPLE,
     "user_text": "bold white",
-    "agent_label": "bold #87CEEB",
+    "agent_label": f"bold {GOLD}",
     "diff_add": "bold green",
     "diff_del": "bold red",
     "plan_mode": "bold #FF6B6B",
     "result_border": "dim",
+    "banner_line": f"bold {PURPLE}",
+    "banner_accent": f"bold {GOLD}",
 })
 
 console = Console(theme=clow_theme)
@@ -580,8 +586,7 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
         for name in tools:
             tool = agent.registry.get(name)
             desc = tool.description[:60] if tool else ""
-            icon = _tool_icon(name)
-            console.print(f"    {icon} [info]{name}[/]  [muted]{desc}[/]")
+            console.print(f"    [accent]⏵[/] [info]{name}[/]  [muted]{desc}[/]")
         return True
 
     elif command == "/agents":
@@ -1027,11 +1032,11 @@ def run_repl(args: argparse.Namespace) -> None:
     # Loop REPL
     while True:
         try:
-            # Prompt limpo estilo Claude Code
+            # Prompt com cores System Clow (roxo + amarelo)
             if agent.plan_mode:
-                prompt_html = HTML('<style fg="#FF6B6B">[PLAN] </style><style fg="#FFD700" bold="true">&gt; </style>')
+                prompt_html = HTML('<style fg="#FF6B6B">[PLAN] </style><style fg="#A855F7" bold="true">❯ </style>')
             else:
-                prompt_html = HTML('<style fg="#FFD700" bold="true">&gt; </style>')
+                prompt_html = HTML('<style fg="#A855F7" bold="true">❯ </style>')
 
             user_input = prompt_session.prompt(prompt_html).strip()
 
@@ -1082,10 +1087,27 @@ def run_repl(args: argparse.Namespace) -> None:
 
 def _print_banner() -> None:
     provider = config.CLOW_PROVIDER.capitalize()
+    model_short = config.CLOW_MODEL.split("-")[0:2]
+    model_display = "-".join(model_short) if len(model_short) >= 2 else config.CLOW_MODEL
+
     console.print()
-    console.print(f"  [{GOLD} bold]🃏 Clow[/]  [muted]v{__version__}[/]")
-    console.print(f"  [muted]{config.CLOW_MODEL} · {provider} · {os.getcwd()}[/]")
-    console.print(f"  [muted]/help para comandos · /exit para sair[/]")
+    # Logo ASCII art com gradiente roxo→amarelo
+    console.print(f"[{PURPLE}]   ╔═══════════════════════════════════════╗[/]")
+    console.print(f"[{PURPLE}]   ║[/]                                       [{PURPLE}]║[/]")
+    console.print(f"[{PURPLE}]   ║[/]   [{GOLD} bold]███████╗██╗      ██████╗ ██╗    ██╗[/]  [{PURPLE}]║[/]")
+    console.print(f"[{PURPLE}]   ║[/]   [{GOLD} bold]██╔════╝██║     ██╔═══██╗██║    ██║[/]  [{PURPLE}]║[/]")
+    console.print(f"[{PURPLE}]   ║[/]   [{GOLD} bold]██║     ██║     ██║   ██║██║ █╗ ██║[/]  [{PURPLE}]║[/]")
+    console.print(f"[{PURPLE}]   ║[/]   [{GOLD} bold]██║     ██║     ██║   ██║██║███╗██║[/]  [{PURPLE}]║[/]")
+    console.print(f"[{PURPLE}]   ║[/]   [{GOLD} bold]███████╗███████╗╚██████╔╝╚███╔███╔╝[/]  [{PURPLE}]║[/]")
+    console.print(f"[{PURPLE}]   ║[/]   [{GOLD} bold]╚══════╝╚══════╝ ╚═════╝  ╚══╝╚══╝[/]   [{PURPLE}]║[/]")
+    console.print(f"[{PURPLE}]   ║[/]                                       [{PURPLE}]║[/]")
+    console.print(f"[{PURPLE}]   ║[/]   [bold white]System Clow[/] [{LIGHT_PURPLE}]v{__version__}[/]  🃏               [{PURPLE}]║[/]")
+    console.print(f"[{PURPLE}]   ║[/]   [dim]{provider} · {model_display}[/]               [{PURPLE}]║[/]")
+    console.print(f"[{PURPLE}]   ║[/]                                       [{PURPLE}]║[/]")
+    console.print(f"[{PURPLE}]   ╚═══════════════════════════════════════╝[/]")
+    console.print()
+    console.print(f"  [dim]{os.getcwd()}[/]")
+    console.print(f"  [dim]14 tools · 8 skills · 4 agent types · /help[/]")
     console.print()
 
 
