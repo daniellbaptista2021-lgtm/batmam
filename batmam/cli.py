@@ -36,10 +36,9 @@ from .logging import log_action
 from .agent_types import list_agent_types
 from . import config
 
-# ── Cores do Batmam ──────────────────────────────────────────
+# ── Tema estilo Claude Code — limpo, minimal ────────────────
 GOLD = "#FFD700"
 DARK_GOLD = "#B8860B"
-BORDER_COLOR = "#5C5C3D"
 
 batmam_theme = Theme({
     "info": "cyan",
@@ -53,88 +52,58 @@ batmam_theme = Theme({
     "bat": f"bold {GOLD}",
     "gold": GOLD,
     "dark_gold": DARK_GOLD,
-    "user_text": f"bold {GOLD}",
-    "border": BORDER_COLOR,
+    "user_text": "bold white",
     "agent_label": "bold #87CEEB",
     "diff_add": "bold green",
     "diff_del": "bold red",
     "plan_mode": "bold #FF6B6B",
+    "result_border": "dim",
 })
 
 console = Console(theme=batmam_theme)
-
-# ── Constantes visuais ───────────────────────────────────────
-CORNER_TL = "╭"
-CORNER_TR = "╮"
-CORNER_BL = "╰"
-CORNER_BR = "╯"
-HORIZ = "─"
 
 # ── Skill registry global ───────────────────────────────────
 _skill_registry = create_default_skill_registry()
 
 
-def _separator(label: str = "", style: str = "border") -> None:
+def _separator(label: str = "", style: str = "dim") -> None:
     if label:
-        console.print(Rule(f" {label} ", style=style, characters=HORIZ))
+        console.print(Rule(f" {label} ", style=style))
     else:
-        console.print(Rule(style=style, characters=HORIZ))
+        console.print(Rule(style=style))
 
 
-def _user_header() -> None:
-    w = console.width or 80
-    line = f"{CORNER_TL}{HORIZ * 2} [gold]Daniel[/] {HORIZ * (w - 14)}{CORNER_TR}"
-    console.print(f"[dark_gold]{line}[/]")
+# ── ANSI helpers ────────────────────────────────────────────
+_BOLD = "\033[1m"
+_DIM = "\033[2m"
+_RESET = "\033[0m"
+_CLEAR_LINE = "\033[2K\r"
+_GOLD_ANSI = "\033[33m"
+_CYAN_ANSI = "\033[36m"
+_GREEN_ANSI = "\033[32m"
+_RED_ANSI = "\033[31m"
+_WHITE_ANSI = "\033[37m"
 
-
-def _user_footer() -> None:
-    w = console.width or 80
-    line = f"{CORNER_BL}{HORIZ * (w - 2)}{CORNER_BR}"
-    console.print(f"[dark_gold]{line}[/]")
-
-
-def _agent_header() -> None:
-    w = console.width or 80
-    line = f"{CORNER_TL}{HORIZ * 2} [agent_label]🦇 Batmam[/] {HORIZ * (w - 17)}{CORNER_TR}"
-    console.print(f"[border]{line}[/]")
-
-
-def _agent_footer() -> None:
-    w = console.width or 80
-    line = f"{CORNER_BL}{HORIZ * (w - 2)}{CORNER_BR}"
-    console.print(f"[border]{line}[/]")
-
-
-# ── Thinking Spinner (🦇 pulsando) ──────────────────────────────
+# ── Thinking Spinner (🦇 pulsando) ──────────────────────────
 import threading as _threading
 
 _spinner_thread: _threading.Thread | None = None
 _spinner_stop = _threading.Event()
 
-# Frames do morcego pulsando — ANSI escape codes para brilho
-# \033[1m = bold(brilhante), \033[2m = dim, \033[0m = reset
-_GOLD_ANSI = "\033[33m"       # amarelo
-_BOLD = "\033[1m"
-_DIM = "\033[2m"
-_RESET = "\033[0m"
-_CLEAR_LINE = "\033[2K\r"
-
 _BAT_FRAMES = [
-    f"{_BOLD}{_GOLD_ANSI}🦇{_RESET}",           # brilhante
-    f"{_BOLD}{_GOLD_ANSI}🦇{_RESET}",           # brilhante
-    f"{_GOLD_ANSI}🦇{_RESET}",                   # normal
-    f"{_DIM}{_GOLD_ANSI}🦇{_RESET}",             # dim
-    f"{_DIM}🦇{_RESET}",                          # mais dim
-    f"{_DIM}{_GOLD_ANSI}🦇{_RESET}",             # dim
-    f"{_GOLD_ANSI}🦇{_RESET}",                   # normal
-    f"{_BOLD}{_GOLD_ANSI}🦇{_RESET}",           # brilhante
+    f"{_BOLD}{_GOLD_ANSI}🦇{_RESET}",
+    f"{_BOLD}{_GOLD_ANSI}🦇{_RESET}",
+    f"{_GOLD_ANSI}🦇{_RESET}",
+    f"{_DIM}{_GOLD_ANSI}🦇{_RESET}",
+    f"{_DIM}🦇{_RESET}",
+    f"{_DIM}{_GOLD_ANSI}🦇{_RESET}",
+    f"{_GOLD_ANSI}🦇{_RESET}",
+    f"{_BOLD}{_GOLD_ANSI}🦇{_RESET}",
 ]
-
 _DOTS_FRAMES = ["   ", ".  ", ".. ", "..."]
 
 
 def _start_thinking_spinner() -> None:
-    """Inicia o spinner 🦇 pulsando enquanto o agente pensa."""
     global _spinner_thread
     _spinner_stop.clear()
 
@@ -150,7 +119,6 @@ def _start_thinking_spinner() -> None:
             if frame_idx % 2 == 0:
                 dots_idx += 1
             _spinner_stop.wait(0.15)
-        # Limpa a linha do spinner
         sys.stdout.write(f"{_CLEAR_LINE}")
         sys.stdout.flush()
 
@@ -159,7 +127,6 @@ def _start_thinking_spinner() -> None:
 
 
 def _stop_thinking_spinner() -> None:
-    """Para o spinner."""
     global _spinner_thread
     _spinner_stop.set()
     if _spinner_thread and _spinner_thread.is_alive():
@@ -170,18 +137,15 @@ def _stop_thinking_spinner() -> None:
 # ── Estado global do streaming ────────────────────────────────
 _streaming_buffer: list[str] = []
 _in_streaming = False
-_agent_box_open = False
-_streaming_tool_args: dict[str, str] = {}
 _thinking_active = False
 _stream_line_count = 0
 _stream_collapsed = False
-MAX_VISIBLE_LINES = 4  # Linhas visíveis antes de compactar
+MAX_VISIBLE_LINES = 4
 
 
 def on_text_delta(delta: str) -> None:
-    """Streaming em tempo real — compacta após MAX_VISIBLE_LINES linhas."""
-    global _in_streaming, _agent_box_open, _thinking_active, _stream_line_count, _stream_collapsed
-    # Para o spinner na primeira resposta
+    """Streaming em tempo real — formato Claude Code."""
+    global _in_streaming, _thinking_active, _stream_line_count, _stream_collapsed
     if _thinking_active:
         _stop_thinking_spinner()
         _thinking_active = False
@@ -189,35 +153,25 @@ def on_text_delta(delta: str) -> None:
         _in_streaming = True
         _stream_line_count = 0
         _stream_collapsed = False
-        if not _agent_box_open:
-            _agent_header()
-            _agent_box_open = True
-        sys.stdout.write("  ")
 
     _streaming_buffer.append(delta)
-
-    # Conta newlines no delta
     newlines = delta.count("\n")
     if newlines > 0:
         _stream_line_count += newlines
 
-    # Se ainda não colapsou, exibe normalmente
     if not _stream_collapsed:
         if _stream_line_count <= MAX_VISIBLE_LINES:
             sys.stdout.write(delta)
             sys.stdout.flush()
         else:
-            # Acabou de passar o limite — exibe o que falta da linha atual e colapsa
-            # Pega só até o ponto de corte
             parts = delta.split("\n", 1)
             sys.stdout.write(parts[0])
             sys.stdout.flush()
             _stream_collapsed = True
-    # Se já colapsou, não exibe nada (acumula no buffer)
 
 
 def on_text_done(text: str) -> None:
-    """Chamado quando o texto completo está pronto — mostra resumo se colapsou."""
+    """Chamado quando o texto completo está pronto."""
     global _in_streaming, _stream_collapsed, _stream_line_count
 
     full_text = "".join(_streaming_buffer)
@@ -225,9 +179,8 @@ def on_text_done(text: str) -> None:
 
     if _in_streaming:
         if _stream_collapsed and total_lines > MAX_VISIBLE_LINES:
-            # Mostra indicador de linhas ocultas
             hidden = total_lines - MAX_VISIBLE_LINES
-            sys.stdout.write(f"\n  [dim]{_DIM}  ... +{hidden} linhas (resposta compactada){_RESET}")
+            sys.stdout.write(f"\n{_DIM}  ⎿ ... +{hidden} linhas{_RESET}")
         sys.stdout.write("\n")
         sys.stdout.flush()
         _in_streaming = False
@@ -237,17 +190,9 @@ def on_text_done(text: str) -> None:
     _stream_collapsed = False
 
 
-def _close_agent_box() -> None:
-    global _agent_box_open
-    if _agent_box_open:
-        _agent_footer()
-        _agent_box_open = False
-
-
 def on_tool_call(name: str, args: dict) -> None:
-    """Chamado quando o modelo chama uma ferramenta — streaming dos args."""
-    global _in_streaming, _agent_box_open, _thinking_active
-    # Para o spinner quando uma tool é chamada
+    """Formato Claude Code: ⏵ ToolName detail"""
+    global _in_streaming, _thinking_active
     if _thinking_active:
         _stop_thinking_spinner()
         _thinking_active = False
@@ -255,10 +200,6 @@ def on_tool_call(name: str, args: dict) -> None:
         sys.stdout.write("\n")
         sys.stdout.flush()
         _in_streaming = False
-
-    if not _agent_box_open:
-        _agent_header()
-        _agent_box_open = True
 
     detail = ""
     if name == "bash":
@@ -276,49 +217,47 @@ def on_tool_call(name: str, args: dict) -> None:
     elif name == "web_fetch":
         detail = args.get("url", "")[:100]
     elif name == "notebook_edit":
-        op = args.get("operation", "")
-        detail = f"{op} {args.get('file_path', '')}"
+        detail = f"{args.get('operation', '')} {args.get('file_path', '')}"
     elif name.startswith("task_"):
         detail = args.get("title", args.get("task_id", ""))
     elif name.startswith("mcp__"):
         detail = str(args)[:80]
 
-    icon = _tool_icon(name)
-
-    # Streaming visual dos argumentos sendo construídos
-    console.print(f"  [tool.name]{icon} {name}[/]  [muted]{detail}[/]")
+    # Formato: ⏵ tool_name detail
+    sys.stdout.write(f"  {_CYAN_ANSI}⏵ {name}{_RESET} {_DIM}{detail}{_RESET}\n")
+    sys.stdout.flush()
 
 
 def on_tool_result(name: str, status: str, output: str) -> None:
-    """Chamado quando uma ferramenta retorna resultado — com diff visual."""
+    """Formato Claude Code: ⎿ resultado compactado."""
     if status == "error":
-        console.print(f"  [error]✗ {name} falhou[/]")
+        sys.stdout.write(f"  {_RED_ANSI}⎿ ✗ erro{_RESET}\n")
         if output:
-            for line in output.strip().splitlines()[:5]:
-                console.print(f"    [error]{line}[/]")
+            for line in output.strip().splitlines()[:3]:
+                sys.stdout.write(f"    {_RED_ANSI}{line[:120]}{_RESET}\n")
+        sys.stdout.flush()
     elif status == "denied":
-        console.print(f"  [warning]⊘ {name} negado[/]")
+        sys.stdout.write(f"  {_GOLD_ANSI}⎿ ⊘ negado{_RESET}\n")
+        sys.stdout.flush()
     else:
-        # Diff visual para edit
         if name == "edit" and "```diff" in output:
             _show_diff_output(output)
-        elif name == "bash" and output:
+        elif output:
             lines = output.strip().splitlines()
-            if len(lines) <= 8:
+            if len(lines) <= 5:
                 for line in lines:
-                    console.print(f"    [muted]{line}[/]")
+                    sys.stdout.write(f"  {_DIM}⎿ {line[:150]}{_RESET}\n")
             else:
-                for line in lines[:4]:
-                    console.print(f"    [muted]{line}[/]")
-                console.print(f"    [muted]... ({len(lines)} linhas)[/]")
-                for line in lines[-2:]:
-                    console.print(f"    [muted]{line}[/]")
-        console.print(f"  [success]✓ {name}[/]")
+                for line in lines[:3]:
+                    sys.stdout.write(f"  {_DIM}⎿ {line[:150]}{_RESET}\n")
+                sys.stdout.write(f"  {_DIM}⎿ ... +{len(lines) - 3} linhas{_RESET}\n")
+        sys.stdout.flush()
 
 
 def _show_diff_output(output: str) -> None:
-    """Mostra diff visual colorido (verde/vermelho)."""
+    """Diff colorido no formato Claude Code."""
     in_diff = False
+    count = 0
     for line in output.splitlines():
         if line.startswith("```diff"):
             in_diff = True
@@ -327,45 +266,32 @@ def _show_diff_output(output: str) -> None:
             in_diff = False
             continue
         if in_diff:
+            count += 1
+            if count > 12:
+                sys.stdout.write(f"  {_DIM}⎿ ... (diff truncado){_RESET}\n")
+                break
             if line.startswith("+") and not line.startswith("+++"):
-                console.print(f"    [diff_add]{line}[/]")
+                sys.stdout.write(f"  {_GREEN_ANSI}⎿ {line}{_RESET}\n")
             elif line.startswith("-") and not line.startswith("---"):
-                console.print(f"    [diff_del]{line}[/]")
+                sys.stdout.write(f"  {_RED_ANSI}⎿ {line}{_RESET}\n")
             elif line.startswith("@@"):
-                console.print(f"    [accent]{line}[/]")
+                sys.stdout.write(f"  {_CYAN_ANSI}⎿ {line}{_RESET}\n")
             else:
-                console.print(f"    [muted]{line}[/]")
-        elif not line.startswith("```"):
-            if line and not line.startswith("Editado "):
-                console.print(f"    [muted]{line}[/]")
-
-
-def _tool_icon(name: str) -> str:
-    icons = {
-        "bash": "⚡", "read": "📖", "write": "✏️", "edit": "🔧",
-        "glob": "🔍", "grep": "🔎", "agent": "🤖",
-        "web_search": "🌐", "web_fetch": "📡", "notebook_edit": "📓",
-        "task_create": "📋", "task_update": "📋", "task_list": "📋", "task_get": "📋",
-    }
-    if name.startswith("mcp__"):
-        return "🔌"
-    return icons.get(name, "⚙️")
+                sys.stdout.write(f"  {_DIM}⎿ {line}{_RESET}\n")
+    sys.stdout.flush()
 
 
 def ask_confirmation(message: str) -> bool:
-    console.print()
-    console.print(Panel(
-        message,
-        title="[warning]⚠ Permissão Necessária[/]",
-        border_style="yellow",
-        padding=(0, 1),
-    ))
+    sys.stdout.write(f"\n  {_GOLD_ANSI}⚠ Permissão necessária{_RESET}\n")
+    for line in message.splitlines():
+        sys.stdout.write(f"  {_DIM}{line}{_RESET}\n")
+    sys.stdout.flush()
     try:
         resp = console.input(f"  [{GOLD}](s)im / (n)ão / (a)sempre: [/]").strip().lower()
         if resp in ("a", "sempre", "always"):
             config.AUTO_APPROVE_BASH = True
             config.AUTO_APPROVE_WRITE = True
-            console.print("  [info]Auto-approve ativado para esta sessão.[/]")
+            console.print("  [info]Auto-approve ativado.[/]")
             return True
         return resp in ("s", "y", "sim", "yes", "")
     except (EOFError, KeyboardInterrupt):
@@ -385,8 +311,7 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
     skill = _skill_registry.get(skill_name)
     if skill:
         expanded_prompt = skill.execute(arg)
-        console.print(f"  [accent]Skill /{skill_name}[/] → expandido")
-        _show_user_message(expanded_prompt)
+        console.print(f"  [muted]/{skill_name} →[/]")
         _run_agent_turn(agent, expanded_prompt)
         return True
 
@@ -395,11 +320,9 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
         return True
 
     elif command in ("/exit", "/quit", "/q"):
-        # Para cron jobs
         get_cron_manager().stop_all()
         save_session(agent.session)
-        _separator("Fim da Sessão", style="gold")
-        console.print(f"[gold]  Sessão salva. Até mais, Daniel! 🦇[/]")
+        console.print(f"\n[muted]  Sessão salva. Até mais! 🦇[/]")
         sys.exit(0)
 
     elif command in ("/clear", "/reset"):
@@ -1099,17 +1022,16 @@ def run_repl(args: argparse.Namespace) -> None:
     # Prompt inicial (se veio da CLI)
     if hasattr(args, "prompt") and args.prompt:
         initial_prompt = " ".join(args.prompt)
-        _show_user_message(initial_prompt)
         _run_agent_turn(agent, initial_prompt)
 
     # Loop REPL
     while True:
         try:
-            # Prompt com indicador de plan mode
+            # Prompt limpo estilo Claude Code
             if agent.plan_mode:
-                prompt_html = HTML('<style fg="#FF6B6B" bold="true">[PLAN] </style><style fg="#FFD700" bold="true">🦇 &gt; </style>')
+                prompt_html = HTML('<style fg="#FF6B6B">[PLAN] </style><style fg="#FFD700" bold="true">&gt; </style>')
             else:
-                prompt_html = HTML('<style fg="#FFD700" bold="true">🦇 &gt; </style>')
+                prompt_html = HTML('<style fg="#FFD700" bold="true">&gt; </style>')
 
             user_input = prompt_session.prompt(prompt_html).strip()
 
@@ -1150,8 +1072,7 @@ def run_repl(args: argparse.Namespace) -> None:
             continue
         except EOFError:
             get_cron_manager().stop_all()
-            _separator("Fim da Sessão", style="gold")
-            console.print(f"[gold]  Sessão salva. Até mais! 🦇[/]")
+            console.print(f"\n[muted]  Sessão salva. Até mais! 🦇[/]")
             save_session(agent.session)
             break
         except Exception as e:
@@ -1160,38 +1081,18 @@ def run_repl(args: argparse.Namespace) -> None:
 
 
 def _print_banner() -> None:
-    console.print()
-    console.print(f"[{GOLD} bold]" + r"""
-  ██████   █████  ████████ ███    ███  █████  ███    ███
-  ██   ██ ██   ██    ██    ████  ████ ██   ██ ████  ████
-  ██████  ███████    ██    ██ ████ ██ ███████ ██ ████ ██
-  ██   ██ ██   ██    ██    ██  ██  ██ ██   ██ ██  ██  ██
-  ██████  ██   ██    ██    ██      ██ ██   ██ ██      ██
-""" + "[/]")
-    _separator(style="dark_gold")
-    console.print(f"  [{GOLD}]Agente de Código AI[/]  [muted]v{__version__}[/]")
     provider = config.BATMAM_PROVIDER.capitalize()
-    console.print(f"  [muted]Modelo: {config.BATMAM_MODEL}  │  Provider: {provider}  │  Dir: {os.getcwd()}[/]")
-    console.print(f"  [muted]14 tools  │  8 skills  │  4 tipos de memória  │  pipeline  │  dashboard[/]")
-    console.print(f"  [muted]/help para comandos  │  /exit para sair[/]")
-    _separator(style="dark_gold")
     console.print()
-
-
-def _show_user_message(message: str) -> None:
-    console.print()
-    _user_header()
-    for line in message.splitlines():
-        console.print(f"  [user_text]{line}[/]")
-    _user_footer()
+    console.print(f"  [{GOLD} bold]🦇 Batmam[/]  [muted]v{__version__}[/]")
+    console.print(f"  [muted]{config.BATMAM_MODEL} · {provider} · {os.getcwd()}[/]")
+    console.print(f"  [muted]/help para comandos · /exit para sair[/]")
     console.print()
 
 
 def _run_agent_turn(agent: Agent, message: str) -> None:
-    global _in_streaming, _agent_box_open, _thinking_active
+    global _in_streaming, _thinking_active
     try:
         log_action("repl_turn", message[:80])
-        # Inicia o 🦇 pulsando enquanto espera resposta
         _thinking_active = True
         _start_thinking_spinner()
         agent.run_turn(message)
@@ -1210,11 +1111,9 @@ def _run_agent_turn(agent: Agent, message: str) -> None:
             _in_streaming = False
         console.print(f"[error]  Erro: {e}[/]")
     finally:
-        # Garante que o spinner para em qualquer caso
         if _thinking_active:
             _stop_thinking_spinner()
             _thinking_active = False
-        _close_agent_box()
 
 
 # ── Entry Point ───────────────────────────────────────────────
