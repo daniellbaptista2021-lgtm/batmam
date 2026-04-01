@@ -6,6 +6,8 @@ import sys
 import time
 import argparse
 import threading
+import tty
+import termios
 from pathlib import Path
 
 import re as _re
@@ -380,28 +382,111 @@ def _show_diff(output: str) -> None:
     sys.stdout.flush()
 
 
+def _read_single_key() -> str:
+    """Lê uma única tecla sem precisar pressionar Enter."""
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        ch = sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    return ch
+
+
 def ask_confirmation(message: str) -> bool:
-    """Permissão estilo Claude Code: (y)es / (n)o / (a)lways allow."""
+    """Permissão com botões visuais coloridos e captura de tecla única."""
     sys.stdout.write(f"\n  Do you want to allow this action?\n\n")
     for line in message.splitlines():
         sys.stdout.write(f"  {_DIM}{line}{_RESET}\n")
-    sys.stdout.write(f"\n  ({_YELLOW}y{_RESET})es / ({_YELLOW}n{_RESET})o / ({_YELLOW}a{_RESET})lways allow  ")
+    sys.stdout.write("\n")
     sys.stdout.flush()
+
+    # Renderiza botões com fundo colorido
+    buttons = Text()
+    buttons.append("  ")
+    buttons.append(" Yes ", style="bold white on green")
+    buttons.append("  ")
+    buttons.append(" No ", style="bold white on red")
+    buttons.append("  ")
+    buttons.append(" Always ", style="bold white on blue")
+    buttons.append("  ")
+    buttons.append("(y / n / a)", style="dim")
+    console.print(buttons)
+
     try:
-        resp = console.input("").strip().lower()
-        if resp in ("a", "always"):
+        choice = _read_single_key()
+
+        if choice in ("y", "Y", "s", "S"):
+            console.print("  [green]✓ Approved[/]\n")
+            return True
+        elif choice in ("a", "A"):
             config.AUTO_APPROVE_BASH = True
             config.AUTO_APPROVE_WRITE = True
-            sys.stdout.write(f"  {_DIM}Auto-approve enabled for this session.{_RESET}\n\n")
+            console.print("  [blue]✓ Always allowed for this session[/]\n")
+            return True
+        else:
+            console.print(f"  [red]✗ Denied[/]\n")
+            return False
+    except (EOFError, KeyboardInterrupt, termios.error):
+        # Fallback para input padrão se terminal não suportar raw mode
+        try:
+            sys.stdout.write(f"  [Y] Yes  [N] No  [A] Always  ")
             sys.stdout.flush()
-            return True
-        if resp in ("y", "yes", "s", "sim", ""):
-            return True
-        sys.stdout.write(f"  {_RED}Action cancelled{_RESET}\n\n")
+            resp = console.input("").strip().lower()
+            if resp in ("a", "always"):
+                config.AUTO_APPROVE_BASH = True
+                config.AUTO_APPROVE_WRITE = True
+                console.print("  [blue]✓ Always allowed for this session[/]\n")
+                return True
+            if resp in ("y", "yes", "s", "sim", ""):
+                console.print("  [green]✓ Approved[/]\n")
+                return True
+            console.print(f"  [red]✗ Denied[/]\n")
+            return False
+        except (EOFError, KeyboardInterrupt):
+            return False
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# RATE LIMIT — countdown visual
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+def show_rate_limit_warning(wait_seconds: int, attempt: int, max_retries: int) -> None:
+    """Mostra countdown visual com infinito pulsando durante rate limit."""
+    _inf_stop_now()  # Para o pulse normal se estiver rodando
+
+    console.print()
+    console.print(
+        f"  [yellow]⚠ Rate limit atingido. Aguardando {wait_seconds}s...[/] "
+        f"[dim](tentativa {attempt}/{max_retries})[/]"
+    )
+
+    # Countdown visual com infinito pulsando
+    styles = [
+        "bold bright_magenta", "bright_magenta", "magenta",
+        "dim magenta", "magenta", "bright_magenta",
+    ]
+    frame = 0
+    for remaining in range(wait_seconds, 0, -1):
+        style = styles[frame % len(styles)]
+        text = Text()
+        text.append("  ")
+        text.append("∞", style=style)
+        text.append(f" Aguardando rate limit... {remaining}s", style="dim yellow")
+        sys.stdout.write(f"\r{' ' * 70}\r")
         sys.stdout.flush()
-        return False
-    except (EOFError, KeyboardInterrupt):
-        return False
+        console.print(text, end="")
+        frame += 1
+        time.sleep(1)
+
+    sys.stdout.write(f"\r{' ' * 70}\r")
+    sys.stdout.flush()
+    console.print("  [green]✓ Retomando...[/]")
+    console.print()
+
+    # Reinicia o pulse normal
+    _inf_start("Pensando")
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1046,6 +1131,7 @@ def run_repl(args: argparse.Namespace) -> None:
         on_tool_call=on_tool_call,
         on_tool_result=on_tool_result,
         ask_confirmation=ask_confirmation,
+        on_rate_limit=show_rate_limit_warning,
         auto_approve=getattr(args, "auto_approve", False),
     )
 

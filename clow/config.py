@@ -50,6 +50,8 @@ CLOW_MODEL = os.getenv("CLOW_MODEL", _DEFAULT_MODELS.get(CLOW_PROVIDER, "claude-
 MAX_TOKENS = 16384
 MAX_CONTEXT_MESSAGES = 200
 TEMPERATURE = 0.2
+MAX_RETRY_ATTEMPTS = 3
+MAX_TOOL_RESULT_CHARS = 5000
 
 # ── Permissões ──────────────────────────────────────────────
 AUTO_APPROVE_READ = True       # Leitura sempre liberada

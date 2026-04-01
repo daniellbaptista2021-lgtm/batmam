@@ -65,6 +65,7 @@ class Agent:
         on_tool_call: Callable[[str, dict], None] | None = None,
         on_tool_result: Callable[[str, str, str], None] | None = None,
         ask_confirmation: Callable[[str], bool] | None = None,
+        on_rate_limit: Callable[[int, int, int], None] | None = None,
         auto_approve: bool = False,
         is_subagent: bool = False,
     ):
@@ -82,6 +83,7 @@ class Agent:
         self.on_tool_call = on_tool_call or (lambda n, a: None)
         self.on_tool_result = on_tool_result or (lambda n, s, o: None)
         self.ask_confirmation = ask_confirmation or (lambda m: True)
+        self.on_rate_limit = on_rate_limit or (lambda w, a, m: time.sleep(w))
         self.auto_approve = auto_approve
         self.is_subagent = is_subagent
 
@@ -245,10 +247,37 @@ class Agent:
     # ── Streaming Call ─────────────────────────────────────────
 
     def _stream_call(self) -> tuple[str, list[dict], dict]:
-        """Faz chamada streaming e retorna (text, tool_calls, usage)."""
-        if self._provider == "anthropic":
-            return self._stream_call_anthropic()
-        return self._stream_call_openai()
+        """Faz chamada streaming com retry automatico para rate limit (429)."""
+        max_retries = config.MAX_RETRY_ATTEMPTS
+
+        for attempt in range(max_retries):
+            try:
+                if self._provider == "anthropic":
+                    return self._stream_call_anthropic()
+                return self._stream_call_openai()
+            except Exception as e:
+                err_str = str(e).lower()
+                is_rate_limit = (
+                    "429" in err_str
+                    or "rate_limit" in err_str
+                    or "rate limit" in err_str
+                    or "overloaded" in err_str
+                )
+                if is_rate_limit and attempt < max_retries - 1:
+                    # Tenta extrair retry-after do erro
+                    wait = min(30 * (attempt + 1), 90)
+                    import re as _re_retry
+                    retry_match = _re_retry.search(r"retry.after[:\s]*(\d+)", err_str)
+                    if retry_match:
+                        wait = int(retry_match.group(1))
+                    self.on_rate_limit(wait, attempt + 1, max_retries)
+                    continue
+                raise
+
+        raise RuntimeError(
+            "Rate limit excedido apos todas as tentativas. "
+            "Tente novamente em alguns minutos."
+        )
 
     def _stream_call_anthropic(self) -> tuple[str, list[dict], dict]:
         """Streaming via Anthropic Messages API."""
@@ -632,11 +661,23 @@ class Agent:
     # ── Context Management ─────────────────────────────────────
 
     def _get_messages(self) -> list[dict]:
-        """Retorna mensagens respeitando limites de contexto."""
+        """Retorna mensagens respeitando limites de contexto e truncando tool results grandes."""
         msgs = self.session.messages
         if len(msgs) > config.MAX_CONTEXT_MESSAGES:
-            return [msgs[0]] + msgs[-(config.MAX_CONTEXT_MESSAGES - 1):]
-        return msgs
+            msgs = [msgs[0]] + msgs[-(config.MAX_CONTEXT_MESSAGES - 1):]
+
+        # Trunca tool results muito grandes para reduzir consumo de tokens
+        max_chars = config.MAX_TOOL_RESULT_CHARS
+        truncated = []
+        for msg in msgs:
+            if msg.get("role") == "tool":
+                content = msg.get("content", "")
+                if isinstance(content, str) and len(content) > max_chars:
+                    msg = dict(msg)
+                    msg["content"] = content[:max_chars] + "\n... (truncado)"
+            truncated.append(msg)
+
+        return truncated
 
     def _maybe_compact(self) -> None:
         """Compacta contexto com resumo LLM se muito grande."""
