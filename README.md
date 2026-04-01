@@ -1,4 +1,4 @@
-# 🦇 Batmam
+# 🃏 Clow
 
 **Agente de código AI no terminal** — similar ao Claude Code, open-source, powered by OpenAI.
 
@@ -9,22 +9,22 @@ Lê, escreve, edita código, executa comandos, busca na web, gerencia projetos �
 ### Rápida (recomendada)
 
 ```bash
-git clone https://github.com/daniel/batmam.git
-cd batmam
+git clone https://github.com/daniel/clow.git
+cd clow
 ./install.sh
 ```
 
 O instalador automaticamente:
 - Instala Python 3 e dependências se necessário
 - Cria ambiente virtual isolado
-- Configura o comando `batmam` globalmente
+- Configura o comando `clow` globalmente
 - Pede sua API key da OpenAI
 
 ### Manual
 
 ```bash
-git clone https://github.com/daniel/batmam.git
-cd batmam
+git clone https://github.com/daniel/clow.git
+cd clow
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
@@ -34,8 +34,8 @@ pip install -e .
 
 ```bash
 ssh usuario@seu-servidor
-git clone https://github.com/daniel/batmam.git
-cd batmam
+git clone https://github.com/daniel/clow.git
+cd clow
 ./install.sh
 ```
 
@@ -43,27 +43,27 @@ cd batmam
 
 ```bash
 # Defina sua API key
-echo 'OPENAI_API_KEY=sk-...' > ~/.batmam/app/.env
-echo 'BATMAM_MODEL=gpt-4.1' >> ~/.batmam/app/.env
+echo 'OPENAI_API_KEY=sk-...' > ~/.clow/app/.env
+echo 'CLOW_MODEL=gpt-4.1' >> ~/.clow/app/.env
 ```
 
 ## Uso
 
 ```bash
 # REPL interativo
-batmam
+clow
 
 # Prompt direto
-batmam "crie um servidor Flask com autenticação JWT"
+clow "crie um servidor Flask com autenticação JWT"
 
 # Escolher modelo
-batmam -m gpt-4.1-mini
+clow -m gpt-4.1-mini
 
 # Auto-approve (sem confirmações)
-batmam -y
+clow -y
 
 # Em um diretório específico
-batmam -C /caminho/do/projeto
+clow -C /caminho/do/projeto
 ```
 
 ## Comandos Internos
@@ -85,7 +85,7 @@ batmam -C /caminho/do/projeto
 | `/hooks` | Lista hooks |
 | `/plugins` | Lista plugins |
 | `/mcp` | Lista servidores MCP |
-| `/init` | Cria BATMAM.md no projeto |
+| `/init` | Cria CLOW.md no projeto |
 | `/approve` | Auto-approve na sessão |
 | `!comando` | Executa bash direto |
 
@@ -104,9 +104,9 @@ batmam -C /caminho/do/projeto
 | `notebook_edit` | Edita Jupyter notebooks |
 | `agent` | Lança sub-agentes |
 
-## BATMAM.md
+## CLOW.md
 
-Crie um arquivo `BATMAM.md` na raiz do seu projeto com instruções específicas. O Batmam lê automaticamente, similar ao `CLAUDE.md`:
+Crie um arquivo `CLOW.md` na raiz do seu projeto com instruções específicas. O Clow lê automaticamente, similar ao `CLAUDE.md`:
 
 ```markdown
 # Instruções do Projeto
@@ -120,7 +120,7 @@ Crie um arquivo `BATMAM.md` na raiz do seu projeto com instruções específicas
 
 ### Hooks
 
-Configure em `~/.batmam/settings.json`:
+Configure em `~/.clow/settings.json`:
 
 ```json
 {
@@ -151,11 +151,11 @@ Configure em `~/.batmam/settings.json`:
 
 ### Plugins
 
-Coloque plugins Python em `~/.batmam/plugins/`:
+Coloque plugins Python em `~/.clow/plugins/`:
 
 ```python
-# ~/.batmam/plugins/meu_plugin.py
-from batmam.tools.base import BaseTool
+# ~/.clow/plugins/meu_plugin.py
+from clow.tools.base import BaseTool
 
 class MeuTool(BaseTool):
     name = "meu_tool"
@@ -174,19 +174,19 @@ def register(registry, hook_runner):
 ### VS Code
 
 1. Copie `vscode-extension/` para seus extensions
-2. Ou instale via: `cd vscode-extension && npx vsce package && code --install-extension batmam-0.1.0.vsix`
+2. Ou instale via: `cd vscode-extension && npx vsce package && code --install-extension clow-0.1.0.vsix`
 
 Atalhos:
-- `Ctrl+Shift+B` — Abre o Batmam
+- `Ctrl+Shift+B` — Abre o Clow
 - `Ctrl+Shift+I` — Pergunta rápida
-- Clique direito → Batmam: Explicar/Corrigir/Refatorar
+- Clique direito → Clow: Explicar/Corrigir/Refatorar
 
 ## Estrutura
 
 ```
-~/.batmam/
-├── app/            # Código do Batmam
-├── bin/batmam      # CLI global
+~/.clow/
+├── app/            # Código do Clow
+├── bin/clow      # CLI global
 ├── sessions/       # Sessões salvas
 ├── memory/         # Memória persistente
 ├── plugins/        # Plugins customizados
@@ -211,7 +211,7 @@ Troque em runtime: `/model gpt-4.1-mini`
 ```bash
 ./install.sh --uninstall
 # Para remover tudo (incluindo sessões):
-rm -rf ~/.batmam
+rm -rf ~/.clow
 ```
 
 ## Licença

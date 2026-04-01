@@ -3,16 +3,16 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "batmam"
+name = "clow"
 version = "0.2.0"
-description = "Batmam - Agente de código AI no terminal. Seu assistente de engenharia de software powered by AI."
+description = "Clow - Agente de código AI no terminal. Seu assistente de engenharia de software powered by AI."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [
     {name = "Daniel"},
 ]
-keywords = ["ai", "agent", "code", "cli", "assistant", "openai", "batmam"]
+keywords = ["ai", "agent", "code", "cli", "assistant", "openai", "clow"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
@@ -39,10 +39,10 @@ web = ["fastapi>=0.100.0", "uvicorn[standard]>=0.20.0"]
 pdf = ["pdfplumber>=0.9.0"]
 
 [project.scripts]
-batmam = "batmam.cli:main"
+clow = "clow.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/daniellbaptista2021-lgtm/batmam"
+Homepage = "https://github.com/daniellbaptista2021-lgtm/clow"
 
 [tool.setuptools.packages.find]
-include = ["batmam*"]
+include = ["clow*"]

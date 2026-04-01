@@ -4,45 +4,45 @@ const path = require('path');
 const os = require('os');
 
 /**
- * Batmam VS Code Extension v0.2.0
- * Integra o agente Batmam diretamente no editor.
+ * Clow VS Code Extension v0.2.0
+ * Integra o agente Clow diretamente no editor.
  * Features: inline edit, commit inteligente, code review, diff view,
  *           test generation, plan mode.
  */
 
-const BATMAM_HOME = path.join(os.homedir(), '.batmam');
-const BATMAM_BIN = path.join(BATMAM_HOME, 'bin', 'batmam');
-const BATMAM_PYTHON = path.join(BATMAM_HOME, 'app', '.venv', 'bin', 'python');
+const CLOW_HOME = path.join(os.homedir(), '.clow');
+const CLOW_BIN = path.join(CLOW_HOME, 'bin', 'clow');
+const CLOW_PYTHON = path.join(CLOW_HOME, 'app', '.venv', 'bin', 'python');
 
 let outputChannel;
-let batmamTerminal;
+let clowTerminal;
 
 function activate(context) {
-    outputChannel = vscode.window.createOutputChannel('Batmam');
-    outputChannel.appendLine('Batmam v0.2.0 extension ativada');
+    outputChannel = vscode.window.createOutputChannel('Clow');
+    outputChannel.appendLine('Clow v0.2.0 extension ativada');
 
     // ── Terminal Commands ──
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('batmam.openInTerminal', () => {
-            openBatmamTerminal();
+        vscode.commands.registerCommand('clow.openInTerminal', () => {
+            openClowTerminal();
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('batmam.open', () => {
-            openBatmamTerminal();
+        vscode.commands.registerCommand('clow.open', () => {
+            openClowTerminal();
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('batmam.ask', async () => {
+        vscode.commands.registerCommand('clow.ask', async () => {
             const question = await vscode.window.showInputBox({
-                prompt: '🦇 Pergunte ao Batmam',
+                prompt: '🃏 Pergunte ao Clow',
                 placeHolder: 'O que você quer fazer?',
             });
             if (question) {
-                runBatmamCommand(question);
+                runClowCommand(question);
             }
         })
     );
@@ -50,26 +50,26 @@ function activate(context) {
     // ── Selection Commands ──
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('batmam.explainSelection', () => {
+        vscode.commands.registerCommand('clow.explainSelection', () => {
             handleSelection('Explique este código em detalhes:');
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('batmam.fixSelection', () => {
+        vscode.commands.registerCommand('clow.fixSelection', () => {
             handleSelection('Encontre e corrija bugs neste código:');
         })
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('batmam.refactorSelection', () => {
+        vscode.commands.registerCommand('clow.refactorSelection', () => {
             handleSelection('Refatore este código para melhor legibilidade e performance:');
         })
     );
 
     // ── Inline Edit ──
     context.subscriptions.push(
-        vscode.commands.registerCommand('batmam.inlineEdit', async () => {
+        vscode.commands.registerCommand('clow.inlineEdit', async () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 vscode.window.showWarningMessage('Nenhum editor ativo.');
@@ -84,7 +84,7 @@ function activate(context) {
             }
 
             const instruction = await vscode.window.showInputBox({
-                prompt: '🦇 Como editar este código?',
+                prompt: '🃏 Como editar este código?',
                 placeHolder: 'Ex: adicionar tratamento de erro, converter para async...',
             });
             if (!instruction) return;
@@ -107,38 +107,38 @@ Código atual:
 ${selectedText}
 \`\`\``;
 
-            runBatmamCommand(prompt);
+            runClowCommand(prompt);
         })
     );
 
     // ── Commit Inteligente ──
     context.subscriptions.push(
-        vscode.commands.registerCommand('batmam.commit', () => {
+        vscode.commands.registerCommand('clow.commit', () => {
             const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
             if (!workspaceFolder) {
                 vscode.window.showWarningMessage('Nenhum workspace aberto.');
                 return;
             }
-            runBatmamSkill('/commit', workspaceFolder);
+            runClowSkill('/commit', workspaceFolder);
         })
     );
 
     // ── Code Review ──
     context.subscriptions.push(
-        vscode.commands.registerCommand('batmam.review', () => {
+        vscode.commands.registerCommand('clow.review', () => {
             const editor = vscode.window.activeTextEditor;
             if (editor) {
                 const filePath = editor.document.uri.fsPath;
-                runBatmamSkill(`/review ${filePath}`);
+                runClowSkill(`/review ${filePath}`);
             } else {
-                runBatmamSkill('/review');
+                runClowSkill('/review');
             }
         })
     );
 
     // ── Generate Tests ──
     context.subscriptions.push(
-        vscode.commands.registerCommand('batmam.generateTests', () => {
+        vscode.commands.registerCommand('clow.generateTests', () => {
             const editor = vscode.window.activeTextEditor;
             if (!editor) {
                 vscode.window.showWarningMessage('Nenhum editor ativo.');
@@ -157,89 +157,89 @@ ${selectedText}
                 target = filePath;
             }
 
-            runBatmamSkill(`/test ${target}`);
+            runClowSkill(`/test ${target}`);
         })
     );
 
     // ── Diff View ──
     context.subscriptions.push(
-        vscode.commands.registerCommand('batmam.diffView', () => {
+        vscode.commands.registerCommand('clow.diffView', () => {
             const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
             if (!workspaceFolder) return;
-            runBatmamCommand('Mostre o git diff completo das mudanças atuais com explicação de cada alteração.');
+            runClowCommand('Mostre o git diff completo das mudanças atuais com explicação de cada alteração.');
         })
     );
 
     // ── Plan Mode ──
     context.subscriptions.push(
-        vscode.commands.registerCommand('batmam.planMode', async () => {
+        vscode.commands.registerCommand('clow.planMode', async () => {
             const choice = await vscode.window.showQuickPick(
                 ['Ativar Plan Mode', 'Desativar Plan Mode'],
-                { placeHolder: '🦇 Plan Mode — somente leitura' }
+                { placeHolder: '🃏 Plan Mode — somente leitura' }
             );
             if (choice === 'Ativar Plan Mode') {
-                runBatmamCommand('/plan');
-                vscode.window.showInformationMessage('🦇 Plan Mode ativado — somente leitura');
+                runClowCommand('/plan');
+                vscode.window.showInformationMessage('🃏 Plan Mode ativado — somente leitura');
             } else if (choice === 'Desativar Plan Mode') {
-                runBatmamCommand('/plan off');
-                vscode.window.showInformationMessage('🦇 Plan Mode desativado');
+                runClowCommand('/plan off');
+                vscode.window.showInformationMessage('🃏 Plan Mode desativado');
             }
         })
     );
 }
 
 /**
- * Abre o Batmam em um terminal integrado.
+ * Abre o Clow em um terminal integrado.
  */
-function openBatmamTerminal() {
+function openClowTerminal() {
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || os.homedir();
-    const config = vscode.workspace.getConfiguration('batmam');
+    const config = vscode.workspace.getConfiguration('clow');
     const model = config.get('model', 'gpt-4.1');
     const autoApprove = config.get('autoApprove', false);
     const planMode = config.get('planModeDefault', false);
 
-    const batmamCmd = getBatmamCommand();
+    const clowCmd = getClowCommand();
 
-    let args = [...batmamCmd.args];
+    let args = [...clowCmd.args];
     if (model) args.push('-m', model);
     if (autoApprove) args.push('-y');
 
-    if (batmamTerminal && batmamTerminal.exitStatus === undefined) {
-        batmamTerminal.show();
+    if (clowTerminal && clowTerminal.exitStatus === undefined) {
+        clowTerminal.show();
         return;
     }
 
-    batmamTerminal = vscode.window.createTerminal({
-        name: '🦇 Batmam',
+    clowTerminal = vscode.window.createTerminal({
+        name: '🃏 Clow',
         cwd: workspaceFolder,
-        shellPath: batmamCmd.shell,
+        shellPath: clowCmd.shell,
         shellArgs: args,
         iconPath: new vscode.ThemeIcon('hubot'),
     });
 
-    batmamTerminal.show();
+    clowTerminal.show();
 
     if (planMode) {
         setTimeout(() => {
-            batmamTerminal.sendText('/plan');
+            clowTerminal.sendText('/plan');
         }, 2000);
     }
 }
 
 /**
- * Roda um comando no Batmam via terminal.
+ * Roda um comando no Clow via terminal.
  */
-function runBatmamCommand(prompt, cwd) {
+function runClowCommand(prompt, cwd) {
     const workspaceFolder = cwd || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || os.homedir();
-    const batmamCmd = getBatmamCommand();
-    const config = vscode.workspace.getConfiguration('batmam');
+    const clowCmd = getClowCommand();
+    const config = vscode.workspace.getConfiguration('clow');
     const model = config.get('model', 'gpt-4.1');
 
     const terminal = vscode.window.createTerminal({
-        name: `🦇 ${prompt.substring(0, 30)}...`,
+        name: `🃏 ${prompt.substring(0, 30)}...`,
         cwd: workspaceFolder,
-        shellPath: batmamCmd.shell,
-        shellArgs: [...batmamCmd.args, prompt],
+        shellPath: clowCmd.shell,
+        shellArgs: [...clowCmd.args, prompt],
         iconPath: new vscode.ThemeIcon('hubot'),
     });
 
@@ -247,26 +247,26 @@ function runBatmamCommand(prompt, cwd) {
 }
 
 /**
- * Roda um skill do Batmam.
+ * Roda um skill do Clow.
  */
-function runBatmamSkill(skillCommand, cwd) {
+function runClowSkill(skillCommand, cwd) {
     // Para skills, enviamos o comando via terminal existente ou novo
-    if (batmamTerminal && batmamTerminal.exitStatus === undefined) {
-        batmamTerminal.show();
-        batmamTerminal.sendText(skillCommand);
+    if (clowTerminal && clowTerminal.exitStatus === undefined) {
+        clowTerminal.show();
+        clowTerminal.sendText(skillCommand);
     } else {
-        openBatmamTerminal();
+        openClowTerminal();
         // Aguarda terminal iniciar e envia o skill
         setTimeout(() => {
-            if (batmamTerminal) {
-                batmamTerminal.sendText(skillCommand);
+            if (clowTerminal) {
+                clowTerminal.sendText(skillCommand);
             }
         }, 3000);
     }
 }
 
 /**
- * Pega código selecionado e envia ao Batmam.
+ * Pega código selecionado e envia ao Clow.
  */
 function handleSelection(prefix) {
     const editor = vscode.window.activeTextEditor;
@@ -290,30 +290,30 @@ function handleSelection(prefix) {
 
     const prompt = `${prefix}\n\nArquivo: ${filePath} (linhas ${lineStart}-${lineEnd})\nLinguagem: ${lang}\n\n\`\`\`${lang}\n${selectedText}\n\`\`\``;
 
-    runBatmamCommand(prompt);
+    runClowCommand(prompt);
 }
 
 /**
- * Detecta como executar o Batmam.
+ * Detecta como executar o Clow.
  */
-function getBatmamCommand() {
-    const config = vscode.workspace.getConfiguration('batmam');
+function getClowCommand() {
+    const config = vscode.workspace.getConfiguration('clow');
     const customPython = config.get('pythonPath', '');
 
     if (customPython) {
-        return { shell: customPython, args: ['-m', 'batmam'] };
+        return { shell: customPython, args: ['-m', 'clow'] };
     }
 
     const fs = require('fs');
-    if (fs.existsSync(BATMAM_BIN)) {
-        return { shell: BATMAM_BIN, args: [] };
+    if (fs.existsSync(CLOW_BIN)) {
+        return { shell: CLOW_BIN, args: [] };
     }
 
-    if (fs.existsSync(BATMAM_PYTHON)) {
-        return { shell: BATMAM_PYTHON, args: ['-m', 'batmam'] };
+    if (fs.existsSync(CLOW_PYTHON)) {
+        return { shell: CLOW_PYTHON, args: ['-m', 'clow'] };
     }
 
-    return { shell: 'python3', args: ['-m', 'batmam'] };
+    return { shell: 'python3', args: ['-m', 'clow'] };
 }
 
 function deactivate() {

@@ -1,6 +1,6 @@
 {
-  "name": "batmam",
-  "displayName": "Batmam - AI Code Agent",
+  "name": "clow",
+  "displayName": "Clow - AI Code Agent",
   "description": "Agente de código AI no VS Code. Inline edit, commit inteligente, code review, diff view, test generation e plan mode.",
   "version": "0.2.0",
   "publisher": "daniel",
@@ -8,91 +8,91 @@
     "vscode": "^1.85.0"
   },
   "categories": ["Programming Languages", "Machine Learning", "Other"],
-  "keywords": ["ai", "agent", "code", "batmam", "assistant", "review", "test", "refactor"],
+  "keywords": ["ai", "agent", "code", "clow", "assistant", "review", "test", "refactor"],
   "activationEvents": [
-    "onCommand:batmam.open",
-    "onCommand:batmam.ask",
-    "onCommand:batmam.openInTerminal"
+    "onCommand:clow.open",
+    "onCommand:clow.ask",
+    "onCommand:clow.openInTerminal"
   ],
   "main": "./src/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "batmam.open",
-        "title": "Batmam: Abrir Painel",
+        "command": "clow.open",
+        "title": "Clow: Abrir Painel",
         "icon": "$(hubot)"
       },
       {
-        "command": "batmam.ask",
-        "title": "Batmam: Perguntar",
+        "command": "clow.ask",
+        "title": "Clow: Perguntar",
         "icon": "$(comment)"
       },
       {
-        "command": "batmam.openInTerminal",
-        "title": "Batmam: Abrir no Terminal",
+        "command": "clow.openInTerminal",
+        "title": "Clow: Abrir no Terminal",
         "icon": "$(terminal)"
       },
       {
-        "command": "batmam.explainSelection",
-        "title": "Batmam: Explicar Seleção"
+        "command": "clow.explainSelection",
+        "title": "Clow: Explicar Seleção"
       },
       {
-        "command": "batmam.fixSelection",
-        "title": "Batmam: Corrigir Seleção"
+        "command": "clow.fixSelection",
+        "title": "Clow: Corrigir Seleção"
       },
       {
-        "command": "batmam.refactorSelection",
-        "title": "Batmam: Refatorar Seleção"
+        "command": "clow.refactorSelection",
+        "title": "Clow: Refatorar Seleção"
       },
       {
-        "command": "batmam.inlineEdit",
-        "title": "Batmam: Edição Inline"
+        "command": "clow.inlineEdit",
+        "title": "Clow: Edição Inline"
       },
       {
-        "command": "batmam.commit",
-        "title": "Batmam: Commit Inteligente"
+        "command": "clow.commit",
+        "title": "Clow: Commit Inteligente"
       },
       {
-        "command": "batmam.review",
-        "title": "Batmam: Code Review"
+        "command": "clow.review",
+        "title": "Clow: Code Review"
       },
       {
-        "command": "batmam.generateTests",
-        "title": "Batmam: Gerar Testes"
+        "command": "clow.generateTests",
+        "title": "Clow: Gerar Testes"
       },
       {
-        "command": "batmam.diffView",
-        "title": "Batmam: Diff View"
+        "command": "clow.diffView",
+        "title": "Clow: Diff View"
       },
       {
-        "command": "batmam.planMode",
-        "title": "Batmam: Plan Mode"
+        "command": "clow.planMode",
+        "title": "Clow: Plan Mode"
       }
     ],
     "keybindings": [
       {
-        "command": "batmam.open",
+        "command": "clow.open",
         "key": "ctrl+shift+b",
         "mac": "cmd+shift+b"
       },
       {
-        "command": "batmam.ask",
+        "command": "clow.ask",
         "key": "ctrl+shift+i",
         "mac": "cmd+shift+i"
       },
       {
-        "command": "batmam.inlineEdit",
+        "command": "clow.inlineEdit",
         "key": "ctrl+shift+e",
         "mac": "cmd+shift+e",
         "when": "editorHasSelection"
       },
       {
-        "command": "batmam.commit",
+        "command": "clow.commit",
         "key": "ctrl+shift+g",
         "mac": "cmd+shift+g"
       },
       {
-        "command": "batmam.review",
+        "command": "clow.review",
         "key": "ctrl+shift+r",
         "mac": "cmd+shift+r"
       }
@@ -100,51 +100,51 @@
     "menus": {
       "editor/context": [
         {
-          "command": "batmam.explainSelection",
+          "command": "clow.explainSelection",
           "when": "editorHasSelection",
-          "group": "batmam@1"
+          "group": "clow@1"
         },
         {
-          "command": "batmam.fixSelection",
+          "command": "clow.fixSelection",
           "when": "editorHasSelection",
-          "group": "batmam@2"
+          "group": "clow@2"
         },
         {
-          "command": "batmam.refactorSelection",
+          "command": "clow.refactorSelection",
           "when": "editorHasSelection",
-          "group": "batmam@3"
+          "group": "clow@3"
         },
         {
-          "command": "batmam.inlineEdit",
+          "command": "clow.inlineEdit",
           "when": "editorHasSelection",
-          "group": "batmam@4"
+          "group": "clow@4"
         },
         {
-          "command": "batmam.generateTests",
+          "command": "clow.generateTests",
           "when": "editorHasSelection",
-          "group": "batmam@5"
+          "group": "clow@5"
         }
       ]
     },
     "configuration": {
-      "title": "Batmam",
+      "title": "Clow",
       "properties": {
-        "batmam.model": {
+        "clow.model": {
           "type": "string",
           "default": "gpt-4.1",
           "description": "Modelo OpenAI a utilizar"
         },
-        "batmam.autoApprove": {
+        "clow.autoApprove": {
           "type": "boolean",
           "default": false,
           "description": "Aprovar ferramentas automaticamente (cuidado!)"
         },
-        "batmam.pythonPath": {
+        "clow.pythonPath": {
           "type": "string",
           "default": "",
-          "description": "Caminho para o Python do Batmam (auto-detectado)"
+          "description": "Caminho para o Python do Clow (auto-detectado)"
         },
-        "batmam.planModeDefault": {
+        "clow.planModeDefault": {
           "type": "boolean",
           "default": false,
           "description": "Iniciar em plan mode por padrão"

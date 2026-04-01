@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # ╔══════════════════════════════════════════════════╗
-# ║  Batmam — Instalador Universal                  ║
+# ║  Clow — Instalador Universal                  ║
 # ║  Funciona em: Ubuntu, Debian, macOS, WSL, VPS   ║
 # ╚══════════════════════════════════════════════════╝
 
 set -e
 
-BATMAM_VERSION="0.1.0"
-BATMAM_HOME="$HOME/.batmam"
-BATMAM_REPO="https://github.com/daniel/batmam.git"
+CLOW_VERSION="0.1.0"
+CLOW_HOME="$HOME/.clow"
+CLOW_REPO="https://github.com/daniel/clow.git"
 
 # Cores
 RED='\033[0;31m'
@@ -26,7 +26,7 @@ print_banner() {
     echo "| |_) | (_| | |_| | | | | | (_| | | | | | |"
     echo "|____/ \\__,_|\\__|_| |_| |_|\\__,_|_| |_| |_|"
     echo -e "${NC}"
-    echo -e "${CYAN}  Instalador v${BATMAM_VERSION}${NC}"
+    echo -e "${CYAN}  Instalador v${CLOW_VERSION}${NC}"
     echo ""
 }
 
@@ -129,38 +129,38 @@ install_system_deps() {
     fi
 }
 
-# ── Instala o Batmam ────────────────────────────────────
-install_batmam() {
-    log_info "Instalando Batmam..."
+# ── Instala o Clow ────────────────────────────────────
+install_clow() {
+    log_info "Instalando Clow..."
 
     # Cria diretório home
-    mkdir -p "$BATMAM_HOME"
-    mkdir -p "$BATMAM_HOME/sessions"
-    mkdir -p "$BATMAM_HOME/memory"
-    mkdir -p "$BATMAM_HOME/plugins"
+    mkdir -p "$CLOW_HOME"
+    mkdir -p "$CLOW_HOME/sessions"
+    mkdir -p "$CLOW_HOME/memory"
+    mkdir -p "$CLOW_HOME/plugins"
 
     # Se já existe instalação, atualiza
-    if [ -d "$BATMAM_HOME/app" ]; then
+    if [ -d "$CLOW_HOME/app" ]; then
         log_info "Instalação existente encontrada. Atualizando..."
-        cd "$BATMAM_HOME/app"
+        cd "$CLOW_HOME/app"
         if [ -d ".git" ]; then
             git pull --quiet 2>/dev/null || true
         fi
     else
         # Verifica se o código fonte está local
         SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-        if [ -f "$SCRIPT_DIR/pyproject.toml" ] && [ -d "$SCRIPT_DIR/batmam" ]; then
+        if [ -f "$SCRIPT_DIR/pyproject.toml" ] && [ -d "$SCRIPT_DIR/clow" ]; then
             log_info "Instalando a partir do diretório local..."
-            cp -r "$SCRIPT_DIR" "$BATMAM_HOME/app"
+            cp -r "$SCRIPT_DIR" "$CLOW_HOME/app"
         else
             log_info "Clonando repositório..."
-            git clone --quiet "$BATMAM_REPO" "$BATMAM_HOME/app" 2>/dev/null || {
+            git clone --quiet "$CLOW_REPO" "$CLOW_HOME/app" 2>/dev/null || {
                 # Se o repo não existe ainda, copia local
                 log_warn "Repo não acessível. Usando cópia local se disponível."
-                if [ -d "/home/daniel/batmam/batmam" ]; then
-                    cp -r /home/daniel/batmam "$BATMAM_HOME/app"
+                if [ -d "/home/daniel/clow/clow" ]; then
+                    cp -r /home/daniel/clow "$CLOW_HOME/app"
                 else
-                    log_err "Não foi possível baixar o Batmam."
+                    log_err "Não foi possível baixar o Clow."
                     exit 1
                 fi
             }
@@ -169,7 +169,7 @@ install_batmam() {
 
     # Cria venv
     log_info "Criando ambiente virtual..."
-    cd "$BATMAM_HOME/app"
+    cd "$CLOW_HOME/app"
 
     if [ ! -d ".venv" ]; then
         python3 -m venv .venv
@@ -180,22 +180,22 @@ install_batmam() {
     .venv/bin/pip install --quiet --upgrade pip
     .venv/bin/pip install --quiet -e .
 
-    log_ok "Batmam instalado em $BATMAM_HOME/app"
+    log_ok "Clow instalado em $CLOW_HOME/app"
 }
 
 # ── Configura CLI global ────────────────────────────────
 setup_cli() {
-    log_info "Configurando comando global 'batmam'..."
+    log_info "Configurando comando global 'clow'..."
 
     # Cria wrapper script
-    WRAPPER="$BATMAM_HOME/bin/batmam"
-    mkdir -p "$BATMAM_HOME/bin"
+    WRAPPER="$CLOW_HOME/bin/clow"
+    mkdir -p "$CLOW_HOME/bin"
 
     cat > "$WRAPPER" << 'WRAPPER_EOF'
 #!/usr/bin/env bash
-# Batmam CLI wrapper
-BATMAM_HOME="$HOME/.batmam"
-exec "$BATMAM_HOME/app/.venv/bin/python" -m batmam "$@"
+# Clow CLI wrapper
+CLOW_HOME="$HOME/.clow"
+exec "$CLOW_HOME/app/.venv/bin/python" -m clow "$@"
 WRAPPER_EOF
     chmod +x "$WRAPPER"
 
@@ -209,12 +209,12 @@ WRAPPER_EOF
         SHELL_RC="$HOME/.profile"
     fi
 
-    PATH_LINE='export PATH="$HOME/.batmam/bin:$PATH"'
+    PATH_LINE='export PATH="$HOME/.clow/bin:$PATH"'
 
     if [ -n "$SHELL_RC" ]; then
-        if ! grep -q '.batmam/bin' "$SHELL_RC" 2>/dev/null; then
+        if ! grep -q '.clow/bin' "$SHELL_RC" 2>/dev/null; then
             echo "" >> "$SHELL_RC"
-            echo "# Batmam" >> "$SHELL_RC"
+            echo "# Clow" >> "$SHELL_RC"
             echo "$PATH_LINE" >> "$SHELL_RC"
             log_ok "PATH adicionado ao $SHELL_RC"
         else
@@ -224,19 +224,19 @@ WRAPPER_EOF
 
     # Também cria symlink em /usr/local/bin se possível
     if [ -w /usr/local/bin ]; then
-        ln -sf "$WRAPPER" /usr/local/bin/batmam
-        log_ok "Symlink criado em /usr/local/bin/batmam"
+        ln -sf "$WRAPPER" /usr/local/bin/clow
+        log_ok "Symlink criado em /usr/local/bin/clow"
     elif command -v sudo &>/dev/null; then
-        sudo ln -sf "$WRAPPER" /usr/local/bin/batmam 2>/dev/null && \
-            log_ok "Symlink criado em /usr/local/bin/batmam" || true
+        sudo ln -sf "$WRAPPER" /usr/local/bin/clow 2>/dev/null && \
+            log_ok "Symlink criado em /usr/local/bin/clow" || true
     fi
 
-    export PATH="$BATMAM_HOME/bin:$PATH"
+    export PATH="$CLOW_HOME/bin:$PATH"
 }
 
 # ── Configura API key ───────────────────────────────────
 setup_api_key() {
-    ENV_FILE="$BATMAM_HOME/app/.env"
+    ENV_FILE="$CLOW_HOME/app/.env"
 
     if [ -f "$ENV_FILE" ] && grep -q "OPENAI_API_KEY" "$ENV_FILE"; then
         log_ok "API key já configurada"
@@ -246,7 +246,7 @@ setup_api_key() {
     echo ""
     echo -e "  ${BOLD}Configuração da API Key${NC}"
     echo ""
-    echo -e "  O Batmam precisa de uma API key da OpenAI."
+    echo -e "  O Clow precisa de uma API key da OpenAI."
     echo -e "  Obtenha em: ${CYAN}https://platform.openai.com/api-keys${NC}"
     echo ""
     read -rp "  Cole sua OpenAI API key (ou Enter para pular): " API_KEY
@@ -254,7 +254,7 @@ setup_api_key() {
     if [ -n "$API_KEY" ]; then
         cat > "$ENV_FILE" << EOF
 OPENAI_API_KEY=${API_KEY}
-BATMAM_MODEL=gpt-4.1
+CLOW_MODEL=gpt-4.1
 EOF
         chmod 600 "$ENV_FILE"
         log_ok "API key salva em $ENV_FILE"
@@ -262,7 +262,7 @@ EOF
         log_warn "API key não configurada. Defina OPENAI_API_KEY depois."
         cat > "$ENV_FILE" << EOF
 OPENAI_API_KEY=
-BATMAM_MODEL=gpt-4.1
+CLOW_MODEL=gpt-4.1
 EOF
     fi
 }
@@ -272,11 +272,11 @@ verify_install() {
     echo ""
     log_info "Verificando instalação..."
 
-    if "$BATMAM_HOME/bin/batmam" --version 2>/dev/null; then
-        log_ok "Batmam funcionando!"
+    if "$CLOW_HOME/bin/clow" --version 2>/dev/null; then
+        log_ok "Clow funcionando!"
     else
         log_err "Algo deu errado. Tente rodar manualmente:"
-        echo "  $BATMAM_HOME/app/.venv/bin/python -m batmam --version"
+        echo "  $CLOW_HOME/app/.venv/bin/python -m clow --version"
         return 1
     fi
 }
@@ -285,21 +285,21 @@ verify_install() {
 print_success() {
     echo ""
     echo -e "${GREEN}══════════════════════════════════════════════════${NC}"
-    echo -e "${GREEN}  Batmam instalado com sucesso!${NC}"
+    echo -e "${GREEN}  Clow instalado com sucesso!${NC}"
     echo -e "${GREEN}══════════════════════════════════════════════════${NC}"
     echo ""
     echo -e "  ${BOLD}Para começar:${NC}"
-    echo -e "    ${CYAN}batmam${NC}                    — abre o REPL"
-    echo -e "    ${CYAN}batmam \"sua pergunta\"${NC}     — prompt direto"
-    echo -e "    ${CYAN}batmam -m gpt-4.1${NC}         — escolher modelo"
-    echo -e "    ${CYAN}batmam -y${NC}                  — auto-approve"
+    echo -e "    ${CYAN}clow${NC}                    — abre o REPL"
+    echo -e "    ${CYAN}clow \"sua pergunta\"${NC}     — prompt direto"
+    echo -e "    ${CYAN}clow -m gpt-4.1${NC}         — escolher modelo"
+    echo -e "    ${CYAN}clow -y${NC}                  — auto-approve"
     echo ""
     echo -e "  ${BOLD}Diretórios:${NC}"
-    echo -e "    App:      $BATMAM_HOME/app/"
-    echo -e "    Sessions: $BATMAM_HOME/sessions/"
-    echo -e "    Memory:   $BATMAM_HOME/memory/"
-    echo -e "    Plugins:  $BATMAM_HOME/plugins/"
-    echo -e "    Config:   $BATMAM_HOME/settings.json"
+    echo -e "    App:      $CLOW_HOME/app/"
+    echo -e "    Sessions: $CLOW_HOME/sessions/"
+    echo -e "    Memory:   $CLOW_HOME/memory/"
+    echo -e "    Plugins:  $CLOW_HOME/plugins/"
+    echo -e "    Config:   $CLOW_HOME/settings.json"
     echo ""
     echo -e "  ${YELLOW}Reinicie o terminal ou rode:${NC}"
     echo -e "    source ~/.bashrc  ${CYAN}# ou ~/.zshrc${NC}"
@@ -308,12 +308,12 @@ print_success() {
 
 # ── Desinstalação ───────────────────────────────────────
 uninstall() {
-    echo -e "${YELLOW}Desinstalando Batmam...${NC}"
-    rm -rf "$BATMAM_HOME/app"
-    rm -f "$BATMAM_HOME/bin/batmam"
-    rm -f /usr/local/bin/batmam 2>/dev/null || sudo rm -f /usr/local/bin/batmam 2>/dev/null || true
-    log_ok "Batmam desinstalado. Sessões e memória preservadas em $BATMAM_HOME/"
-    echo "  Para remover tudo: rm -rf $BATMAM_HOME"
+    echo -e "${YELLOW}Desinstalando Clow...${NC}"
+    rm -rf "$CLOW_HOME/app"
+    rm -f "$CLOW_HOME/bin/clow"
+    rm -f /usr/local/bin/clow 2>/dev/null || sudo rm -f /usr/local/bin/clow 2>/dev/null || true
+    log_ok "Clow desinstalado. Sessões e memória preservadas em $CLOW_HOME/"
+    echo "  Para remover tudo: rm -rf $CLOW_HOME"
 }
 
 # ── Main ────────────────────────────────────────────────
@@ -329,8 +329,8 @@ main() {
             echo "Uso: ./install.sh [opções]"
             echo ""
             echo "Opções:"
-            echo "  (sem args)     Instala o Batmam"
-            echo "  --uninstall    Desinstala o Batmam"
+            echo "  (sem args)     Instala o Clow"
+            echo "  --uninstall    Desinstala o Clow"
             echo "  --help         Mostra esta ajuda"
             exit 0
             ;;
@@ -338,7 +338,7 @@ main() {
 
     detect_os
     install_system_deps
-    install_batmam
+    install_clow
     setup_cli
     setup_api_key
     verify_install
