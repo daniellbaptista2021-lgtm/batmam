@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "batmam"
+version = "0.1.0"
+description = "Batmam - Agente de código AI no terminal. Seu assistente de engenharia de software powered by AI."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Daniel"},
+]
+keywords = ["ai", "agent", "code", "cli", "assistant", "openai", "batmam"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development",
+]
+dependencies = [
+    "openai>=1.30.0",
+    "python-dotenv>=1.0.0",
+    "rich>=13.0.0",
+    "prompt-toolkit>=3.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "black", "mypy"]
+
+[project.scripts]
+batmam = "batmam.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/daniel/batmam"
+
+[tool.setuptools.packages.find]
+include = ["batmam*"]

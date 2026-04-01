@@ -1,0 +1,100 @@
+{
+  "name": "batmam",
+  "displayName": "Batmam - AI Code Agent",
+  "description": "Agente de código AI no VS Code. Execute o Batmam diretamente do editor.",
+  "version": "0.1.0",
+  "publisher": "daniel",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Programming Languages", "Machine Learning", "Other"],
+  "keywords": ["ai", "agent", "code", "batmam", "assistant"],
+  "activationEvents": [
+    "onCommand:batmam.open",
+    "onCommand:batmam.ask",
+    "onCommand:batmam.openInTerminal"
+  ],
+  "main": "./src/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "batmam.open",
+        "title": "Batmam: Abrir Painel",
+        "icon": "$(hubot)"
+      },
+      {
+        "command": "batmam.ask",
+        "title": "Batmam: Perguntar",
+        "icon": "$(comment)"
+      },
+      {
+        "command": "batmam.openInTerminal",
+        "title": "Batmam: Abrir no Terminal",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "batmam.explainSelection",
+        "title": "Batmam: Explicar Seleção"
+      },
+      {
+        "command": "batmam.fixSelection",
+        "title": "Batmam: Corrigir Seleção"
+      },
+      {
+        "command": "batmam.refactorSelection",
+        "title": "Batmam: Refatorar Seleção"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "batmam.open",
+        "key": "ctrl+shift+b",
+        "mac": "cmd+shift+b"
+      },
+      {
+        "command": "batmam.ask",
+        "key": "ctrl+shift+i",
+        "mac": "cmd+shift+i"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "batmam.explainSelection",
+          "when": "editorHasSelection",
+          "group": "batmam@1"
+        },
+        {
+          "command": "batmam.fixSelection",
+          "when": "editorHasSelection",
+          "group": "batmam@2"
+        },
+        {
+          "command": "batmam.refactorSelection",
+          "when": "editorHasSelection",
+          "group": "batmam@3"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Batmam",
+      "properties": {
+        "batmam.model": {
+          "type": "string",
+          "default": "gpt-4.1",
+          "description": "Modelo OpenAI a utilizar"
+        },
+        "batmam.autoApprove": {
+          "type": "boolean",
+          "default": false,
+          "description": "Aprovar ferramentas automaticamente (cuidado!)"
+        },
+        "batmam.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Caminho para o Python do Batmam (auto-detectado)"
+        }
+      }
+    }
+  }
+}
