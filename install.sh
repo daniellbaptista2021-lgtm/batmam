@@ -96,20 +96,26 @@ install_system_deps() {
         esac
     fi
 
-    # venv — instala o pacote correto para a versão do Python
-    if ! python3 -m venv --help &>/dev/null 2>&1; then
-        log_warn "python3-venv não encontrado. Instalando..."
+    # venv + ensurepip — testa com criação real de venv temporário
+    _TESTVENV=$(mktemp -d)
+    if ! python3 -m venv "$_TESTVENV" &>/dev/null 2>&1; then
+        rm -rf "$_TESTVENV"
+        log_warn "python3-venv/ensurepip não funcional. Instalando..."
         PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
         case "$OS_NAME" in
             ubuntu|debian)
-                sudo apt-get update -qq
-                sudo apt-get install -y -qq "python${PY_VER}-venv" python3-venv 2>/dev/null || \
-                sudo apt-get install -y -qq python3-venv
+                apt-get update -qq
+                apt-get install -y -qq "python${PY_VER}-venv" 2>/dev/null || \
+                apt-get install -y -qq python3-venv
                 ;;
             fedora|rhel|centos)
-                sudo dnf install -y python3-libs
+                dnf install -y python3-libs
                 ;;
         esac
+        log_ok "python3-venv instalado"
+    else
+        rm -rf "$_TESTVENV"
+        log_ok "python3-venv OK"
     fi
 
     # git
