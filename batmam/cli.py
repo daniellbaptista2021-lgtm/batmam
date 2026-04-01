@@ -411,8 +411,11 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
             config.BATMAM_MODEL = arg.strip()
             console.print(f"[info]  Modelo: {agent.model}[/]")
         else:
-            console.print(f"[info]  Modelo atual: {agent.model}[/]")
-            console.print("[muted]  Disponíveis: gpt-4.1, gpt-4.1-mini, gpt-4.1-nano, gpt-4o, o3, o4-mini[/]")
+            console.print(f"[info]  Modelo atual: {agent.model}  │  Provider: {config.BATMAM_PROVIDER}[/]")
+            if config.BATMAM_PROVIDER == "anthropic":
+                console.print("[muted]  Disponíveis: claude-sonnet-4-20250514, claude-opus-4-20250514, claude-haiku-4-5-20251001[/]")
+            else:
+                console.print("[muted]  Disponíveis: gpt-4.1, gpt-4.1-mini, gpt-4.1-nano, gpt-4o, o3, o4-mini[/]")
         return True
 
     elif command == "/tokens":
@@ -1133,7 +1136,8 @@ def _print_banner() -> None:
 """ + "[/]")
     _separator(style="dark_gold")
     console.print(f"  [{GOLD}]Agente de Código AI[/]  [muted]v{__version__}[/]")
-    console.print(f"  [muted]Modelo: {config.BATMAM_MODEL}  │  Dir: {os.getcwd()}[/]")
+    provider = config.BATMAM_PROVIDER.capitalize()
+    console.print(f"  [muted]Modelo: {config.BATMAM_MODEL}  │  Provider: {provider}  │  Dir: {os.getcwd()}[/]")
     console.print(f"  [muted]14 tools  │  8 skills  │  4 tipos de memória  │  pipeline  │  dashboard[/]")
     console.print(f"  [muted]/help para comandos  │  /exit para sair[/]")
     _separator(style="dark_gold")

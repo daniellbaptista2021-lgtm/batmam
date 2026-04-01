@@ -16,7 +16,6 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor, Future
 from typing import Any, Callable
 
-from openai import OpenAI
 from .models import Session, ToolCall, ToolResult, ToolResultStatus, Turn
 from .tools.base import ToolRegistry, create_default_registry
 from .permissions import needs_confirmation, format_confirmation_prompt
@@ -86,10 +85,20 @@ class Agent:
         self.auto_approve = auto_approve
         self.is_subagent = is_subagent
 
-        # Client OpenAI
-        if not config.OPENAI_API_KEY:
-            raise RuntimeError("OPENAI_API_KEY nao configurada.")
-        self._client = OpenAI(api_key=config.OPENAI_API_KEY)
+        # Client — suporta Anthropic e OpenAI
+        self._provider = config.BATMAM_PROVIDER
+        if self._provider == "anthropic":
+            if not config.ANTHROPIC_API_KEY:
+                raise RuntimeError("ANTHROPIC_API_KEY nao configurada.")
+            from anthropic import Anthropic
+            self._anthropic = Anthropic(api_key=config.ANTHROPIC_API_KEY)
+            self._client = None
+        else:
+            if not config.OPENAI_API_KEY:
+                raise RuntimeError("OPENAI_API_KEY nao configurada.")
+            from openai import OpenAI
+            self._anthropic = None
+            self._client = OpenAI(api_key=config.OPENAI_API_KEY)
 
         # Plan mode — bloqueia ferramentas de escrita quando ativo
         self.plan_mode = False
@@ -237,6 +246,82 @@ class Agent:
 
     def _stream_call(self) -> tuple[str, list[dict], dict]:
         """Faz chamada streaming e retorna (text, tool_calls, usage)."""
+        if self._provider == "anthropic":
+            return self._stream_call_anthropic()
+        return self._stream_call_openai()
+
+    def _stream_call_anthropic(self) -> tuple[str, list[dict], dict]:
+        """Streaming via Anthropic Messages API."""
+        messages = self._get_messages()
+
+        # Separa system prompt das mensagens (Anthropic usa param separado)
+        system_prompt = ""
+        chat_messages = []
+        for msg in messages:
+            if msg["role"] == "system":
+                system_prompt += msg.get("content", "") + "\n"
+            else:
+                chat_messages.append(msg)
+
+        # Converte tool_results do formato OpenAI para Anthropic
+        chat_messages = self._convert_messages_to_anthropic(chat_messages)
+
+        # Tools no formato Anthropic
+        tools = self._get_anthropic_tools()
+
+        kwargs: dict[str, Any] = {
+            "model": self.model,
+            "messages": chat_messages,
+            "max_tokens": config.MAX_TOKENS,
+        }
+        if system_prompt.strip():
+            kwargs["system"] = system_prompt.strip()
+        if tools:
+            kwargs["tools"] = tools
+
+        collected_text = []
+        collected_tool_calls: dict[int, dict] = {}
+        usage_data = {"prompt_tokens": 0, "completion_tokens": 0}
+        current_tool_idx = -1
+
+        with self._anthropic.messages.stream(**kwargs) as stream:
+            for event in stream:
+                event_type = event.type
+
+                if event_type == "message_start":
+                    if hasattr(event, "message") and hasattr(event.message, "usage"):
+                        usage_data["prompt_tokens"] = event.message.usage.input_tokens or 0
+
+                elif event_type == "message_delta":
+                    if hasattr(event, "usage") and event.usage:
+                        usage_data["completion_tokens"] = event.usage.output_tokens or 0
+
+                elif event_type == "content_block_start":
+                    block = event.content_block
+                    if block.type == "tool_use":
+                        current_tool_idx += 1
+                        collected_tool_calls[current_tool_idx] = {
+                            "id": block.id,
+                            "name": block.name,
+                            "arguments": "",
+                        }
+
+                elif event_type == "content_block_delta":
+                    delta = event.delta
+                    if delta.type == "text_delta":
+                        collected_text.append(delta.text)
+                        self.on_text_delta(delta.text)
+                    elif delta.type == "input_json_delta":
+                        if current_tool_idx in collected_tool_calls:
+                            collected_tool_calls[current_tool_idx]["arguments"] += delta.partial_json
+
+        text = "".join(collected_text)
+        tool_calls = [collected_tool_calls[k] for k in sorted(collected_tool_calls)]
+        return text, tool_calls, usage_data
+
+    def _stream_call_openai(self) -> tuple[str, list[dict], dict]:
+        """Streaming via OpenAI API."""
+        from openai import OpenAI
 
         kwargs: dict[str, Any] = {
             "model": self.model,
@@ -259,7 +344,6 @@ class Agent:
         usage_data = {"prompt_tokens": 0, "completion_tokens": 0}
 
         for chunk in stream:
-            # Usage no final
             if hasattr(chunk, "usage") and chunk.usage:
                 usage_data["prompt_tokens"] = chunk.usage.prompt_tokens or 0
                 usage_data["completion_tokens"] = chunk.usage.completion_tokens or 0
@@ -269,12 +353,10 @@ class Agent:
 
             delta = chunk.choices[0].delta
 
-            # Streaming de texto — emite para a UI em tempo real
             if delta.content:
                 collected_text.append(delta.content)
                 self.on_text_delta(delta.content)
 
-            # Tool calls acumulados
             if delta.tool_calls:
                 for tc in delta.tool_calls:
                     idx = tc.index
@@ -295,6 +377,106 @@ class Agent:
         text = "".join(collected_text)
         tool_calls = [collected_tool_calls[k] for k in sorted(collected_tool_calls)]
         return text, tool_calls, usage_data
+
+    # ── Anthropic Helpers ─────────────────────────────────────
+
+    def _get_anthropic_tools(self) -> list[dict]:
+        """Converte tools para formato Anthropic."""
+        tools = []
+        for tool in self.registry.all_tools():
+            tools.append({
+                "name": tool.name,
+                "description": tool.description,
+                "input_schema": tool.get_schema(),
+            })
+        return tools
+
+    def _convert_messages_to_anthropic(self, messages: list[dict]) -> list[dict]:
+        """Converte mensagens do formato OpenAI para formato Anthropic."""
+        result = []
+        for msg in messages:
+            role = msg.get("role", "")
+
+            # tool results -> user message com tool_result content
+            if role == "tool":
+                # Agrupa tool results consecutivos
+                if result and result[-1]["role"] == "user" and isinstance(result[-1]["content"], list):
+                    result[-1]["content"].append({
+                        "type": "tool_result",
+                        "tool_use_id": msg.get("tool_call_id", ""),
+                        "content": msg.get("content", ""),
+                    })
+                else:
+                    result.append({
+                        "role": "user",
+                        "content": [{
+                            "type": "tool_result",
+                            "tool_use_id": msg.get("tool_call_id", ""),
+                            "content": msg.get("content", ""),
+                        }],
+                    })
+                continue
+
+            # assistant message com tool_calls -> content blocks
+            if role == "assistant":
+                content_blocks = []
+                text = msg.get("content", "")
+                if text:
+                    content_blocks.append({"type": "text", "text": text})
+
+                for tc in msg.get("tool_calls", []):
+                    func = tc.get("function", {})
+                    args_str = func.get("arguments", "{}")
+                    try:
+                        args = json.loads(args_str) if isinstance(args_str, str) else args_str
+                    except (json.JSONDecodeError, TypeError):
+                        args = {"raw": args_str}
+                    content_blocks.append({
+                        "type": "tool_use",
+                        "id": tc.get("id", ""),
+                        "name": func.get("name", ""),
+                        "input": args,
+                    })
+
+                if content_blocks:
+                    result.append({"role": "assistant", "content": content_blocks})
+                continue
+
+            # user e system messages normais
+            if role == "user":
+                content = msg.get("content", "")
+                if isinstance(content, str):
+                    result.append({"role": "user", "content": content})
+                else:
+                    result.append({"role": "user", "content": content})
+                continue
+
+        # Garante alternância user/assistant (Anthropic exige)
+        cleaned = []
+        for msg in result:
+            if cleaned and cleaned[-1]["role"] == msg["role"]:
+                # Merge mensagens do mesmo role
+                if msg["role"] == "user":
+                    prev = cleaned[-1]["content"]
+                    curr = msg["content"]
+                    if isinstance(prev, str) and isinstance(curr, str):
+                        cleaned[-1]["content"] = prev + "\n" + curr
+                    elif isinstance(prev, list) and isinstance(curr, list):
+                        cleaned[-1]["content"] = prev + curr
+                    elif isinstance(prev, str) and isinstance(curr, list):
+                        cleaned[-1]["content"] = [{"type": "text", "text": prev}] + curr
+                    elif isinstance(prev, list) and isinstance(curr, str):
+                        cleaned[-1]["content"] = prev + [{"type": "text", "text": curr}]
+                else:
+                    # assistant: merge content blocks
+                    prev = cleaned[-1].get("content", [])
+                    curr = msg.get("content", [])
+                    if isinstance(prev, list) and isinstance(curr, list):
+                        cleaned[-1]["content"] = prev + curr
+            else:
+                cleaned.append(msg)
+
+        return cleaned
 
     # ── Tool Execution (parallel + sequential) ─────────────────
 
@@ -479,12 +661,11 @@ class Agent:
             self.session.messages = [system] + recent
 
     def _summarize_messages(self, messages: list[dict]) -> str:
-        """Resume mensagens antigas via LLM (gpt-4.1-mini) para smart context."""
+        """Resume mensagens antigas via LLM para smart context."""
         if not messages:
             return ""
 
         try:
-            # Monta texto da conversa para resumo (limita para nao estourar contexto)
             text_parts = []
             for msg in messages[:50]:
                 role = msg.get("role", "")
@@ -496,23 +677,30 @@ class Agent:
                 return ""
 
             conversation_text = "\n".join(text_parts)
-
-            response = self._client.chat.completions.create(
-                model="gpt-4.1-mini",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "Resuma a conversa abaixo em 3-5 frases curtas, mantendo "
-                            "informacoes tecnicas importantes (arquivos, decisoes, erros encontrados)."
-                        ),
-                    },
-                    {"role": "user", "content": conversation_text[:4000]},
-                ],
-                max_tokens=500,
-                temperature=0.1,
+            summary_prompt = (
+                "Resuma a conversa abaixo em 3-5 frases curtas, mantendo "
+                "informacoes tecnicas importantes (arquivos, decisoes, erros encontrados)."
             )
-            return response.choices[0].message.content or ""
+
+            if self._provider == "anthropic":
+                response = self._anthropic.messages.create(
+                    model="claude-haiku-4-5-20251001",
+                    system=summary_prompt,
+                    messages=[{"role": "user", "content": conversation_text[:4000]}],
+                    max_tokens=500,
+                )
+                return response.content[0].text if response.content else ""
+            else:
+                response = self._client.chat.completions.create(
+                    model="gpt-4.1-mini",
+                    messages=[
+                        {"role": "system", "content": summary_prompt},
+                        {"role": "user", "content": conversation_text[:4000]},
+                    ],
+                    max_tokens=500,
+                    temperature=0.1,
+                )
+                return response.choices[0].message.content or ""
         except Exception:
             return ""
 

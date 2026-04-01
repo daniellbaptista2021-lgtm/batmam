@@ -26,6 +26,7 @@ classifiers = [
     "Topic :: Software Development",
 ]
 dependencies = [
+    "anthropic>=0.80.0",
     "openai>=1.30.0",
     "python-dotenv>=1.0.0",
     "rich>=13.0.0",

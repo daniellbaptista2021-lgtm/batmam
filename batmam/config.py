@@ -34,8 +34,17 @@ SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 MEMORY_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── API ─────────────────────────────────────────────────────
+# Provider: "anthropic" ou "openai"
+BATMAM_PROVIDER = os.getenv("BATMAM_PROVIDER", "anthropic").lower()
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-BATMAM_MODEL = os.getenv("BATMAM_MODEL", "gpt-4.1")
+
+# Modelos padrão por provider
+_DEFAULT_MODELS = {
+    "anthropic": "claude-sonnet-4-20250514",
+    "openai": "gpt-4.1",
+}
+BATMAM_MODEL = os.getenv("BATMAM_MODEL", _DEFAULT_MODELS.get(BATMAM_PROVIDER, "claude-sonnet-4-20250514"))
 
 # ── Limites ─────────────────────────────────────────────────
 MAX_TOKENS = 16384
