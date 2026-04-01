@@ -1,6 +1,7 @@
-"""Ferramenta Edit - edição cirúrgica por substituição de string."""
+"""Ferramenta Edit v0.2.0 — edição cirúrgica com diff visual colorido."""
 
 from __future__ import annotations
+import difflib
 from pathlib import Path
 from typing import Any
 from .base import BaseTool
@@ -11,7 +12,8 @@ class EditTool(BaseTool):
     description = (
         "Faz substituição exata de texto em um arquivo. "
         "Encontra old_string e substitui por new_string. "
-        "O old_string deve ser único no arquivo para evitar edições ambíguas."
+        "O old_string deve ser único no arquivo para evitar edições ambíguas. "
+        "Retorna diff visual colorido mostrando as mudanças."
     )
     requires_confirmation = True
 
@@ -80,8 +82,39 @@ class EditTool(BaseTool):
             new_content = content.replace(old_string, new_string, 1)
             replaced = 1
 
+        # Gera diff visual antes de escrever
+        diff_text = self._generate_diff(content, new_content, str(path))
+
         try:
             path.write_text(new_content, encoding="utf-8")
-            return f"Editado {path}: {replaced} substituição(ões) feita(s)."
+            result = f"Editado {path}: {replaced} substituição(ões) feita(s)."
+            if diff_text:
+                result += f"\n\n{diff_text}"
+            return result
         except Exception as e:
             return f"[ERROR] Falha ao escrever: {e}"
+
+    @staticmethod
+    def _generate_diff(old_content: str, new_content: str, filepath: str) -> str:
+        """Gera unified diff visual das mudanças."""
+        old_lines = old_content.splitlines(keepends=True)
+        new_lines = new_content.splitlines(keepends=True)
+
+        diff = difflib.unified_diff(
+            old_lines,
+            new_lines,
+            fromfile=f"a/{filepath}",
+            tofile=f"b/{filepath}",
+            lineterm="",
+        )
+
+        diff_lines = list(diff)
+        if not diff_lines:
+            return ""
+
+        # Limita o diff para não poluir o contexto
+        if len(diff_lines) > 50:
+            diff_lines = diff_lines[:50]
+            diff_lines.append(f"\n... (diff truncado, {len(diff_lines)} linhas total)")
+
+        return "```diff\n" + "".join(diff_lines) + "\n```"

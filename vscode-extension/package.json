@@ -1,14 +1,14 @@
 {
   "name": "batmam",
   "displayName": "Batmam - AI Code Agent",
-  "description": "Agente de código AI no VS Code. Execute o Batmam diretamente do editor.",
-  "version": "0.1.0",
+  "description": "Agente de código AI no VS Code. Inline edit, commit inteligente, code review, diff view, test generation e plan mode.",
+  "version": "0.2.0",
   "publisher": "daniel",
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": ["Programming Languages", "Machine Learning", "Other"],
-  "keywords": ["ai", "agent", "code", "batmam", "assistant"],
+  "keywords": ["ai", "agent", "code", "batmam", "assistant", "review", "test", "refactor"],
   "activationEvents": [
     "onCommand:batmam.open",
     "onCommand:batmam.ask",
@@ -43,6 +43,30 @@
       {
         "command": "batmam.refactorSelection",
         "title": "Batmam: Refatorar Seleção"
+      },
+      {
+        "command": "batmam.inlineEdit",
+        "title": "Batmam: Edição Inline"
+      },
+      {
+        "command": "batmam.commit",
+        "title": "Batmam: Commit Inteligente"
+      },
+      {
+        "command": "batmam.review",
+        "title": "Batmam: Code Review"
+      },
+      {
+        "command": "batmam.generateTests",
+        "title": "Batmam: Gerar Testes"
+      },
+      {
+        "command": "batmam.diffView",
+        "title": "Batmam: Diff View"
+      },
+      {
+        "command": "batmam.planMode",
+        "title": "Batmam: Plan Mode"
       }
     ],
     "keybindings": [
@@ -55,6 +79,22 @@
         "command": "batmam.ask",
         "key": "ctrl+shift+i",
         "mac": "cmd+shift+i"
+      },
+      {
+        "command": "batmam.inlineEdit",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e",
+        "when": "editorHasSelection"
+      },
+      {
+        "command": "batmam.commit",
+        "key": "ctrl+shift+g",
+        "mac": "cmd+shift+g"
+      },
+      {
+        "command": "batmam.review",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r"
       }
     ],
     "menus": {
@@ -73,6 +113,16 @@
           "command": "batmam.refactorSelection",
           "when": "editorHasSelection",
           "group": "batmam@3"
+        },
+        {
+          "command": "batmam.inlineEdit",
+          "when": "editorHasSelection",
+          "group": "batmam@4"
+        },
+        {
+          "command": "batmam.generateTests",
+          "when": "editorHasSelection",
+          "group": "batmam@5"
         }
       ]
     },
@@ -93,6 +143,11 @@
           "type": "string",
           "default": "",
           "description": "Caminho para o Python do Batmam (auto-detectado)"
+        },
+        "batmam.planModeDefault": {
+          "type": "boolean",
+          "default": false,
+          "description": "Iniciar em plan mode por padrão"
         }
       }
     }

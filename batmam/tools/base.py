@@ -1,4 +1,8 @@
-"""Base para todas as ferramentas do Batmam."""
+"""Base para todas as ferramentas do Batmam v0.2.0.
+
+Registro de 14 tools (antes eram 10):
++task_create, +task_update, +task_list, +task_get
+"""
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
@@ -57,7 +61,7 @@ class ToolRegistry:
 
 
 def create_default_registry() -> ToolRegistry:
-    """Cria registro com todas as ferramentas padrão."""
+    """Cria registro com todas as 14 ferramentas padrão."""
     from .bash import BashTool
     from .read import ReadTool
     from .write import WriteTool
@@ -68,8 +72,10 @@ def create_default_registry() -> ToolRegistry:
     from .web_search import WebSearchTool
     from .web_fetch import WebFetchTool
     from .notebook import NotebookEditTool
+    from .task_tool import TaskCreateTool, TaskUpdateTool, TaskListTool, TaskGetTool
 
     registry = ToolRegistry()
+    # Core tools (10 originais)
     registry.register(BashTool())
     registry.register(ReadTool())
     registry.register(WriteTool())
@@ -80,4 +86,9 @@ def create_default_registry() -> ToolRegistry:
     registry.register(WebSearchTool())
     registry.register(WebFetchTool())
     registry.register(NotebookEditTool())
+    # Task tools (4 novas)
+    registry.register(TaskCreateTool())
+    registry.register(TaskUpdateTool())
+    registry.register(TaskListTool())
+    registry.register(TaskGetTool())
     return registry

@@ -1,10 +1,11 @@
-"""CLI REPL interativo do Batmam — com streaming e visual premium."""
+"""CLI REPL interativo do Batmam v0.2.0 — com streaming, diff visual, skills, plan mode, tasks, cron, triggers, web, pipeline, backup."""
 
 from __future__ import annotations
 import os
 import sys
 import time
 import argparse
+import difflib
 from pathlib import Path
 
 from rich.console import Console
@@ -25,14 +26,16 @@ from .models import Session
 from .session import save_session, load_session, list_sessions
 from .memory import list_memories, save_memory, delete_memory
 from .prompts import WELCOME_BANNER
+from .skills import create_default_skill_registry
+from .tasks import get_task_manager
+from .cron import get_cron_manager
+from .triggers import get_trigger_server
+from .pipeline import parse_pipeline, run_pipeline
+from .backup import backup_memory, restore_memory, list_backups
+from .logging import log_action
 from . import config
 
 # ── Cores do Batmam ──────────────────────────────────────────
-#   Dourado/Gold: #FFD700  → texto do usuário
-#   Branco:                → resposta do Batmam
-#   Cyan:                  → informações do sistema
-#   Amarelo escuro:        → bordas e decoração
-
 GOLD = "#FFD700"
 DARK_GOLD = "#B8860B"
 BORDER_COLOR = "#5C5C3D"
@@ -52,22 +55,25 @@ batmam_theme = Theme({
     "user_text": f"bold {GOLD}",
     "border": BORDER_COLOR,
     "agent_label": "bold #87CEEB",
+    "diff_add": "bold green",
+    "diff_del": "bold red",
+    "plan_mode": "bold #FF6B6B",
 })
 
 console = Console(theme=batmam_theme)
 
 # ── Constantes visuais ───────────────────────────────────────
-SEPARATOR_CHAR = "─"
 CORNER_TL = "╭"
 CORNER_TR = "╮"
 CORNER_BL = "╰"
 CORNER_BR = "╯"
-VERT = "│"
 HORIZ = "─"
+
+# ── Skill registry global ───────────────────────────────────
+_skill_registry = create_default_skill_registry()
 
 
 def _separator(label: str = "", style: str = "border") -> None:
-    """Imprime uma linha separadora estilizada."""
     if label:
         console.print(Rule(f" {label} ", style=style, characters=HORIZ))
     else:
@@ -75,28 +81,24 @@ def _separator(label: str = "", style: str = "border") -> None:
 
 
 def _user_header() -> None:
-    """Imprime o cabeçalho da área do usuário."""
     w = console.width or 80
     line = f"{CORNER_TL}{HORIZ * 2} [gold]Daniel[/] {HORIZ * (w - 14)}{CORNER_TR}"
     console.print(f"[dark_gold]{line}[/]")
 
 
 def _user_footer() -> None:
-    """Imprime o rodapé da área do usuário."""
     w = console.width or 80
     line = f"{CORNER_BL}{HORIZ * (w - 2)}{CORNER_BR}"
     console.print(f"[dark_gold]{line}[/]")
 
 
 def _agent_header() -> None:
-    """Imprime o cabeçalho da resposta do Batmam."""
     w = console.width or 80
     line = f"{CORNER_TL}{HORIZ * 2} [agent_label]🦇 Batmam[/] {HORIZ * (w - 17)}{CORNER_TR}"
     console.print(f"[border]{line}[/]")
 
 
 def _agent_footer() -> None:
-    """Imprime o rodapé da resposta do Batmam."""
     w = console.width or 80
     line = f"{CORNER_BL}{HORIZ * (w - 2)}{CORNER_BR}"
     console.print(f"[border]{line}[/]")
@@ -106,6 +108,7 @@ def _agent_footer() -> None:
 _streaming_buffer: list[str] = []
 _in_streaming = False
 _agent_box_open = False
+_streaming_tool_args: dict[str, str] = {}
 
 
 def on_text_delta(delta: str) -> None:
@@ -116,7 +119,7 @@ def on_text_delta(delta: str) -> None:
         if not _agent_box_open:
             _agent_header()
             _agent_box_open = True
-        sys.stdout.write("  ")  # Indentação dentro da box
+        sys.stdout.write("  ")
     sys.stdout.write(delta)
     sys.stdout.flush()
     _streaming_buffer.append(delta)
@@ -133,7 +136,6 @@ def on_text_done(text: str) -> None:
 
 
 def _close_agent_box() -> None:
-    """Fecha a box do agente se estiver aberta."""
     global _agent_box_open
     if _agent_box_open:
         _agent_footer()
@@ -141,7 +143,7 @@ def _close_agent_box() -> None:
 
 
 def on_tool_call(name: str, args: dict) -> None:
-    """Chamado quando o modelo chama uma ferramenta."""
+    """Chamado quando o modelo chama uma ferramenta — streaming dos args."""
     global _in_streaming, _agent_box_open
     if _in_streaming:
         sys.stdout.write("\n")
@@ -170,15 +172,19 @@ def on_tool_call(name: str, args: dict) -> None:
     elif name == "notebook_edit":
         op = args.get("operation", "")
         detail = f"{op} {args.get('file_path', '')}"
+    elif name.startswith("task_"):
+        detail = args.get("title", args.get("task_id", ""))
     elif name.startswith("mcp__"):
         detail = str(args)[:80]
 
     icon = _tool_icon(name)
+
+    # Streaming visual dos argumentos sendo construídos
     console.print(f"  [tool.name]{icon} {name}[/]  [muted]{detail}[/]")
 
 
 def on_tool_result(name: str, status: str, output: str) -> None:
-    """Chamado quando uma ferramenta retorna resultado."""
+    """Chamado quando uma ferramenta retorna resultado — com diff visual."""
     if status == "error":
         console.print(f"  [error]✗ {name} falhou[/]")
         if output:
@@ -187,7 +193,10 @@ def on_tool_result(name: str, status: str, output: str) -> None:
     elif status == "denied":
         console.print(f"  [warning]⊘ {name} negado[/]")
     else:
-        if name == "bash" and output:
+        # Diff visual para edit
+        if name == "edit" and "```diff" in output:
+            _show_diff_output(output)
+        elif name == "bash" and output:
             lines = output.strip().splitlines()
             if len(lines) <= 8:
                 for line in lines:
@@ -201,18 +210,36 @@ def on_tool_result(name: str, status: str, output: str) -> None:
         console.print(f"  [success]✓ {name}[/]")
 
 
+def _show_diff_output(output: str) -> None:
+    """Mostra diff visual colorido (verde/vermelho)."""
+    in_diff = False
+    for line in output.splitlines():
+        if line.startswith("```diff"):
+            in_diff = True
+            continue
+        if line.startswith("```") and in_diff:
+            in_diff = False
+            continue
+        if in_diff:
+            if line.startswith("+") and not line.startswith("+++"):
+                console.print(f"    [diff_add]{line}[/]")
+            elif line.startswith("-") and not line.startswith("---"):
+                console.print(f"    [diff_del]{line}[/]")
+            elif line.startswith("@@"):
+                console.print(f"    [accent]{line}[/]")
+            else:
+                console.print(f"    [muted]{line}[/]")
+        elif not line.startswith("```"):
+            if line and not line.startswith("Editado "):
+                console.print(f"    [muted]{line}[/]")
+
+
 def _tool_icon(name: str) -> str:
     icons = {
-        "bash": "⚡",
-        "read": "📖",
-        "write": "✏️",
-        "edit": "🔧",
-        "glob": "🔍",
-        "grep": "🔎",
-        "agent": "🤖",
-        "web_search": "🌐",
-        "web_fetch": "📡",
-        "notebook_edit": "📓",
+        "bash": "⚡", "read": "📖", "write": "✏️", "edit": "🔧",
+        "glob": "🔍", "grep": "🔎", "agent": "🤖",
+        "web_search": "🌐", "web_fetch": "📡", "notebook_edit": "📓",
+        "task_create": "📋", "task_update": "📋", "task_list": "📋", "task_get": "📋",
     }
     if name.startswith("mcp__"):
         return "🔌"
@@ -220,7 +247,6 @@ def _tool_icon(name: str) -> str:
 
 
 def ask_confirmation(message: str) -> bool:
-    """Pede confirmação do usuário."""
     console.print()
     console.print(Panel(
         message,
@@ -248,11 +274,23 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
     command = parts[0].lower()
     arg = parts[1] if len(parts) > 1 else ""
 
+    # ── Skills (verificar primeiro) ──
+    skill_name = command[1:]  # Remove '/'
+    skill = _skill_registry.get(skill_name)
+    if skill:
+        expanded_prompt = skill.execute(arg)
+        console.print(f"  [accent]Skill /{skill_name}[/] → expandido")
+        _show_user_message(expanded_prompt)
+        _run_agent_turn(agent, expanded_prompt)
+        return True
+
     if command in ("/help", "/h"):
         _show_help()
         return True
 
     elif command in ("/exit", "/quit", "/q"):
+        # Para cron jobs
+        get_cron_manager().stop_all()
         save_session(agent.session)
         _separator("Fim da Sessão", style="gold")
         console.print(f"[gold]  Sessão salva. Até mais, Daniel! 🦇[/]")
@@ -348,6 +386,18 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
         console.print(f"[info]  Compactado: {before} → {after} mensagens[/]")
         return True
 
+    # ── Plan Mode ──
+    elif command == "/plan":
+        if arg.lower() == "off":
+            agent.plan_mode = False
+            console.print("[success]  Plan mode desativado. Escrita liberada.[/]")
+        else:
+            agent.plan_mode = True
+            console.print("[plan_mode]  Plan mode ativado. Apenas leitura permitida.[/]")
+            console.print("[muted]  Use /plan off para desativar.[/]")
+        return True
+
+    # ── Memory ──
     elif command == "/memory":
         if arg.startswith("save "):
             mem_parts = arg[5:].split(maxsplit=1)
@@ -369,9 +419,35 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
             else:
                 console.print(f"\n[accent]  Memórias ({len(memories)}):[/]")
                 for m in memories:
-                    console.print(f"    [info]{m['name']}[/]  [muted]({m['type']})[/]")
+                    desc = f"  [muted]{m.get('description', '')}[/]" if m.get("description") else ""
+                    console.print(f"    [info]{m['name']}[/]  [muted]({m['type']})[/]{desc}")
         return True
 
+    # ── Tasks ──
+    elif command == "/tasks":
+        manager = get_task_manager()
+        tasks = manager.list_all()
+        if not tasks:
+            console.print("[muted]  Nenhuma task.[/]")
+        else:
+            icons = {"pending": "○", "in_progress": "◑", "completed": "●", "failed": "✗"}
+            console.print(f"\n[accent]  Tasks ({len(tasks)}):[/]")
+            for t in tasks:
+                icon = icons.get(t.status.value, "?")
+                style = "success" if t.status.value == "completed" else ("error" if t.status.value == "failed" else "info")
+                console.print(f"    {icon} [{style}][{t.id}][/] {t.title}  [muted]({t.status.value})[/]")
+            console.print(f"  [muted]{manager.summary()}[/]")
+        return True
+
+    # ── Cron ──
+    elif command == "/cron":
+        return _handle_cron(arg, agent)
+
+    # ── Triggers ──
+    elif command == "/trigger":
+        return _handle_trigger(arg, agent)
+
+    # ── Diff ──
     elif command == "/diff":
         import subprocess
         try:
@@ -379,7 +455,21 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
                 "git diff --stat", shell=True, capture_output=True, text=True, cwd=agent.cwd
             )
             if result.stdout.strip():
-                console.print(f"\n[accent]  Git Diff:[/]\n[muted]{result.stdout}[/]")
+                # Mostra diff colorido
+                diff_result = subprocess.run(
+                    "git diff", shell=True, capture_output=True, text=True, cwd=agent.cwd
+                )
+                if diff_result.stdout:
+                    for line in diff_result.stdout.splitlines()[:60]:
+                        if line.startswith("+") and not line.startswith("+++"):
+                            console.print(f"  [diff_add]{line}[/]")
+                        elif line.startswith("-") and not line.startswith("---"):
+                            console.print(f"  [diff_del]{line}[/]")
+                        elif line.startswith("@@"):
+                            console.print(f"  [accent]{line}[/]")
+                        else:
+                            console.print(f"  [muted]{line}[/]")
+                console.print(f"\n[muted]{result.stdout}[/]")
             else:
                 console.print("[muted]  Sem alterações.[/]")
         except Exception:
@@ -445,7 +535,6 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
         servers = agent.mcp.server_status()
         if not servers:
             console.print("[muted]  Nenhum servidor MCP conectado.[/]")
-            console.print("[muted]  Configure em ~/.batmam/settings.json[/]")
         else:
             console.print(f"\n[accent]  Servidores MCP ({len(servers)}):[/]")
             for s in servers:
@@ -463,7 +552,311 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
             console.print(f"    {icon} [info]{name}[/]  [muted]{desc}[/]")
         return True
 
+    elif command == "/skills":
+        skills = _skill_registry.list_all()
+        console.print(f"\n[accent]  Skills ({len(skills)}):[/]")
+        for s in skills:
+            aliases = f" ({', '.join('/' + a for a in s.aliases)})" if s.aliases else ""
+            cat = f" [{s.category}]" if s.category != "built-in" else ""
+            console.print(f"    [info]/{s.name}[/]{aliases}  [muted]{s.description}{cat}[/]")
+        return True
+
+    elif command == "/background":
+        bg_status = agent.get_background_status()
+        if not bg_status:
+            console.print("[muted]  Nenhum background agent.[/]")
+        else:
+            console.print(f"\n[accent]  Background Agents ({len(bg_status)}):[/]")
+            for info in bg_status:
+                style = "success" if info["status"] == "completed" else ("error" if info["status"] == "error" else "info")
+                console.print(
+                    f"    [{style}]{info['status']}[/]  "
+                    f"[info]{info['id']}[/]  [muted]{info['description']}[/]"
+                )
+        return True
+
+    elif command == "/web":
+        _start_web_server(arg)
+        return True
+
+    # ── Pipeline (#25) ──
+    elif command == "/pipeline":
+        if not arg:
+            console.print("[error]  Use: /pipeline \"etapa 1\" -> \"etapa 2\" -> \"etapa 3\"[/]")
+            console.print("[muted]  Ex: /pipeline \"analisa código\" -> \"gera testes\" -> \"faz review\"[/]")
+            return True
+        return _handle_pipeline(arg, agent)
+
+    # ── Backup (#22) ──
+    elif command == "/backup":
+        return _handle_backup(arg)
+
+    # ── Chatwoot (#20) ──
+    elif command == "/chatwoot":
+        return _handle_chatwoot(arg)
+
     return False
+
+
+def _handle_cron(arg: str, agent: Agent) -> bool:
+    """Processa comandos /cron."""
+    cron = get_cron_manager()
+
+    if not arg or arg == "list":
+        jobs = cron.list_all()
+        if not jobs:
+            console.print("[muted]  Nenhum cron job.[/]")
+        else:
+            console.print(f"\n[accent]  Cron Jobs ({len(jobs)}):[/]")
+            for j in jobs:
+                interval = cron.format_interval(j.interval_seconds)
+                status = "[success]ativo[/]" if j.active else "[muted]pausado[/]"
+                console.print(
+                    f"    {status}  [info]{j.id}[/]  cada {interval}  "
+                    f"[muted]{j.prompt[:40]}... ({j.run_count}x)[/]"
+                )
+        return True
+
+    parts = arg.split(maxsplit=1)
+    subcmd = parts[0].lower()
+
+    if subcmd == "create" and len(parts) > 1:
+        # /cron create 5m "prompt aqui"
+        create_parts = parts[1].split(maxsplit=1)
+        if len(create_parts) < 2:
+            console.print("[error]  Use: /cron create <intervalo> <prompt>[/]")
+            console.print("[muted]  Ex: /cron create 5m 'verificar status do deploy'[/]")
+            return True
+        interval_str = create_parts[0]
+        prompt = create_parts[1].strip("'\"")
+
+        # Configura agent factory
+        def factory():
+            return Agent(
+                cwd=agent.cwd,
+                model=agent.model,
+                on_text_delta=lambda t: None,
+                on_text_done=lambda t: None,
+                auto_approve=True,
+                is_subagent=True,
+            )
+        cron.set_agent_factory(factory)
+
+        try:
+            job = cron.create(prompt, interval_str)
+            console.print(
+                f"[success]  Cron job criado: {job.id}[/]\n"
+                f"  [muted]Intervalo: {interval_str} | Prompt: {prompt[:60]}[/]"
+            )
+        except ValueError as e:
+            console.print(f"[error]  {e}[/]")
+        return True
+
+    elif subcmd == "delete" and len(parts) > 1:
+        job_id = parts[1].strip()
+        if cron.delete(job_id):
+            console.print(f"[success]  Cron job {job_id} deletado.[/]")
+        else:
+            console.print(f"[error]  Job '{job_id}' não encontrado.[/]")
+        return True
+
+    elif subcmd == "pause" and len(parts) > 1:
+        job_id = parts[1].strip()
+        if cron.pause(job_id):
+            console.print(f"[info]  Cron job {job_id} pausado.[/]")
+        else:
+            console.print(f"[error]  Job '{job_id}' não encontrado.[/]")
+        return True
+
+    elif subcmd == "resume" and len(parts) > 1:
+        job_id = parts[1].strip()
+        if cron.resume(job_id):
+            console.print(f"[success]  Cron job {job_id} retomado.[/]")
+        else:
+            console.print(f"[error]  Job '{job_id}' não encontrado.[/]")
+        return True
+
+    console.print("[error]  Uso: /cron [list|create|delete|pause|resume][/]")
+    return True
+
+
+def _handle_trigger(arg: str, agent: Agent) -> bool:
+    """Processa comandos /trigger."""
+    trigger = get_trigger_server()
+
+    parts = arg.split(maxsplit=1) if arg else [""]
+    subcmd = parts[0].lower()
+
+    if subcmd == "start":
+        port = 7777
+        if len(parts) > 1:
+            try:
+                port = int(parts[1])
+            except ValueError:
+                pass
+        trigger.port = port
+
+        def factory():
+            return Agent(
+                cwd=agent.cwd,
+                model=agent.model,
+                on_text_delta=lambda t: None,
+                on_text_done=lambda t: None,
+                auto_approve=True,
+                is_subagent=True,
+            )
+        trigger.set_agent_factory(factory)
+        info = trigger.start()
+        console.print(f"[success]  {info}[/]")
+        return True
+
+    elif subcmd == "stop":
+        info = trigger.stop()
+        console.print(f"[info]  {info}[/]")
+        return True
+
+    elif subcmd == "status" or not subcmd:
+        if trigger.running:
+            console.print(f"[success]  Trigger server rodando na porta {trigger.port}[/]")
+            console.print(f"  [muted]Token: {trigger.token}[/]")
+            results = trigger.list_results()
+            if results:
+                console.print(f"\n[accent]  Últimos triggers ({len(results)}):[/]")
+                for r in results[:10]:
+                    style = "success" if r.status == "completed" else ("error" if r.status == "error" else "info")
+                    console.print(f"    [{style}]{r.status}[/]  [info]{r.id}[/]  [muted]{r.prompt[:40]}[/]")
+        else:
+            console.print("[muted]  Trigger server não está rodando.[/]")
+            console.print("[muted]  Use /trigger start [porta][/]")
+        return True
+
+    console.print("[error]  Uso: /trigger [start|stop|status][/]")
+    return True
+
+
+def _handle_pipeline(arg: str, agent: Agent) -> bool:
+    """Feature #25: Processa /pipeline."""
+    prompts = parse_pipeline(arg)
+    if len(prompts) < 2:
+        console.print("[error]  Pipeline precisa de pelo menos 2 etapas separadas por '->'[/]")
+        return True
+
+    console.print(f"\n[accent]  Pipeline — {len(prompts)} etapas:[/]")
+    for i, p in enumerate(prompts, 1):
+        console.print(f"    [muted]{i}. {p}[/]")
+    console.print()
+
+    def factory():
+        return Agent(
+            cwd=agent.cwd,
+            model=agent.model,
+            on_text_delta=lambda t: None,
+            on_text_done=lambda t: None,
+            auto_approve=True,
+            is_subagent=True,
+        )
+
+    def on_step_start(i: int, prompt: str):
+        console.print(f"  [accent]◑ Etapa {i + 1}:[/] {prompt[:60]}")
+        log_action("pipeline_step_start", f"Etapa {i+1}: {prompt[:50]}")
+
+    def on_step_done(i: int, status: str, output: str):
+        icon = "[success]✓[/]" if status == "completed" else "[error]✗[/]"
+        console.print(f"  {icon} Etapa {i + 1} — {status}")
+        if output and status == "completed":
+            lines = output.strip().splitlines()
+            for line in lines[:3]:
+                console.print(f"    [muted]{line[:100]}[/]")
+            if len(lines) > 3:
+                console.print(f"    [muted]... ({len(lines)} linhas total)[/]")
+
+    result = run_pipeline(prompts, factory, on_step_start, on_step_done)
+    console.print(f"\n[accent]  Pipeline {result.status} em {result.total_duration:.1f}s[/]")
+    return True
+
+
+def _handle_backup(arg: str) -> bool:
+    """Feature #22: Processa /backup."""
+    parts = arg.split(maxsplit=1) if arg else [""]
+    subcmd = parts[0].lower()
+
+    if subcmd == "create" or not subcmd:
+        result = backup_memory()
+        style = "success" if "criado" in result.lower() else "error"
+        console.print(f"[{style}]  {result}[/]")
+        return True
+
+    elif subcmd == "list":
+        backups = list_backups()
+        if not backups:
+            console.print("[muted]  Nenhum backup encontrado.[/]")
+        else:
+            console.print(f"\n[accent]  Backups ({len(backups)}):[/]")
+            for b in backups[:15]:
+                console.print(f"    [info]{b['name']}[/]  {b['created']}  [muted]{b['size_kb']} KB[/]")
+        return True
+
+    elif subcmd == "restore" and len(parts) > 1:
+        name = parts[1].strip()
+        result = restore_memory(name)
+        style = "success" if "restaurado" in result.lower() else "error"
+        console.print(f"[{style}]  {result}[/]")
+        return True
+
+    console.print("[error]  Uso: /backup [create|list|restore <nome>][/]")
+    return True
+
+
+def _handle_chatwoot(arg: str) -> bool:
+    """Feature #20: Configura integração Chatwoot."""
+    trigger = get_trigger_server()
+    parts = arg.split(maxsplit=1) if arg else [""]
+    subcmd = parts[0].lower()
+
+    if subcmd == "setup" and len(parts) > 1:
+        token = parts[1].strip()
+        trigger.configure_chatwoot(token)
+        console.print(f"[success]  Chatwoot configurado.[/]")
+        console.print(f"  [muted]Token: {token[:8]}...[/]")
+        console.print(f"  [muted]Webhook URL: POST http://localhost:{trigger.port}/webhook/chatwoot[/]")
+        console.print(f"  [muted]Eventos: {', '.join(trigger._chatwoot_events)}[/]")
+        return True
+
+    elif subcmd == "status":
+        if trigger._chatwoot_token:
+            console.print(f"[success]  Chatwoot configurado[/]")
+            console.print(f"  [muted]Eventos: {', '.join(trigger._chatwoot_events)}[/]")
+            console.print(f"  [muted]Webhook: POST http://localhost:{trigger.port}/webhook/chatwoot[/]")
+        else:
+            console.print("[muted]  Chatwoot não configurado.[/]")
+        return True
+
+    console.print("[error]  Uso: /chatwoot setup <token> | /chatwoot status[/]")
+    console.print("[muted]  Configure o webhook no Chatwoot para:[/]")
+    console.print(f"  [muted]POST http://<seu-ip>:{trigger.port}/webhook/chatwoot[/]")
+    return True
+
+
+def _start_web_server(arg: str) -> None:
+    """Inicia o servidor web FastAPI."""
+    port = 8080
+    if arg:
+        try:
+            port = int(arg)
+        except ValueError:
+            pass
+
+    try:
+        import uvicorn
+        from .webapp import get_app
+        app = get_app()
+        console.print(f"[success]  Web app iniciando em http://0.0.0.0:{port}[/]")
+        console.print("[muted]  Ctrl+C para parar[/]")
+        uvicorn.run(app, host="0.0.0.0", port=port, log_level="warning")
+    except ImportError:
+        console.print("[error]  Instale: pip install fastapi uvicorn[/]")
+    except Exception as e:
+        console.print(f"[error]  Erro: {e}[/]")
 
 
 def _show_help() -> None:
@@ -473,38 +866,66 @@ def _show_help() -> None:
         "  [muted]Termine com \\\\ para multi-linha[/]\n"
         "  [muted]!comando[/]  — executa bash direto\n"
         "\n"
+        "[gold]Skills (atalhos)[/]\n"
+        "  [info]/commit[/]          — commit inteligente\n"
+        "  [info]/review[/]          — code review\n"
+        "  [info]/test[/]            — gera testes\n"
+        "  [info]/refactor[/]        — refatora código\n"
+        "  [info]/explain[/]         — explica código\n"
+        "  [info]/fix[/]             — encontra bugs\n"
+        "  [info]/init[/]            — inicializa projeto\n"
+        "  [info]/simplify[/]        — revisa qualidade\n"
+        "  [info]/skills[/]          — lista todos os skills\n"
+        "\n"
+        "[gold]Plan Mode[/]\n"
+        "  [info]/plan[/]            — ativa (somente leitura)\n"
+        "  [info]/plan off[/]        — desativa\n"
+        "\n"
+        "[gold]Tasks[/]\n"
+        "  [info]/tasks[/]           — lista tasks\n"
+        "\n"
         "[gold]Navegação[/]\n"
-        "  [info]/cd <dir>[/]       — muda diretório\n"
-        "  [info]/cwd[/]            — mostra diretório atual\n"
-        "  [info]/status[/]         — git status\n"
-        "  [info]/diff[/]           — git diff\n"
+        "  [info]/cd <dir>[/]        — muda diretório\n"
+        "  [info]/cwd[/]             — mostra diretório\n"
+        "  [info]/status[/]          — git status\n"
+        "  [info]/diff[/]            — git diff colorido\n"
         "\n"
         "[gold]Sessões[/]\n"
-        "  [info]/sessions[/]       — lista sessões\n"
-        "  [info]/resume <id>[/]    — retoma sessão\n"
-        "  [info]/save[/]           — salva sessão\n"
-        "  [info]/clear[/]          — limpa histórico\n"
-        "  [info]/compact[/]        — compacta contexto\n"
+        "  [info]/sessions[/]        — lista sessões\n"
+        "  [info]/resume <id>[/]     — retoma sessão\n"
+        "  [info]/save[/]            — salva sessão\n"
+        "  [info]/clear[/]           — limpa histórico\n"
+        "  [info]/compact[/]         — compacta contexto\n"
         "\n"
         "[gold]Memória[/]\n"
-        "  [info]/memory[/]              — lista memórias\n"
-        "  [info]/memory save <n> <t>[/] — salva memória\n"
-        "  [info]/memory delete <n>[/]   — deleta memória\n"
+        "  [info]/memory[/]               — lista memórias\n"
+        "  [info]/memory save <n> <t>[/]  — salva memória\n"
+        "  [info]/memory delete <n>[/]    — deleta memória\n"
+        "\n"
+        "[gold]Cron & Triggers[/]\n"
+        "  [info]/cron[/] [list|create|delete] — cron jobs\n"
+        "  [info]/trigger[/] [start|stop|status] — HTTP triggers\n"
+        "  [info]/chatwoot[/] setup <token>   — integração Chatwoot\n"
+        "\n"
+        "[gold]Pipeline & Backup[/]\n"
+        "  [info]/pipeline[/] \"a\" -> \"b\" -> \"c\" — multi-agent pipeline\n"
+        "  [info]/backup[/] [create|list|restore] — backup de memória\n"
         "\n"
         "[gold]Config[/]\n"
-        "  [info]/model[/] [nome]   — mostra/altera modelo\n"
-        "  [info]/tokens[/]         — uso de tokens\n"
-        "  [info]/approve[/]        — auto-approve\n"
-        "  [info]/init[/]           — cria BATMAM.md\n"
+        "  [info]/model[/] [nome]    — mostra/altera modelo\n"
+        "  [info]/tokens[/]          — uso de tokens\n"
+        "  [info]/approve[/]         — auto-approve\n"
+        "  [info]/background[/]      — background agents\n"
         "\n"
         "[gold]Extensões[/]\n"
-        "  [info]/tools[/]          — lista ferramentas\n"
-        "  [info]/hooks[/]          — lista hooks\n"
-        "  [info]/plugins[/]        — lista plugins\n"
-        "  [info]/mcp[/]            — lista servidores MCP\n"
+        "  [info]/tools[/]           — lista ferramentas\n"
+        "  [info]/hooks[/]           — lista hooks\n"
+        "  [info]/plugins[/]         — lista plugins\n"
+        "  [info]/mcp[/]             — servidores MCP\n"
+        "  [info]/web[/] [porta]     — web app + /dashboard\n"
         "\n"
-        "  [info]/exit[/]           — sai do Batmam\n",
-        title=f"[{GOLD}]🦇 Batmam — Ajuda[/]",
+        "  [info]/exit[/]            — sai do Batmam\n",
+        title=f"[{GOLD}]🦇 Batmam v{__version__} — Ajuda[/]",
         border_style=DARK_GOLD,
         padding=(1, 2),
     ))
@@ -555,10 +976,13 @@ def run_repl(args: argparse.Namespace) -> None:
     # Loop REPL
     while True:
         try:
-            # Prompt dourado com prompt_toolkit
-            user_input = prompt_session.prompt(
-                HTML('<style fg="#FFD700" bold="true">🦇 &gt; </style>'),
-            ).strip()
+            # Prompt com indicador de plan mode
+            if agent.plan_mode:
+                prompt_html = HTML('<style fg="#FF6B6B" bold="true">[PLAN] </style><style fg="#FFD700" bold="true">🦇 &gt; </style>')
+            else:
+                prompt_html = HTML('<style fg="#FFD700" bold="true">🦇 &gt; </style>')
+
+            user_input = prompt_session.prompt(prompt_html).strip()
 
             if not user_input:
                 continue
@@ -589,21 +1013,24 @@ def run_repl(args: argparse.Namespace) -> None:
                 except (EOFError, KeyboardInterrupt):
                     break
 
-            # Mostra mensagem do usuário em dourado com box
             _show_user_message(user_input)
-
-            # Turno do agente
             _run_agent_turn(agent, user_input)
 
-        except (EOFError, KeyboardInterrupt):
+        except KeyboardInterrupt:
+            console.print("\n[muted]  (Ctrl+C — use /exit para sair)[/]")
+            continue
+        except EOFError:
+            get_cron_manager().stop_all()
             _separator("Fim da Sessão", style="gold")
             console.print(f"[gold]  Sessão salva. Até mais! 🦇[/]")
             save_session(agent.session)
             break
+        except Exception as e:
+            console.print(f"\n[error]  Erro inesperado: {e}[/]")
+            continue
 
 
 def _print_banner() -> None:
-    """Banner de inicialização premium."""
     console.print()
     console.print(f"[{GOLD} bold]" + r"""
   ██████   █████  ████████ ███    ███  █████  ███    ███
@@ -615,16 +1042,15 @@ def _print_banner() -> None:
     _separator(style="dark_gold")
     console.print(f"  [{GOLD}]Agente de Código AI[/]  [muted]v{__version__}[/]")
     console.print(f"  [muted]Modelo: {config.BATMAM_MODEL}  │  Dir: {os.getcwd()}[/]")
+    console.print(f"  [muted]14 tools  │  8 skills  │  4 tipos de memória  │  pipeline  │  dashboard[/]")
     console.print(f"  [muted]/help para comandos  │  /exit para sair[/]")
     _separator(style="dark_gold")
     console.print()
 
 
 def _show_user_message(message: str) -> None:
-    """Mostra a mensagem do usuário em dourado dentro de uma box."""
     console.print()
     _user_header()
-    # Mostra cada linha com indentação e cor dourada
     for line in message.splitlines():
         console.print(f"  [user_text]{line}[/]")
     _user_footer()
@@ -632,9 +1058,9 @@ def _show_user_message(message: str) -> None:
 
 
 def _run_agent_turn(agent: Agent, message: str) -> None:
-    """Executa um turno do agente com tratamento de erro."""
     global _in_streaming, _agent_box_open
     try:
+        log_action("repl_turn", message[:80])
         agent.run_turn(message)
     except KeyboardInterrupt:
         if _in_streaming:
@@ -653,7 +1079,6 @@ def _run_agent_turn(agent: Agent, message: str) -> None:
 # ── Entry Point ───────────────────────────────────────────────
 
 def main() -> None:
-    """Entry point principal do Batmam."""
     parser = argparse.ArgumentParser(
         prog="batmam",
         description="Batmam — Agente de código AI no terminal",
@@ -663,6 +1088,8 @@ def main() -> None:
     parser.add_argument("--resume", "-r", help="ID da sessão para retomar")
     parser.add_argument("--auto-approve", "-y", action="store_true", help="Aprovar tudo automaticamente")
     parser.add_argument("--cwd", "-C", help="Diretório de trabalho inicial")
+    parser.add_argument("--web", action="store_true", help="Iniciar web app")
+    parser.add_argument("--port", type=int, default=8080, help="Porta do web server (padrão: 8080)")
     parser.add_argument("prompt", nargs="*", help="Prompt inicial (opcional)")
 
     args = parser.parse_args()
@@ -677,6 +1104,11 @@ def main() -> None:
 
     if args.model:
         config.BATMAM_MODEL = args.model
+
+    # Web mode
+    if args.web:
+        _start_web_server(str(args.port))
+        return
 
     run_repl(args)
 
