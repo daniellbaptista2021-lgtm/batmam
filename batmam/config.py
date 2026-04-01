@@ -5,15 +5,22 @@ import json
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Carrega .env do diretório do projeto OU do home
-_project_env = Path(__file__).resolve().parent.parent / ".env"
-_home_env = Path.home() / ".batmam" / ".env"
+# Carrega .env — busca em vários locais possíveis
+_env_candidates = [
+    Path(__file__).resolve().parent.parent / ".env",   # ./batmam/../.env (dev)
+    Path.home() / ".batmam" / "app" / ".env",          # ~/.batmam/app/.env (instalado)
+    Path.home() / ".batmam" / ".env",                  # ~/.batmam/.env
+    Path.cwd() / ".env",                               # diretório atual
+]
 
-if _project_env.exists():
-    load_dotenv(_project_env)
-elif _home_env.exists():
-    load_dotenv(_home_env)
-else:
+_loaded_env = False
+for _env_path in _env_candidates:
+    if _env_path.exists():
+        load_dotenv(_env_path)
+        _loaded_env = True
+        break
+
+if not _loaded_env:
     load_dotenv()
 
 # ── Diretórios ──────────────────────────────────────────────
