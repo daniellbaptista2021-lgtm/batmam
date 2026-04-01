@@ -105,16 +105,83 @@ def _agent_footer() -> None:
     console.print(f"[border]{line}[/]")
 
 
+# ── Thinking Spinner (🦇 pulsando) ──────────────────────────────
+import threading as _threading
+
+_spinner_thread: _threading.Thread | None = None
+_spinner_stop = _threading.Event()
+
+# Frames do morcego pulsando — ANSI escape codes para brilho
+# \033[1m = bold(brilhante), \033[2m = dim, \033[0m = reset
+_GOLD_ANSI = "\033[33m"       # amarelo
+_BOLD = "\033[1m"
+_DIM = "\033[2m"
+_RESET = "\033[0m"
+_CLEAR_LINE = "\033[2K\r"
+
+_BAT_FRAMES = [
+    f"{_BOLD}{_GOLD_ANSI}🦇{_RESET}",           # brilhante
+    f"{_BOLD}{_GOLD_ANSI}🦇{_RESET}",           # brilhante
+    f"{_GOLD_ANSI}🦇{_RESET}",                   # normal
+    f"{_DIM}{_GOLD_ANSI}🦇{_RESET}",             # dim
+    f"{_DIM}🦇{_RESET}",                          # mais dim
+    f"{_DIM}{_GOLD_ANSI}🦇{_RESET}",             # dim
+    f"{_GOLD_ANSI}🦇{_RESET}",                   # normal
+    f"{_BOLD}{_GOLD_ANSI}🦇{_RESET}",           # brilhante
+]
+
+_DOTS_FRAMES = ["   ", ".  ", ".. ", "..."]
+
+
+def _start_thinking_spinner() -> None:
+    """Inicia o spinner 🦇 pulsando enquanto o agente pensa."""
+    global _spinner_thread
+    _spinner_stop.clear()
+
+    def _spin():
+        frame_idx = 0
+        dots_idx = 0
+        while not _spinner_stop.is_set():
+            bat = _BAT_FRAMES[frame_idx % len(_BAT_FRAMES)]
+            dots = _DOTS_FRAMES[dots_idx % len(_DOTS_FRAMES)]
+            sys.stdout.write(f"{_CLEAR_LINE}  {bat} {_DIM}Pensando{dots}{_RESET}")
+            sys.stdout.flush()
+            frame_idx += 1
+            if frame_idx % 2 == 0:
+                dots_idx += 1
+            _spinner_stop.wait(0.15)
+        # Limpa a linha do spinner
+        sys.stdout.write(f"{_CLEAR_LINE}")
+        sys.stdout.flush()
+
+    _spinner_thread = _threading.Thread(target=_spin, daemon=True, name="bat-spinner")
+    _spinner_thread.start()
+
+
+def _stop_thinking_spinner() -> None:
+    """Para o spinner."""
+    global _spinner_thread
+    _spinner_stop.set()
+    if _spinner_thread and _spinner_thread.is_alive():
+        _spinner_thread.join(timeout=1)
+    _spinner_thread = None
+
+
 # ── Estado global do streaming ────────────────────────────────
 _streaming_buffer: list[str] = []
 _in_streaming = False
 _agent_box_open = False
 _streaming_tool_args: dict[str, str] = {}
+_thinking_active = False
 
 
 def on_text_delta(delta: str) -> None:
     """Streaming em tempo real — imprime cada pedaço conforme chega."""
-    global _in_streaming, _agent_box_open
+    global _in_streaming, _agent_box_open, _thinking_active
+    # Para o spinner na primeira resposta
+    if _thinking_active:
+        _stop_thinking_spinner()
+        _thinking_active = False
     if not _in_streaming:
         _in_streaming = True
         if not _agent_box_open:
@@ -145,7 +212,11 @@ def _close_agent_box() -> None:
 
 def on_tool_call(name: str, args: dict) -> None:
     """Chamado quando o modelo chama uma ferramenta — streaming dos args."""
-    global _in_streaming, _agent_box_open
+    global _in_streaming, _agent_box_open, _thinking_active
+    # Para o spinner quando uma tool é chamada
+    if _thinking_active:
+        _stop_thinking_spinner()
+        _thinking_active = False
     if _in_streaming:
         sys.stdout.write("\n")
         sys.stdout.flush()
@@ -1079,21 +1150,32 @@ def _show_user_message(message: str) -> None:
 
 
 def _run_agent_turn(agent: Agent, message: str) -> None:
-    global _in_streaming, _agent_box_open
+    global _in_streaming, _agent_box_open, _thinking_active
     try:
         log_action("repl_turn", message[:80])
+        # Inicia o 🦇 pulsando enquanto espera resposta
+        _thinking_active = True
+        _start_thinking_spinner()
         agent.run_turn(message)
     except KeyboardInterrupt:
+        _stop_thinking_spinner()
+        _thinking_active = False
         if _in_streaming:
             sys.stdout.write("\n")
             _in_streaming = False
         console.print("[warning]  Interrompido.[/]")
     except Exception as e:
+        _stop_thinking_spinner()
+        _thinking_active = False
         if _in_streaming:
             sys.stdout.write("\n")
             _in_streaming = False
         console.print(f"[error]  Erro: {e}[/]")
     finally:
+        # Garante que o spinner para em qualquer caso
+        if _thinking_active:
+            _stop_thinking_spinner()
+            _thinking_active = False
         _close_agent_box()
 
 
