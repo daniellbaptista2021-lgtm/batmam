@@ -132,6 +132,7 @@ def _inf_stop_now() -> None:
 _streaming_buffer: list[str] = []
 _in_streaming = False
 _thinking_active = False
+_first_turn = True  # Não mostra divisória antes do primeiro turno
 
 # Colapsamento APENAS para output de tools (nunca para resposta textual)
 TOOL_OUTPUT_MAX_LINES = 8
@@ -882,7 +883,7 @@ def _print_banner() -> None:
 
 
 def _run_agent_turn(agent: Agent, message: str) -> None:
-    global _in_streaming, _thinking_active
+    global _in_streaming, _thinking_active, _first_turn
     try:
         log_action("repl_turn", message[:80])
         _thinking_active = True
@@ -907,6 +908,7 @@ def _run_agent_turn(agent: Agent, message: str) -> None:
         if _thinking_active:
             _inf_stop_now()
             _thinking_active = False
+        _first_turn = False
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -984,7 +986,23 @@ def run_repl(args: argparse.Namespace) -> None:
                 except (EOFError, KeyboardInterrupt):
                     break
 
-            sys.stdout.write("\n")  # Linha em branco entre input e resposta
+            # Divisória entre turnos (não aparece antes do primeiro)
+            if not _first_turn:
+                console.print()
+                console.print(Rule(style="dim bright_black"))
+                console.print()
+
+            # Re-renderiza input com background sombreado
+            # Move cursor para cima (sobre a linha que prompt_toolkit escreveu) e sobrescreve
+            lines_in_input = user_input.count("\n") + 1
+            sys.stdout.write(f"\033[{lines_in_input}A")  # move N linhas para cima
+            sys.stdout.write(_CLEAR_LINE)
+            user_line = Text()
+            user_line.append(f"  ❯ {user_input}", style="bold white on grey15")
+            user_line.pad_right(console.width)
+            console.print(user_line)
+            console.print()
+
             _run_agent_turn(agent, user_input)
 
         except KeyboardInterrupt:
