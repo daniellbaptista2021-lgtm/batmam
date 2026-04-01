@@ -8,12 +8,16 @@ import argparse
 import threading
 from pathlib import Path
 
+import re as _re
+
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.text import Text
 from rich.theme import Theme
 from rich.rule import Rule
 from rich.syntax import Syntax
+from rich.table import Table
+from rich.box import ROUNDED
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
@@ -138,6 +142,98 @@ _first_turn = True  # Não mostra divisória antes do primeiro turno
 TOOL_OUTPUT_MAX_LINES = 8
 
 
+def _clean_text(text: str) -> str:
+    """Remove espaços em branco excessivos — máximo 1 linha em branco entre seções."""
+    text = _re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
+
+
+def _split_tables(text: str) -> list[dict]:
+    """Separa texto normal de blocos de tabela markdown."""
+    lines = text.split('\n')
+    parts: list[dict] = []
+    current_text: list[str] = []
+    current_table: list[str] = []
+    in_table = False
+
+    for line in lines:
+        stripped = line.strip()
+        is_table_line = stripped.startswith('|') and stripped.endswith('|') and len(stripped) > 2
+
+        if is_table_line:
+            if not in_table:
+                if current_text:
+                    parts.append({'type': 'text', 'content': '\n'.join(current_text)})
+                    current_text = []
+                in_table = True
+            current_table.append(stripped)
+        else:
+            if in_table:
+                if current_table:
+                    parts.append({'type': 'table', 'content': current_table})
+                    current_table = []
+                in_table = False
+            current_text.append(line)
+
+    if current_table:
+        parts.append({'type': 'table', 'content': current_table})
+    if current_text:
+        parts.append({'type': 'text', 'content': '\n'.join(current_text)})
+
+    return parts
+
+
+def _build_rich_table(table_lines: list[str]) -> Table:
+    """Converte linhas de tabela markdown em rich.Table."""
+    table = Table(
+        show_header=True,
+        header_style="bold cyan",
+        border_style="dim",
+        pad_edge=True,
+        expand=False,
+        box=ROUNDED,
+    )
+
+    # Header
+    headers = [cell.strip() for cell in table_lines[0].split('|')[1:-1]]
+    for header in headers:
+        table.add_column(header, style="white", overflow="fold")
+
+    # Dados (pula separador |---|---|)
+    for line in table_lines[2:] if len(table_lines) > 2 else []:
+        cells = [cell.strip() for cell in line.split('|')[1:-1]]
+        # Garante mesmo número de colunas
+        while len(cells) < len(headers):
+            cells.append("")
+        table.add_row(*cells[:len(headers)])
+
+    return table
+
+
+def _render_response(text: str) -> None:
+    """Renderiza resposta do agente: Markdown para texto, rich.Table para tabelas."""
+    cleaned = _clean_text(text)
+    if not cleaned:
+        return
+
+    parts = _split_tables(cleaned)
+    width = min(console.width - 4, 100)
+
+    for part in parts:
+        if part['type'] == 'table' and len(part['content']) >= 2:
+            try:
+                table = _build_rich_table(part['content'])
+                console.print(table)
+            except Exception:
+                # Fallback: renderiza como markdown se der erro
+                console.print(Markdown('\n'.join(part['content'])), width=width)
+        else:
+            content = part['content']
+            cleaned_part = _clean_text(content)
+            if cleaned_part:
+                console.print(Markdown(cleaned_part), width=width)
+
+
 def on_text_delta(delta: str) -> None:
     """Acumula tokens da resposta. Streaming visual mostra texto cru, Markdown renderizado no final."""
     global _in_streaming, _thinking_active
@@ -176,10 +272,9 @@ def on_text_done(text: str) -> None:
             sys.stdout.write(f"\033[A{_CLEAR_LINE}")
         sys.stdout.flush()
 
-        # Re-renderiza como Markdown formatado com rich
+        # Re-renderiza como Markdown formatado + tabelas rich.Table
         if full_text.strip():
-            md = Markdown(full_text.strip())
-            console.print(md, width=min(console.width - 4, 100))
+            _render_response(full_text)
 
         console.print()
         _in_streaming = False
