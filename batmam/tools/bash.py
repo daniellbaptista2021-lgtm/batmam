@@ -1,86 +1,79 @@
-"""Ferramenta Bash - executa comandos no shell."""
+"""Ferramenta Bash — execução segura via Sandbox com Git Safety Protocol."""
 
 from __future__ import annotations
-import subprocess
-import os
+import uuid
 from typing import Any
 from .base import BaseTool
+from ..sandbox import Sandbox
+from ..git_safety import GitSafety
+from ..logging import log_action
 
 
 class BashTool(BaseTool):
     name = "bash"
     description = (
-        "Executa um comando bash e retorna stdout+stderr. "
-        "Use para operações de sistema, git, instalação de pacotes, "
-        "compilação e qualquer comando de terminal."
+        "Executa comando bash no terminal com sandbox de segurança. "
+        "Timeout configurável (1-600s), background execution, Git Safety Protocol."
     )
     requires_confirmation = True
 
-    # Limite de saída para não estourar contexto
-    MAX_OUTPUT = 50_000
+    def __init__(self) -> None:
+        self._sandbox = Sandbox()
 
     def get_schema(self) -> dict:
         return {
             "type": "object",
             "properties": {
-                "command": {
-                    "type": "string",
-                    "description": "O comando bash a ser executado.",
-                },
-                "cwd": {
-                    "type": "string",
-                    "description": "Diretório de trabalho (opcional). Se não informado, usa o diretório atual.",
-                },
-                "timeout": {
-                    "type": "integer",
-                    "description": "Timeout em segundos (padrão: 120).",
-                },
+                "command": {"type": "string", "description": "Comando bash a executar"},
+                "description": {"type": "string", "description": "Descrição curta do que o comando faz"},
+                "timeout": {"type": "integer", "description": "Timeout em milissegundos (max 600000). Padrão: 120000"},
+                "cwd": {"type": "string", "description": "Diretório de trabalho (opcional)"},
+                "run_in_background": {"type": "boolean", "description": "Executar em background (não bloqueia)"},
             },
             "required": ["command"],
         }
 
     def execute(self, **kwargs: Any) -> str:
-        command = kwargs.get("command", "")
-        cwd = kwargs.get("cwd") or os.getcwd()
-        timeout = kwargs.get("timeout", 120)
+        command: str = kwargs.get("command", "")
+        if not command:
+            return "Erro: comando vazio."
 
-        if not command.strip():
-            return "[ERROR] Comando vazio."
+        timeout_ms: int = kwargs.get("timeout", 120000)
+        timeout_s = min(max(timeout_ms // 1000, 1), 600)
+        cwd: str = kwargs.get("cwd", "")
+        run_bg: bool = kwargs.get("run_in_background", False)
 
-        try:
-            result = subprocess.run(
-                command,
-                shell=True,
-                capture_output=True,
-                text=True,
-                cwd=cwd,
-                timeout=timeout,
-                env={**os.environ},
-            )
+        # Git Safety Protocol
+        if command.strip().startswith("git "):
+            git_safety = GitSafety(cwd or self._sandbox.cwd)
+            allowed, reason = git_safety.validate_command(command)
+            if not allowed:
+                return f"[GIT SAFETY] {reason}"
 
-            output_parts = []
-            if result.stdout:
-                output_parts.append(result.stdout)
-            if result.stderr:
-                output_parts.append(f"[STDERR]\n{result.stderr}")
+        # Bloqueio de segurança
+        blocked = self._sandbox.is_blocked(command)
+        if blocked:
+            return f"[SANDBOX] {blocked}"
 
-            output = "\n".join(output_parts) if output_parts else "(sem saída)"
+        # Background execution
+        if run_bg:
+            job_id = uuid.uuid4().hex[:8]
+            self._sandbox.execute_background(command, job_id, timeout=timeout_s, cwd=cwd or None)
+            return f"[Background] Job {job_id} iniciado. O resultado será notificado quando completar."
 
-            if result.returncode != 0:
-                output = f"[EXIT CODE: {result.returncode}]\n{output}"
+        # Execução normal
+        result = self._sandbox.execute(command, timeout=timeout_s, cwd=cwd or None)
 
-            # Truncar se muito grande
-            if len(output) > self.MAX_OUTPUT:
-                half = self.MAX_OUTPUT // 2
-                output = (
-                    output[:half]
-                    + f"\n\n... [TRUNCADO: {len(output)} chars total] ...\n\n"
-                    + output[-half:]
-                )
+        parts = []
+        if result.stdout:
+            parts.append(result.stdout)
+        if result.stderr:
+            parts.append(f"[stderr]\n{result.stderr}")
+        if result.timed_out:
+            parts.append(f"[TIMEOUT] Comando excedeu {timeout_s}s")
+        if result.return_code != 0 and not result.timed_out:
+            parts.append(f"[exit code: {result.return_code}]")
+        if result.truncated:
+            parts.append("[output truncado]")
 
-            return output
-
-        except subprocess.TimeoutExpired:
-            return f"[ERROR] Comando expirou após {timeout}s: {command}"
-        except Exception as e:
-            return f"[ERROR] Falha ao executar: {e}"
+        return "\n".join(parts) if parts else "(sem output)"

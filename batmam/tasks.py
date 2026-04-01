@@ -3,6 +3,7 @@
 from __future__ import annotations
 import uuid
 import time
+import threading
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -96,6 +97,45 @@ class TaskManager:
             if t.status == TaskStatus.PENDING and t.can_start(self._tasks)
         ]
 
+    def stop(self, task_id: str) -> bool:
+        """Para uma task em execução."""
+        task = self._tasks.get(task_id)
+        if not task or task.status != TaskStatus.IN_PROGRESS:
+            return False
+        task.status = TaskStatus.FAILED
+        task.output = "[STOPPED] Task parada pelo usuário"
+        task.updated_at = time.time()
+        return True
+
+    def set_output(self, task_id: str, output: str) -> bool:
+        """Define output de uma task."""
+        task = self._tasks.get(task_id)
+        if not task:
+            return False
+        task.output = output
+        task.updated_at = time.time()
+        return True
+
+    def get_blocked(self) -> list[Task]:
+        """Retorna tasks bloqueadas por dependências falhas."""
+        blocked = []
+        for task in self._tasks.values():
+            if task.status != TaskStatus.PENDING:
+                continue
+            for dep_id in task.dependencies:
+                dep = self._tasks.get(dep_id)
+                if not dep or dep.status == TaskStatus.FAILED:
+                    blocked.append(task)
+                    break
+        return blocked
+
+    def delete(self, task_id: str) -> bool:
+        """Remove uma task."""
+        if task_id in self._tasks:
+            del self._tasks[task_id]
+            return True
+        return False
+
     def summary(self) -> str:
         total = len(self._tasks)
         if total == 0:
@@ -104,7 +144,9 @@ class TaskManager:
         for t in self._tasks.values():
             counts[t.status.value] = counts.get(t.status.value, 0) + 1
         parts = [f"{v} {k}" for k, v in counts.items()]
-        return f"{total} tasks: {', '.join(parts)}"
+        blocked = len(self.get_blocked())
+        extra = f", {blocked} bloqueadas" if blocked else ""
+        return f"{total} tasks: {', '.join(parts)}{extra}"
 
 
 # Instância global

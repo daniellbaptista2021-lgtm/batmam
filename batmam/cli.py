@@ -33,6 +33,7 @@ from .triggers import get_trigger_server
 from .pipeline import parse_pipeline, run_pipeline
 from .backup import backup_memory, restore_memory, list_backups
 from .logging import log_action
+from .agent_types import list_agent_types
 from . import config
 
 # ── Cores do Batmam ──────────────────────────────────────────
@@ -550,6 +551,26 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
             desc = tool.description[:60] if tool else ""
             icon = _tool_icon(name)
             console.print(f"    {icon} [info]{name}[/]  [muted]{desc}[/]")
+        return True
+
+    elif command == "/agents":
+        types = list_agent_types()
+        console.print(f"\n[accent]  Tipos de Agent ({len(types)}):[/]")
+        for at in types:
+            tools_str = ", ".join(sorted(at.allowed_tools)[:6]) if at.allowed_tools else "todas"
+            console.print(f"    [info]{at.name}[/]  [muted]{at.description[:60]}[/]")
+            console.print(f"      [muted]Tools: {tools_str} | Max iter: {at.max_iterations}[/]")
+        return True
+
+    elif command == "/stale":
+        from .memory import cleanup_stale_memories
+        stale = cleanup_stale_memories(agent.cwd)
+        if stale:
+            console.print(f"\n[warning]  Memórias potencialmente stale ({len(stale)}):[/]")
+            for s in stale:
+                console.print(f"    [muted]{s}[/]")
+        else:
+            console.print("[success]  Nenhuma memória stale detectada.[/]")
         return True
 
     elif command == "/skills":

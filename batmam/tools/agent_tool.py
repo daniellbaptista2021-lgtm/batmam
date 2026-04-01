@@ -1,21 +1,20 @@
-"""Ferramenta Agent v0.2.0 — sub-agentes com background e worktree isolation."""
+"""Ferramenta Agent v0.2.0 — sub-agentes tipados com background e worktree isolation."""
 
 from __future__ import annotations
 from typing import Any
 from .base import BaseTool
+from ..agent_types import get_agent_type, list_agent_types
 
 
 class AgentTool(BaseTool):
     name = "agent"
     description = (
-        "Lança um sub-agente para realizar tarefas complexas em paralelo. "
-        "O sub-agente tem acesso a todas as mesmas ferramentas. "
-        "Suporta run_in_background=true para execução assíncrona e "
-        "isolation='worktree' para executar em cópia isolada do repositório."
+        "Lança um sub-agente tipado para realizar tarefas. "
+        "Tipos: explore (busca rápida), plan (arquitetura), general (tudo), guide (ajuda). "
+        "Suporta run_in_background e isolation='worktree'."
     )
     requires_confirmation = False
 
-    # Referência ao agente pai (setado externamente)
     _parent_agent: Any = None
 
     def get_schema(self) -> dict:
@@ -29,6 +28,11 @@ class AgentTool(BaseTool):
                 "description": {
                     "type": "string",
                     "description": "Resumo curto (3-5 palavras) do que o sub-agente fará.",
+                },
+                "subagent_type": {
+                    "type": "string",
+                    "enum": ["explore", "plan", "general", "guide"],
+                    "description": "Tipo de agente: explore (busca rápida), plan (arquitetura), general (propósito geral), guide (ajuda Batmam).",
                 },
                 "run_in_background": {
                     "type": "boolean",

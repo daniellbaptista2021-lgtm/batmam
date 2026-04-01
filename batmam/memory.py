@@ -5,6 +5,8 @@ frontmatter YAML, agrupamento por tipo, e índice MEMORY.md.
 """
 
 from __future__ import annotations
+import os
+import re
 import time
 from pathlib import Path
 from . import config
@@ -197,5 +199,70 @@ def _update_index() -> None:
             lines.extend(entries_by_type[mtype])
             lines.append("")
 
+    # Limite de 200 linhas no índice
+    if len(lines) > 200:
+        lines = lines[:200]
+        lines.append("... (índice truncado em 200 linhas)")
+
     index_path = config.MEMORY_DIR / "MEMORY.md"
     index_path.write_text("\n".join(lines) + "\n" if lines else "", encoding="utf-8")
+
+
+def validate_memory_content(content: str, memory_type: str = "general") -> tuple[bool, str]:
+    """Valida se o conteúdo deve ser salvo na memória.
+
+    Regras de exclusão (matching Claude Code):
+    - Code patterns → derivável do código
+    - Git history → derivável de git log/blame
+    - Debugging solutions → o fix está no código
+    - Ephemeral tasks → usar tasks
+    """
+    exclusion_patterns = [
+        (r"(?:class|def|function)\s+\w+\s*[\(\{:]", "Code patterns são deriváveis do código — leia o arquivo diretamente"),
+        (r"git\s+(?:log|blame|diff)\s+", "Git history é derivável de git log/blame"),
+        (r"(?:fix|fixed|bug|debug).*(?:by changing|by adding|by removing)\s+", "Debugging solutions estão no commit/código"),
+        (r"^TODO\s*:|^FIXME\s*:|^HACK\s*:", "TODOs efêmeros devem ser tasks, não memórias"),
+    ]
+
+    for pattern, reason in exclusion_patterns:
+        if re.search(pattern, content, re.IGNORECASE | re.MULTILINE):
+            return False, reason
+
+    return True, ""
+
+
+def check_memory_stale(memory_file: Path, cwd: str = "") -> tuple[bool, str]:
+    """Verifica se uma memória referencia recursos que não existem mais."""
+    try:
+        content = memory_file.read_text(encoding="utf-8")
+    except Exception:
+        return False, "Não foi possível ler o arquivo"
+
+    work_dir = cwd or os.getcwd()
+    issues = []
+
+    # Procura referências a arquivos
+    file_refs = re.findall(
+        r'(?:^|\s)([\w/.-]+\.(?:py|js|ts|go|rs|java|rb|php|sh|yaml|yml|json|toml|md))\b',
+        content,
+    )
+    for fpath in file_refs[:5]:
+        full_path = os.path.join(work_dir, fpath)
+        if not os.path.exists(full_path):
+            issues.append(f"Arquivo não encontrado: {fpath}")
+
+    if issues:
+        return True, "; ".join(issues)
+    return False, ""
+
+
+def cleanup_stale_memories(cwd: str = "") -> list[str]:
+    """Verifica e lista memórias stale (não remove automaticamente)."""
+    cleaned = []
+    for f in config.MEMORY_DIR.glob("*.md"):
+        if f.name == "MEMORY.md":
+            continue
+        is_stale, reason = check_memory_stale(f, cwd)
+        if is_stale:
+            cleaned.append(f"{f.stem}: {reason}")
+    return cleaned

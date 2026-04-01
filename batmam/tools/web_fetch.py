@@ -1,129 +1,119 @@
-"""Ferramenta WebFetch — busca conteúdo de URLs."""
+"""WebFetchTool — busca conteúdo de URLs com conversão HTML→markdown."""
 
 from __future__ import annotations
-import urllib.request
-import urllib.error
 import re
 import html as html_module
+from urllib.request import urlopen, Request
+from urllib.error import URLError, HTTPError
 from typing import Any
 from .base import BaseTool
 
 
 class WebFetchTool(BaseTool):
     name = "web_fetch"
-    description = (
-        "Faz fetch do conteúdo de uma URL e retorna o texto. "
-        "Remove HTML e retorna texto limpo. "
-        "Use para ler documentação, APIs, páginas web."
-    )
+    description = "Busca conteúdo de uma URL e retorna como texto. Converte HTML para markdown."
     requires_confirmation = False
-
-    MAX_SIZE = 100_000  # 100KB de texto
 
     def get_schema(self) -> dict:
         return {
             "type": "object",
             "properties": {
-                "url": {
-                    "type": "string",
-                    "description": "URL completa para buscar (deve começar com http:// ou https://).",
-                },
-                "raw": {
-                    "type": "boolean",
-                    "description": "Se true, retorna HTML bruto ao invés de texto limpo. Padrão: false.",
-                },
+                "url": {"type": "string", "description": "URL para buscar"},
+                "max_length": {"type": "integer", "description": "Máximo de caracteres (padrão: 100000)"},
                 "headers": {
-                    "type": "object",
-                    "description": "Headers HTTP adicionais (opcional).",
+                    "type": "object", "description": "Headers HTTP adicionais",
+                    "additionalProperties": {"type": "string"},
                 },
             },
             "required": ["url"],
         }
 
     def execute(self, **kwargs: Any) -> str:
-        url = kwargs.get("url", "")
-        raw = kwargs.get("raw", False)
-        extra_headers = kwargs.get("headers", {})
-
+        url: str = kwargs.get("url", "")
         if not url:
-            return "[ERROR] url é obrigatório."
-
+            return "Erro: url é obrigatório."
         if not url.startswith(("http://", "https://")):
-            return "[ERROR] URL deve começar com http:// ou https://"
+            return "Erro: URL deve começar com http:// ou https://"
+
+        max_length: int = kwargs.get("max_length", 100000)
+        extra_headers: dict = kwargs.get("headers", {})
 
         headers = {
-            "User-Agent": "Batmam/0.1.0 (AI code agent)",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,text/plain;q=0.8,*/*;q=0.7",
+            "User-Agent": "Mozilla/5.0 (compatible; Batmam/0.2)",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
         }
         headers.update(extra_headers)
 
         try:
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            req = Request(url, headers=headers)
+            with urlopen(req, timeout=15) as resp:
                 content_type = resp.headers.get("Content-Type", "")
-                data = resp.read(self.MAX_SIZE * 2)  # Lê um pouco mais para o HTML
-
-                # Determina encoding
                 encoding = "utf-8"
                 if "charset=" in content_type:
                     encoding = content_type.split("charset=")[-1].split(";")[0].strip()
 
-                text = data.decode(encoding, errors="replace")
+                raw = resp.read(max_length + 1000)
+                text = raw.decode(encoding, errors="replace")
 
-            if raw or "text/plain" in content_type or "application/json" in content_type:
-                return self._truncate(text)
+                if "json" in content_type:
+                    return text[:max_length]
+                if "text/plain" in content_type:
+                    return text[:max_length]
+                if "html" in content_type or text.strip().startswith("<"):
+                    text = self._html_to_markdown(text)
+                if len(text) > max_length:
+                    text = text[:max_length] + "\n\n[...truncado]"
+                return text
 
-            # HTML → texto limpo
-            clean = self._html_to_text(text)
-            return self._truncate(clean)
-
-        except urllib.error.HTTPError as e:
-            return f"[ERROR] HTTP {e.code}: {e.reason}"
-        except urllib.error.URLError as e:
-            return f"[ERROR] URL error: {e.reason}"
+        except HTTPError as e:
+            return f"HTTP Error {e.code}: {e.reason}"
+        except URLError as e:
+            return f"Erro de conexão: {e.reason}"
         except Exception as e:
-            return f"[ERROR] Falha no fetch: {e}"
+            return f"Erro: {e}"
 
-    def _html_to_text(self, html: str) -> str:
-        """Converte HTML para texto limpo."""
-        # Remove script e style
-        text = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL | re.IGNORECASE)
-        text = re.sub(r"<style[^>]*>.*?</style>", "", text, flags=re.DOTALL | re.IGNORECASE)
-        text = re.sub(r"<nav[^>]*>.*?</nav>", "", text, flags=re.DOTALL | re.IGNORECASE)
-        text = re.sub(r"<footer[^>]*>.*?</footer>", "", text, flags=re.DOTALL | re.IGNORECASE)
-        text = re.sub(r"<header[^>]*>.*?</header>", "", text, flags=re.DOTALL | re.IGNORECASE)
+    def _html_to_markdown(self, html: str) -> str:
+        text = html
+        for tag in ["script", "style", "svg", "nav", "footer", "header", "noscript", "iframe"]:
+            text = re.sub(rf"<{tag}[^>]*>.*?</{tag}>", "", text, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
 
-        # Headers para markdown
-        for i in range(1, 7):
-            text = re.sub(rf"<h{i}[^>]*>(.*?)</h{i}>", rf"\n{'#' * i} \1\n", text, flags=re.DOTALL | re.IGNORECASE)
+        for level in range(1, 7):
+            text = re.sub(
+                rf"<h{level}[^>]*>(.*?)</h{level}>",
+                lambda m, l=level: f"\n{'#' * l} {m.group(1).strip()}\n",
+                text, flags=re.DOTALL | re.IGNORECASE,
+            )
 
-        # Parágrafos e breaks
+        text = re.sub(r'<a[^>]+href="([^"]*)"[^>]*>(.*?)</a>',
+                       lambda m: f"[{m.group(2).strip()}]({m.group(1)})",
+                       text, flags=re.DOTALL | re.IGNORECASE)
+
+        text = re.sub(r"<pre[^>]*><code[^>]*>(.*?)</code></pre>",
+                       lambda m: f"\n```\n{m.group(1).strip()}\n```\n",
+                       text, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(r"<pre[^>]*>(.*?)</pre>",
+                       lambda m: f"\n```\n{m.group(1).strip()}\n```\n",
+                       text, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(r"<code[^>]*>(.*?)</code>",
+                       lambda m: f"`{m.group(1).strip()}`",
+                       text, flags=re.DOTALL | re.IGNORECASE)
+
+        text = re.sub(r"<(?:b|strong)[^>]*>(.*?)</(?:b|strong)>", r"**\1**", text, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(r"<(?:i|em)[^>]*>(.*?)</(?:i|em)>", r"*\1*", text, flags=re.DOTALL | re.IGNORECASE)
+        text = re.sub(r"<li[^>]*>(.*?)</li>", lambda m: f"\n- {m.group(1).strip()}", text, flags=re.DOTALL | re.IGNORECASE)
+
         text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
-        text = re.sub(r"</?p[^>]*>", "\n", text, flags=re.IGNORECASE)
-        text = re.sub(r"</?div[^>]*>", "\n", text, flags=re.IGNORECASE)
-        text = re.sub(r"<li[^>]*>", "\n- ", text, flags=re.IGNORECASE)
-
-        # Links
-        text = re.sub(r'<a[^>]+href="([^"]*)"[^>]*>(.*?)</a>', r"\2 (\1)", text, flags=re.DOTALL | re.IGNORECASE)
-
-        # Code blocks
-        text = re.sub(r"<pre[^>]*>(.*?)</pre>", r"\n```\n\1\n```\n", text, flags=re.DOTALL | re.IGNORECASE)
-        text = re.sub(r"<code[^>]*>(.*?)</code>", r"`\1`", text, flags=re.DOTALL | re.IGNORECASE)
-
-        # Remove todas as tags restantes
+        text = re.sub(r"<p[^>]*>", "\n\n", text, flags=re.IGNORECASE)
+        text = re.sub(r"</p>", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"<hr[^>]*/?>", "\n---\n", text, flags=re.IGNORECASE)
         text = re.sub(r"<[^>]+>", "", text)
 
-        # Decode HTML entities
         text = html_module.unescape(text)
-
-        # Limpa espaçamento
         text = re.sub(r"\n{3,}", "\n\n", text)
-        text = re.sub(r" +", " ", text)
-
+        text = re.sub(r"[ \t]+", " ", text)
         lines = [line.strip() for line in text.splitlines()]
-        return "\n".join(line for line in lines if line)
-
-    def _truncate(self, text: str) -> str:
-        if len(text) > self.MAX_SIZE:
-            return text[:self.MAX_SIZE] + f"\n\n... [TRUNCADO: {len(text)} chars total]"
-        return text
+        text = "\n".join(lines)
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        return text.strip()

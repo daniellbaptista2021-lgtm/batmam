@@ -1,68 +1,79 @@
-"""Ferramenta Glob - busca arquivos por padrão."""
+"""GlobTool avançado — busca de arquivos por padrão glob.
+
+Features: Glob patterns, sort por mtime, paginação.
+"""
 
 from __future__ import annotations
-import fnmatch
 import os
 from pathlib import Path
 from typing import Any
 from .base import BaseTool
 
+SKIP_DIRS = {
+    ".git", "node_modules", "__pycache__", ".venv", "venv",
+    ".tox", ".mypy_cache", ".pytest_cache", "dist", "build",
+    ".next", ".nuxt", "target", "vendor", ".cargo",
+}
+
 
 class GlobTool(BaseTool):
     name = "glob"
     description = (
-        "Busca arquivos por padrão glob (ex: '**/*.py', 'src/**/*.ts'). "
-        "Retorna caminhos dos arquivos encontrados ordenados por modificação."
+        "Busca arquivos por padrão glob (ex: **/*.py, src/**/*.ts). "
+        "Retorna paths ordenados por data de modificação (mais recente primeiro)."
     )
     requires_confirmation = False
-
-    MAX_RESULTS = 500
 
     def get_schema(self) -> dict:
         return {
             "type": "object",
             "properties": {
-                "pattern": {
-                    "type": "string",
-                    "description": "Padrão glob para buscar arquivos (ex: '**/*.py').",
-                },
-                "path": {
-                    "type": "string",
-                    "description": "Diretório base para busca. Padrão: diretório atual.",
-                },
+                "pattern": {"type": "string", "description": "Padrão glob (ex: **/*.py)"},
+                "path": {"type": "string", "description": "Diretório base (padrão: cwd)"},
+                "head_limit": {"type": "integer", "description": "Limitar a N resultados (padrão: 500)"},
             },
             "required": ["pattern"],
         }
 
     def execute(self, **kwargs: Any) -> str:
-        pattern = kwargs.get("pattern", "")
-        base_path = kwargs.get("path") or os.getcwd()
-
+        pattern: str = kwargs.get("pattern", "")
         if not pattern:
-            return "[ERROR] pattern é obrigatório."
+            return "Erro: pattern é obrigatório."
 
-        base = Path(base_path).expanduser().resolve()
+        base_path: str = kwargs.get("path", os.getcwd())
+        head_limit: int = kwargs.get("head_limit", 500)
 
+        base = Path(base_path)
         if not base.exists():
-            return f"[ERROR] Diretório não encontrado: {base}"
+            return f"Diretório não encontrado: {base_path}"
 
         try:
-            matches = sorted(base.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True)
+            matches = list(base.glob(pattern))
         except Exception as e:
-            return f"[ERROR] Erro na busca: {e}"
+            return f"Erro no glob: {e}"
 
-        # Filtra apenas arquivos
-        files = [m for m in matches if m.is_file()]
+        filtered = []
+        for p in matches:
+            if p.is_dir():
+                continue
+            parts = p.relative_to(base).parts
+            if any(part in SKIP_DIRS or part.startswith(".") for part in parts[:-1]):
+                continue
+            try:
+                mtime = p.stat().st_mtime
+                filtered.append((p, mtime))
+            except OSError:
+                continue
 
-        if not files:
-            return f"Nenhum arquivo encontrado para padrão '{pattern}' em {base}"
+        filtered.sort(key=lambda x: x[1], reverse=True)
+        total = len(filtered)
+        showing = filtered[:head_limit]
 
-        total = len(files)
-        shown = files[: self.MAX_RESULTS]
+        lines = [str(p.relative_to(base)) for p, _ in showing]
+        output = "\n".join(lines)
+        if total > head_limit:
+            output += f"\n\n... {total - head_limit} arquivos omitidos (total: {total})"
+        elif not lines:
+            output = f"Nenhum arquivo encontrado para: {pattern}"
 
-        result = "\n".join(str(f) for f in shown)
-
-        if total > self.MAX_RESULTS:
-            result += f"\n\n... [{total - self.MAX_RESULTS} arquivos omitidos]"
-
-        return f"{len(shown)} arquivo(s) encontrado(s):\n{result}"
+        return output

@@ -151,3 +151,73 @@ def _check_custom_rules(tool_name: str, arguments: dict) -> bool | None:
                 return True  # Bloqueia (pede confirmação que será negada)
 
     return None  # Nenhuma regra aplicável
+
+
+# ── Classificação de ações por risco ──────────────────────────
+
+ACTION_CLASSIFICATIONS = {
+    "read": {"reversible": True, "external": False, "level": "safe"},
+    "glob": {"reversible": True, "external": False, "level": "safe"},
+    "grep": {"reversible": True, "external": False, "level": "safe"},
+    "web_search": {"reversible": True, "external": False, "level": "safe"},
+    "web_fetch": {"reversible": True, "external": False, "level": "safe"},
+    "task_list": {"reversible": True, "external": False, "level": "safe"},
+    "task_get": {"reversible": True, "external": False, "level": "safe"},
+    "write": {"reversible": True, "external": False, "level": "write"},
+    "edit": {"reversible": True, "external": False, "level": "write"},
+    "task_create": {"reversible": True, "external": False, "level": "write"},
+    "task_update": {"reversible": True, "external": False, "level": "write"},
+    "notebook_edit": {"reversible": True, "external": False, "level": "write"},
+    "bash": {"reversible": None, "external": None, "level": "varies"},
+    "agent": {"reversible": None, "external": None, "level": "varies"},
+}
+
+BASH_RISK_LEVELS = {
+    "safe": [
+        r"^ls\b", r"^cat\b", r"^head\b", r"^tail\b", r"^wc\b",
+        r"^echo\b", r"^pwd\b", r"^which\b", r"^whoami\b",
+        r"^date\b", r"^env\b", r"^printenv\b",
+        r"^git\s+status", r"^git\s+log", r"^git\s+diff",
+        r"^git\s+branch\b(?!.*-[dD])", r"^git\s+show",
+        r"^python\s+-c\b", r"^node\s+-e\b",
+        r"^pip\s+list", r"^pip\s+show", r"^npm\s+list",
+    ],
+    "write": [
+        r"^git\s+add\b", r"^git\s+commit\b",
+        r"^pip\s+install\b", r"^npm\s+install\b",
+        r"^mkdir\b", r"^touch\b", r"^cp\b", r"^mv\b",
+    ],
+    "dangerous": [
+        r"^rm\b", r"^git\s+push\b", r"^git\s+reset\b",
+        r"^git\s+checkout\s+--", r"^git\s+clean\b",
+        r"^git\s+branch\s+-[dD]\b", r"^git\s+stash\s+drop",
+        r"^docker\s+rm\b", r"^docker\s+rmi\b",
+        r"^kill\b", r"^pkill\b", r"^shutdown\b", r"^reboot\b",
+        r"^chmod\b", r"^chown\b", r"^sudo\b",
+    ],
+}
+
+
+def classify_bash_command(command: str) -> str:
+    """Classifica comando bash: safe, write, dangerous, blocked."""
+    cmd = command.strip()
+    if is_dangerous_command(cmd):
+        return "blocked"
+    for level in ["safe", "dangerous", "write"]:
+        for pattern in BASH_RISK_LEVELS.get(level, []):
+            if re.match(pattern, cmd, re.IGNORECASE):
+                return level
+    return "write"
+
+
+def classify_action(tool_name: str, arguments: dict) -> dict:
+    """Classifica ação completa por risco, reversibilidade e visibilidade."""
+    base = ACTION_CLASSIFICATIONS.get(tool_name, {"reversible": None, "external": None, "level": "write"})
+    result = dict(base)
+    if tool_name == "bash":
+        cmd = arguments.get("command", "")
+        risk = classify_bash_command(cmd)
+        result["level"] = risk
+        result["reversible"] = risk == "safe"
+        result["external"] = bool(re.search(r"curl|wget|ssh|scp|git\s+push", cmd))
+    return result
