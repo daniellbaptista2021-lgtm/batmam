@@ -22,13 +22,17 @@ from typing import Any
 from pathlib import Path
 
 try:
-    from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException, Depends
+    from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException, Depends, UploadFile, File, Form
     from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.staticfiles import StaticFiles
     HAS_FASTAPI = True
 except ImportError:
     HAS_FASTAPI = False
+
+import base64
+import re as _re
+import io
 
 from . import __version__
 from . import config
@@ -317,6 +321,69 @@ def _get_health_data() -> dict:
     }
 
 
+def _build_multimodal_message(text: str, file_data: dict) -> Any:
+    """Monta mensagem multimodal (content blocks) para API Anthropic."""
+    ftype = file_data.get("type", "")
+    content_blocks = []
+
+    if ftype == "image":
+        content_blocks.append({
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": file_data.get("media_type", "image/jpeg"),
+                "data": file_data.get("base64", ""),
+            },
+        })
+        if text:
+            content_blocks.append({"type": "text", "text": text})
+        else:
+            content_blocks.append({"type": "text", "text": "Analise esta imagem e descreva o que voce ve."})
+
+    elif ftype == "pdf":
+        content_blocks.append({
+            "type": "document",
+            "source": {
+                "type": "base64",
+                "media_type": "application/pdf",
+                "data": file_data.get("base64", ""),
+            },
+        })
+        if text:
+            content_blocks.append({"type": "text", "text": text})
+        else:
+            content_blocks.append({"type": "text", "text": "Analise este PDF e resuma o conteudo."})
+
+    elif ftype == "audio":
+        transcription = file_data.get("transcription", "")
+        if transcription and not transcription.startswith("[Erro"):
+            prompt = f"[Audio transcrito do usuario]\nTranscricao: {transcription}"
+            if text:
+                prompt += f"\n\nMensagem adicional: {text}"
+            return prompt
+        else:
+            return text or "[O usuario enviou um audio mas a transcricao nao esta disponivel]"
+
+    elif ftype in ("spreadsheet", "document", "code"):
+        extracted = file_data.get("extracted_text", "")
+        fname = file_data.get("file_name", "arquivo")
+        if ftype == "spreadsheet":
+            prefix = f"[Planilha: {fname}]\n\nDados:\n{extracted}"
+        elif ftype == "code":
+            lang = file_data.get("language", "text")
+            prefix = f"[Codigo: {fname}]\n\n```{lang}\n{extracted}\n```"
+        else:
+            prefix = f"[Documento: {fname}]\n\nConteudo:\n{extracted}"
+        if text:
+            prefix += f"\n\nPedido do usuario: {text}"
+        return prefix
+
+    else:
+        return text or f"[O usuario enviou um arquivo: {file_data.get('file_name', 'arquivo')}]"
+
+    return content_blocks
+
+
 # ── HTML/CSS/JS — SPA Completo ────────────────────────────────
 
 
@@ -530,13 +597,84 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
 
 /* INPUT */
 .input-area{flex-shrink:0;padding:12px 16px;padding-bottom:calc(12px + var(--sb));background:var(--bg-1);border-top:1px solid var(--bd)}
-.ibox{position:relative}
-.ibox textarea{width:100%;background:var(--bg-3);border:1px solid var(--bd);border-radius:14px;padding:14px 52px 14px 18px;color:var(--t1);font-family:var(--sans);font-size:14px;line-height:1.5;resize:none;outline:none;max-height:120px;min-height:20px;transition:border-color .2s,box-shadow .2s}
+.file-preview{padding:8px 12px;display:flex;align-items:center;gap:10px;background:var(--bg-2);border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;animation:mIn .2s ease-out}
+.file-preview .fp-thumb{width:48px;height:48px;border-radius:8px;object-fit:cover;background:var(--bg-3);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;overflow:hidden}
+.file-preview .fp-thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+.file-preview .fp-info{flex:1;min-width:0}
+.file-preview .fp-name{font-size:13px;font-weight:500;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-preview .fp-meta{font-size:11px;color:var(--tm);margin-top:2px}
+.file-preview .fp-close{width:28px;height:28px;border-radius:50%;border:none;background:var(--bg-h);color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:14px;flex-shrink:0}
+.file-preview .fp-close:hover{background:var(--r);color:#fff}
+.audio-preview{padding:10px 12px;display:flex;align-items:center;gap:10px;background:var(--bg-2);border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;animation:mIn .2s ease-out}
+.audio-preview .ap-play{width:36px;height:36px;border-radius:50%;border:none;background:var(--p);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:all .15s}
+.audio-preview .ap-play:hover{background:var(--ph)}
+.audio-preview .ap-bar{flex:1;height:4px;background:var(--bg-h);border-radius:2px;overflow:hidden}
+.audio-preview .ap-fill{height:100%;background:var(--p);border-radius:2px;width:0%;transition:width .1s linear}
+.audio-preview .ap-dur{font-size:11px;color:var(--tm);font-family:var(--mono);flex-shrink:0;min-width:35px;text-align:right}
+.audio-preview .ap-del{width:28px;height:28px;border-radius:50%;border:none;background:var(--bg-h);color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:all .15s}
+.audio-preview .ap-del:hover{background:var(--r);color:#fff}
+.ibox{position:relative;display:flex;align-items:flex-end;gap:6px}
+.attach-btn{width:40px;height:40px;border-radius:50%;border:none;background:transparent;color:var(--tm);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:18px;flex-shrink:0}
+.attach-btn:hover{color:var(--p);background:var(--bg-h)}
+.ibox textarea{flex:1;background:var(--bg-3);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;color:var(--t1);font-family:var(--sans);font-size:14px;line-height:1.5;resize:none;outline:none;max-height:120px;min-height:20px;transition:border-color .2s,box-shadow .2s}
 .ibox textarea::placeholder{color:var(--tm);font-weight:300}
 .ibox textarea:focus{border-color:var(--bdf);box-shadow:0 0 0 3px var(--pg)}
-.sbtn{position:absolute;right:8px;bottom:8px;width:36px;height:36px;border-radius:50%;border:none;background:var(--p);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.ibox-right{display:flex;align-items:center;flex-shrink:0;position:relative;width:40px;height:40px}
+.sbtn,.mic-btn{position:absolute;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s ease}
+.sbtn{background:var(--p);color:#fff;opacity:0;transform:scale(.7);pointer-events:none}
+.sbtn.vis{opacity:1;transform:scale(1);pointer-events:auto}
 .sbtn:hover{background:var(--ph);transform:scale(1.05)}.sbtn:active{transform:scale(.95)}.sbtn:disabled{opacity:.2;cursor:not-allowed;transform:none}
 .sbtn svg{width:16px;height:16px}
+.mic-btn{background:transparent;color:var(--tm);opacity:1;transform:scale(1)}
+.mic-btn.vis{opacity:1;transform:scale(1);pointer-events:auto}
+.mic-btn.hid{opacity:0;transform:scale(.7);pointer-events:none}
+.mic-btn:hover{color:var(--p);background:var(--bg-h)}
+.mic-btn.recording{background:var(--r);color:#fff;animation:micPulse 1.5s ease-in-out infinite}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.4)}50%{box-shadow:0 0 0 8px rgba(248,113,113,0)}}
+.mic-btn svg{width:18px;height:18px}
+.rec-timer{position:absolute;right:50px;bottom:12px;font-size:11px;font-family:var(--mono);color:var(--r);opacity:0;transition:opacity .2s}
+.rec-timer.vis{opacity:1}
+/* Attach Menu */
+.attach-menu{position:absolute;bottom:calc(100% + 8px);left:0;background:var(--bg-2);border:1px solid var(--bd);border-radius:12px;padding:6px;min-width:200px;z-index:60;box-shadow:0 -10px 30px rgba(0,0,0,.3);transform-origin:bottom left;animation:amIn .2s ease}
+@keyframes amIn{from{opacity:0;transform:translateY(8px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.attach-menu .am-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--t2);font-family:var(--sans);transition:background .12s;border:none;background:none;width:100%;text-align:left}
+.attach-menu .am-item:hover{background:var(--bg-h);color:var(--t1)}
+.attach-menu .am-item .am-icon{font-size:16px;width:22px;text-align:center;flex-shrink:0}
+/* Drag overlay */
+.drag-overlay{position:absolute;inset:0;background:rgba(9,9,15,.85);z-index:80;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;border:2px dashed var(--p);border-radius:16px;margin:8px;pointer-events:none}
+.drag-overlay.show{display:flex}
+.drag-overlay .do-icon{font-size:48px;animation:float 2s ease-in-out infinite}
+.drag-overlay .do-text{font-size:16px;font-weight:500;color:var(--p)}
+/* Chat file cards */
+.chat-img{max-width:300px;border-radius:12px;cursor:pointer;transition:transform .2s;margin:6px 0;display:block}
+.chat-img:hover{transform:scale(1.02)}
+.chat-file-card{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-2);border:1px solid var(--bd);border-radius:8px;margin:6px 0;max-width:280px}
+.chat-file-card .cfc-icon{font-size:24px;flex-shrink:0}
+.chat-file-card .cfc-info{flex:1;min-width:0}
+.chat-file-card .cfc-name{font-size:12px;font-weight:500;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-file-card .cfc-meta{font-size:10px;color:var(--tm);margin-top:2px}
+.chat-file-card .cfc-dl{font-size:12px;color:var(--p);text-decoration:none;flex-shrink:0}
+.chat-file-card .cfc-dl:hover{text-decoration:underline}
+/* Audio player inline */
+.chat-audio{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg-2);border:1px solid var(--bd);border-radius:20px;margin:6px 0;max-width:280px}
+.chat-audio .ca-play{width:30px;height:30px;border-radius:50%;border:none;background:var(--p);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;transition:all .15s}
+.chat-audio .ca-play:hover{background:var(--ph)}
+.chat-audio .ca-bar{flex:1;height:3px;background:var(--bg-h);border-radius:2px;overflow:hidden;cursor:pointer}
+.chat-audio .ca-fill{height:100%;background:var(--p);border-radius:2px;width:0%;transition:width .1s linear}
+.chat-audio .ca-dur{font-size:10px;color:var(--tm);font-family:var(--mono);flex-shrink:0}
+.chat-transcription{font-style:italic;color:var(--tm);font-size:12px;margin:4px 0 6px;max-width:280px}
+/* Lightbox */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:200;display:none;align-items:center;justify-content:center;cursor:zoom-out;padding:20px}
+.lightbox.show{display:flex}
+.lightbox img{max-width:95vw;max-height:95vh;object-fit:contain;border-radius:8px}
+.lightbox .lb-close{position:absolute;top:20px;right:20px;width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center}
+/* Upload progress */
+.upload-progress{height:3px;background:var(--bg-h);border-radius:2px;overflow:hidden;margin:4px 0}
+.upload-progress .up-fill{height:100%;background:var(--p);border-radius:2px;transition:width .3s ease;width:0%}
+/* Toast */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bg-2);border:1px solid var(--bd);color:var(--t1);padding:10px 20px;border-radius:10px;font-size:13px;z-index:300;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:toastIn .3s ease}
+.toast.error{border-color:var(--r);color:var(--r)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 
 /* MODAL */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
@@ -695,12 +833,25 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
       </div>
     </div>
   </div>
+  <div class="drag-overlay" id="dragOv"><div class="do-icon">&#x1F4CE;</div><div class="do-text">Solte o arquivo aqui</div></div>
   <div class="input-area">
+    <div id="filePreview"></div>
     <div class="ibox">
+      <button class="attach-btn" id="attachBtn" onclick="toggleAttachMenu()" title="Anexar arquivo">&#x1F4CE;</button>
+      <div class="attach-menu" id="attachMenu" style="display:none">
+        <button class="am-item" onclick="pickFile('image/*','.jpg,.jpeg,.png,.gif,.webp')"><span class="am-icon">&#x1F4F7;</span>Foto / Imagem</button>
+        <button class="am-item" onclick="pickFile('','.pdf,.docx,.doc,.txt,.md')"><span class="am-icon">&#x1F4C4;</span>Documento</button>
+        <button class="am-item" onclick="pickFile('','.xlsx,.xls,.csv')"><span class="am-icon">&#x1F4CA;</span>Planilha</button>
+        <button class="am-item" onclick="pickFile('','*')"><span class="am-icon">&#x1F4C1;</span>Qualquer arquivo</button>
+      </div>
       <textarea id="inp" rows="1" placeholder="O que voce precisa?" autofocus></textarea>
-      <button class="sbtn" id="sBtn" onclick="sendMessage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+      <div class="ibox-right">
+        <button class="mic-btn vis" id="micBtn" onclick="toggleRec()" title="Gravar audio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+        <button class="sbtn" id="sBtn" onclick="sendMessage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+      </div>
     </div>
   </div>
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()"><button class="lb-close" onclick="closeLightbox()">&times;</button><img id="lbImg" src=""></div>
 </div>
 <div class="modal-bg" id="modalBg" onclick="if(event.target===this)clsModal()"><div class="modal" id="modalC"></div></div>
 <script>
@@ -982,8 +1133,262 @@ async function setPlan(id,p){await fetch(`/api/v1/admin/users/${id}`,{method:'PO
 async function togUsr(id,a){await fetch(`/api/v1/admin/users/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({active:a})});showAdmUsers()}
 function clsModal(){document.getElementById('modalBg').classList.remove('show')}
 I.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}});
-I.addEventListener('input',()=>{I.style.height='auto';I.style.height=Math.min(I.scrollHeight,120)+'px'});
+I.addEventListener('input',()=>{I.style.height='auto';I.style.height=Math.min(I.scrollHeight,120)+'px';toggleInputBtns()});
 let lte=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lte<=300)e.preventDefault();lte=n},false);
+
+// ── FILE & AUDIO SUPPORT ──────────────────────────────────────
+const MIC=document.getElementById('micBtn'),FP=document.getElementById('filePreview');
+let pendingFile=null,mediaRec=null,audioChunks=[],recStart=0,recTimer=null,audioBlob=null,audioUrl=null;
+const fileInput=document.createElement('input');fileInput.type='file';fileInput.style.display='none';document.body.appendChild(fileInput);
+
+function toggleInputBtns(){
+  const has=I.value.trim().length>0||pendingFile||audioBlob;
+  SB.classList.toggle('vis',has);
+  MIC.classList.toggle('hid',has);
+  MIC.classList.toggle('vis',!has);
+}
+
+// ── Attach Menu ──
+function toggleAttachMenu(){
+  const m=document.getElementById('attachMenu');
+  m.style.display=m.style.display==='none'?'block':'none';
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.attach-btn')&&!e.target.closest('.attach-menu'))document.getElementById('attachMenu').style.display='none'});
+
+function pickFile(accept,exts){
+  document.getElementById('attachMenu').style.display='none';
+  fileInput.accept=exts==='*'?'':exts;
+  fileInput.value='';
+  fileInput.onchange=()=>{if(fileInput.files[0])handleFile(fileInput.files[0])};
+  fileInput.click();
+}
+
+async function handleFile(f){
+  if(f.size>20*1024*1024){showToast('Arquivo muito grande. Maximo: 20MB','error');return}
+  const blocked=['.exe','.bat','.sh','.cmd','.com','.msi','.scr','.ps1'];
+  const ext='.'+f.name.split('.').pop().toLowerCase();
+  if(blocked.includes(ext)){showToast('Tipo de arquivo nao permitido','error');return}
+  pendingFile={file:f,name:f.name,size:f.size,ext:ext};
+  showFilePreview(f);
+  toggleInputBtns();
+}
+
+function showFilePreview(f){
+  const ext='.'+f.name.split('.').pop().toLowerCase();
+  const isImg=['.jpg','.jpeg','.png','.gif','.webp'].includes(ext);
+  let iconHtml='&#x1F4C1;';
+  if(isImg)iconHtml='';
+  else if(ext==='.pdf')iconHtml='&#x1F4D5;';
+  else if(['.xlsx','.xls','.csv'].includes(ext))iconHtml='&#x1F4CA;';
+  else if(['.docx','.doc','.txt','.md'].includes(ext))iconHtml='&#x1F4C4;';
+  else if(['.py','.js','.ts','.html','.css','.json','.jsx','.tsx'].includes(ext))iconHtml='&#x1F4BB;';
+  const sz=f.size>1024*1024?(f.size/1024/1024).toFixed(1)+' MB':(f.size/1024).toFixed(1)+' KB';
+  let thumbHtml;
+  if(isImg){
+    const url=URL.createObjectURL(f);
+    thumbHtml='<div class="fp-thumb"><img src="'+url+'" alt="preview"></div>';
+  }else{
+    thumbHtml='<div class="fp-thumb">'+iconHtml+'</div>';
+  }
+  FP.innerHTML='<div class="file-preview">'+thumbHtml+'<div class="fp-info"><div class="fp-name">'+esc(f.name)+'</div><div class="fp-meta">'+sz+'</div></div><button class="fp-close" onclick="clearFile()">&times;</button></div>';
+}
+
+function clearFile(){pendingFile=null;FP.innerHTML='';toggleInputBtns()}
+
+// ── Audio Recording ──
+function toggleRec(){
+  if(mediaRec&&mediaRec.state==='recording'){stopRec();return}
+  startRec();
+}
+
+async function startRec(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    mediaRec=new MediaRecorder(stream,{mimeType:'audio/webm'});
+    audioChunks=[];
+    mediaRec.ondataavailable=e=>{if(e.data.size>0)audioChunks.push(e.data)};
+    mediaRec.onstop=()=>{stream.getTracks().forEach(t=>t.stop());audioBlob=new Blob(audioChunks,{type:'audio/webm'});audioUrl=URL.createObjectURL(audioBlob);showAudioPreview()};
+    mediaRec.start();
+    MIC.classList.add('recording');
+    recStart=Date.now();
+    recTimer=setInterval(()=>{
+      const s=Math.floor((Date.now()-recStart)/1000);
+      const mm=Math.floor(s/60),ss=s%60;
+      MIC.title=mm+':'+(ss<10?'0':'')+ss;
+    },500);
+    // Auto-stop at 5 min
+    setTimeout(()=>{if(mediaRec&&mediaRec.state==='recording')stopRec()},300000);
+  }catch(e){showToast('Nao foi possivel acessar o microfone','error')}
+}
+
+function stopRec(){
+  if(mediaRec&&mediaRec.state==='recording'){
+    mediaRec.stop();
+    MIC.classList.remove('recording');
+    clearInterval(recTimer);
+    MIC.title='Gravar audio';
+  }
+}
+
+function showAudioPreview(){
+  const dur=Math.floor((Date.now()-recStart)/1000);
+  const mm=Math.floor(dur/60),ss=dur%60;
+  const ts=mm+':'+(ss<10?'0':'')+ss;
+  FP.innerHTML='<div class="audio-preview"><button class="ap-play" id="apPlay" onclick="playPreviewAudio()">&#x25B6;</button><div class="ap-bar"><div class="ap-fill" id="apFill"></div></div><span class="ap-dur">'+ts+'</span><button class="ap-del" onclick="clearAudio()">&#x1F5D1;</button></div>';
+  toggleInputBtns();
+}
+
+let previewAudio=null;
+function playPreviewAudio(){
+  if(!audioUrl)return;
+  if(previewAudio){previewAudio.pause();previewAudio=null;document.getElementById('apPlay').innerHTML='&#x25B6;';return}
+  previewAudio=new Audio(audioUrl);
+  document.getElementById('apPlay').innerHTML='&#x23F8;';
+  previewAudio.ontimeupdate=()=>{const p=(previewAudio.currentTime/previewAudio.duration*100)||0;document.getElementById('apFill').style.width=p+'%'};
+  previewAudio.onended=()=>{document.getElementById('apPlay').innerHTML='&#x25B6;';document.getElementById('apFill').style.width='0%';previewAudio=null};
+  previewAudio.play();
+}
+
+function clearAudio(){audioBlob=null;audioUrl=null;FP.innerHTML='';if(previewAudio){previewAudio.pause();previewAudio=null}toggleInputBtns()}
+
+// ── Upload & Send ──
+async function uploadFile(f){
+  const fd=new FormData();
+  fd.append('file',f);
+  fd.append('message',I.value.trim());
+  try{
+    const r=await fetch('/api/v1/upload',{method:'POST',body:fd});
+    if(!r.ok){const e=await r.json().catch(()=>({error:'Erro no upload'}));showToast(e.error||'Erro','error');return null}
+    return await r.json();
+  }catch(e){showToast('Erro no upload: '+e.message,'error');return null}
+}
+
+// Override sendMessage to handle files/audio
+const _origSendMessage=sendMessage;
+sendMessage=async function(){
+  // Audio pending?
+  if(audioBlob){
+    const text=I.value.trim();
+    addUserWithAttachment(text,'audio','&#x1F3A4;','Audio',null,audioUrl);
+    I.value='';I.style.height='auto';proc=true;SB.disabled=true;
+    const audioFile=new File([audioBlob],'audio.webm',{type:'audio/webm'});
+    clearAudio();
+    showThink();
+    const res=await uploadFile(audioFile);
+    hideThink();
+    if(!res||!res.ok){finishTurn();return}
+    // Send to chat
+    const fileData={type:'audio',transcription:res.transcription||'',has_transcription:res.has_transcription,file_name:'audio.webm',file_url:res.file_url};
+    if(http){await sendFileHTTP(text,fileData)}
+    else if(ws&&ws.readyState===1){ws.send(JSON.stringify({type:'message',content:text||res.transcription||'[audio]',file_data:fileData}));proc=true;SB.disabled=true}
+    else{finishTurn()}
+    return;
+  }
+  // File pending?
+  if(pendingFile){
+    const text=I.value.trim();
+    const f=pendingFile;
+    const isImg=['.jpg','.jpeg','.png','.gif','.webp'].includes(f.ext);
+    const imgUrl=isImg?URL.createObjectURL(f.file):null;
+    const icons={'.pdf':'&#x1F4D5;','.xlsx':'&#x1F4CA;','.xls':'&#x1F4CA;','.csv':'&#x1F4CA;','.docx':'&#x1F4C4;','.doc':'&#x1F4C4;','.txt':'&#x1F4C4;','.md':'&#x1F4C4;'};
+    const icon=icons[f.ext]||'&#x1F4C1;';
+    addUserWithAttachment(text,isImg?'image':'file',icon,f.name,imgUrl);
+    I.value='';I.style.height='auto';proc=true;SB.disabled=true;
+    const theFile=f.file;
+    clearFile();
+    showThink();
+    const res=await uploadFile(theFile);
+    hideThink();
+    if(!res||!res.ok){finishTurn();return}
+    const fileData={...res};
+    if(http){await sendFileHTTP(text,fileData)}
+    else if(ws&&ws.readyState===1){ws.send(JSON.stringify({type:'message',content:text,file_data:fileData}));proc=true;SB.disabled=true}
+    else{finishTurn()}
+    return;
+  }
+  // Normal text
+  _origSendMessage();
+};
+
+function addUserWithAttachment(text,type,icon,name,imgUrl,audUrl){
+  const w=document.getElementById('welc');if(w)w.remove();
+  const wm=document.getElementById('wmark');if(wm)wm.classList.remove('empty');
+  const d=document.createElement('div');d.className='ml user';
+  let attachHtml='';
+  if(type==='image'&&imgUrl){
+    attachHtml='<img class="chat-img" src="'+imgUrl+'" onclick="openLightbox(this.src)" alt="imagem">';
+  }else if(type==='audio'){
+    attachHtml='<div class="chat-audio"><button class="ca-play" onclick="playChatAudio(this,\''+esc(audUrl||'')+'\')">&#x25B6;</button><div class="ca-bar"><div class="ca-fill"></div></div><span class="ca-dur">0:00</span></div>';
+  }else{
+    const sz=pendingFile?(pendingFile.size>1024*1024?(pendingFile.size/1024/1024).toFixed(1)+' MB':(pendingFile.size/1024).toFixed(1)+' KB'):'';
+    attachHtml='<div class="chat-file-card"><span class="cfc-icon">'+icon+'</span><div class="cfc-info"><div class="cfc-name">'+esc(name)+'</div><div class="cfc-meta">'+sz+'</div></div></div>';
+  }
+  d.innerHTML='<div class="mh"><span class="mt">'+now()+'</span><span class="mn">voce</span><div class="mav">'+(me?me.email[0].toUpperCase():'?')+'</div></div><div class="mb-wrap">'+attachHtml+(text?'<div class="mb">'+esc(text)+'</div>':'')+'</div>';
+  T.appendChild(d);scrl();
+  convMsgCount++;
+  if(!cid){fetch('/api/v1/conversations',{method:'POST'}).then(r=>r.json()).then(d=>{cid=d.id;autoTitle(text||name);loadConvs()})}
+}
+
+async function sendFileHTTP(text,fileData){
+  showThink();
+  try{
+    const content=text||'[arquivo enviado]';
+    const body={content:content,session_id:hSid,conversation_id:cid,model:selMod,file_data:fileData};
+    const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    hideThink();
+    if(!r.ok){const e=await r.json().catch(()=>({error:'Erro'}));showErr(e.error||'Erro');finishTurn();return}
+    const d=await r.json();
+    hSid=d.session_id||hSid;
+    if(d.response){appendTxt(d.response);finishTxt()}
+    finishTurn();
+  }catch(e){hideThink();showErr('Erro: '+e.message);finishTurn()}
+}
+
+// ── Drag & Drop ──
+const mainEl=document.querySelector('.main');
+let dragCounter=0;
+mainEl.addEventListener('dragenter',e=>{e.preventDefault();dragCounter++;document.getElementById('dragOv').classList.add('show')});
+mainEl.addEventListener('dragleave',e=>{e.preventDefault();dragCounter--;if(dragCounter<=0){dragCounter=0;document.getElementById('dragOv').classList.remove('show')}});
+mainEl.addEventListener('dragover',e=>e.preventDefault());
+mainEl.addEventListener('drop',e=>{e.preventDefault();dragCounter=0;document.getElementById('dragOv').classList.remove('show');if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0])});
+
+// ── Ctrl+V Paste ──
+document.addEventListener('paste',e=>{
+  const items=e.clipboardData&&e.clipboardData.items;
+  if(!items)return;
+  for(let i=0;i<items.length;i++){
+    if(items[i].type.indexOf('image')!==-1){
+      const f=items[i].getAsFile();
+      if(f){e.preventDefault();handleFile(f)}
+      break;
+    }
+  }
+});
+
+// ── Lightbox ──
+function openLightbox(src){const lb=document.getElementById('lightbox');document.getElementById('lbImg').src=src;lb.classList.add('show')}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('show')}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox()});
+
+// ── Chat audio player ──
+function playChatAudio(btn,url){
+  const wrap=btn.closest('.chat-audio');
+  const fill=wrap.querySelector('.ca-fill');
+  const durEl=wrap.querySelector('.ca-dur');
+  if(btn._audio){btn._audio.pause();btn._audio=null;btn.innerHTML='&#x25B6;';fill.style.width='0%';return}
+  const a=new Audio(url);btn._audio=a;btn.innerHTML='&#x23F8;';
+  a.ontimeupdate=()=>{const p=(a.currentTime/a.duration*100)||0;fill.style.width=p+'%';const s=Math.floor(a.currentTime);durEl.textContent=Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60)};
+  a.onended=()=>{btn.innerHTML='&#x25B6;';fill.style.width='0%';btn._audio=null;durEl.textContent='0:00'};
+  a.play();
+}
+
+// ── Toast ──
+function showToast(msg,type){
+  const t=document.createElement('div');t.className='toast'+(type==='error'?' error':'');t.textContent=msg;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),3500);
+}
+
+toggleInputBtns();
 init();
 </script>
 </body>
@@ -1630,6 +2035,255 @@ if HAS_FASTAPI:
             update_conversation_title(conv_id, title)
         return JSONResponse({"ok": True})
 
+    # ── API: Upload de Arquivos ─────────────────────────────────────
+
+    _ALLOWED_IMAGE_EXT = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+    _ALLOWED_DOC_EXT = {".pdf", ".docx", ".doc", ".txt", ".md"}
+    _ALLOWED_SHEET_EXT = {".xlsx", ".xls", ".csv"}
+    _ALLOWED_CODE_EXT = {".py", ".js", ".html", ".css", ".json", ".ts", ".jsx", ".tsx"}
+    _ALLOWED_AUDIO_EXT = {".webm", ".mp3", ".ogg", ".wav", ".m4a"}
+    _BLOCKED_EXT = {".exe", ".bat", ".sh", ".cmd", ".com", ".msi", ".scr", ".ps1"}
+    _MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
+    _UPLOAD_LIMITS = {"free": 5, "basic": 20, "pro": 100, "unlimited": 0}
+    _upload_counts: dict[str, dict] = {}  # user_id -> {"date": "YYYY-MM-DD", "count": N}
+
+    def _check_upload_limit(user_id: str, plan: str) -> bool:
+        import datetime
+        today = datetime.date.today().isoformat()
+        rec = _upload_counts.get(user_id, {"date": "", "count": 0})
+        if rec["date"] != today:
+            rec = {"date": today, "count": 0}
+        limit = _UPLOAD_LIMITS.get(plan, 5)
+        if limit == 0:
+            return True
+        return rec["count"] < limit
+
+    def _inc_upload_count(user_id: str):
+        import datetime
+        today = datetime.date.today().isoformat()
+        rec = _upload_counts.get(user_id, {"date": "", "count": 0})
+        if rec["date"] != today:
+            rec = {"date": today, "count": 0}
+        rec["count"] += 1
+        _upload_counts[user_id] = rec
+
+    def _sanitize_filename(name: str) -> str:
+        name = _re.sub(r'[^\w\-_. ]', '', name)
+        return name.strip()[:100] or "arquivo"
+
+    def _format_size(size: int) -> str:
+        if size > 1024 * 1024:
+            return f"{size / (1024*1024):.1f} MB"
+        if size > 1024:
+            return f"{size / 1024:.1f} KB"
+        return f"{size} bytes"
+
+    def _extract_text_docx(data: bytes) -> str:
+        try:
+            from docx import Document
+            doc = Document(io.BytesIO(data))
+            return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+        except Exception as e:
+            return f"[Erro ao ler DOCX: {e}]"
+
+    def _extract_text_xlsx(data: bytes) -> tuple[str, int]:
+        try:
+            from openpyxl import load_workbook
+            wb = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+            lines = []
+            total_rows = 0
+            for sheet in wb.worksheets:
+                lines.append(f"\n### Aba: {sheet.title}\n")
+                rows = list(sheet.iter_rows(values_only=True))
+                total_rows += len(rows)
+                if rows:
+                    # Header
+                    header = [str(c) if c is not None else "" for c in rows[0]]
+                    lines.append("| " + " | ".join(header) + " |")
+                    lines.append("| " + " | ".join(["---"] * len(header)) + " |")
+                    for row in rows[1:51]:
+                        cells = [str(c) if c is not None else "" for c in row]
+                        lines.append("| " + " | ".join(cells) + " |")
+                    if len(rows) > 51:
+                        lines.append(f"\n... e mais {len(rows) - 51} linhas")
+            wb.close()
+            return "\n".join(lines), total_rows
+        except Exception as e:
+            return f"[Erro ao ler XLSX: {e}]", 0
+
+    def _extract_text_csv(data: bytes) -> tuple[str, int]:
+        import csv
+        try:
+            text = data.decode("utf-8", errors="replace")
+            reader = csv.reader(io.StringIO(text))
+            rows = list(reader)
+            lines = []
+            if rows:
+                header = rows[0]
+                lines.append("| " + " | ".join(header) + " |")
+                lines.append("| " + " | ".join(["---"] * len(header)) + " |")
+                for row in rows[1:51]:
+                    lines.append("| " + " | ".join(row) + " |")
+                if len(rows) > 51:
+                    lines.append(f"\n... e mais {len(rows) - 51} linhas")
+            return "\n".join(lines), len(rows)
+        except Exception as e:
+            return f"[Erro ao ler CSV: {e}]", 0
+
+    def _resize_image(data: bytes, max_px: int = 2000) -> bytes:
+        try:
+            from PIL import Image
+            img = Image.open(io.BytesIO(data))
+            if max(img.size) > max_px:
+                img.thumbnail((max_px, max_px), Image.LANCZOS)
+                buf = io.BytesIO()
+                fmt = img.format or "JPEG"
+                if fmt.upper() == "WEBP":
+                    img.save(buf, format="WEBP", quality=85)
+                else:
+                    img.save(buf, format="JPEG", quality=85)
+                return buf.getvalue()
+        except Exception:
+            pass
+        return data
+
+    async def _transcribe_audio(file_path: str) -> str:
+        """Transcreve audio usando Whisper API da OpenAI."""
+        openai_key = config.OPENAI_API_KEY
+        if not openai_key:
+            return ""
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=openai_key)
+            with open(file_path, "rb") as f:
+                result = client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=f,
+                    language="pt",
+                )
+            return result.text or ""
+        except Exception as e:
+            return f"[Erro na transcricao: {e}]"
+
+    @app.post("/api/v1/upload")
+    async def api_upload(request: Request, file: UploadFile = File(...), message: str = Form("")):
+        """Upload de arquivo com processamento automatico."""
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+
+        user_id = sess["user_id"]
+        user_plan = sess.get("plan", "free")
+
+        if not _check_upload_limit(user_id, user_plan):
+            limit = _UPLOAD_LIMITS.get(user_plan, 5)
+            return JSONResponse({"error": f"Limite de {limit} uploads/dia atingido. Faca upgrade do plano."}, status_code=429)
+
+        # Lê arquivo
+        data = await file.read()
+        if len(data) > _MAX_FILE_SIZE:
+            return JSONResponse({"error": "Arquivo muito grande. Maximo: 20MB"}, status_code=413)
+
+        original_name = file.filename or "arquivo"
+        safe_name = _sanitize_filename(original_name)
+        ext = Path(original_name).suffix.lower()
+
+        if ext in _BLOCKED_EXT:
+            return JSONResponse({"error": f"Tipo de arquivo nao permitido: {ext}"}, status_code=400)
+
+        # Salva arquivo
+        upload_dir = Path(__file__).parent.parent / "static" / "uploads" / user_id
+        upload_dir.mkdir(parents=True, exist_ok=True)
+        ts = int(time.time())
+        saved_name = f"{ts}_{safe_name}"
+        saved_path = upload_dir / saved_name
+        saved_path.write_bytes(data)
+
+        _inc_upload_count(user_id)
+        file_size = len(data)
+        file_url = f"/static/uploads/{user_id}/{saved_name}"
+
+        result: dict[str, Any] = {
+            "ok": True,
+            "file_name": safe_name,
+            "file_url": file_url,
+            "file_size": _format_size(file_size),
+            "file_ext": ext,
+            "type": "unknown",
+        }
+
+        # Processa por tipo
+        if ext in _ALLOWED_IMAGE_EXT:
+            resized = _resize_image(data)
+            media_type = {
+                ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+                ".gif": "image/gif", ".webp": "image/webp",
+            }.get(ext, "image/jpeg")
+            b64 = base64.b64encode(resized).decode("ascii")
+            result["type"] = "image"
+            result["media_type"] = media_type
+            result["base64"] = b64
+
+        elif ext == ".pdf":
+            b64 = base64.b64encode(data).decode("ascii")
+            # Conta paginas
+            pages = 0
+            try:
+                from PyPDF2 import PdfReader
+                reader = PdfReader(io.BytesIO(data))
+                pages = len(reader.pages)
+            except Exception:
+                pass
+            if pages > 50:
+                result["warning"] = f"PDF com {pages} paginas. Apenas as primeiras 50 serao analisadas."
+            result["type"] = "pdf"
+            result["media_type"] = "application/pdf"
+            result["base64"] = b64
+            result["pages"] = pages
+
+        elif ext in _ALLOWED_SHEET_EXT:
+            if ext == ".csv":
+                text, rows = _extract_text_csv(data)
+            else:
+                text, rows = _extract_text_xlsx(data)
+            result["type"] = "spreadsheet"
+            result["extracted_text"] = text
+            result["rows"] = rows
+
+        elif ext in _ALLOWED_DOC_EXT:
+            if ext == ".docx":
+                text = _extract_text_docx(data)
+            else:
+                text = data.decode("utf-8", errors="replace")
+            words = len(text.split())
+            if words > 5000:
+                text = " ".join(text.split()[:5000]) + f"\n\n... (truncado, {words} palavras total)"
+            result["type"] = "document"
+            result["extracted_text"] = text
+            result["words"] = words
+
+        elif ext in _ALLOWED_CODE_EXT:
+            text = data.decode("utf-8", errors="replace")
+            lang_map = {".py": "python", ".js": "javascript", ".ts": "typescript",
+                        ".html": "html", ".css": "css", ".json": "json", ".jsx": "jsx", ".tsx": "tsx"}
+            result["type"] = "code"
+            result["extracted_text"] = text
+            result["language"] = lang_map.get(ext, "text")
+
+        elif ext in _ALLOWED_AUDIO_EXT:
+            # Transcreve audio
+            loop = asyncio.get_event_loop()
+            transcription = await _transcribe_audio(str(saved_path))
+            result["type"] = "audio"
+            result["transcription"] = transcription
+            result["has_transcription"] = bool(transcription and not transcription.startswith("[Erro"))
+
+        else:
+            result["type"] = "file"
+
+        track_action("file_upload", f"{ext}: {safe_name}", "ok")
+        return JSONResponse(result)
+
     # ── API: Usage ───────────────────────────────────────────────────
 
     @app.get("/api/v1/usage")
@@ -1819,8 +2473,9 @@ if HAS_FASTAPI:
         conv_id = body.get("conversation_id", "")
         session_id = body.get("session_id", "")
         chosen_model = body.get("model", "haiku")  # haiku ou sonnet
+        file_data = body.get("file_data")
 
-        if not content:
+        if not content and not file_data:
             return JSONResponse({"error": "content vazio"}, status_code=400)
 
         user_email = sess["email"]
@@ -2090,8 +2745,14 @@ if HAS_FASTAPI:
         agent.on_tool_call = on_tool_call
         agent.on_tool_result = on_tool_result
 
+        # Monta mensagem multimodal se tem arquivo
+        if file_data:
+            user_msg = _build_multimodal_message(content, file_data)
+        else:
+            user_msg = content
+
         try:
-            result = await loop.run_in_executor(None, agent.run_turn, content)
+            result = await loop.run_in_executor(None, agent.run_turn, user_msg)
         except Exception as e:
             return JSONResponse({
                 "session_id": session_id,
@@ -2189,7 +2850,9 @@ if HAS_FASTAPI:
                 data = await websocket.receive_json()
                 if data.get("type") == "message":
                     content = data.get("content", "")
-                    if not content:
+                    file_data = data.get("file_data")
+
+                    if not content and not file_data:
                         continue
 
                     track_action("user_message", content[:60])
@@ -2197,10 +2860,16 @@ if HAS_FASTAPI:
                     # Envia thinking
                     await websocket.send_json({"type": "thinking_start"})
 
+                    # Monta mensagem multimodal se tem arquivo
+                    if file_data:
+                        user_msg = _build_multimodal_message(content, file_data)
+                    else:
+                        user_msg = content
+
                     # Executa agente em thread separada
                     try:
                         result = await loop.run_in_executor(
-                            None, agent.run_turn, content
+                            None, agent.run_turn, user_msg
                         )
                         track_action("agent_response", result[:60] if result else "")
                     except Exception as e:

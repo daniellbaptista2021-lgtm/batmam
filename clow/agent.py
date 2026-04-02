@@ -165,22 +165,26 @@ class Agent:
 
     # ── Main Turn Loop ─────────────────────────────────────────
 
-    def run_turn(self, user_message: str) -> str:
-        """Executa um turno completo com streaming."""
+    def run_turn(self, user_message) -> str:
+        """Executa um turno completo com streaming.
+
+        user_message pode ser str (texto) ou list (content blocks multimodais).
+        """
 
         # Hook pre_turn
+        msg_text = user_message if isinstance(user_message, str) else "[multimodal message]"
         pre_results = self.hooks.run_hooks(
-            "pre_turn", {"user_message": user_message}, self.cwd
+            "pre_turn", {"user_message": msg_text}, self.cwd
         )
         for hr in pre_results:
             if hr.blocked:
                 return f"[Hook bloqueou execucao] {hr.feedback}"
 
         self.session.messages.append({"role": "user", "content": user_message})
-        log_action("turn_start", user_message[:80], session_id=self.session.id)
+        log_action("turn_start", msg_text[:80], session_id=self.session.id)
 
         # Auto-memory: detecta correcoes e confirmacoes
-        if not self.is_subagent:
+        if not self.is_subagent and isinstance(user_message, str):
             self._check_auto_memory(user_message)
 
         turn = Turn(user_message=user_message)
