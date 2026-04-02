@@ -88,42 +88,52 @@ async def _auth_dependency(request: Request) -> None:
     raise HTTPException(status_code=401, detail="API key invalida ou ausente")
 
 
-# ── Login / Sessao Web ──────────────────────────────────────────
+# ── Login / Sessao Web (SQLite backed) ──────────────────────────
 
-_WEB_USERS: dict[str, str] = {
-    "daniellbaptista2021@gmail.com": hashlib.sha256("Dan24851388.@".encode()).hexdigest(),
-}
+from .database import (
+    authenticate_user, create_user, get_user_by_email, get_user_by_id,
+    list_users, update_user, log_usage, get_user_usage_today, check_limit,
+    get_admin_stats, create_conversation, list_conversations, delete_conversation,
+    save_message, get_messages, update_conversation_title, PLANS, ADMIN_EMAIL,
+)
 
-_web_sessions: dict[str, dict] = {}  # token -> {"email": ..., "created": ...}
+_web_sessions: dict[str, dict] = {}  # token -> {"email", "user_id", "is_admin", "created"}
 _SESSION_TTL = 86400 * 7  # 7 dias
 
 
-def _create_session(email: str) -> str:
+def _create_session(user: dict) -> str:
     token = secrets.token_urlsafe(48)
-    _web_sessions[token] = {"email": email, "created": time.time()}
+    _web_sessions[token] = {
+        "email": user["email"],
+        "user_id": user["id"],
+        "is_admin": bool(user.get("is_admin")),
+        "plan": user.get("plan", "free"),
+        "created": time.time(),
+    }
     return token
 
 
-def _validate_session(token: str) -> str | None:
+def _validate_session(token: str) -> dict | None:
     sess = _web_sessions.get(token)
     if not sess:
         return None
     if time.time() - sess["created"] > _SESSION_TTL:
         del _web_sessions[token]
         return None
-    return sess["email"]
+    return sess
 
 
 def _get_session_from_request(request: Request) -> str | None:
+    """Returns email string for backwards compat."""
+    token = request.cookies.get("clow_session", "")
+    sess = _validate_session(token)
+    return sess["email"] if sess else None
+
+
+def _get_user_session(request: Request) -> dict | None:
+    """Returns full session dict."""
     token = request.cookies.get("clow_session", "")
     return _validate_session(token)
-
-
-def _require_login(request: Request) -> str:
-    email = _get_session_from_request(request)
-    if not email:
-        raise HTTPException(status_code=302, headers={"Location": "/login"})
-    return email
 
 
 # ── Rate Limiting ────────────────────────────────────────────────
@@ -523,6 +533,30 @@ WEBAPP_HTML = r'''<!DOCTYPE html>
     border-radius: 4px;
     border: 1px solid var(--border);
   }
+  .quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    max-width: 360px;
+    margin: 20px auto 0;
+  }
+  .qa-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  .qa-card:hover, .qa-card:active {
+    border-color: var(--border-focus);
+    background: var(--bg-tertiary);
+    transform: translateY(-1px);
+  }
+  .qa-icon { font-size: 18px; margin-bottom: 6px; }
+  .qa-title { font-size: 11px; font-weight: 600; color: var(--text-primary); }
+  .qa-desc { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
 
   /* ── Message Lines ── */
   .msg-line {
@@ -978,13 +1012,55 @@ WEBAPP_HTML = r'''<!DOCTYPE html>
 
 <!-- Terminal -->
 <div class="terminal" id="terminal">
-  <div class="welcome">
+  <div class="welcome" id="welcomeBlock">
     <svg class="welcome-infinity" viewBox="0 0 32 32">
       <path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(0.95)" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round"/>
     </svg>
     <h2>System Clow</h2>
     <p>AI Code Agent — terminal inteligente na palma da mao</p>
     <span class="ver">v''' + __version__ + r'''</span>
+    <div class="quick-actions">
+      <div class="qa-card" onclick="quickAction('Cria uma landing page de ')">
+        <div class="qa-icon">&#x1F310;</div>
+        <div class="qa-title">Landing Page</div>
+        <div class="qa-desc">Gerar site completo</div>
+      </div>
+      <div class="qa-card" onclick="quickAction('Gera uma planilha de ')">
+        <div class="qa-icon">&#x1F4CA;</div>
+        <div class="qa-title">Planilha</div>
+        <div class="qa-desc">Excel profissional</div>
+      </div>
+      <div class="qa-card" onclick="quickAction('Cria uma apresentacao sobre ')">
+        <div class="qa-icon">&#x1F3AC;</div>
+        <div class="qa-title">Apresentacao</div>
+        <div class="qa-desc">Slides PowerPoint</div>
+      </div>
+      <div class="qa-card" onclick="quickAction('Faz um documento de ')">
+        <div class="qa-icon">&#x1F4C4;</div>
+        <div class="qa-title">Documento</div>
+        <div class="qa-desc">Word formatado</div>
+      </div>
+      <div class="qa-card" onclick="quickAction('Me faz um app de ')">
+        <div class="qa-icon">&#x26A1;</div>
+        <div class="qa-title">Web App</div>
+        <div class="qa-desc">App funcional</div>
+      </div>
+      <div class="qa-card" onclick="quickAction('Ideias de conteudo para instagram sobre ')">
+        <div class="qa-icon">&#x1F4F1;</div>
+        <div class="qa-title">Conteudo</div>
+        <div class="qa-desc">Ideias p/ redes</div>
+      </div>
+      <div class="qa-card" onclick="quickAction('Gera copy para anuncio de ')">
+        <div class="qa-icon">&#x1F4DD;</div>
+        <div class="qa-title">Copy Ads</div>
+        <div class="qa-desc">Texto p/ anuncios</div>
+      </div>
+      <div class="qa-card" onclick="quickAction('/help')">
+        <div class="qa-icon">&#x2753;</div>
+        <div class="qa-title">Ajuda</div>
+        <div class="qa-desc">Comandos e dicas</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1124,6 +1200,7 @@ function now() {
 }
 
 function addUserMsg(text) {
+  hideWelcome();
   const div = document.createElement('div');
   div.className = 'msg-line user';
   div.innerHTML = `
@@ -1316,6 +1393,21 @@ document.addEventListener('touchend', (e) => {
   if (now - lastTouchEnd <= 300) e.preventDefault();
   lastTouchEnd = now;
 }, false);
+
+function quickAction(text) {
+  if (text.startsWith('/')) {
+    inputEl.value = text;
+    sendMessage();
+  } else {
+    inputEl.value = text;
+    inputEl.focus();
+  }
+}
+
+function hideWelcome() {
+  const w = document.getElementById('welcomeBlock');
+  if (w) w.style.display = 'none';
+}
 
 // Init
 connectWS();
@@ -1794,9 +1886,74 @@ LOGIN_HTML = r'''<!DOCTYPE html>
     <button class="login-btn" type="submit">Entrar</button>
   </form>
   <div class="error-msg __ERROR_CLASS__">__ERROR_MSG__</div>
+  <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--text-muted)">
+    Nao tem conta? <a href="/register" style="color:var(--purple);text-decoration:none;font-weight:600">Criar conta</a>
+  </div>
 </div>
 </body>
 </html>
+'''
+
+
+ADMIN_HTML = r'''<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="theme-color" content="#0a0a0f"><title>Clow Admin</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap');
+:root{--bg:#06060b;--s1:#0a0a0f;--s2:#111118;--s3:#16161f;--t1:#f0f0f5;--t2:#9d9db5;--tm:#55556a;--p:#a78bfa;--pb:#c4b5fd;--pd:#7c3aed;--g:#34d399;--r:#f87171;--b:rgba(167,139,250,.12);--bf:rgba(167,139,250,.4);--f:"JetBrains Mono",monospace}
+*{margin:0;padding:0;box-sizing:border-box}body{background:var(--bg);color:var(--t1);font-family:var(--f);font-size:13px}
+.bar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:var(--s1);border-bottom:1px solid var(--b);height:52px;position:sticky;top:0;z-index:10}
+.logo{font-size:20px;font-weight:700;letter-spacing:2px;background:linear-gradient(135deg,var(--pb),var(--p));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav a{color:var(--t2);font-size:10px;text-decoration:none;padding:5px 10px;border:1px solid var(--b);border-radius:6px;margin-left:8px}
+.nav a:hover{color:var(--p);border-color:var(--bf)}
+.wrap{max-width:900px;margin:0 auto;padding:24px 16px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:28px}
+.stat{background:var(--s2);border:1px solid var(--b);border-radius:12px;padding:16px}
+.stat-label{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--tm);margin-bottom:8px}
+.stat-val{font-size:28px;font-weight:700;background:linear-gradient(135deg,var(--pb),var(--p));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-sub{font-size:10px;color:var(--tm);margin-top:4px}
+.sec{font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--p);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--b)}
+.tbl{width:100%;background:var(--s2);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin-bottom:24px}
+table{width:100%;border-collapse:collapse}
+th{background:var(--s3);color:var(--tm);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;text-align:left;padding:10px 12px}
+td{padding:8px 12px;border-top:1px solid var(--b);font-size:12px}
+.badge{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500}
+.badge.g{background:rgba(52,211,153,.15);color:var(--g)}.badge.r{background:rgba(248,113,113,.15);color:var(--r)}
+.badge.p{background:rgba(167,139,250,.15);color:var(--p)}
+select,button{background:var(--s3);border:1px solid var(--b);color:var(--t1);font-family:var(--f);font-size:11px;padding:4px 8px;border-radius:4px;cursor:pointer}
+button:hover{border-color:var(--bf);color:var(--p)}
+</style></head><body>
+<div class="bar"><span class="logo">CLOW ADMIN</span><div class="nav"><a href="/">Terminal</a><a href="/dashboard">Dashboard</a><a href="/logout">Sair</a></div></div>
+<div class="wrap">
+<div class="row" id="stats"></div>
+<div class="sec">Usuarios</div>
+<div class="tbl"><table><thead><tr><th>Email</th><th>Plano</th><th>Status</th><th>Criado</th><th>Acao</th></tr></thead><tbody id="usersBody"></tbody></table></div>
+<div class="sec">Top Consumo (Hoje)</div>
+<div class="tbl"><table><thead><tr><th>Email</th><th>Plano</th><th>Tokens</th><th>Custo</th></tr></thead><tbody id="topBody"></tbody></table></div>
+</div>
+<script>
+async function load(){
+  const [sr,ur]=await Promise.all([fetch('/api/v1/admin/stats').then(r=>r.json()),fetch('/api/v1/admin/users').then(r=>r.json())]);
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="stat-label">Usuarios</div><div class="stat-val">${sr.total_users}</div><div class="stat-sub">${sr.active_users} ativos</div></div>
+    <div class="stat"><div class="stat-label">Custo Hoje</div><div class="stat-val">$${sr.cost_today.toFixed(3)}</div></div>
+    <div class="stat"><div class="stat-label">Custo Semana</div><div class="stat-val">$${sr.cost_week.toFixed(3)}</div></div>
+    <div class="stat"><div class="stat-label">Custo Mes</div><div class="stat-val">$${sr.cost_month.toFixed(3)}</div></div>
+    <div class="stat"><div class="stat-label">Tokens Hoje</div><div class="stat-val">${(sr.tokens_today/1000).toFixed(0)}k</div></div>`;
+  const ub=document.getElementById('usersBody');
+  ub.innerHTML=ur.users.map(u=>{
+    const dt=new Date(u.created_at*1000).toLocaleDateString('pt-BR');
+    const st=u.active?'<span class="badge g">ativo</span>':'<span class="badge r">inativo</span>';
+    return `<tr><td>${u.email}</td><td><select onchange="setPlan('${u.id}',this.value)">${['free','basic','pro','unlimited'].map(p=>`<option ${u.plan===p?'selected':''}>${p}</option>`).join('')}</select></td><td>${st}</td><td style="color:var(--tm)">${dt}</td><td><button onclick="toggle('${u.id}',${u.active?0:1})">${u.active?'Desativar':'Ativar'}</button></td></tr>`;
+  }).join('');
+  const tb=document.getElementById('topBody');
+  tb.innerHTML=(sr.top_users_today||[]).map(u=>`<tr><td>${u.email}</td><td><span class="badge p">${u.plan}</span></td><td>${(u.tokens/1000).toFixed(0)}k</td><td>$${u.cost.toFixed(4)}</td></tr>`).join('')||'<tr><td colspan="4" style="color:var(--tm)">Sem dados</td></tr>';
+}
+async function setPlan(id,plan){await fetch(`/api/v1/admin/users/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan})});load();}
+async function toggle(id,active){await fetch(`/api/v1/admin/users/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({active})});load();}
+load();setInterval(load,30000);
+</script></body></html>
 '''
 
 
@@ -1814,11 +1971,10 @@ if HAS_FASTAPI:
         form = await request.form()
         email = form.get("email", "").strip().lower()
         password = form.get("password", "")
-        pw_hash = hashlib.sha256(password.encode()).hexdigest()
 
-        expected = _WEB_USERS.get(email)
-        if expected and pw_hash == expected:
-            token = _create_session(email)
+        user = authenticate_user(email, password)
+        if user:
+            token = _create_session(user)
             resp = RedirectResponse("/", status_code=302)
             resp.set_cookie(
                 "clow_session", token,
@@ -1829,6 +1985,41 @@ if HAS_FASTAPI:
 
         html = LOGIN_HTML.replace("__ERROR_CLASS__", "show").replace("__ERROR_MSG__", "Email ou senha incorretos")
         return HTMLResponse(html, status_code=401)
+
+    @app.get("/register", response_class=HTMLResponse)
+    async def register_page(request: Request):
+        if _get_session_from_request(request):
+            return RedirectResponse("/", status_code=302)
+        html = LOGIN_HTML.replace("Acesso ao Sistema", "Criar Conta")
+        html = html.replace('action="/login"', 'action="/register"')
+        html = html.replace("Entrar", "Criar Conta")
+        html = html.replace("__ERROR_CLASS__", "").replace("__ERROR_MSG__", "")
+        html = html.replace("</form>", '<div style="text-align:center;margin-top:16px;font-size:11px;color:var(--text-muted)">Ja tem conta? <a href="/login" style="color:var(--purple)">Entrar</a></div></form>')
+        return HTMLResponse(html)
+
+    @app.post("/register")
+    async def register_submit(request: Request):
+        form = await request.form()
+        email = form.get("email", "").strip().lower()
+        password = form.get("password", "")
+
+        if len(password) < 6:
+            html = LOGIN_HTML.replace("Acesso ao Sistema", "Criar Conta").replace('action="/login"', 'action="/register"').replace("Entrar", "Criar Conta")
+            html = html.replace("__ERROR_CLASS__", "show").replace("__ERROR_MSG__", "Senha deve ter no minimo 6 caracteres")
+            return HTMLResponse(html, status_code=400)
+
+        user = create_user(email, password)
+        if not user:
+            html = LOGIN_HTML.replace("Acesso ao Sistema", "Criar Conta").replace('action="/login"', 'action="/register"').replace("Entrar", "Criar Conta")
+            html = html.replace("__ERROR_CLASS__", "show").replace("__ERROR_MSG__", "Email ja cadastrado")
+            return HTMLResponse(html, status_code=400)
+
+        # Auto-login
+        full_user = get_user_by_email(email)
+        token = _create_session(full_user)
+        resp = RedirectResponse("/", status_code=302)
+        resp.set_cookie("clow_session", token, max_age=_SESSION_TTL, httponly=True, samesite="lax", secure=False)
+        return resp
 
     @app.get("/logout")
     async def logout(request: Request):
@@ -1895,6 +2086,14 @@ if HAS_FASTAPI:
             return RedirectResponse("/login", status_code=302)
         return DASHBOARD_HTML
 
+    # Admin panel (so admin)
+    @app.get("/admin", response_class=HTMLResponse)
+    async def admin_panel(request: Request):
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return RedirectResponse("/login", status_code=302)
+        return HTMLResponse(ADMIN_HTML)
+
     # Feature #19: Health Check (publico — sem auth)
     @app.get("/health", dependencies=[Depends(_rate_limit_dependency)])
     async def health():
@@ -1942,38 +2141,178 @@ if HAS_FASTAPI:
         tools = [{"name": t.name, "description": t.description} for t in registry.all_tools()]
         return JSONResponse({"tools": tools, "count": len(tools)})
 
+    # ── API: Conversations ──────────────────────────────────────────
+
+    @app.get("/api/v1/conversations")
+    async def api_conversations(request: Request):
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        convs = list_conversations(sess["user_id"])
+        return JSONResponse({"conversations": convs})
+
+    @app.post("/api/v1/conversations")
+    async def api_create_conversation(request: Request):
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        cid = create_conversation(sess["user_id"])
+        return JSONResponse({"id": cid})
+
+    @app.get("/api/v1/conversations/{conv_id}/messages")
+    async def api_get_messages(conv_id: str, request: Request):
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        msgs = get_messages(conv_id)
+        return JSONResponse({"messages": msgs})
+
+    @app.delete("/api/v1/conversations/{conv_id}")
+    async def api_delete_conversation(conv_id: str, request: Request):
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        delete_conversation(sess["user_id"], conv_id)
+        return JSONResponse({"ok": True})
+
+    # ── API: Usage ───────────────────────────────────────────────────
+
+    @app.get("/api/v1/usage")
+    async def api_usage(request: Request):
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        usage = get_user_usage_today(sess["user_id"])
+        plan = PLANS.get(sess.get("plan", "free"), PLANS["free"])
+        return JSONResponse({
+            "usage": usage,
+            "plan": sess.get("plan", "free"),
+            "plan_label": plan["label"],
+            "daily_limit": plan["daily_tokens"],
+        })
+
+    # ── API: Admin ───────────────────────────────────────────────────
+
+    @app.get("/api/v1/admin/stats")
+    async def api_admin_stats(request: Request):
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return JSONResponse({"error": "Acesso negado"}, status_code=403)
+        return JSONResponse(get_admin_stats())
+
+    @app.get("/api/v1/admin/users")
+    async def api_admin_users(request: Request):
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return JSONResponse({"error": "Acesso negado"}, status_code=403)
+        return JSONResponse({"users": list_users()})
+
+    @app.post("/api/v1/admin/users/{user_id}")
+    async def api_admin_update_user(user_id: str, request: Request):
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return JSONResponse({"error": "Acesso negado"}, status_code=403)
+        body = await request.json()
+        update_user(user_id, **body)
+        return JSONResponse({"ok": True})
+
     # ── HTTP Chat Fallback (para mobile sem WebSocket) ────────────
     _http_sessions: dict[str, Any] = {}
 
     @app.post("/api/v1/chat", dependencies=[Depends(_rate_limit_dependency)])
     async def api_chat(request: Request):
         """Chat HTTP com deteccao automatica de geracao de arquivos."""
-        if not _get_session_from_request(request):
+        sess = _get_user_session(request)
+        if not sess:
             return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+
+        # Checa limite de uso
+        allowed, pct = check_limit(sess["user_id"])
+        if not allowed:
+            return JSONResponse({
+                "session_id": "",
+                "response": "Voce atingiu seu limite diario de tokens. Volte amanha ou faca upgrade do seu plano.\n\nUse `/plan` para ver seu plano atual.",
+                "tools": [], "file": None,
+            })
+
         from .agent import Agent
         import uuid
 
         body = await request.json()
         content = body.get("content", "").strip()
+        conv_id = body.get("conversation_id", "")
         session_id = body.get("session_id", "")
 
         if not content:
             return JSONResponse({"error": "content vazio"}, status_code=400)
 
-        # Pega email do usuario logado para credenciais
-        user_email = _get_session_from_request(request) or "anonymous"
+        user_email = sess["email"]
+        user_id = sess["user_id"]
         track_action("user_message_http", content[:60])
 
-        # ── Comandos /connect, /disconnect, /connections ──
+        # Salva mensagem do usuario no historico
+        if conv_id:
+            save_message(conv_id, "user", content)
+
+        # ── Comandos internos ──
         if content.startswith("/"):
+            cmd_lower = content.lower().strip()
+            cmd_resp = None
+
+            if cmd_lower == "/help":
+                cmd_resp = (
+                    "## Comandos Disponiveis\n\n"
+                    "| Comando | Descricao |\n|---------|----------|\n"
+                    "| `/connect` | Conectar servico externo |\n"
+                    "| `/connections` | Ver conexoes ativas |\n"
+                    "| `/disconnect X` | Desconectar servico |\n"
+                    "| `/usage` | Ver consumo de tokens hoje |\n"
+                    "| `/plan` | Ver plano atual e limites |\n"
+                    "| `/help` | Esta lista de comandos |\n\n"
+                    "**Geracao de arquivos:** peca naturalmente (ex: 'cria uma planilha de vendas')\n\n"
+                    "**Integracoes:** pergunte direto (ex: 'mostra minhas campanhas meta ads')"
+                )
+            elif cmd_lower == "/usage":
+                usage = get_user_usage_today(user_id)
+                plan_info = PLANS.get(sess.get("plan", "free"), PLANS["free"])
+                limit = plan_info["daily_tokens"]
+                used = usage["total_tokens"]
+                pct_str = f"{(used/limit*100):.0f}%" if limit > 0 else "ilimitado"
+                cmd_resp = (
+                    f"## Seu Consumo Hoje\n\n"
+                    f"- Tokens usados: **{used:,}**\n"
+                    f"- Limite diario: **{limit:,}** ({pct_str})\n"
+                    f"- Requests: **{usage['requests']}**\n"
+                    f"- Custo estimado: **${usage['total_cost']:.4f}**"
+                )
+            elif cmd_lower == "/plan":
+                plan_info = PLANS.get(sess.get("plan", "free"), PLANS["free"])
+                cmd_resp = (
+                    f"## Seu Plano: {plan_info['label']}\n\n"
+                    f"- Limite diario: **{plan_info['daily_tokens']:,} tokens**\n\n"
+                    "**Planos disponiveis:**\n"
+                    "| Plano | Tokens/dia |\n|-------|------------|\n"
+                    "| Free | 50.000 |\n| Basic | 200.000 |\n| Pro | 1.000.000 |\n| Unlimited | Sem limite |"
+                )
+
+            if cmd_resp:
+                if conv_id:
+                    save_message(conv_id, "assistant", cmd_resp)
+                return JSONResponse({
+                    "session_id": session_id or str(uuid.uuid4())[:8],
+                    "response": cmd_resp, "tools": [], "file": None,
+                })
+
+            # /connect, /disconnect, /connections
             from .integrations.command_handler import handle_command
             cmd_result = handle_command(content, user_email)
             if cmd_result:
+                if conv_id:
+                    save_message(conv_id, "assistant", cmd_result["response"])
                 return JSONResponse({
                     "session_id": session_id or str(uuid.uuid4())[:8],
                     "response": cmd_result["response"],
-                    "tools": [],
-                    "file": None,
+                    "tools": [], "file": None,
                 })
 
         # ── Detecta pedidos de integracao (meta ads, supabase, etc) ──

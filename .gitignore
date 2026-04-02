@@ -10,3 +10,12 @@ build/
 sessions/*.json
 .mypy_cache/
 .pytest_cache/
+data/*.db
+static/files/*
+static/pages/*
+static/apps/*
+static/uploads/*
+!static/files/.gitkeep
+!static/pages/.gitkeep
+!static/apps/.gitkeep
+!static/uploads/.gitkeep

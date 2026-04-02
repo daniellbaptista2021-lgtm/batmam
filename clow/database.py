@@ -1,0 +1,278 @@
+"""Clow Database — SQLite para users, usage e conversations."""
+from __future__ import annotations
+import sqlite3
+import hashlib
+import time
+import uuid
+import json
+from pathlib import Path
+from contextlib import contextmanager
+
+DB_PATH = Path(__file__).parent.parent / "data" / "clow.db"
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+PLANS = {
+    "free": {"label": "Free", "daily_tokens": 50_000},
+    "basic": {"label": "Basic", "daily_tokens": 200_000},
+    "pro": {"label": "Pro", "daily_tokens": 1_000_000},
+    "unlimited": {"label": "Unlimited", "daily_tokens": 0},  # 0 = sem limite
+}
+
+ADMIN_EMAIL = "daniellbaptista2021@gmail.com"
+
+
+@contextmanager
+def get_db():
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    try:
+        yield conn
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def init_db():
+    with get_db() as db:
+        db.executescript("""
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            name TEXT DEFAULT '',
+            plan TEXT DEFAULT 'free',
+            active INTEGER DEFAULT 1,
+            is_admin INTEGER DEFAULT 0,
+            created_at REAL NOT NULL,
+            last_login REAL
+        );
+
+        CREATE TABLE IF NOT EXISTS usage_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            model TEXT NOT NULL,
+            input_tokens INTEGER DEFAULT 0,
+            output_tokens INTEGER DEFAULT 0,
+            cost_usd REAL DEFAULT 0,
+            action TEXT DEFAULT 'chat',
+            created_at REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS conversations (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            title TEXT DEFAULT 'Nova conversa',
+            created_at REAL NOT NULL,
+            updated_at REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            file_data TEXT,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_usage_user_date ON usage_log(user_id, created_at);
+        CREATE INDEX IF NOT EXISTS idx_conv_user ON conversations(user_id, updated_at);
+        CREATE INDEX IF NOT EXISTS idx_msg_conv ON messages(conversation_id, created_at);
+        """)
+
+
+# ── Users ────────────────────────────────────────────────────────
+
+def _hash_pw(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
+def create_user(email: str, password: str, name: str = "") -> dict | None:
+    uid = str(uuid.uuid4())[:12]
+    now = time.time()
+    is_admin = 1 if email.lower() == ADMIN_EMAIL else 0
+    plan = "unlimited" if is_admin else "free"
+    try:
+        with get_db() as db:
+            db.execute(
+                "INSERT INTO users (id, email, password_hash, name, plan, is_admin, created_at) VALUES (?,?,?,?,?,?,?)",
+                (uid, email.lower(), _hash_pw(password), name, plan, is_admin, now),
+            )
+        return {"id": uid, "email": email.lower(), "plan": plan, "is_admin": bool(is_admin)}
+    except sqlite3.IntegrityError:
+        return None
+
+
+def authenticate_user(email: str, password: str) -> dict | None:
+    with get_db() as db:
+        row = db.execute("SELECT * FROM users WHERE email=? AND password_hash=?",
+            (email.lower(), _hash_pw(password))).fetchone()
+        if not row:
+            return None
+        if not row["active"]:
+            return None
+        db.execute("UPDATE users SET last_login=? WHERE id=?", (time.time(), row["id"]))
+        return dict(row)
+
+
+def get_user_by_email(email: str) -> dict | None:
+    with get_db() as db:
+        row = db.execute("SELECT * FROM users WHERE email=?", (email.lower(),)).fetchone()
+        return dict(row) if row else None
+
+
+def get_user_by_id(uid: str) -> dict | None:
+    with get_db() as db:
+        row = db.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+        return dict(row) if row else None
+
+
+def list_users() -> list[dict]:
+    with get_db() as db:
+        rows = db.execute("SELECT id, email, name, plan, active, is_admin, created_at, last_login FROM users ORDER BY created_at DESC").fetchall()
+        return [dict(r) for r in rows]
+
+
+def update_user(uid: str, **kwargs) -> bool:
+    allowed = {"name", "plan", "active", "is_admin"}
+    fields = {k: v for k, v in kwargs.items() if k in allowed}
+    if not fields:
+        return False
+    sets = ", ".join(f"{k}=?" for k in fields)
+    vals = list(fields.values()) + [uid]
+    with get_db() as db:
+        db.execute(f"UPDATE users SET {sets} WHERE id=?", vals)
+    return True
+
+
+# ── Usage ────────────────────────────────────────────────────────
+
+def log_usage(user_id: str, model: str, input_tokens: int, output_tokens: int, cost_usd: float = 0, action: str = "chat"):
+    with get_db() as db:
+        db.execute(
+            "INSERT INTO usage_log (user_id, model, input_tokens, output_tokens, cost_usd, action, created_at) VALUES (?,?,?,?,?,?,?)",
+            (user_id, model, input_tokens, output_tokens, cost_usd, action, time.time()),
+        )
+
+
+def get_user_usage_today(user_id: str) -> dict:
+    start_of_day = time.time() - (time.time() % 86400)
+    with get_db() as db:
+        row = db.execute(
+            "SELECT COALESCE(SUM(input_tokens+output_tokens),0) as total_tokens, COALESCE(SUM(cost_usd),0) as total_cost, COUNT(*) as requests FROM usage_log WHERE user_id=? AND created_at>=?",
+            (user_id, start_of_day),
+        ).fetchone()
+        return dict(row)
+
+
+def check_limit(user_id: str) -> tuple[bool, float]:
+    """Retorna (allowed, pct_used)."""
+    user = get_user_by_id(user_id)
+    if not user:
+        return False, 1.0
+    plan = PLANS.get(user["plan"], PLANS["free"])
+    limit = plan["daily_tokens"]
+    if limit == 0:
+        return True, 0.0
+    usage = get_user_usage_today(user_id)
+    used = usage["total_tokens"]
+    pct = used / limit if limit > 0 else 0
+    return pct < 1.0, pct
+
+
+def get_admin_stats() -> dict:
+    now = time.time()
+    day_start = now - (now % 86400)
+    week_start = now - 7 * 86400
+    month_start = now - 30 * 86400
+
+    with get_db() as db:
+        total_users = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        active_users = db.execute("SELECT COUNT(*) FROM users WHERE active=1").fetchone()[0]
+
+        day_cost = db.execute("SELECT COALESCE(SUM(cost_usd),0) FROM usage_log WHERE created_at>=?", (day_start,)).fetchone()[0]
+        week_cost = db.execute("SELECT COALESCE(SUM(cost_usd),0) FROM usage_log WHERE created_at>=?", (week_start,)).fetchone()[0]
+        month_cost = db.execute("SELECT COALESCE(SUM(cost_usd),0) FROM usage_log WHERE created_at>=?", (month_start,)).fetchone()[0]
+
+        day_tokens = db.execute("SELECT COALESCE(SUM(input_tokens+output_tokens),0) FROM usage_log WHERE created_at>=?", (day_start,)).fetchone()[0]
+
+        top_users = db.execute("""
+            SELECT u.email, u.plan, SUM(l.input_tokens+l.output_tokens) as tokens, SUM(l.cost_usd) as cost
+            FROM usage_log l JOIN users u ON l.user_id=u.id
+            WHERE l.created_at>=?
+            GROUP BY l.user_id ORDER BY tokens DESC LIMIT 10
+        """, (day_start,)).fetchall()
+
+    return {
+        "total_users": total_users,
+        "active_users": active_users,
+        "cost_today": day_cost,
+        "cost_week": week_cost,
+        "cost_month": month_cost,
+        "tokens_today": day_tokens,
+        "top_users_today": [dict(r) for r in top_users],
+    }
+
+
+# ── Conversations ────────────────────────────────────────────────
+
+def create_conversation(user_id: str, title: str = "Nova conversa") -> str:
+    cid = str(uuid.uuid4())[:12]
+    now = time.time()
+    with get_db() as db:
+        db.execute("INSERT INTO conversations (id, user_id, title, created_at, updated_at) VALUES (?,?,?,?,?)",
+            (cid, user_id, title[:100], now, now))
+    return cid
+
+
+def list_conversations(user_id: str, limit: int = 30) -> list[dict]:
+    with get_db() as db:
+        rows = db.execute(
+            "SELECT id, title, created_at, updated_at FROM conversations WHERE user_id=? ORDER BY updated_at DESC LIMIT ?",
+            (user_id, limit)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def delete_conversation(user_id: str, conv_id: str) -> bool:
+    with get_db() as db:
+        db.execute("DELETE FROM messages WHERE conversation_id=?", (conv_id,))
+        r = db.execute("DELETE FROM conversations WHERE id=? AND user_id=?", (conv_id, user_id))
+    return r.rowcount > 0
+
+
+def save_message(conv_id: str, role: str, content: str, file_data: dict = None):
+    with get_db() as db:
+        db.execute("INSERT INTO messages (conversation_id, role, content, file_data, created_at) VALUES (?,?,?,?,?)",
+            (conv_id, role, content, json.dumps(file_data) if file_data else None, time.time()))
+        db.execute("UPDATE conversations SET updated_at=? WHERE id=?", (time.time(), conv_id))
+
+
+def get_messages(conv_id: str, limit: int = 100) -> list[dict]:
+    with get_db() as db:
+        rows = db.execute(
+            "SELECT role, content, file_data, created_at FROM messages WHERE conversation_id=? ORDER BY created_at ASC LIMIT ?",
+            (conv_id, limit)).fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        if d["file_data"]:
+            d["file_data"] = json.loads(d["file_data"])
+        result.append(d)
+    return result
+
+
+def update_conversation_title(conv_id: str, title: str):
+    with get_db() as db:
+        db.execute("UPDATE conversations SET title=? WHERE id=?", (title[:100], conv_id))
+
+
+# Init on import
+init_db()
+
+# Ensure admin user exists
+if not get_user_by_email(ADMIN_EMAIL):
+    create_user(ADMIN_EMAIL, "Dan24851388.@", "Daniel")
