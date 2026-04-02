@@ -87,7 +87,7 @@ class Agent:
         self.auto_approve = auto_approve
         self.is_subagent = is_subagent
 
-        # Client — suporta Anthropic e OpenAI
+        # Client — suporta Anthropic, OpenAI e Ollama
         self._provider = config.CLOW_PROVIDER
         if self._provider == "anthropic":
             if not config.ANTHROPIC_API_KEY:
@@ -95,6 +95,13 @@ class Agent:
             from anthropic import Anthropic
             self._anthropic = Anthropic(api_key=config.ANTHROPIC_API_KEY)
             self._client = None
+        elif self._provider == "ollama":
+            from openai import OpenAI
+            self._anthropic = None
+            self._client = OpenAI(
+                base_url=config.OLLAMA_BASE_URL,
+                api_key="ollama",  # Ollama nao precisa de key real
+            )
         else:
             if not config.OPENAI_API_KEY:
                 raise RuntimeError("OPENAI_API_KEY nao configurada.")
@@ -349,17 +356,18 @@ class Agent:
         return text, tool_calls, usage_data
 
     def _stream_call_openai(self) -> tuple[str, list[dict], dict]:
-        """Streaming via OpenAI API."""
-        from openai import OpenAI
-
+        """Streaming via OpenAI/Ollama API."""
         kwargs: dict[str, Any] = {
             "model": self.model,
             "messages": self._get_messages(),
             "temperature": config.TEMPERATURE,
-            "max_tokens": config.MAX_TOKENS,
             "stream": True,
-            "stream_options": {"include_usage": True},
         }
+
+        # Ollama nao suporta todos os parametros do OpenAI
+        if self._provider != "ollama":
+            kwargs["max_tokens"] = config.MAX_TOKENS
+            kwargs["stream_options"] = {"include_usage": True}
 
         tools = self.registry.openai_tools()
         if tools:

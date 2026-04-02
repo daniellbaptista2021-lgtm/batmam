@@ -34,15 +34,17 @@ SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 MEMORY_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── API ─────────────────────────────────────────────────────
-# Provider: "anthropic" ou "openai"
+# Provider: "anthropic", "openai" ou "ollama"
 CLOW_PROVIDER = os.getenv("CLOW_PROVIDER", "anthropic").lower()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 
-# Modelos padrão por provider
+# Modelos padrao por provider
 _DEFAULT_MODELS = {
     "anthropic": "claude-sonnet-4-20250514",
     "openai": "gpt-4.1",
+    "ollama": "qwen2.5-coder:7b",
 }
 CLOW_MODEL = os.getenv("CLOW_MODEL", _DEFAULT_MODELS.get(CLOW_PROVIDER, "claude-sonnet-4-20250514"))
 
