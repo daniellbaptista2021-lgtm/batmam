@@ -401,7 +401,7 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
 .hdr-drop a:hover,.hdr-drop button:hover{background:var(--bg-h);color:var(--t1)}
 
 /* TERMINAL */
-.term{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;background:var(--bg-0);
+.term{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;background:var(--bg-0);position:relative;
   background-image:radial-gradient(rgba(255,255,255,.012) 1px,transparent 1px);background-size:24px 24px}
 
 /* WELCOME */
@@ -509,6 +509,12 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
 .adm-tbl select,.adm-tbl button{background:var(--bg-h);border:1px solid var(--bd);color:var(--t1);font-family:var(--sans);font-size:10px;padding:3px 6px;border-radius:4px;cursor:pointer}
 .adm-tbl button:hover{color:var(--p);border-color:var(--bdf)}
 
+/* WATERMARK */
+.watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:200px;pointer-events:none;z-index:0;opacity:.02;transition:opacity .3s}
+.watermark.empty{opacity:.05}
+.watermark svg{width:100%;height:100%}
+.watermark svg path{fill:none;stroke:var(--t1);stroke-width:1.5;stroke-linecap:round}
+
 /* RESPONSIVE */
 @media(max-width:768px){
   .sb{position:fixed;left:0;top:0;height:100%;transform:translateX(-100%);box-shadow:4px 0 24px rgba(0,0,0,.6)}
@@ -609,6 +615,7 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
     </div>
   </div>
   <div class="term" id="term">
+    <div class="watermark empty" id="wmark"><svg viewBox="0 0 32 32"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)"/></svg></div>
     <div class="welc" id="welc">
       <svg class="welc-inf" viewBox="0 0 32 32"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)"/></svg>
       <h2>Ola, o que vamos <span>criar</span>?</h2>
@@ -651,8 +658,21 @@ function toggleSB(){document.getElementById('sb').classList.toggle('open');docum
 function togDrop(){document.getElementById('hdrDrop').classList.toggle('show')}
 function clsDrop(){document.getElementById('hdrDrop').classList.remove('show')}
 document.addEventListener('click',e=>{if(!e.target.closest('.hdr-menu'))clsDrop()});
-async function loadConvs(){try{const r=await fetch('/api/v1/conversations');const d=await r.json();const el=document.getElementById('convList');el.innerHTML=d.conversations.map(c=>`<button class="sb-btn${c.id===cid?' act':''}" onclick="loadConv('${c.id}')"><span class="ic">&#x1F4AC;</span>${esc(c.title.substring(0,22))}</button>`).join('')||'<div style="padding:8px 12px;color:var(--tm);font-size:11px">Nenhuma conversa</div>'}catch(e){}}
-async function newConv(){try{const r=await fetch('/api/v1/conversations',{method:'POST'});const d=await r.json();cid=d.id;T.innerHTML='';showWelc();document.getElementById('hdrT').textContent='Nova conversa';loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
+let pinnedConvs=JSON.parse(localStorage.getItem('clow_pinned')||'[]');
+async function loadConvs(){try{const r=await fetch('/api/v1/conversations');const d=await r.json();const el=document.getElementById('convList');
+  const all=d.conversations;
+  const pinned=all.filter(c=>pinnedConvs.includes(c.id));
+  const recent=all.filter(c=>!pinnedConvs.includes(c.id)).slice(0,5);
+  let h='';
+  if(pinned.length){h+='<div style="padding:4px 12px 2px;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--tm)">Fixadas</div>';pinned.forEach(c=>{h+=convBtn(c,true)})}
+  if(recent.length){if(pinned.length)h+='<div style="padding:4px 12px 2px;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--tm)">Recentes</div>';recent.forEach(c=>{h+=convBtn(c,false)})}
+  if(all.length>pinned.length+5)h+='<button class="sb-btn" onclick="showAllConvs()" style="font-size:11px;color:var(--tm)"><span class="ic">&#x22EF;</span>Ver todas</button>';
+  el.innerHTML=h||'<div style="padding:8px 12px;color:var(--tm);font-size:11px">Nenhuma conversa</div>';
+}catch(e){}}
+function convBtn(c,isPinned){const t=c.title==='Nova conversa'?'Nova conversa':c.title;const short=t.length>25?t.substring(0,25)+'...':t;return `<div style="display:flex;align-items:center" class="conv-row"><button class="sb-btn${c.id===cid?' act':''}" onclick="loadConv('${c.id}')" style="flex:1"><span class="ic">&#x1F4AC;</span>${esc(short)}</button><button onclick="togglePin('${c.id}')" style="background:none;border:none;cursor:pointer;padding:4px;font-size:11px;opacity:.4;color:var(--p)" title="${isPinned?'Desafixar':'Fixar'}">${isPinned?'&#x1F4CC;':'&#x1F4CC;'}</button></div>`}
+function togglePin(id){if(pinnedConvs.includes(id)){pinnedConvs=pinnedConvs.filter(x=>x!==id)}else{if(pinnedConvs.length>=3)return;pinnedConvs.push(id)}localStorage.setItem('clow_pinned',JSON.stringify(pinnedConvs));loadConvs()}
+async function showAllConvs(){const r=await fetch('/api/v1/conversations');const d=await r.json();let h='<h3>Todas as Conversas</h3>';d.conversations.forEach(c=>{const t=c.title.length>35?c.title.substring(0,35)+'...':c.title;h+=`<button class="sb-btn" onclick="loadConv('${c.id}');clsModal()" style="margin:2px 0"><span class="ic">&#x1F4AC;</span>${esc(t)}</button>`});document.getElementById('modalC').innerHTML=h;document.getElementById('modalBg').classList.add('show')}
+async function newConv(){try{const r=await fetch('/api/v1/conversations',{method:'POST'});const d=await r.json();cid=d.id;convMsgCount=0;T.innerHTML='';showWelc();document.getElementById('hdrT').textContent='Nova conversa';loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
 async function loadConv(id){cid=id;T.innerHTML='';try{const r=await fetch(`/api/v1/conversations/${id}/messages`);const d=await r.json();d.messages.forEach(m=>{if(m.role==='user')addUser(m.content,false);else{curMsg=null;curBody=null;appendTxt(m.content);finishTxt();curMsg=null;curBody=null}});const cs=await(await fetch('/api/v1/conversations')).json();const c=cs.conversations.find(x=>x.id===id);if(c)document.getElementById('hdrT').textContent=c.title;loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
 function showWelc(){const w=document.createElement('div');w.className='welc';w.id='welc';w.innerHTML='<svg class="welc-inf" viewBox="0 0 32 32"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)" fill="none" stroke="var(--p)" stroke-width="2.5" stroke-linecap="round"/></svg><h2>Ola, o que vamos <span>criar</span>?</h2><p>Escolha abaixo ou descreva o que precisa</p>';T.appendChild(w)}
 function connectWS(){const pr=location.protocol==='https:'?'wss:':'ws:';try{ws=new WebSocket(`${pr}//${location.host}/ws`)}catch(e){http=true;setOn('http');return}const to=setTimeout(()=>{if(!ws||ws.readyState!==1){try{ws.close()}catch(e){}http=true;setOn('http')}},4000);ws.onopen=()=>{clearTimeout(to);http=false;setOn('online');rA=0};ws.onmessage=e=>hMsg(JSON.parse(e.data));ws.onclose=()=>{clearTimeout(to);if(rA>=3){http=true;setOn('http');return}setOn('offline');setTimeout(()=>{rA++;connectWS()},Math.min(1000*rA,5000))};ws.onerror=()=>setOn('offline')}
@@ -663,7 +683,9 @@ async function sendHTTP(t){addUser(t);I.value='';I.style.height='auto';proc=true
 function sendCmd(c){I.value=c;sendMessage()}
 function qa(t){const w=document.getElementById('welc');if(w)w.remove();I.value=t;I.focus();if(window.innerWidth<769)toggleSB()}
 function now(){return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
-function addUser(t,save=true){const w=document.getElementById('welc');if(w)w.remove();const d=document.createElement('div');d.className='ml user';d.innerHTML=`<div class="mh"><span class="mt">${now()}</span><span class="mn">voce</span><div class="mav">${me?me.email[0].toUpperCase():'?'}</div></div><div class="mb-wrap"><div class="mb">${esc(t)}</div></div>`;T.appendChild(d);scrl();if(!cid&&save){fetch('/api/v1/conversations',{method:'POST'}).then(r=>r.json()).then(d=>{cid=d.id;loadConvs()})}}
+let convMsgCount=0;
+function addUser(t,save=true){const w=document.getElementById('welc');if(w)w.remove();const wm=document.getElementById('wmark');if(wm)wm.classList.remove('empty');const d=document.createElement('div');d.className='ml user';d.innerHTML=`<div class="mh"><span class="mt">${now()}</span><span class="mn">voce</span><div class="mav">${me?me.email[0].toUpperCase():'?'}</div></div><div class="mb-wrap"><div class="mb">${esc(t)}</div></div>`;T.appendChild(d);scrl();convMsgCount++;if(!cid&&save){fetch('/api/v1/conversations',{method:'POST'}).then(r=>r.json()).then(d=>{cid=d.id;autoTitle(t);loadConvs()})}else if(convMsgCount===1&&cid){autoTitle(t)}}
+function autoTitle(t){const title=t.length>30?t.substring(0,30)+'...':t;document.getElementById('hdrT').textContent=title;fetch(`/api/v1/conversations/${cid}/title`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title})}).then(()=>loadConvs())}
 function showThink(){hideThink();const d=document.createElement('div');d.className='think';d.id='thinkEl';d.innerHTML='<div class="think-in"><div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span class="think-t">Clow pensando...</span></div>';T.appendChild(d);scrl()}
 function hideThink(){const e=document.getElementById('thinkEl');if(e)e.remove()}
 function ensureMsg(){if(!curMsg){hideThink();curMsg=document.createElement('div');curMsg.className='ml assistant';curMsg.innerHTML=`<div class="mh"><div class="mav">${INF}</div><span class="mn">clow</span><span class="mt">${now()}</span></div>`;curBody=document.createElement('div');curBody.className='mb';const wrap=document.createElement('div');wrap.className='mb-wrap';wrap.appendChild(curBody);curMsg.appendChild(wrap);T.appendChild(curMsg);raw=''}}
@@ -1321,6 +1343,17 @@ if HAS_FASTAPI:
         if not sess:
             return JSONResponse({"error": "Nao autenticado"}, status_code=401)
         delete_conversation(sess["user_id"], conv_id)
+        return JSONResponse({"ok": True})
+
+    @app.post("/api/v1/conversations/{conv_id}/title")
+    async def api_update_conv_title(conv_id: str, request: Request):
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        title = body.get("title", "")[:50]
+        if title:
+            update_conversation_title(conv_id, title)
         return JSONResponse({"ok": True})
 
     # ── API: Usage ───────────────────────────────────────────────────
