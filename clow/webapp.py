@@ -484,6 +484,14 @@ body{background:var(--bg);color:var(--t1);font-family:var(--f);font-size:13px;he
 .badge-s{padding:1px 5px;border-radius:3px;font-size:9px;font-weight:500}
 .badge-s.g{background:var(--gd);color:var(--g)}.badge-s.r{background:var(--rd);color:var(--r)}.badge-s.p{background:var(--pg);color:var(--p)}
 
+/* MODEL SELECTOR */
+.model-sel{background:var(--s3);border:1px solid var(--b);color:var(--t2);font-family:var(--f);font-size:10px;font-weight:500;padding:4px 8px;border-radius:6px;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%239d9db5' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;padding-right:20px}
+.model-sel:focus{border-color:var(--bf)}
+.model-sel option{background:var(--s2);color:var(--t1)}
+.model-sel.sonnet{color:var(--p);border-color:var(--pgs)}
+.model-sel.haiku{color:var(--g);border-color:rgba(52,211,153,.3)}
+.model-sel:disabled{opacity:.5;cursor:not-allowed}
+
 /* MISSION */
 .mission-card{background:var(--s2);border:1px solid var(--pgs);border-radius:12px;padding:14px;margin:10px 0}
 .mission-card .mctitle{font-size:13px;font-weight:700;color:var(--pb);margin-bottom:8px;display:flex;align-items:center;gap:8px}
@@ -581,6 +589,10 @@ body{background:var(--bg);color:var(--t1);font-family:var(--f);font-size:13px;he
   <div class="topbar">
     <button class="hamburger" onclick="toggleSB()">&#9776;</button>
     <div class="tb-title" id="tbTitle">Nova conversa</div>
+    <select class="model-sel" id="modelSel" onchange="onModelChange()" title="Modelo AI">
+      <option value="haiku">Haiku</option>
+      <option value="sonnet">Sonnet</option>
+    </select>
     <div class="conn-pill on" id="connPill"><span class="conn-dot"></span><span id="connLbl">online</span></div>
     <div class="tb-menu">
       <button class="tb-menu-btn" onclick="toggleDrop()">&#x22EE;</button>
@@ -629,15 +641,38 @@ const T=document.getElementById('terminal'),I=document.getElementById('input'),S
 let ws=null,proc=false,curMsg=null,curBody=null,curTool=null,tStart=0,tTimer=null,rAttempts=0,httpMode=false,httpSid='',rawBuf='',me=null,convId='';
 
 // ── Init ──
+let selectedModel='haiku';
+
 async function init(){
   try{const r=await fetch('/api/v1/me');me=await r.json();
     document.getElementById('sbAvatar').textContent=me.email[0].toUpperCase();
     document.getElementById('sbEmail').textContent=me.email;
     document.getElementById('sbPlan').textContent=me.plan;
     if(me.is_admin)document.getElementById('adminSection').style.display='block';
+    // Model selector setup
+    initModelSelector(me.plan,me.is_admin);
   }catch(e){}
   loadConvs();
   connectWS();
+}
+
+function initModelSelector(plan,isAdmin){
+  const sel=document.getElementById('modelSel');
+  const canSonnet=isAdmin||plan==='pro'||plan==='unlimited';
+  if(!canSonnet){
+    sel.value='haiku';selectedModel='haiku';
+    sel.disabled=true;sel.title='Seu plano permite apenas Haiku';
+    // Remove sonnet option
+    const opt=sel.querySelector('option[value="sonnet"]');
+    if(opt)opt.disabled=true;
+  }
+  sel.className='model-sel '+(selectedModel==='sonnet'?'sonnet':'haiku');
+}
+
+function onModelChange(){
+  const sel=document.getElementById('modelSel');
+  selectedModel=sel.value;
+  sel.className='model-sel '+selectedModel;
 }
 
 // ── Sidebar ──
@@ -717,7 +752,7 @@ async function sendHTTP(text){
   addUserMsg(text);I.value='';I.style.height='auto';proc=true;SB.disabled=true;
   showThink();
   try{
-    const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:text,session_id:httpSid,conversation_id:convId})});
+    const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:text,session_id:httpSid,conversation_id:convId,model:selectedModel})});
     hideThink();
     if(!r.ok){const e=await r.json().catch(()=>({error:'Erro'}));showErr(e.error||e.response||'Erro');finishTurn();return}
     const d=await r.json();httpSid=d.session_id||httpSid;
@@ -1584,11 +1619,17 @@ if HAS_FASTAPI:
         sess = _get_user_session(request)
         if not sess:
             return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        plan = sess.get("plan", "free")
+        is_admin = sess.get("is_admin", False)
+        models = ["haiku"]
+        if plan in ("pro", "unlimited") or is_admin:
+            models.append("sonnet")
         return JSONResponse({
             "email": sess["email"],
             "user_id": sess["user_id"],
-            "is_admin": sess.get("is_admin", False),
-            "plan": sess.get("plan", "free"),
+            "is_admin": is_admin,
+            "plan": plan,
+            "available_models": models,
         })
 
     # ── API: Admin ───────────────────────────────────────────────────
@@ -1745,12 +1786,24 @@ if HAS_FASTAPI:
         content = body.get("content", "").strip()
         conv_id = body.get("conversation_id", "")
         session_id = body.get("session_id", "")
+        chosen_model = body.get("model", "haiku")  # haiku ou sonnet
 
         if not content:
             return JSONResponse({"error": "content vazio"}, status_code=400)
 
         user_email = sess["email"]
         user_id = sess["user_id"]
+        user_plan = sess.get("plan", "free")
+        is_admin = sess.get("is_admin", False)
+
+        # Valida modelo pelo plano
+        from .generators.base import MODELS as AI_MODELS
+        allowed_models = ["haiku"]
+        if user_plan in ("pro", "unlimited") or is_admin:
+            allowed_models.append("sonnet")
+        if chosen_model not in allowed_models:
+            chosen_model = "haiku"
+        model_id = AI_MODELS.get(chosen_model, AI_MODELS["haiku"])
         track_action("user_message_http", content[:60])
 
         # Salva mensagem do usuario no historico
@@ -1943,14 +1996,16 @@ if HAS_FASTAPI:
                 }, status_code=500)
 
         # ── Chat normal via Agent ──
-        if session_id and session_id in _http_sessions:
-            agent = _http_sessions[session_id]["agent"]
+        session_key = f"{session_id}_{chosen_model}"
+        if session_id and session_key in _http_sessions:
+            agent = _http_sessions[session_key]["agent"]
         else:
             session_id = str(uuid.uuid4())[:8]
-            agent = Agent(cwd=os.getcwd(), auto_approve=True)
-            _http_sessions[session_id] = {"agent": agent, "last_used": time.time()}
+            session_key = f"{session_id}_{chosen_model}"
+            agent = Agent(cwd=os.getcwd(), model=model_id, auto_approve=True)
+            _http_sessions[session_key] = {"agent": agent, "last_used": time.time()}
 
-        _http_sessions[session_id]["last_used"] = time.time()
+        _http_sessions[session_key]["last_used"] = time.time()
 
         now = time.time()
         stale = [k for k, v in _http_sessions.items() if now - v["last_used"] > 1800]
