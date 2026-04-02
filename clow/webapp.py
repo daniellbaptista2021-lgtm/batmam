@@ -359,7 +359,7 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
 .sb-logo{font-family:var(--mono);font-size:18px;font-weight:600;letter-spacing:1.5px;color:var(--p)}
 .sb-inf{width:22px;height:22px;filter:drop-shadow(0 0 8px rgba(124,92,252,.4))}
 .sb-inf path{fill:none;stroke:var(--p);stroke-width:3;stroke-linecap:round}
-.sb-body{flex:1;overflow-y:auto;padding:4px 0}
+.sb-body{flex:1;overflow-y:auto;padding:4px 0;display:flex;flex-direction:column}
 .sb-sep{height:1px;background:var(--bd);margin:8px 12px}
 .sb-sec{padding:0 12px;margin-bottom:2px}
 .sb-lbl{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--tm);padding:12px 4px 6px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
@@ -371,7 +371,54 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
 .sb-btn .ic{font-size:15px;width:20px;text-align:center;flex-shrink:0;color:var(--tm)}.sb-btn:hover .ic,.sb-btn.act .ic{color:var(--p)}
 .sb-new{margin:8px 12px 12px;padding:10px;border-radius:8px;border:1px solid var(--p);background:transparent;color:var(--p);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:all .2s;letter-spacing:.3px}
 .sb-new:hover{background:var(--p);color:#fff}
-.sb-convs{max-height:180px;overflow-y:auto}
+.sb-convs{flex:1;overflow-y:auto;padding:0 8px}
+.sb-conv-search{padding:0 8px 8px;position:relative}
+.sb-conv-search input{width:100%;background:var(--bg-2);border:1px solid var(--bd);border-radius:6px;padding:6px 10px 6px 30px;color:var(--t1);font-size:12px;font-family:var(--sans);outline:none;transition:border-color .15s}
+.sb-conv-search input:focus{border-color:var(--p)}
+.sb-conv-search input::placeholder{color:var(--tm)}
+.sb-conv-search .search-icon{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:var(--tm);font-size:12px;pointer-events:none;padding-bottom:8px}
+.sb-grp-label{padding:6px 8px 4px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--tm);user-select:none}
+.sb-conv-item{display:flex;align-items:center;padding:8px 10px;border-radius:6px;cursor:pointer;transition:background .15s ease;position:relative;gap:8px;margin:1px 0}
+.sb-conv-item:hover{background:var(--bg-h)}
+.sb-conv-item.act{background:var(--bg-h);border-left:2px solid var(--p);padding-left:8px}
+.sb-conv-item .conv-icon{font-size:13px;flex-shrink:0;color:var(--tm);width:16px;text-align:center}
+.sb-conv-item.act .conv-icon{color:var(--p)}
+.sb-conv-item .conv-title{flex:1;font-size:13px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--sans);line-height:1.3}
+.sb-conv-item.act .conv-title{color:var(--t1);font-weight:500}
+.sb-conv-item .conv-pin-static{font-size:10px;color:var(--tm);flex-shrink:0;margin-right:2px}
+.sb-conv-item .conv-actions{display:flex;align-items:center;gap:2px;opacity:0;transition:opacity .15s ease;flex-shrink:0}
+.sb-conv-item:hover .conv-actions{opacity:1}
+.sb-conv-item .conv-actions .ca-btn{background:none;border:none;cursor:pointer;padding:3px 4px;border-radius:4px;font-size:12px;color:var(--tm);transition:all .15s;display:flex;align-items:center;justify-content:center;line-height:1}
+.sb-conv-item .conv-actions .ca-btn:hover{background:var(--bg-3);color:var(--t1)}
+/* Context menu */
+.conv-ctx-menu{position:fixed;background:var(--bg-2);border:1px solid var(--bd);border-radius:8px;padding:4px;min-width:180px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.5);transform-origin:top left;animation:ctxIn .15s ease}
+@keyframes ctxIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.conv-ctx-menu .ctx-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--t2);font-family:var(--sans);transition:background .12s;border:none;background:none;width:100%;text-align:left}
+.conv-ctx-menu .ctx-item:hover{background:var(--bg-h);color:var(--t1)}
+.conv-ctx-menu .ctx-item.danger{color:var(--r)}
+.conv-ctx-menu .ctx-item.danger:hover{background:rgba(248,113,113,.1)}
+.conv-ctx-menu .ctx-item .ctx-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.conv-ctx-sep{height:1px;background:var(--bd);margin:4px 0}
+/* Delete confirm */
+.conv-del-confirm{display:flex;align-items:center;gap:6px;padding:6px 12px}
+.conv-del-confirm span{font-size:12px;color:var(--t2);font-family:var(--sans)}
+.conv-del-confirm button{padding:4px 12px;border-radius:4px;border:none;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.conv-del-confirm .del-yes{background:var(--r);color:#fff}
+.conv-del-confirm .del-yes:hover{background:#ef4444}
+.conv-del-confirm .del-no{background:var(--bg-3);color:var(--t2)}
+.conv-del-confirm .del-no:hover{background:var(--bg-h);color:var(--t1)}
+/* Rename inline */
+.sb-conv-item .conv-rename-input{flex:1;background:var(--bg-2);border:1px solid var(--p);border-radius:4px;padding:2px 6px;color:var(--t1);font-size:12px;font-family:var(--sans);outline:none}
+/* Animations */
+@keyframes convSlideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+@keyframes convFadeOut{to{opacity:0;transform:translateX(-12px)}}
+.sb-conv-item.entering{animation:convSlideIn .2s ease forwards}
+.sb-conv-item.leaving{animation:convFadeOut .2s ease forwards}
+@keyframes pinBounce{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+.pin-bounce{animation:pinBounce .3s ease}
+/* Ver anteriores btn */
+.sb-conv-more{display:flex;align-items:center;justify-content:center;padding:8px;font-size:11px;color:var(--tm);cursor:pointer;border:none;background:none;width:100%;font-family:var(--sans);border-radius:6px;transition:all .15s;margin-top:2px}
+.sb-conv-more:hover{background:var(--bg-h);color:var(--t2)}
 .sb-foot{padding:12px 16px;border-top:1px solid var(--bd)}
 .sb-user{display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px;border-radius:8px;transition:background .15s}
 .sb-user:hover{background:var(--bg-h)}
@@ -536,9 +583,15 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
   </div>
   <div class="sb-body">
     <div class="sb-sec"><button class="sb-new" onclick="newConv()">+ Nova Conversa</button></div>
-    <div class="sb-sec">
+    <div class="sb-sec" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
       <div class="sb-lbl open" onclick="this.classList.toggle('open')">Conversas <span class="ar">&#9654;</span></div>
-      <div class="sb-ct"><div class="sb-convs" id="convList"></div></div>
+      <div class="sb-ct" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+        <div class="sb-conv-search" id="convSearchWrap" style="display:none">
+          <span class="search-icon">&#x1F50D;</span>
+          <input type="text" id="convSearchInp" placeholder="Buscar conversas..." oninput="filterConvs(this.value)" onkeydown="if(event.key==='Escape'){closeConvSearch()}">
+        </div>
+        <div class="sb-convs" id="convList"></div>
+      </div>
     </div>
     <div class="sb-sep"></div>
     <div class="sb-sec">
@@ -659,19 +712,175 @@ function togDrop(){document.getElementById('hdrDrop').classList.toggle('show')}
 function clsDrop(){document.getElementById('hdrDrop').classList.remove('show')}
 document.addEventListener('click',e=>{if(!e.target.closest('.hdr-menu'))clsDrop()});
 let pinnedConvs=JSON.parse(localStorage.getItem('clow_pinned')||'[]');
-async function loadConvs(){try{const r=await fetch('/api/v1/conversations');const d=await r.json();const el=document.getElementById('convList');
-  const all=d.conversations;
-  const pinned=all.filter(c=>pinnedConvs.includes(c.id));
-  const recent=all.filter(c=>!pinnedConvs.includes(c.id)).slice(0,5);
+let allConvsCache=[];
+let showAllPast=false;
+let activeCtxMenu=null;
+
+function closeCtxMenu(){if(activeCtxMenu){activeCtxMenu.remove();activeCtxMenu=null}}
+document.addEventListener('click',e=>{if(activeCtxMenu&&!e.target.closest('.conv-ctx-menu')&&!e.target.closest('.ca-btn'))closeCtxMenu()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCtxMenu()});
+
+function getDateGroup(ts){
+  const d=new Date(ts*1000);const now=new Date();
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const yesterday=new Date(today);yesterday.setDate(today.getDate()-1);
+  const week=new Date(today);week.setDate(today.getDate()-7);
+  const convDay=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  if(convDay>=today)return'Hoje';
+  if(convDay>=yesterday)return'Ontem';
+  if(convDay>=week)return'Ultimos 7 dias';
+  return'Anteriores';
+}
+
+function smartTitle(t){
+  if(!t||t==='Nova conversa')return'Nova conversa';
+  const generic=['oi','ola','bom dia','boa tarde','boa noite','hey','hello','hi','e ai','fala'];
+  const w=t.trim().toLowerCase();
+  if(generic.includes(w))return'Nova conversa';
+  if(t.length>28)return t.substring(0,28)+'...';
+  return t;
+}
+
+async function loadConvs(){try{
+  const r=await fetch('/api/v1/conversations');const d=await r.json();
+  const el=document.getElementById('convList');
+  allConvsCache=d.conversations||[];
+  const pinned=allConvsCache.filter(c=>pinnedConvs.includes(c.id));
+  const unpinned=allConvsCache.filter(c=>!pinnedConvs.includes(c.id));
+  // Show search icon if 3+ conversations
+  document.getElementById('convSearchWrap').style.display=allConvsCache.length>=3?'block':'none';
   let h='';
-  if(pinned.length){h+='<div style="padding:4px 12px 2px;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--tm)">Fixadas</div>';pinned.forEach(c=>{h+=convBtn(c,true)})}
-  if(recent.length){if(pinned.length)h+='<div style="padding:4px 12px 2px;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--tm)">Recentes</div>';recent.forEach(c=>{h+=convBtn(c,false)})}
-  if(all.length>pinned.length+5)h+='<button class="sb-btn" onclick="showAllConvs()" style="font-size:11px;color:var(--tm)"><span class="ic">&#x22EF;</span>Ver todas</button>';
-  el.innerHTML=h||'<div style="padding:8px 12px;color:var(--tm);font-size:11px">Nenhuma conversa</div>';
+  // PINNED
+  if(pinned.length){
+    h+='<div class="sb-grp-label">FIXADAS</div>';
+    pinned.forEach(c=>{h+=convBtn(c,true)});
+  }
+  // GROUP BY DATE
+  const groups={};
+  const maxShow=showAllPast?unpinned.length:10;
+  unpinned.slice(0,maxShow).forEach(c=>{
+    const g=getDateGroup(c.updated_at||c.created_at);
+    if(!groups[g])groups[g]=[];
+    groups[g].push(c);
+  });
+  const order=['Hoje','Ontem','Ultimos 7 dias','Anteriores'];
+  order.forEach(g=>{
+    if(groups[g]&&groups[g].length){
+      h+='<div class="sb-grp-label">'+g+'</div>';
+      groups[g].forEach(c=>{h+=convBtn(c,false)});
+    }
+  });
+  if(!showAllPast&&unpinned.length>10){
+    h+='<button class="sb-conv-more" onclick="showAllPast=true;loadConvs()">Ver anteriores ('+unpinned.length+')</button>';
+  }
+  el.innerHTML=h||'<div style="padding:12px 8px;color:var(--tm);font-size:12px;text-align:center">Nenhuma conversa</div>';
 }catch(e){}}
-function convBtn(c,isPinned){const t=c.title==='Nova conversa'?'Nova conversa':c.title;const short=t.length>25?t.substring(0,25)+'...':t;return `<div style="display:flex;align-items:center" class="conv-row"><button class="sb-btn${c.id===cid?' act':''}" onclick="loadConv('${c.id}')" style="flex:1"><span class="ic">&#x1F4AC;</span>${esc(short)}</button><button onclick="togglePin('${c.id}')" style="background:none;border:none;cursor:pointer;padding:4px;font-size:11px;opacity:.4;color:var(--p)" title="${isPinned?'Desafixar':'Fixar'}">${isPinned?'&#x1F4CC;':'&#x1F4CC;'}</button></div>`}
-function togglePin(id){if(pinnedConvs.includes(id)){pinnedConvs=pinnedConvs.filter(x=>x!==id)}else{if(pinnedConvs.length>=3)return;pinnedConvs.push(id)}localStorage.setItem('clow_pinned',JSON.stringify(pinnedConvs));loadConvs()}
-async function showAllConvs(){const r=await fetch('/api/v1/conversations');const d=await r.json();let h='<h3>Todas as Conversas</h3>';d.conversations.forEach(c=>{const t=c.title.length>35?c.title.substring(0,35)+'...':c.title;h+=`<button class="sb-btn" onclick="loadConv('${c.id}');clsModal()" style="margin:2px 0"><span class="ic">&#x1F4AC;</span>${esc(t)}</button>`});document.getElementById('modalC').innerHTML=h;document.getElementById('modalBg').classList.add('show')}
+
+function convBtn(c,isPinned){
+  const t=smartTitle(c.title);
+  const isAct=c.id===cid;
+  return '<div class="sb-conv-item'+(isAct?' act':'')+'" data-id="'+c.id+'" data-title="'+esc(c.title)+'" onclick="loadConv(\''+c.id+'\')">'
+    +'<span class="conv-icon">'+(isPinned?'':'&#x1F4AC;')+'</span>'
+    +(isPinned?'<span class="conv-pin-static">&#x1F4CC;</span>':'')
+    +'<span class="conv-title">'+esc(t)+'</span>'
+    +'<span class="conv-actions">'
+    +'<button class="ca-btn" onclick="event.stopPropagation();togglePin(\''+c.id+'\')" title="'+(isPinned?'Desafixar':'Fixar')+'">&#x1F4CC;</button>'
+    +'<button class="ca-btn" onclick="event.stopPropagation();showCtxMenu(event,\''+c.id+'\','+isPinned+')" title="Menu">\u22EF</button>'
+    +'</span></div>';
+}
+
+function showCtxMenu(e,id,isPinned){
+  closeCtxMenu();
+  const menu=document.createElement('div');
+  menu.className='conv-ctx-menu';
+  menu.innerHTML=
+    '<button class="ctx-item" onclick="startRename(\''+id+'\')"><span class="ctx-icon">\u270F\uFE0F</span>Renomear</button>'
+    +'<button class="ctx-item" onclick="togglePin(\''+id+'\');closeCtxMenu()"><span class="ctx-icon">\uD83D\uDCCC</span>'+(isPinned?'Desafixar':'Fixar conversa')+'</button>'
+    +'<button class="ctx-item" onclick="copyConv(\''+id+'\');closeCtxMenu()"><span class="ctx-icon">\uD83D\uDCCB</span>Copiar conversa</button>'
+    +'<div class="conv-ctx-sep"></div>'
+    +'<button class="ctx-item danger" onclick="confirmDel(\''+id+'\',this)"><span class="ctx-icon">\uD83D\uDDD1\uFE0F</span>Deletar conversa</button>';
+  document.body.appendChild(menu);
+  // Position near click
+  const x=Math.min(e.clientX,window.innerWidth-200);
+  const y=Math.min(e.clientY,window.innerHeight-menu.offsetHeight-10);
+  menu.style.left=x+'px';menu.style.top=y+'px';
+  activeCtxMenu=menu;
+}
+
+function confirmDel(id,btn){
+  const parent=btn.parentElement;
+  // Replace the delete button with confirmation
+  btn.outerHTML='<div class="conv-del-confirm"><span>Tem certeza?</span><button class="del-yes" onclick="delConv(\''+id+'\')">Sim</button><button class="del-no" onclick="closeCtxMenu()">Nao</button></div>';
+}
+
+async function delConv(id){
+  closeCtxMenu();
+  const el=document.querySelector('.sb-conv-item[data-id="'+id+'"]');
+  if(el){el.classList.add('leaving');await new Promise(r=>setTimeout(r,200))}
+  try{await fetch('/api/v1/conversations/'+id,{method:'DELETE'});
+    if(id===cid){cid=null;T.innerHTML='';showWelc();document.getElementById('hdrT').textContent='Nova conversa'}
+    pinnedConvs=pinnedConvs.filter(x=>x!==id);localStorage.setItem('clow_pinned',JSON.stringify(pinnedConvs));
+    loadConvs();
+  }catch(e){}
+}
+
+function startRename(id){
+  closeCtxMenu();
+  const el=document.querySelector('.sb-conv-item[data-id="'+id+'"]');
+  if(!el)return;
+  const titleEl=el.querySelector('.conv-title');
+  const oldTitle=el.getAttribute('data-title')||titleEl.textContent;
+  const inp=document.createElement('input');
+  inp.className='conv-rename-input';inp.value=oldTitle;inp.maxLength=50;
+  titleEl.replaceWith(inp);inp.focus();inp.select();
+  const save=async()=>{
+    const v=inp.value.trim()||oldTitle;
+    try{await fetch('/api/v1/conversations/'+id+'/title',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:v})});
+      if(id===cid)document.getElementById('hdrT').textContent=v;
+      loadConvs();
+    }catch(e){loadConvs()}
+  };
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();save()}if(e.key==='Escape'){loadConvs()}});
+  inp.addEventListener('blur',save);
+  inp.addEventListener('click',e=>e.stopPropagation());
+}
+
+async function copyConv(id){
+  try{const r=await fetch('/api/v1/conversations/'+id+'/messages');const d=await r.json();
+    let txt='';d.messages.forEach(m=>{txt+=(m.role==='user'?'Voce':'Clow')+': '+m.content+'\\n\\n'});
+    await navigator.clipboard.writeText(txt);
+  }catch(e){try{
+    const ta=document.createElement('textarea');ta.value='Conversa copiada';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+  }catch(e2){}}
+}
+
+function togglePin(id){
+  if(pinnedConvs.includes(id)){pinnedConvs=pinnedConvs.filter(x=>x!==id)}
+  else{if(pinnedConvs.length>=3)return;pinnedConvs.push(id)}
+  localStorage.setItem('clow_pinned',JSON.stringify(pinnedConvs));
+  loadConvs();
+  // Pin bounce animation
+  setTimeout(()=>{const el=document.querySelector('.sb-conv-item[data-id="'+id+'"] .conv-pin-static');if(el)el.classList.add('pin-bounce')},50);
+}
+
+function filterConvs(q){
+  const el=document.getElementById('convList');
+  if(!q.trim()){loadConvs();return}
+  const ql=q.toLowerCase();
+  const filtered=allConvsCache.filter(c=>(c.title||'').toLowerCase().includes(ql));
+  let h='';
+  if(!filtered.length){h='<div style="padding:12px 8px;color:var(--tm);font-size:12px;text-align:center">Nenhum resultado</div>'}
+  else{filtered.forEach(c=>{h+=convBtn(c,pinnedConvs.includes(c.id))})}
+  el.innerHTML=h;
+}
+
+function closeConvSearch(){
+  document.getElementById('convSearchInp').value='';
+  loadConvs();
+}
+
+async function showAllConvs(){showAllPast=true;loadConvs()}
+
 async function newConv(){try{const r=await fetch('/api/v1/conversations',{method:'POST'});const d=await r.json();cid=d.id;convMsgCount=0;T.innerHTML='';showWelc();document.getElementById('hdrT').textContent='Nova conversa';loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
 async function loadConv(id){cid=id;T.innerHTML='';try{const r=await fetch(`/api/v1/conversations/${id}/messages`);const d=await r.json();d.messages.forEach(m=>{if(m.role==='user')addUser(m.content,false);else{curMsg=null;curBody=null;appendTxt(m.content);finishTxt();curMsg=null;curBody=null}});const cs=await(await fetch('/api/v1/conversations')).json();const c=cs.conversations.find(x=>x.id===id);if(c)document.getElementById('hdrT').textContent=c.title;loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
 function showWelc(){const w=document.createElement('div');w.className='welc';w.id='welc';w.innerHTML='<svg class="welc-inf" viewBox="0 0 32 32"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)" fill="none" stroke="var(--p)" stroke-width="2.5" stroke-linecap="round"/></svg><h2>Ola, o que vamos <span>criar</span>?</h2><p>Escolha abaixo ou descreva o que precisa</p>';T.appendChild(w)}
@@ -684,8 +893,16 @@ function sendCmd(c){I.value=c;sendMessage()}
 function qa(t){const w=document.getElementById('welc');if(w)w.remove();I.value=t;I.focus();if(window.innerWidth<769)toggleSB()}
 function now(){return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
 let convMsgCount=0;
-function addUser(t,save=true){const w=document.getElementById('welc');if(w)w.remove();const wm=document.getElementById('wmark');if(wm)wm.classList.remove('empty');const d=document.createElement('div');d.className='ml user';d.innerHTML=`<div class="mh"><span class="mt">${now()}</span><span class="mn">voce</span><div class="mav">${me?me.email[0].toUpperCase():'?'}</div></div><div class="mb-wrap"><div class="mb">${esc(t)}</div></div>`;T.appendChild(d);scrl();convMsgCount++;if(!cid&&save){fetch('/api/v1/conversations',{method:'POST'}).then(r=>r.json()).then(d=>{cid=d.id;autoTitle(t);loadConvs()})}else if(convMsgCount===1&&cid){autoTitle(t)}}
-function autoTitle(t){const title=t.length>30?t.substring(0,30)+'...':t;document.getElementById('hdrT').textContent=title;fetch(`/api/v1/conversations/${cid}/title`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title})}).then(()=>loadConvs())}
+function addUser(t,save=true){const w=document.getElementById('welc');if(w)w.remove();const wm=document.getElementById('wmark');if(wm)wm.classList.remove('empty');const d=document.createElement('div');d.className='ml user';d.innerHTML=`<div class="mh"><span class="mt">${now()}</span><span class="mn">voce</span><div class="mav">${me?me.email[0].toUpperCase():'?'}</div></div><div class="mb-wrap"><div class="mb">${esc(t)}</div></div>`;T.appendChild(d);scrl();convMsgCount++;if(!cid&&save){fetch('/api/v1/conversations',{method:'POST'}).then(r=>r.json()).then(d=>{cid=d.id;autoTitle(t);loadConvs()})}else if(convMsgCount===1&&cid){autoTitle(t)}else if(convMsgCount===2&&cid){const hdr=document.getElementById('hdrT');if(!hdr.textContent||hdr.textContent==='Nova conversa')autoTitle(t)}}
+function autoTitle(t){
+  const generic=['oi','ola','bom dia','boa tarde','boa noite','hey','hello','hi','e ai','fala','oi!','ola!'];
+  const w=t.trim().toLowerCase().replace(/[!?.]/g,'');
+  if(generic.includes(w))return;
+  const words=t.trim().split(/\s+/).slice(0,6).join(' ');
+  const title=words.length>28?words.substring(0,28)+'...':words;
+  document.getElementById('hdrT').textContent=title;
+  fetch(`/api/v1/conversations/${cid}/title`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title})}).then(()=>loadConvs());
+}
 function showThink(){hideThink();const d=document.createElement('div');d.className='think';d.id='thinkEl';d.innerHTML='<div class="think-in"><div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span class="think-t">Clow pensando...</span></div>';T.appendChild(d);scrl()}
 function hideThink(){const e=document.getElementById('thinkEl');if(e)e.remove()}
 function ensureMsg(){if(!curMsg){hideThink();curMsg=document.createElement('div');curMsg.className='ml assistant';curMsg.innerHTML=`<div class="mh"><div class="mav">${INF}</div><span class="mn">clow</span><span class="mt">${now()}</span></div>`;curBody=document.createElement('div');curBody.className='mb';const wrap=document.createElement('div');wrap.className='mb-wrap';wrap.appendChild(curBody);curMsg.appendChild(wrap);T.appendChild(curMsg);raw=''}}
