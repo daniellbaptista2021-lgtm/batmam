@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clow
+  labels:
+    app: clow
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: clow
+  template:
+    metadata:
+      labels:
+        app: clow
+    spec:
+      containers:
+        - name: clow
+          image: clow:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: clow-secrets
+                  key: anthropic-api-key
+            - name: CLOW_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: clow-secrets
+                  key: clow-api-key
+            - name: CLOW_PROVIDER
+              valueFrom:
+                configMapKeyRef:
+                  name: clow-config
+                  key: provider
+            - name: CLOW_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: clow-config
+                  key: model
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+          volumeMounts:
+            - name: clow-data
+              mountPath: /home/clow/.clow
+      volumes:
+        - name: clow-data
+          persistentVolumeClaim:
+            claimName: clow-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clow
+  labels:
+    app: clow
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: clow
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clow-config
+data:
+  provider: "anthropic"
+  model: "claude-sonnet-4-20250514"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: clow-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

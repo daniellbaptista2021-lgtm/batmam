@@ -3,7 +3,11 @@
 Features:
   #18 — Web App (FastAPI + WebSocket com UI completa)
   #19 — Health Check + Monitoring Endpoint
-  #24 — Dashboard de Métricas
+  #24 — Dashboard de Metricas
+  #26 — Autenticacao via API Key / Bearer Token
+  #27 — Rate Limiting por IP (configurable)
+  #28 — CORS configuravel
+  #29 — HTTPS/TLS support (via uvicorn ssl)
 """
 
 from __future__ import annotations
@@ -11,11 +15,15 @@ import json
 import asyncio
 import os
 import time
+import hashlib
+import secrets
+from collections import defaultdict
 from typing import Any
 
 try:
-    from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+    from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException, Depends
     from fastapi.responses import HTMLResponse, JSONResponse
+    from fastapi.middleware.cors import CORSMiddleware
     HAS_FASTAPI = True
 except ImportError:
     HAS_FASTAPI = False
@@ -23,13 +31,152 @@ except ImportError:
 from . import __version__
 from . import config
 
-app = FastAPI(title="Clow", version=__version__) if HAS_FASTAPI else None
+app = FastAPI(
+    title="Clow",
+    version=__version__,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+) if HAS_FASTAPI else None
+
+
+# ── Autenticacao ─────────────────────────────────────────────────
+
+def _get_api_keys() -> list[str]:
+    """Carrega API keys do settings ou env."""
+    settings = config.load_settings()
+    keys = settings.get("webapp", {}).get("api_keys", [])
+    env_key = os.getenv("CLOW_API_KEY", "")
+    if env_key and env_key not in keys:
+        keys.append(env_key)
+    return keys
+
+
+def _generate_api_key() -> str:
+    """Gera uma nova API key segura."""
+    return f"clow_{secrets.token_urlsafe(32)}"
+
+
+def _verify_api_key(key: str) -> bool:
+    """Verifica se uma API key e valida."""
+    valid_keys = _get_api_keys()
+    if not valid_keys:
+        return True  # Sem keys configuradas = sem autenticacao (dev mode)
+    return key in valid_keys
+
+
+async def _auth_dependency(request: Request) -> None:
+    """FastAPI dependency para verificar autenticacao."""
+    keys = _get_api_keys()
+    if not keys:
+        return  # Dev mode — sem autenticacao
+
+    # Tenta Authorization header
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        if _verify_api_key(token):
+            return
+
+    # Tenta query param
+    api_key = request.query_params.get("api_key", "")
+    if api_key and _verify_api_key(api_key):
+        return
+
+    raise HTTPException(status_code=401, detail="API key invalida ou ausente")
+
+
+# ── Rate Limiting ────────────────────────────────────────────────
+
+class RateLimiter:
+    """Rate limiter por IP com sliding window."""
+
+    def __init__(self, max_requests: int = 60, window_seconds: int = 60):
+        self.max_requests = max_requests
+        self.window = window_seconds
+        self._requests: dict[str, list[float]] = defaultdict(list)
+
+    def is_allowed(self, ip: str) -> bool:
+        now = time.time()
+        window_start = now - self.window
+
+        # Limpa requests antigos
+        self._requests[ip] = [t for t in self._requests[ip] if t > window_start]
+
+        if len(self._requests[ip]) >= self.max_requests:
+            return False
+
+        self._requests[ip].append(now)
+        return True
+
+    def remaining(self, ip: str) -> int:
+        now = time.time()
+        window_start = now - self.window
+        recent = [t for t in self._requests[ip] if t > window_start]
+        return max(0, self.max_requests - len(recent))
+
+
+_rate_limiter = RateLimiter(max_requests=60, window_seconds=60)
+_ws_rate_limiter = RateLimiter(max_requests=10, window_seconds=60)
+
+
+async def _rate_limit_dependency(request: Request) -> None:
+    """FastAPI dependency para rate limiting."""
+    client_ip = request.client.host if request.client else "unknown"
+    if not _rate_limiter.is_allowed(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Rate limit excedido. Tente novamente em alguns segundos.",
+            headers={"Retry-After": "60"},
+        )
+
+
+# ── Setup CORS e Middleware ──────────────────────────────────────
+
+def _setup_middleware():
+    """Configura CORS e middlewares de seguranca."""
+    if not HAS_FASTAPI or app is None:
+        return
+
+    settings = config.load_settings()
+    webapp_cfg = settings.get("webapp", {})
+
+    # CORS
+    allowed_origins = webapp_cfg.get("cors_origins", ["http://localhost:*", "http://127.0.0.1:*"])
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allowed_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["*"],
+    )
+
+
+if HAS_FASTAPI:
+    _setup_middleware()
 
 
 def get_app():
     if not HAS_FASTAPI:
-        raise RuntimeError("FastAPI não instalado. Instale com: pip install fastapi uvicorn")
+        raise RuntimeError("FastAPI nao instalado. Instale com: pip install 'clow[web]'")
     return app
+
+
+def start_with_tls(host: str = "0.0.0.0", port: int = 8080, certfile: str = "", keyfile: str = ""):
+    """Inicia o servidor com TLS/HTTPS se certificados forem fornecidos."""
+    import uvicorn
+
+    kwargs: dict[str, Any] = {
+        "app": "clow.webapp:app",
+        "host": host,
+        "port": port,
+        "log_level": "info",
+    }
+    if certfile and keyfile:
+        kwargs["ssl_certfile"] = certfile
+        kwargs["ssl_keyfile"] = keyfile
+
+    uvicorn.run(**kwargs)
 
 
 # ── Ações executadas (Feature #24 — tracking) ──────────────────
@@ -868,18 +1015,73 @@ if HAS_FASTAPI:
     async def index():
         return WEBAPP_HTML
 
-    # Feature #24: Dashboard
-    @app.get("/dashboard", response_class=HTMLResponse)
+    # Feature #24: Dashboard (protegido)
+    @app.get("/dashboard", response_class=HTMLResponse, dependencies=[Depends(_auth_dependency)])
     async def dashboard():
         return DASHBOARD_HTML
 
-    # Feature #19: Health Check + Monitoring
-    @app.get("/health")
+    # Feature #19: Health Check (publico — sem auth)
+    @app.get("/health", dependencies=[Depends(_rate_limit_dependency)])
     async def health():
         return JSONResponse(_get_health_data())
 
+    # API endpoints protegidos
+    @app.get("/api/v1/status", dependencies=[Depends(_auth_dependency), Depends(_rate_limit_dependency)])
+    async def api_status():
+        """Status completo da API com metricas."""
+        return JSONResponse({
+            "version": __version__,
+            "status": "ok",
+            **_get_health_data(),
+        })
+
+    @app.post("/api/v1/generate-key", dependencies=[Depends(_auth_dependency)])
+    async def generate_key():
+        """Gera nova API key para autenticacao."""
+        key = _generate_api_key()
+        return JSONResponse({"api_key": key, "note": "Adicione esta key em settings.json > webapp > api_keys"})
+
+    @app.get("/api/v1/metrics", dependencies=[Depends(_auth_dependency), Depends(_rate_limit_dependency)])
+    async def api_metrics():
+        """Retorna metricas coletadas (counters, gauges, histograms)."""
+        from .logging import metrics
+        return JSONResponse(metrics.snapshot())
+
+    @app.get("/api/v1/sessions", dependencies=[Depends(_auth_dependency), Depends(_rate_limit_dependency)])
+    async def api_sessions():
+        """Lista sessoes salvas."""
+        from .session import list_sessions
+        return JSONResponse({"sessions": list_sessions()})
+
+    @app.get("/api/v1/memory", dependencies=[Depends(_auth_dependency), Depends(_rate_limit_dependency)])
+    async def api_memory():
+        """Lista memorias persistidas."""
+        from .memory import list_memories
+        return JSONResponse({"memories": list_memories()})
+
+    @app.get("/api/v1/tools", dependencies=[Depends(_auth_dependency)])
+    async def api_tools():
+        """Lista todas as ferramentas disponiveis."""
+        from .tools.base import create_default_registry
+        registry = create_default_registry()
+        tools = [{"name": t.name, "description": t.description} for t in registry.all_tools()]
+        return JSONResponse({"tools": tools, "count": len(tools)})
+
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):
+        # Verificacao de API key via query param para WebSocket
+        api_key = websocket.query_params.get("api_key", "")
+        keys = _get_api_keys()
+        if keys and not _verify_api_key(api_key):
+            await websocket.close(code=4001, reason="API key invalida")
+            return
+
+        # Rate limit para WebSocket
+        client_ip = websocket.client.host if websocket.client else "unknown"
+        if not _ws_rate_limiter.is_allowed(client_ip):
+            await websocket.close(code=4029, reason="Rate limit excedido")
+            return
+
         await websocket.accept()
 
         from .agent import Agent

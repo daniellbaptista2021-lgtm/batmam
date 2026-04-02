@@ -1075,13 +1075,35 @@ def _start_web_server(arg: str) -> None:
     port = int(arg) if arg and arg.isdigit() else 8080
     try:
         import uvicorn
-        from .webapp import get_app
+        from .webapp import get_app, _get_api_keys
         app = get_app()
-        console.print(f"  [success]Web app starting at http://0.0.0.0:{port}[/]")
+
+        # Verifica TLS
+        settings = config.load_settings()
+        tls = settings.get("webapp", {}).get("tls", {})
+        certfile = tls.get("certfile", "")
+        keyfile = tls.get("keyfile", "")
+
+        protocol = "https" if certfile and keyfile else "http"
+        console.print(f"  [success]Web app starting at {protocol}://0.0.0.0:{port}[/]")
+        console.print(f"  [muted]Docs: {protocol}://localhost:{port}/docs[/]")
+
+        keys = _get_api_keys()
+        if keys:
+            console.print(f"  [info]Auth: {len(keys)} API key(s) configuradas[/]")
+        else:
+            console.print("  [warning]Auth: DESABILITADA (configure api_keys em settings.json)[/]")
+
         console.print("  [muted]Ctrl+C to stop[/]")
-        uvicorn.run(app, host="0.0.0.0", port=port, log_level="warning")
+
+        kwargs: dict = {"host": "0.0.0.0", "port": port, "log_level": "warning"}
+        if certfile and keyfile:
+            kwargs["ssl_certfile"] = certfile
+            kwargs["ssl_keyfile"] = keyfile
+
+        uvicorn.run(app, **kwargs)
     except ImportError:
-        console.print("  [error]Install: pip install fastapi uvicorn[/]")
+        console.print("  [error]Install: pip install 'clow[web]'[/]")
     except Exception as e:
         console.print(f"  [error]{e}[/]")
 

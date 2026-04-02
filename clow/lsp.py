@@ -431,3 +431,46 @@ def _uri_to_path(uri: str) -> str:
             return path.replace("/", os.sep)
         return "/" + path.replace("/", os.sep)
     return uri
+
+
+# ── Integracao com Agent ────────────────────────────────────────
+
+class LSPAgentIntegration:
+    """Integra LSP com o agent loop do Clow.
+
+    - Notifica LSP quando arquivos sao editados/escritos
+    - Injeta diagnosticos no contexto do agente
+    - Espera breve para diagnosticos apos edicao
+    """
+
+    def __init__(self, manager: LSPManager) -> None:
+        self.manager = manager
+        self._notified_files: set[str] = set()
+
+    def on_file_changed(self, file_path: str) -> None:
+        """Chamado quando uma tool edita/escreve um arquivo."""
+        if not self.manager._clients:
+            return
+
+        abs_path = str(Path(file_path).resolve())
+        self.manager.open_file(abs_path)
+        self._notified_files.add(abs_path)
+
+        # Espera breve para o LSP processar
+        import time as _time
+        _time.sleep(0.5)
+
+    def get_diagnostics_context(self, max_items: int = 15) -> str:
+        """Retorna diagnosticos formatados para injetar no system prompt."""
+        if not self.manager._clients:
+            return ""
+
+        summary = self.manager.get_context_summary(max_items)
+        if not summary:
+            return ""
+
+        return f"\n# LSP Diagnostics (tempo real)\n{summary}"
+
+    def get_file_diagnostics(self, file_path: str) -> list[LSPDiagnostic]:
+        """Retorna diagnosticos para um arquivo especifico."""
+        return self.manager.get_diagnostics_for_file(file_path)

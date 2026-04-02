@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  clow:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "${CLOW_PORT:-8080}:8080"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - CLOW_PROVIDER=${CLOW_PROVIDER:-anthropic}
+      - CLOW_MODEL=${CLOW_MODEL:-claude-sonnet-4-20250514}
+      - CLOW_API_KEY=${CLOW_API_KEY:-}
+    volumes:
+      - clow-data:/home/clow/.clow
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+
+volumes:
+  clow-data:
