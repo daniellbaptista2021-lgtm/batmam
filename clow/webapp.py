@@ -1960,7 +1960,32 @@ if HAS_FASTAPI:
         if not content:
             return JSONResponse({"error": "content vazio"}, status_code=400)
 
+        # Pega email do usuario logado para credenciais
+        user_email = _get_session_from_request(request) or "anonymous"
         track_action("user_message_http", content[:60])
+
+        # ── Comandos /connect, /disconnect, /connections ──
+        if content.startswith("/"):
+            from .integrations.command_handler import handle_command
+            cmd_result = handle_command(content, user_email)
+            if cmd_result:
+                return JSONResponse({
+                    "session_id": session_id or str(uuid.uuid4())[:8],
+                    "response": cmd_result["response"],
+                    "tools": [],
+                    "file": None,
+                })
+
+        # ── Detecta pedidos de integracao (meta ads, supabase, etc) ──
+        from .integrations.command_handler import detect_integration_request
+        int_result = detect_integration_request(content, user_email)
+        if int_result:
+            return JSONResponse({
+                "session_id": session_id or str(uuid.uuid4())[:8],
+                "response": int_result["response"],
+                "tools": [],
+                "file": None,
+            })
 
         # ── Detecta geracao de arquivo ──
         from .generators.dispatcher import detect, run_generator
