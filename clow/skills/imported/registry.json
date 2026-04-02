@@ -1,0 +1,30 @@
+{
+  "skills": [
+    {"id": "paid-ads", "name": "Paid Ads Expert", "category": "marketing", "trigger_words": ["meta ads", "facebook ads", "google ads", "campanha", "anuncio", "trafego pago", "cpc", "cpa", "roas", "ctr", "ppc", "paid", "ads", "trafego", "andromeda"], "path": "imported/paid-ads/SKILL.md"},
+    {"id": "ad-creative", "name": "Ad Creative Generator", "category": "marketing", "trigger_words": ["criativo", "creative", "banner", "imagem anuncio", "visual ad", "briefing criativo"], "path": "imported/ad-creative/SKILL.md"},
+    {"id": "copywriting", "name": "Copywriter Expert", "category": "marketing", "trigger_words": ["copy", "headline", "texto anuncio", "cta", "persuasao", "venda", "headline"], "path": "imported/copywriting/SKILL.md"},
+    {"id": "content-humanizer", "name": "Content Humanizer", "category": "marketing", "trigger_words": ["__always__"], "path": "imported/content-humanizer/SKILL.md"},
+    {"id": "content-creator", "name": "Content Creator", "category": "marketing", "trigger_words": ["conteudo", "blog", "artigo", "post", "texto", "redacao"], "path": "imported/content-creator/SKILL.md"},
+    {"id": "social-content", "name": "Social Media Content", "category": "marketing", "trigger_words": ["instagram", "reels", "stories", "tiktok", "linkedin", "rede social", "social media", "carrossel"], "path": "imported/social-content/SKILL.md"},
+    {"id": "campaign-analytics", "name": "Campaign Analytics", "category": "marketing", "trigger_words": ["metricas", "analytics", "relatorio campanha", "performance", "dashboard ads"], "path": "imported/campaign-analytics/SKILL.md"},
+    {"id": "content-strategy", "name": "Content Strategy", "category": "marketing", "trigger_words": ["estrategia conteudo", "calendario editorial", "planejamento conteudo"], "path": "imported/content-strategy/SKILL.md"},
+    {"id": "email-sequence", "name": "Email Sequence Builder", "category": "marketing", "trigger_words": ["email", "sequencia", "nurture", "follow-up", "email marketing", "automacao email"], "path": "imported/email-sequence/SKILL.md"},
+    {"id": "pricing-strategy", "name": "Pricing Strategy", "category": "marketing", "trigger_words": ["preco", "pricing", "precificacao", "quanto cobrar", "tabela preco"], "path": "imported/pricing-strategy/SKILL.md"},
+    {"id": "seo-audit", "name": "SEO Audit", "category": "marketing", "trigger_words": ["seo", "google organico", "rankeamento", "palavras-chave", "backlink"], "path": "imported/seo-audit/SKILL.md"},
+    {"id": "landing-page-generator", "name": "Landing Page Generator", "category": "marketing", "trigger_words": ["landing page", "lp", "pagina de captura", "pagina de vendas", "hotsite"], "path": "imported/landing-page-generator/SKILL.md"},
+    {"id": "llm-cost-optimizer", "name": "LLM Cost Optimizer", "category": "engineering", "trigger_words": ["custo api", "otimizar tokens", "economizar api", "gasto llm", "token usage"], "path": "imported/llm-cost-optimizer/SKILL.md"},
+    {"id": "agent-designer", "name": "Agent Designer", "category": "engineering", "trigger_words": ["multi-agent", "arquitetura agente", "orquestracao", "swarm", "supervisor agent"], "path": "imported/agent-designer/SKILL.md"},
+    {"id": "database-designer", "name": "Database Designer", "category": "engineering", "trigger_words": ["banco de dados", "database design", "schema", "modelagem", "erd"], "path": "imported/database-designer/SKILL.md"},
+    {"id": "sql-database-assistant", "name": "SQL Assistant", "category": "engineering", "trigger_words": ["sql", "query", "select", "insert", "postgres query", "supabase query"], "path": "imported/sql-database-assistant/SKILL.md"},
+    {"id": "docker-development", "name": "Docker Development", "category": "engineering", "trigger_words": ["docker", "container", "dockerfile", "docker-compose", "imagem docker"], "path": "imported/docker-development/SKILL.md"},
+    {"id": "mcp-server-builder", "name": "MCP Server Builder", "category": "engineering", "trigger_words": ["mcp", "model context protocol", "mcp server", "tool server"], "path": "imported/mcp-server-builder/SKILL.md"},
+    {"id": "api-design-reviewer", "name": "API Design Reviewer", "category": "engineering", "trigger_words": ["api design", "rest api", "endpoint", "api review"], "path": "imported/api-design-reviewer/SKILL.md"},
+    {"id": "ci-cd-pipeline-builder", "name": "CI/CD Pipeline Builder", "category": "engineering", "trigger_words": ["ci cd", "pipeline", "github actions", "deploy automatico", "ci/cd"], "path": "imported/ci-cd-pipeline-builder/SKILL.md"},
+    {"id": "contract-proposal-writer", "name": "Contract & Proposal Writer", "category": "business", "trigger_words": ["contrato", "proposta", "sow", "nda", "acordo", "documento legal", "proposta comercial"], "path": "imported/contract-and-proposal-writer/SKILL.md"},
+    {"id": "sales-engineer", "name": "Sales Engineer", "category": "business", "trigger_words": ["demo tecnica", "poc", "venda tecnica", "objecao tecnica"], "path": "imported/sales-engineer/SKILL.md"},
+    {"id": "customer-success-manager", "name": "Customer Success Manager", "category": "business", "trigger_words": ["customer success", "onboarding cliente", "retencao", "cs manager"], "path": "imported/customer-success-manager/SKILL.md"},
+    {"id": "revenue-operations", "name": "Revenue Operations", "category": "business", "trigger_words": ["revops", "revenue operations", "funil vendas", "pipeline vendas"], "path": "imported/revenue-operations/SKILL.md"},
+    {"id": "saas-metrics-coach", "name": "SaaS Metrics Coach", "category": "business", "trigger_words": ["mrr", "arr", "churn", "ltv", "cac", "metricas saas", "receita recorrente"], "path": "imported/saas-metrics-coach/SKILL.md"},
+    {"id": "saas-scaffolder", "name": "SaaS Scaffolder", "category": "engineering", "trigger_words": ["saas", "scaffold", "boilerplate", "starter", "template saas", "criar saas"], "path": "imported/saas-scaffolder/SKILL.md"}
+  ]
+}

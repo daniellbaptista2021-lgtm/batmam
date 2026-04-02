@@ -536,14 +536,32 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
     </div>
     <div class="sb-sep"></div>
     <div class="sb-sec">
-      <div class="sb-lbl open" onclick="this.classList.toggle('open')">Ferramentas <span class="ar">&#9654;</span></div>
+      <div class="sb-lbl open" onclick="this.classList.toggle('open')">Criar <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
         <button class="sb-btn" onclick="qa('Cria uma landing page de ')"><span class="ic">&#x1F310;</span>Landing Page</button>
         <button class="sb-btn" onclick="qa('Gera uma planilha de ')"><span class="ic">&#x1F4CA;</span>Planilha</button>
         <button class="sb-btn" onclick="qa('Cria uma apresentacao sobre ')"><span class="ic">&#x1F3AC;</span>Apresentacao</button>
         <button class="sb-btn" onclick="qa('Faz um documento de ')"><span class="ic">&#x1F4C4;</span>Documento</button>
         <button class="sb-btn" onclick="qa('Me faz um app de ')"><span class="ic">&#x26A1;</span>Web App</button>
-        <button class="sb-btn" onclick="qa('Gera copy para anuncio de ')"><span class="ic">&#x270F;</span>Copy Ads</button>
+      </div>
+    </div>
+    <div class="sb-sec">
+      <div class="sb-lbl" onclick="this.classList.toggle('open')">Marketing <span class="ar">&#9654;</span></div>
+      <div class="sb-ct">
+        <button class="sb-btn" onclick="qa('Analise minha campanha de trafego pago ')"><span class="ic">&#x1F4B0;</span>Trafego Pago</button>
+        <button class="sb-btn" onclick="qa('Gera copy para anuncio de ')"><span class="ic">&#x270F;</span>Copy</button>
+        <button class="sb-btn" onclick="qa('Cria conteudo para instagram sobre ')"><span class="ic">&#x1F4F1;</span>Redes Sociais</button>
+        <button class="sb-btn" onclick="qa('Cria sequencia de emails para ')"><span class="ic">&#x1F4E7;</span>Email Marketing</button>
+        <button class="sb-btn" onclick="qa('Faz auditoria SEO de ')"><span class="ic">&#x1F50D;</span>SEO</button>
+        <button class="sb-btn" onclick="qa('Define estrategia de precificacao para ')"><span class="ic">&#x1F4B2;</span>Pricing</button>
+      </div>
+    </div>
+    <div class="sb-sec">
+      <div class="sb-lbl" onclick="this.classList.toggle('open')">Negocios <span class="ar">&#9654;</span></div>
+      <div class="sb-ct">
+        <button class="sb-btn" onclick="qa('Cria proposta comercial para ')"><span class="ic">&#x1F4DD;</span>Proposta</button>
+        <button class="sb-btn" onclick="qa('Analise metricas SaaS: ')"><span class="ic">&#x1F4CA;</span>Metricas SaaS</button>
+        <button class="sb-btn" onclick="qa('Cria contrato de ')"><span class="ic">&#x1F4C3;</span>Contrato</button>
       </div>
     </div>
     <div class="sb-sec">
@@ -1522,7 +1540,11 @@ if HAS_FASTAPI:
             cmd_lower = content.lower().strip()
             cmd_resp = None
 
-            if cmd_lower == "/memories":
+            if cmd_lower.startswith("/skills"):
+                from .skills.loader import format_skills_list
+                cat = content[7:].strip()
+                cmd_resp = format_skills_list(cat)
+            elif cmd_lower == "/memories":
                 from .memory_web import format_memories_list
                 cmd_resp = format_memories_list(user_id)
             elif cmd_lower.startswith("/forget"):
@@ -1588,6 +1610,9 @@ if HAS_FASTAPI:
                     "## Comandos Disponiveis\n\n"
                     "| Comando | Descricao |\n|---------|----------|\n"
                     "| `/mission X` | Iniciar missao autonoma |\n"
+                    "| `/skills` | Listar skills disponiveis |\n"
+                    "| `/memories` | Ver memorias salvas |\n"
+                    "| `/forget X` | Esquecer memoria |\n"
                     "| `/connect` | Conectar servico externo |\n"
                     "| `/connections` | Ver conexoes ativas |\n"
                     "| `/disconnect X` | Desconectar servico |\n"
@@ -1710,6 +1735,12 @@ if HAS_FASTAPI:
                     "tools": [],
                     "file": None,
                 }, status_code=500)
+
+        # ── Injetar skills no prompt ──
+        from .skills.loader import build_skill_prompt
+        skill_context = build_skill_prompt(content)
+        if skill_context:
+            content = f"[CONTEXTO DE SKILLS ATIVAS - siga estas instrucoes]\n{skill_context}\n[FIM DO CONTEXTO]\n\nPedido do usuario: {content}"
 
         # ── Chat normal via Agent ──
         session_key = f"{session_id}_{chosen_model}"
