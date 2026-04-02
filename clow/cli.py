@@ -80,93 +80,18 @@ _BLUE = "\033[94m"
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# ∞ INFINITY PULSE — identidade visual do Clow
-# Inspirado no icone pulsante do Claude Code, mas com ∞ roxo.
-# Mostra o agente/modelo ativo enquanto trabalha.
+# ∞ INFINITY PULSE — feedback visual estilo Claude Code
+# ∞ roxo pulsante durante TODA operacao (modelo, tools, bash)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-_inf_thread: threading.Thread | None = None
-_inf_stop = threading.Event()
-_inf_state = "Pensando"
-_inf_agent_name = ""
+from .spinner import ClowSpinner
 
-# Gradiente de brilho para o pulso suave (8 frames = ciclo completo ~2.4s)
-# Usa escape codes RGB para transicao mais suave roxo brilhante -> escuro -> brilhante
-_PULSE_COLORS = [
-    "\033[38;2;168;85;247m",   # #A855F7 — roxo brilhante (peak)
-    "\033[38;2;155;75;230m",   # medio-alto
-    "\033[38;2;140;65;210m",   # medio
-    "\033[38;2;124;58;237m",   # #7C3AED — roxo medio
-    "\033[38;2;110;50;200m",   # medio-baixo
-    "\033[38;2;95;42;180m",    # escuro
-    "\033[38;2;110;50;200m",   # medio-baixo (volta)
-    "\033[38;2;124;58;237m",   # medio (volta)
-    "\033[38;2;140;65;210m",   # medio (volta)
-    "\033[38;2;155;75;230m",   # medio-alto (volta)
-]
+_spinner = ClowSpinner()
+_spinner_agent_name = ""  # Nome do modelo ativo para exibicao
 
-
-def _inf_start(state: str = "Pensando") -> None:
-    """Inicia o ∞ roxo pulsante com nome do agente ativo."""
-    global _inf_thread, _inf_state, _inf_agent_name
-    _inf_state = state
-    # Monta nome do agente/modelo no formato Claude Code
-    model = config.CLOW_MODEL
-    # Extrai nome curto do modelo (ex: "claude-sonnet-4" -> "Claude Sonnet")
-    _inf_agent_name = _format_model_name(model)
-    _inf_stop.clear()
-
-    def _pulse():
-        frame = 0
-        while not _inf_stop.is_set():
-            color = _PULSE_COLORS[frame % len(_PULSE_COLORS)]
-            # Frame par: ∞ brilhante, frame impar: ∞ com bold
-            if frame % len(_PULSE_COLORS) < 2:
-                inf_char = f"{_BOLD}{color}\u221e{_RESET}"
-            else:
-                inf_char = f"{color}\u221e{_RESET}"
-
-            # Nome do agente em roxo medio + estado em dim
-            agent_display = f"{_PURPLE_B}{_BOLD}{_inf_agent_name}{_RESET}" if _inf_agent_name else ""
-            state_display = f"{_DIM}{_inf_state}{_RESET}" if _inf_state != _inf_agent_name else ""
-
-            if agent_display and state_display:
-                line = f"  {inf_char} {agent_display} {state_display}"
-            elif agent_display:
-                line = f"  {inf_char} {agent_display}"
-            else:
-                line = f"  {inf_char} {_DIM}{_inf_state}{_RESET}"
-
-            try:
-                sys.stdout.write(f"{_CLEAR_LINE}{line}")
-                sys.stdout.flush()
-            except UnicodeEncodeError:
-                # Fallback para terminais sem suporte UTF-8
-                fallback = line.replace("\u221e", "*")
-                sys.stdout.write(f"{_CLEAR_LINE}{fallback}")
-                sys.stdout.flush()
-            frame += 1
-            _inf_stop.wait(0.3)  # 0.3s por frame = pulso suave
-        sys.stdout.write(_CLEAR_LINE)
-        sys.stdout.flush()
-
-    _inf_thread = threading.Thread(target=_pulse, daemon=True, name="clow-inf")
-    _inf_thread.start()
-
-
-def _inf_update(state: str) -> None:
-    """Atualiza o texto de estado (ex: 'Executando bash')."""
-    global _inf_state
-    _inf_state = state
-
-
-def _inf_stop_now() -> None:
-    """Para o pulso imediatamente."""
-    global _inf_thread
-    _inf_stop.set()
-    if _inf_thread and _inf_thread.is_alive():
-        _inf_thread.join(timeout=1)
-    _inf_thread = None
+# Badge roxo para tool calls: ⟡ NomeDaTool
+_TOOL_BADGE = "\033[1;38;5;129m"  # bold roxo
+_BADGE_RESET = "\033[0m"
 
 
 def _format_model_name(model: str) -> str:
@@ -314,11 +239,11 @@ def on_text_delta(delta: str) -> None:
     """Acumula tokens da resposta. Streaming visual mostra texto cru, Markdown renderizado no final."""
     global _in_streaming, _thinking_active
 
-    if _thinking_active:
-        _inf_stop_now()
+    if _thinking_active or _spinner.is_running:
+        _spinner.stop()
         _thinking_active = False
         # Mostra label do agente que esta respondendo
-        sys.stdout.write(f"{_CLEAR_LINE}  \033[38;2;168;85;247m{_BOLD}{_inf_agent_name}{_RESET}\n\n")
+        sys.stdout.write(f"  \033[1;38;5;129m{_spinner_agent_name}{_RESET}\n\n")
 
     if not _in_streaming:
         _in_streaming = True
@@ -408,44 +333,45 @@ def _tool_label(name: str, args: dict) -> str:
 
 
 def on_tool_call(name: str, args: dict) -> None:
-    """Formato Claude Code: ⏺ Label descritiva com agente ativo."""
+    """Formato Claude Code: badge roxo ⟡ + spinner durante execucao."""
     global _in_streaming, _thinking_active
 
-    if _thinking_active:
-        _inf_stop_now()
-        _thinking_active = False
-        sys.stdout.write(_CLEAR_LINE)
+    # Para spinner anterior (se estava "Pensando...")
+    _spinner.stop()
+    _thinking_active = False
 
     if _in_streaming:
         sys.stdout.write("\n")
         sys.stdout.flush()
         _in_streaming = False
 
+    # Badge roxo com nome da tool capitalizado
+    tool_display = name.replace("_", " ").title()
     label = _tool_label(name, args)
-    # ⏺ roxo + label — estilo Claude Code mas identidade Clow
-    sys.stdout.write(f"  \033[38;2;168;85;247m⏺{_RESET} {label}\n")
+    sys.stdout.write(f"  {_TOOL_BADGE}\u27e1 {tool_display}{_BADGE_RESET}  {_DIM}{label}{_RESET}\n")
     sys.stdout.flush()
 
-    # Reinicia o pulso com o nome da tool
+    # Inicia spinner DURANTE a execucao da tool (momento critico)
     _thinking_active = True
-    _inf_start(f"executando {name}")
+    _spinner.start(f"Executando {tool_display}...")
 
 
 def on_tool_result(name: str, status: str, output: str) -> None:
-    """Resultado compactado com ⎿."""
+    """Resultado compactado com ⎿. Para o spinner e mostra resultado."""
     global _thinking_active
-    if _thinking_active:
-        _inf_stop_now()
-        _thinking_active = False
+
+    # Para o spinner que estava rodando durante a execucao da tool
+    _spinner.stop()
+    _thinking_active = False
 
     if status == "error":
-        sys.stdout.write(f"  {_RED}⎿ Error{_RESET}\n")
+        sys.stdout.write(f"  {_RED}\u23bf Error{_RESET}\n")
         if output:
             for line in output.strip().splitlines()[:3]:
                 sys.stdout.write(f"    {_RED}{line[:120]}{_RESET}\n")
         sys.stdout.flush()
     elif status == "denied":
-        sys.stdout.write(f"  {_RED}⎿ Action cancelled{_RESET}\n")
+        sys.stdout.write(f"  {_RED}\u23bf Action cancelled{_RESET}\n")
         sys.stdout.flush()
     else:
         if name == "edit" and "```diff" in output:
@@ -454,13 +380,17 @@ def on_tool_result(name: str, status: str, output: str) -> None:
             lines = output.strip().splitlines()
             if len(lines) <= TOOL_OUTPUT_MAX_LINES:
                 for line in lines:
-                    sys.stdout.write(f"  {_DIM}⎿ {line[:150]}{_RESET}\n")
+                    sys.stdout.write(f"  {_DIM}\u23bf {line[:150]}{_RESET}\n")
             else:
                 for line in lines[:4]:
-                    sys.stdout.write(f"  {_DIM}⎿ {line[:150]}{_RESET}\n")
-                sys.stdout.write(f"  {_DIM}⎿ ... +{len(lines) - 4} lines{_RESET}\n")
+                    sys.stdout.write(f"  {_DIM}\u23bf {line[:150]}{_RESET}\n")
+                sys.stdout.write(f"  {_DIM}\u23bf ... +{len(lines) - 4} lines{_RESET}\n")
         sys.stdout.write("\n")
         sys.stdout.flush()
+
+    # Reinicia spinner "Pensando..." pois o modelo vai processar o resultado
+    _thinking_active = True
+    _spinner.start("Pensando...")
 
 
 def _show_diff(output: str) -> None:
@@ -1298,14 +1228,15 @@ def _print_banner() -> None:
 
 
 def _run_agent_turn(agent: Agent, message: str) -> None:
-    global _in_streaming, _thinking_active, _first_turn
+    global _in_streaming, _thinking_active, _first_turn, _spinner_agent_name
+    _spinner_agent_name = _format_model_name(agent.model)
     try:
         log_action("repl_turn", message[:80])
         _thinking_active = True
-        _inf_start("Pensando")
+        _spinner.start("Pensando...")
         agent.run_turn(message)
     except KeyboardInterrupt:
-        _inf_stop_now()
+        _spinner.stop()
         _thinking_active = False
         if _in_streaming:
             sys.stdout.write("\n")
@@ -1313,16 +1244,15 @@ def _run_agent_turn(agent: Agent, message: str) -> None:
         sys.stdout.write(f"\n  {_DIM}Interrupted.{_RESET}\n\n")
         sys.stdout.flush()
     except Exception as e:
-        _inf_stop_now()
+        _spinner.stop()
         _thinking_active = False
         if _in_streaming:
             sys.stdout.write("\n")
             _in_streaming = False
         console.print(f"\n  [error]{e}[/]\n")
     finally:
-        if _thinking_active:
-            _inf_stop_now()
-            _thinking_active = False
+        _spinner.stop()
+        _thinking_active = False
         _first_turn = False
 
 
