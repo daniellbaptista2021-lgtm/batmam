@@ -1,4 +1,4 @@
-const CACHE_NAME = 'system-clow-v1';
+const CACHE_NAME = 'system-clow-v2';
 const urlsToCache = [
   '/',
   '/static/icon.svg',

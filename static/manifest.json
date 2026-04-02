@@ -1,13 +1,13 @@
 {
-  "name": "System Clow",
+  "name": "Clow — Inteligência Infinita",
   "short_name": "Clow",
-  "description": "AI Code Agent para Terminal",
+  "description": "Clow - AI Code Agent | Inteligência Infinita • Possibilidades Premium",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "theme_color": "#0a0a0f",
-  "background_color": "#06060b",
+  "theme_color": "#050510",
+  "background_color": "#050510",
   "icons": [
     {
       "src": "/static/icon.svg",
