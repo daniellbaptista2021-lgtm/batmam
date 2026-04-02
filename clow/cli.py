@@ -81,40 +81,72 @@ _BLUE = "\033[94m"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # ∞ INFINITY PULSE — identidade visual do Clow
+# Inspirado no icone pulsante do Claude Code, mas com ∞ roxo.
+# Mostra o agente/modelo ativo enquanto trabalha.
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 _inf_thread: threading.Thread | None = None
 _inf_stop = threading.Event()
 _inf_state = "Pensando"
+_inf_agent_name = ""
 
-_INF_FRAMES = [
-    f"{_BOLD}{_PURPLE_B}∞{_RESET}",   # brilhante
-    f"{_PURPLE_B}∞{_RESET}",           # médio-alto
-    f"{_PURPLE_D}∞{_RESET}",           # médio
-    f"{_DIM}{_PURPLE_D}∞{_RESET}",    # suave
-    f"{_PURPLE_D}∞{_RESET}",           # médio
-    f"{_PURPLE_B}∞{_RESET}",           # médio-alto
+# Gradiente de brilho para o pulso suave (8 frames = ciclo completo ~2.4s)
+# Usa escape codes RGB para transicao mais suave roxo brilhante -> escuro -> brilhante
+_PULSE_COLORS = [
+    "\033[38;2;168;85;247m",   # #A855F7 — roxo brilhante (peak)
+    "\033[38;2;155;75;230m",   # medio-alto
+    "\033[38;2;140;65;210m",   # medio
+    "\033[38;2;124;58;237m",   # #7C3AED — roxo medio
+    "\033[38;2;110;50;200m",   # medio-baixo
+    "\033[38;2;95;42;180m",    # escuro
+    "\033[38;2;110;50;200m",   # medio-baixo (volta)
+    "\033[38;2;124;58;237m",   # medio (volta)
+    "\033[38;2;140;65;210m",   # medio (volta)
+    "\033[38;2;155;75;230m",   # medio-alto (volta)
 ]
-_DOTS = ["   ", ".  ", ".. ", "..."]
 
 
 def _inf_start(state: str = "Pensando") -> None:
-    global _inf_thread, _inf_state
+    """Inicia o ∞ roxo pulsante com nome do agente ativo."""
+    global _inf_thread, _inf_state, _inf_agent_name
     _inf_state = state
+    # Monta nome do agente/modelo no formato Claude Code
+    model = config.CLOW_MODEL
+    # Extrai nome curto do modelo (ex: "claude-sonnet-4" -> "Claude Sonnet")
+    _inf_agent_name = _format_model_name(model)
     _inf_stop.clear()
 
     def _pulse():
-        fi = 0
-        di = 0
+        frame = 0
         while not _inf_stop.is_set():
-            inf = _INF_FRAMES[fi % len(_INF_FRAMES)]
-            dots = _DOTS[di % len(_DOTS)]
-            sys.stdout.write(f"{_CLEAR_LINE}  {inf} {_DIM}{_inf_state}{dots}{_RESET}")
-            sys.stdout.flush()
-            fi += 1
-            if fi % 2 == 0:
-                di += 1
-            _inf_stop.wait(0.2)
+            color = _PULSE_COLORS[frame % len(_PULSE_COLORS)]
+            # Frame par: ∞ brilhante, frame impar: ∞ com bold
+            if frame % len(_PULSE_COLORS) < 2:
+                inf_char = f"{_BOLD}{color}\u221e{_RESET}"
+            else:
+                inf_char = f"{color}\u221e{_RESET}"
+
+            # Nome do agente em roxo medio + estado em dim
+            agent_display = f"{_PURPLE_B}{_BOLD}{_inf_agent_name}{_RESET}" if _inf_agent_name else ""
+            state_display = f"{_DIM}{_inf_state}{_RESET}" if _inf_state != _inf_agent_name else ""
+
+            if agent_display and state_display:
+                line = f"  {inf_char} {agent_display} {state_display}"
+            elif agent_display:
+                line = f"  {inf_char} {agent_display}"
+            else:
+                line = f"  {inf_char} {_DIM}{_inf_state}{_RESET}"
+
+            try:
+                sys.stdout.write(f"{_CLEAR_LINE}{line}")
+                sys.stdout.flush()
+            except UnicodeEncodeError:
+                # Fallback para terminais sem suporte UTF-8
+                fallback = line.replace("\u221e", "*")
+                sys.stdout.write(f"{_CLEAR_LINE}{fallback}")
+                sys.stdout.flush()
+            frame += 1
+            _inf_stop.wait(0.3)  # 0.3s por frame = pulso suave
         sys.stdout.write(_CLEAR_LINE)
         sys.stdout.flush()
 
@@ -123,16 +155,54 @@ def _inf_start(state: str = "Pensando") -> None:
 
 
 def _inf_update(state: str) -> None:
+    """Atualiza o texto de estado (ex: 'Executando bash')."""
     global _inf_state
     _inf_state = state
 
 
 def _inf_stop_now() -> None:
+    """Para o pulso imediatamente."""
     global _inf_thread
     _inf_stop.set()
     if _inf_thread and _inf_thread.is_alive():
         _inf_thread.join(timeout=1)
     _inf_thread = None
+
+
+def _format_model_name(model: str) -> str:
+    """Formata nome do modelo para exibicao elegante.
+
+    'claude-sonnet-4-20250514'  -> 'Claude Sonnet'
+    'claude-opus-4-20250514'    -> 'Claude Opus'
+    'claude-haiku-4-5-20251001' -> 'Claude Haiku'
+    'gpt-4.1'                   -> 'GPT-4.1'
+    'gpt-4.1-mini'              -> 'GPT-4.1 Mini'
+    """
+    m = model.lower()
+
+    # Claude models
+    if "claude" in m:
+        if "opus" in m:
+            return "Claude Opus"
+        elif "sonnet" in m:
+            return "Claude Sonnet"
+        elif "haiku" in m:
+            return "Claude Haiku"
+        return "Claude"
+
+    # OpenAI models
+    if m.startswith("gpt-"):
+        # gpt-4.1 -> GPT-4.1, gpt-4.1-mini -> GPT-4.1 Mini
+        rest = model[4:]  # Remove "gpt-"
+        parts = rest.split("-")
+        version = parts[0]  # "4.1"
+        suffix = " ".join(p.capitalize() for p in parts[1:] if p)
+        return f"GPT-{version}" + (f" {suffix}" if suffix else "")
+
+    if m.startswith("o") and (len(m) <= 2 or m[1:].replace("-", "").replace(".", "").isalnum()):
+        return model.upper()
+
+    return model
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -247,7 +317,8 @@ def on_text_delta(delta: str) -> None:
     if _thinking_active:
         _inf_stop_now()
         _thinking_active = False
-        sys.stdout.write("\n")
+        # Mostra label do agente que esta respondendo
+        sys.stdout.write(f"{_CLEAR_LINE}  \033[38;2;168;85;247m{_BOLD}{_inf_agent_name}{_RESET}\n\n")
 
     if not _in_streaming:
         _in_streaming = True
@@ -337,11 +408,13 @@ def _tool_label(name: str, args: dict) -> str:
 
 
 def on_tool_call(name: str, args: dict) -> None:
-    """Formato Claude Code: ⏺ Label descritiva."""
+    """Formato Claude Code: ⏺ Label descritiva com agente ativo."""
     global _in_streaming, _thinking_active
 
     if _thinking_active:
-        _inf_update(f"Executando {name}")
+        _inf_stop_now()
+        _thinking_active = False
+        sys.stdout.write(_CLEAR_LINE)
 
     if _in_streaming:
         sys.stdout.write("\n")
@@ -349,12 +422,22 @@ def on_tool_call(name: str, args: dict) -> None:
         _in_streaming = False
 
     label = _tool_label(name, args)
-    sys.stdout.write(f"  {_BLUE}⏺{_RESET} {label}\n")
+    # ⏺ roxo + label — estilo Claude Code mas identidade Clow
+    sys.stdout.write(f"  \033[38;2;168;85;247m⏺{_RESET} {label}\n")
     sys.stdout.flush()
+
+    # Reinicia o pulso com o nome da tool
+    _thinking_active = True
+    _inf_start(f"executando {name}")
 
 
 def on_tool_result(name: str, status: str, output: str) -> None:
     """Resultado compactado com ⎿."""
+    global _thinking_active
+    if _thinking_active:
+        _inf_stop_now()
+        _thinking_active = False
+
     if status == "error":
         sys.stdout.write(f"  {_RED}⎿ Error{_RESET}\n")
         if output:
