@@ -544,9 +544,13 @@ KNOWN_SLASH_COMMANDS = [
     "/status", "/init", "/hooks", "/plugins", "/mcp",
     "/tools", "/agents", "/stale", "/skills",
     "/background", "/web", "/pipeline", "/backup", "/chatwoot",
-    # Skills comuns
+    # Skills
     "/commit", "/review", "/test", "/refactor", "/explain",
-    "/fix", "/simplify",
+    "/fix", "/simplify", "/batch", "/loop", "/debug",
+    "/stuck", "/remember", "/schedule", "/verify", "/security",
+    "/perf", "/docs", "/migrate", "/pr", "/changelog",
+    "/scaffold", "/cleanup", "/estimate", "/plan", "/diff",
+    "/undo", "/search",
 ]
 
 
@@ -1221,7 +1225,7 @@ def _print_banner() -> None:
 {purple}   ╚═══════════════════════════════════════╝{r}
 
   {dim}{os.getcwd()}{r}
-  {dim}24 tools · 16 skills · 8 agent types · /help{r}
+  {dim}24 tools · 36 skills · 8 agent types · /help{r}
 
 """)
     sys.stdout.flush()

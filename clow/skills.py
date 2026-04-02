@@ -221,22 +221,285 @@ def _leads_handler(args: str, ctx: dict) -> str:
     )
 
 
+
+
+# ── Skills Avancados (20 novos — inspirados no Claude Code) ────
+
+def _batch_handler(args: str, ctx: dict) -> str:
+    return (
+        f"Execute os seguintes jobs em sequencia, reportando resultado de cada um:\n{args}\n\n"
+        "Para cada job: execute, capture o resultado, e continue para o proximo. "
+        "No final, mostre um resumo com status de cada job (ok/erro)."
+        if args else
+        "Execute multiplos comandos em sequencia. "
+        "Forneça os comandos separados por ponto-e-virgula ou um por linha."
+    )
+
+def _loop_handler(args: str, ctx: dict) -> str:
+    return (
+        f"Execute iterativamente ate atingir o objetivo: {args}\n\n"
+        "Ciclo: tente → verifique resultado → ajuste → tente novamente. "
+        "Maximo 10 iteracoes. Pare quando o objetivo for atingido ou quando "
+        "nao houver mais progresso. Reporte cada tentativa."
+        if args else
+        "Execute um loop iterativo ate atingir um objetivo. "
+        "Diga qual o objetivo a atingir."
+    )
+
+def _debug_handler(args: str, ctx: dict) -> str:
+    target = args or "o erro mais recente"
+    return (
+        f"Debug inteligente de: {target}\n\n"
+        "1) Leia o stacktrace/erro completo\n"
+        "2) Identifique o arquivo e linha do problema\n"
+        "3) Leia o codigo ao redor para entender o contexto\n"
+        "4) Formule hipotese sobre a causa raiz\n"
+        "5) Proponha e aplique o fix\n"
+        "6) Execute testes para validar\n"
+        "Use as tools read, grep, edit, bash conforme necessario."
+    )
+
+def _stuck_handler(args: str, ctx: dict) -> str:
+    return (
+        "O agente esta travado ou em loop. Analise a situacao:\n"
+        "1) Revise o historico recente da conversa\n"
+        "2) Identifique o que ja foi tentado\n"
+        "3) Identifique o que esta bloqueando o progresso\n"
+        "4) Proponha uma abordagem completamente diferente\n"
+        "5) Se necessario, simplifique o objetivo\n"
+        f"Contexto adicional: {args}" if args else
+        "O agente esta travado. Analise o historico, identifique o bloqueio, "
+        "e proponha abordagem alternativa."
+    )
+
+def _remember_handler(args: str, ctx: dict) -> str:
+    if args:
+        return (
+            f"Salve na memoria persistente: {args}\n\n"
+            "Use a ferramenta de memoria para salvar esta informacao. "
+            "Classifique como user/feedback/project/reference conforme o tipo."
+        )
+    return (
+        "Liste todas as memorias salvas. "
+        "Mostre nome, tipo, e um resumo de cada uma."
+    )
+
+def _schedule_handler(args: str, ctx: dict) -> str:
+    return (
+        f"Configure um agente remoto agendado: {args}\n\n"
+        "Use o sistema de cron jobs para agendar execucao recorrente. "
+        "Defina: intervalo, prompt a executar, e condicoes de parada."
+        if args else
+        "Configure um agente agendado. "
+        "Diga: o que executar, com que frequencia, e quando parar."
+    )
+
+def _verify_handler(args: str, ctx: dict) -> str:
+    return (
+        "Verifique a integridade do projeto:\n"
+        "1) Execute todos os testes (pytest/unittest)\n"
+        "2) Verifique se o codigo compila sem erros\n"
+        "3) Verifique imports quebrados\n"
+        "4) Verifique git status (arquivos nao commitados)\n"
+        "5) Verifique se o build funciona\n"
+        f"Foco em: {args}" if args else
+        "Verifique a integridade completa do projeto: testes, build, imports, git status."
+    )
+
+def _security_handler(args: str, ctx: dict) -> str:
+    target = args or "todo o codigo do projeto"
+    return (
+        f"Auditoria de seguranca em: {target}\n\n"
+        "Verifique OWASP Top 10:\n"
+        "1) Injection (SQL, command, XSS)\n"
+        "2) Autenticacao quebrada\n"
+        "3) Dados sensiveis expostos (.env, keys, tokens no codigo)\n"
+        "4) Configuracoes inseguras\n"
+        "5) Dependencias com vulnerabilidades conhecidas\n"
+        "6) Validacao de input insuficiente\n"
+        "Reporte severidade (critica/alta/media/baixa) e sugira fix para cada."
+    )
+
+def _perf_handler(args: str, ctx: dict) -> str:
+    target = args or "o codigo modificado recentemente"
+    return (
+        f"Analise de performance de: {target}\n\n"
+        "1) Identifique gargalos (loops O(n^2), queries N+1, I/O bloqueante)\n"
+        "2) Meca tempo de execucao com benchmarks simples\n"
+        "3) Sugira otimizacoes concretas com exemplos\n"
+        "4) Priorize por impacto (maior ganho primeiro)\n"
+        "Use bash para rodar benchmarks quando possivel."
+    )
+
+def _docs_handler(args: str, ctx: dict) -> str:
+    target = args or "o projeto inteiro"
+    return (
+        f"Gere documentacao para: {target}\n\n"
+        "Inclua: descricao, instalacao, uso, API reference, exemplos. "
+        "Formate em Markdown. Se for funcao/classe, gere docstrings. "
+        "Se for projeto, gere/atualize README.md."
+    )
+
+def _migrate_handler(args: str, ctx: dict) -> str:
+    return (
+        f"Execute migracao: {args}\n\n"
+        "1) Analise o estado atual\n"
+        "2) Crie backup antes de migrar\n"
+        "3) Execute a migracao passo a passo\n"
+        "4) Valide que tudo funciona apos migrar\n"
+        "5) Documente o que foi feito"
+        if args else
+        "Execute uma migracao. Diga: de onde para onde (framework, DB, versao, etc)."
+    )
+
+def _pr_handler(args: str, ctx: dict) -> str:
+    return (
+        "Crie um Pull Request completo:\n"
+        "1) git diff para ver todas as mudancas\n"
+        "2) Gere titulo conciso (< 70 chars)\n"
+        "3) Gere descricao com: ## Summary, ## Changes, ## Test Plan\n"
+        "4) Identifique breaking changes\n"
+        "5) Sugira reviewers\n"
+        f"Branch/contexto: {args}" if args else
+        "Crie um Pull Request com titulo, descricao e test plan baseado nas mudancas atuais."
+    )
+
+def _changelog_handler(args: str, ctx: dict) -> str:
+    range_str = args or "desde o ultimo release"
+    return (
+        f"Gere changelog para: {range_str}\n\n"
+        "Use git log para listar commits. Agrupe por:\n"
+        "- Features (feat:)\n"
+        "- Bug Fixes (fix:)\n"
+        "- Breaking Changes\n"
+        "- Other\n"
+        "Formate em Markdown no padrao Keep a Changelog."
+    )
+
+def _scaffold_handler(args: str, ctx: dict) -> str:
+    component = args or "componente"
+    return (
+        f"Gere scaffold/boilerplate para: {component}\n\n"
+        "Crie todos os arquivos necessarios: codigo, testes, types, exports. "
+        "Siga os padroes e convencoes ja existentes no projeto. "
+        "Registre o novo componente onde necessario (index, registry, etc)."
+    )
+
+def _cleanup_handler(args: str, ctx: dict) -> str:
+    return (
+        "Limpeza do projeto:\n"
+        "1) Encontre e remova imports nao usados\n"
+        "2) Encontre e remova variaveis/funcoes mortas\n"
+        "3) Remova arquivos temporarios e caches\n"
+        "4) Organize imports (stdlib, third-party, local)\n"
+        "5) Remova comentarios TODO resolvidos\n"
+        f"Foco em: {args}" if args else
+        "Faca limpeza geral do codigo: imports mortos, variaveis nao usadas, caches."
+    )
+
+def _estimate_handler(args: str, ctx: dict) -> str:
+    task = args or "a tarefa discutida"
+    return (
+        f"Estime o esforco para: {task}\n\n"
+        "Analise:\n"
+        "1) Complexidade tecnica (baixa/media/alta)\n"
+        "2) Arquivos que precisam ser modificados\n"
+        "3) Riscos e dependencias\n"
+        "4) Testes necessarios\n"
+        "5) Estimativa em horas (otimista/realista/pessimista)\n"
+        "Seja honesto e conservador."
+    )
+
+def _plan_handler(args: str, ctx: dict) -> str:
+    objective = args or "o objetivo discutido"
+    return (
+        f"Crie um plano de implementacao para: {objective}\n\n"
+        "Estruture em fases:\n"
+        "1) Preparacao (pesquisa, design)\n"
+        "2) Implementacao (passo a passo detalhado)\n"
+        "3) Testes e validacao\n"
+        "4) Deploy/entrega\n"
+        "Identifique riscos, dependencias e criterios de sucesso. "
+        "NAO implemente — apenas planeje."
+    )
+
+def _diff_handler(args: str, ctx: dict) -> str:
+    return (
+        "Mostre e analise todas as mudancas pendentes:\n"
+        "1) git status para ver arquivos modificados\n"
+        "2) git diff para ver mudancas detalhadas\n"
+        "3) Resuma o que mudou em linguagem humana\n"
+        "4) Identifique potenciais problemas\n"
+        f"Filtro: {args}" if args else
+        "Mostre e analise todas as mudancas pendentes no repositorio."
+    )
+
+def _undo_handler(args: str, ctx: dict) -> str:
+    return (
+        f"Desfaca a ultima acao: {args}\n\n"
+        "Analise o que foi feito recentemente e reverta de forma segura. "
+        "Use git checkout/restore para arquivos, git reset para commits. "
+        "NUNCA use --force sem confirmar. Mostre o que sera desfeito antes de agir."
+        if args else
+        "Desfaca a ultima acao realizada. Mostre o que sera desfeito antes de agir."
+    )
+
+def _search_handler(args: str, ctx: dict) -> str:
+    query = args or ""
+    return (
+        f"Busca profunda no projeto por: {query}\n\n"
+        "1) grep no codigo-fonte\n"
+        "2) Busca em nomes de arquivos\n"
+        "3) Busca em git log (commits)\n"
+        "4) Busca em comentarios e docstrings\n"
+        "Reporte todos os resultados organizados por relevancia."
+        if query else
+        "Faca uma busca profunda no projeto. Diga o que procurar."
+    )
+
+
 BUILTIN_SKILLS = [
-    Skill(name="commit", description="Commit inteligente com mensagem automática", handler=_commit_handler, aliases=["c", "ci"]),
-    Skill(name="review", description="Code review detalhado", handler=_review_handler, aliases=["rev"]),
+    # ── Dev Core (8 originais) ──
+    Skill(name="commit", description="Commit inteligente com mensagem automatica", handler=_commit_handler, aliases=["c", "ci"]),
+    Skill(name="review", description="Code review detalhado com nota 1-10", handler=_review_handler, aliases=["rev"]),
     Skill(name="test", description="Gera e executa testes", handler=_test_handler, aliases=["t"]),
-    Skill(name="refactor", description="Refatora código", handler=_refactor_handler, aliases=["ref"]),
-    Skill(name="explain", description="Explica código em detalhes", handler=_explain_handler, aliases=["exp"]),
+    Skill(name="refactor", description="Refatora codigo mantendo comportamento", handler=_refactor_handler, aliases=["ref"]),
+    Skill(name="explain", description="Explica codigo em detalhes", handler=_explain_handler, aliases=["exp"]),
     Skill(name="fix", description="Encontra e corrige bugs", handler=_fix_handler, aliases=["f"]),
     Skill(name="init", description="Inicializa novo projeto", handler=_init_handler),
-    Skill(name="simplify", description="Revisa código para reuso e qualidade", handler=_simplify_handler, aliases=["simp"]),
-    # Novas skills (8)
-    Skill(name="cotacao", description="Gera cotação de seguro/plano funerário em PDF", handler=_cotacao_handler, aliases=["cot"]),
+    Skill(name="simplify", description="Revisa codigo para reuso e qualidade", handler=_simplify_handler, aliases=["simp"]),
+
+    # ── Dev Avancado (12 novos — inspirados no Claude Code) ──
+    Skill(name="batch", description="Executa multiplos jobs em sequencia", handler=_batch_handler, aliases=["b"]),
+    Skill(name="loop", description="Executa iterativamente ate atingir objetivo", handler=_loop_handler, aliases=["l"]),
+    Skill(name="debug", description="Debug inteligente com analise de causa raiz", handler=_debug_handler, aliases=["dbg"]),
+    Skill(name="stuck", description="Desbloqueia quando o agente esta travado", handler=_stuck_handler),
+    Skill(name="remember", description="Salva/lista memorias persistentes", handler=_remember_handler, aliases=["mem"]),
+    Skill(name="schedule", description="Configura agente remoto agendado (cron)", handler=_schedule_handler, aliases=["sched"]),
+    Skill(name="verify", description="Verifica integridade do projeto (testes, build, imports)", handler=_verify_handler, aliases=["v"]),
+    Skill(name="security", description="Auditoria de seguranca OWASP Top 10", handler=_security_handler, aliases=["sec"]),
+    Skill(name="perf", description="Analise de performance e otimizacao", handler=_perf_handler, aliases=["performance"]),
+    Skill(name="docs", description="Gera documentacao (README, docstrings, API ref)", handler=_docs_handler, aliases=["doc"]),
+    Skill(name="migrate", description="Executa migracoes (DB, framework, versao)", handler=_migrate_handler, aliases=["mig"]),
+    Skill(name="pr", description="Cria Pull Request com titulo, descricao e test plan", handler=_pr_handler, aliases=["pull-request"]),
+
+    # ── Workflow (8 novos) ──
+    Skill(name="changelog", description="Gera changelog a partir do git log", handler=_changelog_handler, aliases=["cl"]),
+    Skill(name="scaffold", description="Gera boilerplate seguindo padroes do projeto", handler=_scaffold_handler, aliases=["new"]),
+    Skill(name="cleanup", description="Limpa imports mortos, variaveis e caches", handler=_cleanup_handler, aliases=["clean"]),
+    Skill(name="estimate", description="Estima esforco de uma tarefa", handler=_estimate_handler, aliases=["est"]),
+    Skill(name="plan", description="Cria plano de implementacao sem executar", handler=_plan_handler),
+    Skill(name="diff", description="Mostra e analisa mudancas pendentes", handler=_diff_handler),
+    Skill(name="undo", description="Desfaz a ultima acao com seguranca", handler=_undo_handler),
+    Skill(name="search", description="Busca profunda no projeto (codigo, git, arquivos)", handler=_search_handler, aliases=["find"]),
+
+    # ── Dominio (8 originais) ──
+    Skill(name="cotacao", description="Gera cotacao de seguro/plano funerario em PDF", handler=_cotacao_handler, aliases=["cot"]),
     Skill(name="proposta", description="Gera proposta comercial profissional em PDF", handler=_proposta_handler, aliases=["prop"]),
-    Skill(name="relatorio", description="Relatório de vendas com dados do Supabase", handler=_relatorio_handler, aliases=["rel"]),
+    Skill(name="relatorio", description="Relatorio de vendas com dados do Supabase", handler=_relatorio_handler, aliases=["rel"]),
     Skill(name="deploy", description="Deploy automatizado com health checks", handler=_deploy_handler, aliases=["dep"]),
     Skill(name="backup", description="Backup completo do VPS (DB, n8n, configs)", handler=_backup_handler_skill, aliases=["bkp"]),
-    Skill(name="monitor", description="Status de todos os serviços (Docker, n8n, CPU/RAM)", handler=_monitor_handler, aliases=["mon"]),
+    Skill(name="monitor", description="Status de todos os servicos (Docker, n8n, CPU/RAM)", handler=_monitor_handler, aliases=["mon"]),
     Skill(name="ads", description="Gerencia campanhas Meta Ads", handler=_ads_handler),
     Skill(name="leads", description="Consulta e gerencia leads", handler=_leads_handler),
 ]
