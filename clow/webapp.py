@@ -774,31 +774,69 @@ async function loadConvs(){try{
     h+='<button class="sb-conv-more" onclick="showAllPast=true;loadConvs()">Ver anteriores ('+unpinned.length+')</button>';
   }
   el.innerHTML=h||'<div style="padding:12px 8px;color:var(--tm);font-size:12px;text-align:center">Nenhuma conversa</div>';
+  bindConvEvents();
 }catch(e){}}
 
 function convBtn(c,isPinned){
   const t=smartTitle(c.title);
   const isAct=c.id===cid;
-  return '<div class="sb-conv-item'+(isAct?' act':'')+'" data-id="'+c.id+'" data-title="'+esc(c.title)+'" onclick="loadConv(\''+c.id+'\')">'
+  return '<div class="sb-conv-item'+(isAct?' act':'')+'" data-id="'+c.id+'" data-title="'+esc(c.title)+'">'
     +'<span class="conv-icon">'+(isPinned?'':'&#x1F4AC;')+'</span>'
     +(isPinned?'<span class="conv-pin-static">&#x1F4CC;</span>':'')
     +'<span class="conv-title">'+esc(t)+'</span>'
     +'<span class="conv-actions">'
-    +'<button class="ca-btn" onclick="event.stopPropagation();togglePin(\''+c.id+'\')" title="'+(isPinned?'Desafixar':'Fixar')+'">&#x1F4CC;</button>'
-    +'<button class="ca-btn" onclick="event.stopPropagation();showCtxMenu(event,\''+c.id+'\','+isPinned+')" title="Menu">\u22EF</button>'
+    +'<button class="ca-btn ca-pin" data-cid="'+c.id+'" data-pinned="'+(isPinned?'1':'0')+'" title="'+(isPinned?'Desafixar':'Fixar')+'">&#x1F4CC;</button>'
+    +'<button class="ca-btn ca-menu" data-cid="'+c.id+'" data-pinned="'+(isPinned?'1':'0')+'" title="Menu">\u22EF</button>'
     +'</span></div>';
+}
+function bindConvEvents(){
+  // Bind click on conv items (load conversation)
+  document.querySelectorAll('.sb-conv-item').forEach(function(el){
+    el.addEventListener('click',function(e){
+      if(e.target.closest('.ca-btn'))return; // Don't load if clicking action buttons
+      loadConv(el.getAttribute('data-id'));
+    });
+  });
+  // Bind pin buttons
+  document.querySelectorAll('.ca-pin').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      togglePin(btn.getAttribute('data-cid'));
+    });
+  });
+  // Bind menu buttons
+  document.querySelectorAll('.ca-menu').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      showCtxMenu(e,btn.getAttribute('data-cid'),btn.getAttribute('data-pinned')==='1');
+    });
+  });
 }
 
 function showCtxMenu(e,id,isPinned){
+  e.preventDefault();e.stopPropagation();
   closeCtxMenu();
   const menu=document.createElement('div');
   menu.className='conv-ctx-menu';
-  menu.innerHTML=
-    '<button class="ctx-item" onclick="startRename(\''+id+'\')"><span class="ctx-icon">\u270F\uFE0F</span>Renomear</button>'
-    +'<button class="ctx-item" onclick="togglePin(\''+id+'\');closeCtxMenu()"><span class="ctx-icon">\uD83D\uDCCC</span>'+(isPinned?'Desafixar':'Fixar conversa')+'</button>'
-    +'<button class="ctx-item" onclick="copyConv(\''+id+'\');closeCtxMenu()"><span class="ctx-icon">\uD83D\uDCCB</span>Copiar conversa</button>'
-    +'<div class="conv-ctx-sep"></div>'
-    +'<button class="ctx-item danger" onclick="confirmDel(\''+id+'\',this)"><span class="ctx-icon">\uD83D\uDDD1\uFE0F</span>Deletar conversa</button>';
+  // Block ALL clicks inside menu from bubbling to document
+  menu.addEventListener('click',function(ev){ev.stopPropagation()});
+  menu.addEventListener('mousedown',function(ev){ev.stopPropagation()});
+  // Build menu items with addEventListener (not inline onclick)
+  const items=[
+    {icon:'\u270F\uFE0F',label:'Renomear',action:function(){closeCtxMenu();startRename(id)}},
+    {icon:'\uD83D\uDCCC',label:isPinned?'Desafixar':'Fixar conversa',action:function(){closeCtxMenu();togglePin(id)}},
+    {icon:'\uD83D\uDCCB',label:'Copiar conversa',action:function(){closeCtxMenu();copyConv(id)}},
+    {sep:true},
+    {icon:'\uD83D\uDDD1\uFE0F',label:'Deletar conversa',danger:true,action:function(ev){confirmDel(id,ev.currentTarget,menu)}}
+  ];
+  items.forEach(function(item){
+    if(item.sep){const s=document.createElement('div');s.className='conv-ctx-sep';menu.appendChild(s);return}
+    const btn=document.createElement('button');
+    btn.className='ctx-item'+(item.danger?' danger':'');
+    btn.innerHTML='<span class="ctx-icon">'+item.icon+'</span>'+item.label;
+    btn.addEventListener('click',item.action);
+    menu.appendChild(btn);
+  });
   document.body.appendChild(menu);
   // Position near click
   const x=Math.min(e.clientX,window.innerWidth-200);
@@ -807,10 +845,16 @@ function showCtxMenu(e,id,isPinned){
   activeCtxMenu=menu;
 }
 
-function confirmDel(id,btn){
-  const parent=btn.parentElement;
-  // Replace the delete button with confirmation
-  btn.outerHTML='<div class="conv-del-confirm"><span>Tem certeza?</span><button class="del-yes" onclick="delConv(\''+id+'\')">Sim</button><button class="del-no" onclick="closeCtxMenu()">Nao</button></div>';
+function confirmDel(id,btn,menu){
+  const confirm=document.createElement('div');
+  confirm.className='conv-del-confirm';
+  const span=document.createElement('span');span.textContent='Tem certeza?';
+  const yes=document.createElement('button');yes.className='del-yes';yes.textContent='Sim';
+  yes.addEventListener('click',function(ev){ev.stopPropagation();delConv(id)});
+  const no=document.createElement('button');no.className='del-no';no.textContent='Nao';
+  no.addEventListener('click',function(ev){ev.stopPropagation();closeCtxMenu()});
+  confirm.appendChild(span);confirm.appendChild(yes);confirm.appendChild(no);
+  btn.replaceWith(confirm);
 }
 
 async function delConv(id){
@@ -872,6 +916,7 @@ function filterConvs(q){
   if(!filtered.length){h='<div style="padding:12px 8px;color:var(--tm);font-size:12px;text-align:center">Nenhum resultado</div>'}
   else{filtered.forEach(c=>{h+=convBtn(c,pinnedConvs.includes(c.id))})}
   el.innerHTML=h;
+  bindConvEvents();
 }
 
 function closeConvSearch(){
