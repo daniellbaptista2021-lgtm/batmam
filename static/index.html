@@ -10,7 +10,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Clow">
-    <link rel="apple-touch-icon" href="/static/icon.svg">
+    <link rel="apple-touch-icon" href="/static/brand/icon.png">
+    <link rel="icon" type="image/png" href="/static/brand/favicon.png">
 
     <title>Clow — Inteligência Infinita</title>
 
@@ -94,11 +95,11 @@
         }
 
         .infinity-logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 24px;
+            height: 100px;
+            display: block;
+            margin: 0 auto 12px;
             animation: float 3s ease-in-out infinite;
-            filter: drop-shadow(0 0 20px rgba(155,89,252,.3)) drop-shadow(0 0 20px rgba(74,158,255,.2));
+            filter: drop-shadow(0 0 20px rgba(155,89,252,.25)) drop-shadow(0 0 20px rgba(74,158,255,.15));
         }
         @keyframes float {
             0%, 100% { transform: translateY(0); }
@@ -106,16 +107,7 @@
         }
 
         h1 {
-            font-family: var(--font-mono);
-            font-size: 32px;
-            font-weight: 700;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            background: linear-gradient(180deg, #E0E0F0 0%, #8888AA 50%, #C0C0D8 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 4px;
+            display: none;
         }
 
         .lens-flare {
@@ -217,17 +209,7 @@
 </head>
 <body>
     <div class="container">
-        <svg class="infinity-logo" viewBox="0 0 32 32">
-            <defs>
-                <linearGradient id="pwaGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#9B59FC"/>
-                    <stop offset="100%" stop-color="#4A9EFF"/>
-                </linearGradient>
-            </defs>
-            <path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(0.95)" fill="none" stroke="url(#pwaGrad)" stroke-width="2.5" stroke-linecap="round"/>
-        </svg>
-
-        <h1>Clow</h1>
+        <img src="/static/brand/logo.png" alt="Clow" class="infinity-logo">
         <div class="lens-flare"></div>
         <p class="tagline">INTELIG&Ecirc;NCIA INFINITA <span class="dot">&bull;</span> POSSIBILIDADES PREMIUM</p>
 

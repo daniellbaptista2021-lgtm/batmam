@@ -398,6 +398,8 @@ WEBAPP_HTML = r'''<!DOCTYPE html>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/static/manifest.json">
+<link rel="icon" type="image/png" href="/static/brand/favicon.png">
+<link rel="apple-touch-icon" href="/static/brand/icon.png">
 <title>Clow — Inteligência Infinita</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -429,9 +431,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
 /* SIDEBAR */
 .sb{width:var(--sw);height:100%;background:var(--bg-1);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;z-index:30;transition:transform .25s ease;box-shadow:1px 0 20px rgba(155,89,252,.03)}
 .sb-head{padding:20px 16px 16px;padding-top:calc(16px + var(--st));display:flex;align-items:center;gap:10px}
-.sb-logo{font-family:var(--mono);font-size:18px;font-weight:700;letter-spacing:2px;background:linear-gradient(180deg,#E0E0F0 0%,#8888AA 50%,#C0C0D8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.sb-inf{width:22px;height:22px;filter:drop-shadow(0 0 12px rgba(155,89,252,.4))}
-.sb-inf path{fill:none;stroke:url(#sbGrad);stroke-width:3;stroke-linecap:round}
+.sb-logo-img{height:36px;object-fit:contain;filter:drop-shadow(0 0 12px rgba(155,89,252,.2))}
 .sb-body{flex:1;overflow-y:auto;padding:4px 0;display:flex;flex-direction:column}
 .sb-sep{height:1px;background:var(--bd);margin:8px 12px}
 .sb-sec{padding:0 12px;margin-bottom:2px}
@@ -465,10 +465,10 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
 .sb-conv-item .conv-actions .ca-btn{background:none;border:none;cursor:pointer;padding:3px 4px;border-radius:4px;font-size:12px;color:var(--tm);transition:all .15s;display:flex;align-items:center;justify-content:center;line-height:1}
 .sb-conv-item .conv-actions .ca-btn:hover{background:var(--bg-3);color:var(--t1)}
 /* Context menu */
-.conv-ctx-menu{position:fixed;background:var(--bg-2);border:1px solid var(--bd);border-radius:8px;padding:4px;min-width:180px;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.5);transform-origin:top left;animation:ctxIn .15s ease}
+.conv-ctx-menu{position:fixed;background:var(--bg-3);border:1px solid rgba(100,100,180,.15);border-radius:8px;padding:4px;min-width:180px;z-index:999;box-shadow:0 10px 30px rgba(0,0,0,.4);transform-origin:top left;animation:ctxIn .15s ease}
 @keyframes ctxIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
 .conv-ctx-menu .ctx-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--t2);font-family:var(--sans);transition:background .12s;border:none;background:none;width:100%;text-align:left}
-.conv-ctx-menu .ctx-item:hover{background:var(--bg-h);color:var(--t1)}
+.conv-ctx-menu .ctx-item:hover{background:rgba(155,89,252,.08);color:var(--t1)}
 .conv-ctx-menu .ctx-item.danger{color:var(--r)}
 .conv-ctx-menu .ctx-item.danger:hover{background:rgba(248,113,113,.1)}
 .conv-ctx-menu .ctx-item .ctx-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
@@ -528,9 +528,10 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
 /* WELCOME */
 .welc{text-align:center;padding:32px 16px;animation:fadeUp .5s ease-out}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.welc-inf{width:48px;height:48px;margin:0 auto 20px;filter:drop-shadow(0 0 20px rgba(155,89,252,.3)) drop-shadow(0 0 20px rgba(74,158,255,.2));animation:float 4s ease-in-out infinite}
+.welc-logo{height:80px;margin:0 auto 12px;display:block;filter:drop-shadow(0 0 20px rgba(155,89,252,.2)) drop-shadow(0 0 20px rgba(74,158,255,.15));animation:float 4s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-.welc-inf path{fill:none;stroke:url(#wGrad);stroke-width:2.5;stroke-linecap:round}
+.welc-tagline{font-size:10px;letter-spacing:3px;color:var(--tm);text-transform:uppercase;margin-bottom:16px}
+.welc-dot{color:var(--p)}
 .welc h2{font-family:var(--sans);font-size:28px;font-weight:300;color:var(--t1);margin-bottom:8px;letter-spacing:-0.5px}
 .welc h2 span{font-weight:700;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .welc p{font-size:14px;color:var(--tm);max-width:300px;margin:0 auto;font-weight:300}
@@ -707,17 +708,15 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
 
 /* WATERMARK — logo pulse */
 @keyframes logoPulse{
-  0%,100%{opacity:.02;filter:drop-shadow(0 0 15px rgba(155,89,252,.05)) drop-shadow(0 0 15px rgba(74,158,255,.05))}
-  50%{opacity:.04;filter:drop-shadow(0 0 40px rgba(155,89,252,.1)) drop-shadow(0 0 40px rgba(74,158,255,.1))}
+  0%,100%{opacity:.025;filter:drop-shadow(0 0 15px rgba(155,89,252,.05)) drop-shadow(0 0 15px rgba(74,158,255,.05))}
+  50%{opacity:.045;filter:drop-shadow(0 0 40px rgba(155,89,252,.1)) drop-shadow(0 0 40px rgba(74,158,255,.1))}
 }
 @keyframes glowPulse{
   0%,100%{opacity:.6;transform:translate(-50%,-50%) scale(1)}
   50%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
 }
-.watermark{position:fixed;top:50%;left:calc(50% + var(--sw)/2);transform:translate(-50%,-50%);width:250px;height:250px;pointer-events:none;z-index:0;user-select:none;animation:logoPulse 5s ease-in-out infinite;opacity:.025}
+.watermark{position:fixed;top:50%;left:calc(50% + var(--sw)/2);transform:translate(-50%,-50%);width:250px;pointer-events:none;z-index:0;user-select:none;animation:logoPulse 5s ease-in-out infinite;opacity:.025}
 .watermark.empty{opacity:.04;animation-name:logoPulse}
-.watermark svg{width:100%;height:100%}
-.watermark svg path{fill:none;stroke:url(#wmGrad);stroke-width:1.2;stroke-linecap:round}
 /* Glow ambient light behind watermark */
 .main::before{content:'';position:fixed;top:50%;left:calc(50% + var(--sw)/2);transform:translate(-50%,-50%);width:500px;height:500px;background:radial-gradient(circle,rgba(155,89,252,.03) 0%,rgba(74,158,255,.02) 40%,transparent 70%);pointer-events:none;z-index:0;animation:glowPulse 4s ease-in-out infinite}
 
@@ -744,8 +743,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
 <div class="sb-ov" id="sbOv" onclick="toggleSB()"></div>
 <aside class="sb" id="sb">
   <div class="sb-head">
-    <svg class="sb-inf" viewBox="0 0 32 32"><defs><linearGradient id="infGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#9B59FC"/><stop offset="100%" stop-color="#4A9EFF"/></linearGradient></defs><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)" stroke="url(#infGrad)"/></svg>
-    <span class="sb-logo">CLOW</span>
+    <img src="/static/brand/logo-sidebar.png" alt="Clow" class="sb-logo-img">
   </div>
   <div class="sb-body">
     <div class="sb-sec"><button class="sb-new" onclick="newConv()">+ Nova Conversa</button></div>
@@ -833,11 +831,12 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
       </div>
     </div>
   </div>
-  <div class="watermark empty" id="wmark"><svg viewBox="0 0 32 32"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)"/></svg></div>
+  <img src="/static/brand/logo.png" alt="" class="watermark empty" id="wmark">
   <div class="term" id="term">
     <div class="welc" id="welc">
-      <svg class="welc-inf" viewBox="0 0 32 32"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)"/></svg>
-      <h2>Ola, o que vamos <span>criar</span>?</h2>
+      <img src="/static/brand/logo.png" alt="Clow" class="welc-logo">
+      <div class="welc-tagline">INTELIG&Ecirc;NCIA INFINITA <span class="welc-dot">&bull;</span> POSSIBILIDADES PREMIUM</div>
+      <h2>O que vamos <span>criar</span>?</h2>
       <p>Escolha abaixo ou descreva o que precisa</p>
       <div class="qgrid">
         <div class="qc" onclick="qa('Cria uma landing page de ')"><div class="qi">&#x1F310;</div><div class="qt">Landing Page</div><div class="qd">Site completo e responsivo</div></div>
@@ -1107,7 +1106,7 @@ async function showAllConvs(){showAllPast=true;loadConvs()}
 
 async function newConv(){try{const r=await fetch('/api/v1/conversations',{method:'POST'});const d=await r.json();cid=d.id;convMsgCount=0;T.innerHTML='';showWelc();document.getElementById('hdrT').textContent='Nova conversa';loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
 async function loadConv(id){cid=id;T.innerHTML='';try{const r=await fetch(`/api/v1/conversations/${id}/messages`);const d=await r.json();d.messages.forEach(m=>{if(m.role==='user')addUser(m.content,false);else{curMsg=null;curBody=null;appendTxt(m.content);finishTxt();curMsg=null;curBody=null}});const cs=await(await fetch('/api/v1/conversations')).json();const c=cs.conversations.find(x=>x.id===id);if(c)document.getElementById('hdrT').textContent=c.title;loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
-function showWelc(){const w=document.createElement('div');w.className='welc';w.id='welc';w.innerHTML='<svg class="welc-inf" viewBox="0 0 32 32"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)" fill="none" stroke="var(--p)" stroke-width="2.5" stroke-linecap="round"/></svg><h2>Ola, o que vamos <span>criar</span>?</h2><p>Escolha abaixo ou descreva o que precisa</p>';T.appendChild(w);const wm=document.getElementById('wmark');if(wm)wm.classList.add('empty')}
+function showWelc(){const w=document.createElement('div');w.className='welc';w.id='welc';w.innerHTML='<img src="/static/brand/logo.png" alt="Clow" class="welc-logo"><div class="welc-tagline">INTELIG\u00caNCIA INFINITA <span class="welc-dot">\u2022</span> POSSIBILIDADES PREMIUM</div><h2>O que vamos <span>criar</span>?</h2><p>Escolha abaixo ou descreva o que precisa</p>';T.appendChild(w);const wm=document.getElementById('wmark');if(wm)wm.classList.add('empty')}
 function connectWS(){const pr=location.protocol==='https:'?'wss:':'ws:';try{ws=new WebSocket(`${pr}//${location.host}/ws`)}catch(e){http=true;setOn('http');return}const to=setTimeout(()=>{if(!ws||ws.readyState!==1){try{ws.close()}catch(e){}http=true;setOn('http')}},4000);ws.onopen=()=>{clearTimeout(to);http=false;setOn('online');rA=0};ws.onmessage=e=>hMsg(JSON.parse(e.data));ws.onclose=()=>{clearTimeout(to);if(rA>=3){http=true;setOn('http');return}setOn('offline');setTimeout(()=>{rA++;connectWS()},Math.min(1000*rA,5000))};ws.onerror=()=>setOn('offline')}
 function setOn(s){const b=document.getElementById('onBdg'),l=document.getElementById('onLbl');b.style.color=s==='offline'?'var(--r)':'var(--g)';l.textContent=s}
 function hMsg(m){switch(m.type){case'thinking_start':showThink();break;case'thinking_end':hideThink();break;case'text_delta':appendTxt(m.content);break;case'text_done':finishTxt();break;case'tool_call':showTool(m.name,m.args);break;case'tool_result':showToolR(m.name,m.status,m.output);break;case'turn_complete':finishTurn();break;case'error':showErr(m.content);break}}
@@ -1492,6 +1491,7 @@ DASHBOARD_HTML = r'''<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#050510">
+<link rel="icon" type="image/png" href="/static/brand/favicon.png">
 <title>Clow — Dashboard</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
@@ -1855,6 +1855,8 @@ LOGIN_HTML = r'''<!DOCTYPE html>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <meta name="theme-color" content="#050510">
 <meta name="description" content="Clow - AI Code Agent | Inteligência Infinita • Possibilidades Premium">
+<link rel="icon" type="image/png" href="/static/brand/favicon.png">
+<link rel="apple-touch-icon" href="/static/brand/icon.png">
 <title>Clow — Inteligência Infinita</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1872,9 +1874,8 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 .card{width:100%;max-width:400px;padding:48px 40px;background:var(--bg2);border:1px solid var(--bd);border-radius:20px;box-shadow:0 30px 60px rgba(0,0,0,.5),0 0 60px rgba(155,89,252,.05);animation:fadeIn .4s ease-out;position:relative;z-index:2}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .logo{text-align:center;margin-bottom:32px}
-.logo svg{width:80px;height:80px;margin-bottom:16px;filter:drop-shadow(0 0 24px rgba(155,89,252,.35)) drop-shadow(0 0 24px rgba(74,158,255,.25));animation:float 4s ease-in-out infinite}
+.logo img{height:100px;display:block;margin:0 auto 8px;filter:drop-shadow(0 0 24px rgba(155,89,252,.25)) drop-shadow(0 0 24px rgba(74,158,255,.15));animation:float 4s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-.logo h1{font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:3px;text-transform:uppercase;background:linear-gradient(180deg,#E0E0F0 0%,#8888AA 50%,#C0C0D8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
 .lens-flare{width:200px;height:1px;margin:12px auto 16px;background:linear-gradient(90deg,transparent,rgba(155,89,252,.5),rgba(74,158,255,.5),transparent);box-shadow:0 0 10px rgba(155,89,252,.3);border-radius:1px}
 .tagline{font-family:var(--sans);font-size:10px;color:var(--tm);letter-spacing:3px;text-transform:uppercase}
 .tagline .dot{color:var(--p)}
@@ -1891,8 +1892,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 <body>
 <div class="card">
   <div class="logo">
-    <svg viewBox="0 0 32 32"><defs><linearGradient id="lGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#9B59FC"/><stop offset="100%" stop-color="#4A9EFF"/></linearGradient></defs><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)" fill="none" stroke="url(#lGrad)" stroke-width="2.5" stroke-linecap="round"/></svg>
-    <h1>CLOW</h1>
+    <img src="/static/brand/logo.png" alt="Clow">
     <div class="lens-flare"></div>
     <p class="tagline">INTELIG&Ecirc;NCIA INFINITA <span class="dot">&bull;</span> POSSIBILIDADES PREMIUM</p>
   </div>
@@ -1929,7 +1929,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 ADMIN_HTML = r'''<!DOCTYPE html>
 <html lang="pt-BR"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="theme-color" content="#050510"><title>Clow Admin</title>
+<meta name="theme-color" content="#050510"><link rel="icon" type="image/png" href="/static/brand/favicon.png"><title>Clow Admin</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
 :root{--bg:#050510;--s1:#0A0A1A;--s2:#0F0F24;--s3:#14142E;--t1:#E8E8F0;--t2:#9898B8;--tm:#585878;--p:#9B59FC;--bl:#4A9EFF;--g:#4ADE80;--r:#F87171;--b:rgba(100,100,180,.12);--bf:rgba(155,89,252,.4);--gp:linear-gradient(135deg,#9B59FC 0%,#4A9EFF 100%);--f:'DM Sans',-apple-system,sans-serif;--fm:'JetBrains Mono',monospace}
