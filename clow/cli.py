@@ -236,48 +236,35 @@ def _render_response(text: str) -> None:
 
 
 def on_text_delta(delta: str) -> None:
-    """Acumula tokens da resposta. Streaming visual mostra texto cru, Markdown renderizado no final."""
+    """Acumula tokens. Mostra spinner 'Gerando...' durante streaming."""
     global _in_streaming, _thinking_active
 
     if _thinking_active or _spinner.is_running:
         _spinner.stop()
         _thinking_active = False
-        # Mostra label do agente que esta respondendo
-        sys.stdout.write(f"  \033[1;38;5;129m{_spinner_agent_name}{_RESET}\n\n")
-
-    if not _in_streaming:
-        _in_streaming = True
-        sys.stdout.write("  ")
 
     _streaming_buffer.append(delta)
 
-    # Streaming visual: mostra texto cru com indentação (typewriter effect)
-    indented = delta.replace("\n", "\n  ")
-    sys.stdout.write(indented)
-    sys.stdout.flush()
+    # Primeira vez: inicia indicador de geracao
+    if not _in_streaming:
+        _in_streaming = True
+        _spinner.start(f"{_spinner_agent_name} gerando resposta...")
 
 
 def on_text_done(text: str) -> None:
-    """Finaliza streaming — re-renderiza como Markdown formatado."""
+    """Finaliza streaming — renderiza tudo com Rich Markdown. Sem markdown cru."""
     global _in_streaming
+
+    _spinner.stop()
 
     full_text = "".join(_streaming_buffer)
     _streaming_buffer.clear()
 
     if _in_streaming:
-        # Conta linhas exibidas pelo streaming cru para apagar
-        raw_lines = full_text.count("\n") + 1
-
-        # Apaga o texto cru do streaming (move cursor para cima e limpa)
-        sys.stdout.write("\r")
-        for _ in range(raw_lines):
-            sys.stdout.write(f"\033[A{_CLEAR_LINE}")
-        sys.stdout.flush()
-
-        # Re-renderiza como Markdown formatado + tabelas rich.Table
+        # Renderiza com Rich Markdown — limpo, sem asteriscos
         if full_text.strip():
+            console.print()
             _render_response(full_text)
-
         console.print()
         _in_streaming = False
 
