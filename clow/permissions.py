@@ -1,6 +1,18 @@
-"""Sistema de permissões granulares do Clow v0.2.0.
+"""Sistema de permissoes granulares do Clow v0.2.0.
 
-Suporta rules customizáveis em settings.json com:
+Modelo de 5 camadas de permissao inspirado no Claude Code:
+
+  ReadOnly         — apenas ferramentas de leitura
+  WorkspaceWrite   — leitura + escrita em arquivos do workspace
+  Prompt           — pede confirmacao antes de acoes perigosas (padrao)
+  DangerFullAccess — acesso total sem restricoes
+  Allow            — ignora todas as verificacoes
+
+Cada ferramenta declara seu nivel minimo via TOOL_REQUIREMENTS.
+Escalacao automatica: se o nivel atual nao atinge o requisito,
+o sistema pede confirmacao ao usuario (se prompter disponivel).
+
+Suporta rules customizaveis em settings.json com:
 - path patterns (glob)
 - command patterns (regex)
 - tool-level overrides
@@ -9,86 +21,194 @@ Suporta rules customizáveis em settings.json com:
 from __future__ import annotations
 import re
 import fnmatch
+from enum import IntEnum
 from . import config
 
 
+# ── Niveis de Permissao (5 camadas) ────────────────────────────
+
+class PermissionLevel(IntEnum):
+    """Niveis de permissao em ordem crescente de acesso."""
+    READ_ONLY = 0
+    WORKSPACE_WRITE = 1
+    PROMPT = 2          # Padrao — pede confirmacao para acoes perigosas
+    DANGER_FULL_ACCESS = 3
+    ALLOW = 4
+
+
+# Nivel minimo necessario por ferramenta
+TOOL_REQUIREMENTS: dict[str, PermissionLevel] = {
+    # Leitura — nivel 0
+    "read": PermissionLevel.READ_ONLY,
+    "glob": PermissionLevel.READ_ONLY,
+    "grep": PermissionLevel.READ_ONLY,
+    "web_search": PermissionLevel.READ_ONLY,
+    "web_fetch": PermissionLevel.READ_ONLY,
+    "scraper": PermissionLevel.READ_ONLY,
+    "task_list": PermissionLevel.READ_ONLY,
+    "task_get": PermissionLevel.READ_ONLY,
+    # Escrita no workspace — nivel 1
+    "write": PermissionLevel.WORKSPACE_WRITE,
+    "edit": PermissionLevel.WORKSPACE_WRITE,
+    "task_create": PermissionLevel.WORKSPACE_WRITE,
+    "task_update": PermissionLevel.WORKSPACE_WRITE,
+    "notebook_edit": PermissionLevel.WORKSPACE_WRITE,
+    "pdf_tool": PermissionLevel.WORKSPACE_WRITE,
+    "spreadsheet": PermissionLevel.WORKSPACE_WRITE,
+    "image_gen": PermissionLevel.WORKSPACE_WRITE,
+    "agent": PermissionLevel.WORKSPACE_WRITE,
+    # Acesso perigoso — nivel 3
+    "bash": PermissionLevel.DANGER_FULL_ACCESS,
+    "git_advanced": PermissionLevel.DANGER_FULL_ACCESS,
+    "docker_manage": PermissionLevel.DANGER_FULL_ACCESS,
+    "whatsapp_send": PermissionLevel.DANGER_FULL_ACCESS,
+    "http_request": PermissionLevel.DANGER_FULL_ACCESS,
+    "supabase_query": PermissionLevel.DANGER_FULL_ACCESS,
+    "n8n_workflow": PermissionLevel.DANGER_FULL_ACCESS,
+}
+
+# Mapeamento de nomes de modo (settings.json) para nivel
+PERMISSION_MODES: dict[str, PermissionLevel] = {
+    "readonly": PermissionLevel.READ_ONLY,
+    "read_only": PermissionLevel.READ_ONLY,
+    "workspace": PermissionLevel.WORKSPACE_WRITE,
+    "workspace_write": PermissionLevel.WORKSPACE_WRITE,
+    "default": PermissionLevel.PROMPT,
+    "prompt": PermissionLevel.PROMPT,
+    "acceptEdits": PermissionLevel.WORKSPACE_WRITE,
+    "danger": PermissionLevel.DANGER_FULL_ACCESS,
+    "dontAsk": PermissionLevel.ALLOW,
+    "allow": PermissionLevel.ALLOW,
+}
+
+
+def get_current_level() -> PermissionLevel:
+    """Retorna o nivel de permissao atual baseado em config e settings."""
+    settings = config.load_settings()
+    mode = settings.get("permissions", {}).get("mode", "default")
+    return PERMISSION_MODES.get(mode, PermissionLevel.PROMPT)
+
+
+def get_tool_requirement(tool_name: str) -> PermissionLevel:
+    """Retorna o nivel minimo necessario para uma ferramenta."""
+    return TOOL_REQUIREMENTS.get(tool_name, PermissionLevel.DANGER_FULL_ACCESS)
+
+
+# ── API Principal ──────────────────────────────────────────────
+
 def is_dangerous_command(command: str) -> bool:
-    """Verifica se um comando bash é perigoso."""
+    """Verifica se um comando bash e perigoso."""
     cmd_lower = command.lower().strip()
     return any(danger in cmd_lower for danger in config.DANGEROUS_COMMANDS)
 
 
 def needs_confirmation(tool_name: str, arguments: dict) -> bool:
-    """Determina se uma chamada de ferramenta precisa de confirmação do usuário."""
+    """Determina se uma chamada de ferramenta precisa de confirmacao.
 
-    # Verifica regras customizadas primeiro
+    Logica de 5 camadas:
+    1. Verifica regras customizadas (settings.json) — tem prioridade
+    2. Verifica nivel atual vs requisito da ferramenta
+    3. Para bash, classifica o comando para decidir
+    """
+    # Regras customizadas tem prioridade
     custom_result = _check_custom_rules(tool_name, arguments)
     if custom_result is not None:
         return custom_result
 
-    # Leitura nunca precisa de confirmação
-    if tool_name in ("read", "glob", "grep", "task_create", "task_update", "task_list", "task_get"):
+    current = get_current_level()
+    required = get_tool_requirement(tool_name)
+
+    # Allow: nunca pede confirmacao
+    if current == PermissionLevel.ALLOW:
         return False
 
-    # Bash: depende do comando
+    # ReadOnly: bloqueia tudo que nao e leitura
+    if current == PermissionLevel.READ_ONLY:
+        return required > PermissionLevel.READ_ONLY
+
+    # DangerFullAccess: nunca pede confirmacao (exceto comandos bloqueados)
+    if current == PermissionLevel.DANGER_FULL_ACCESS:
+        if tool_name == "bash" and is_dangerous_command(arguments.get("command", "")):
+            return True  # Mesmo com full access, comandos bloqueados pedem confirmacao
+        return False
+
+    # WorkspaceWrite: permite leitura e escrita, pede confirmacao para danger
+    if current == PermissionLevel.WORKSPACE_WRITE:
+        if required <= PermissionLevel.WORKSPACE_WRITE:
+            return False
+        # Bash: depende do comando
+        if tool_name == "bash":
+            risk = classify_bash_command(arguments.get("command", ""))
+            return risk in ("dangerous", "blocked")
+        return True
+
+    # Prompt (padrao): usa logica detalhada
+    if tool_name in ("read", "glob", "grep", "task_list", "task_get"):
+        return False
+
     if tool_name == "bash":
         cmd = arguments.get("command", "")
         if is_dangerous_command(cmd):
             return True
+        risk = classify_bash_command(cmd)
+        if risk == "safe":
+            return False
         return not config.AUTO_APPROVE_BASH
 
-    # Write e Edit: depende da config
     if tool_name in ("write", "edit"):
         return not config.AUTO_APPROVE_WRITE
 
-    # Web tools: normalmente livres
     if tool_name in ("web_search", "web_fetch", "scraper"):
         return False
 
-    # Agent tool: livre
     if tool_name == "agent":
         return False
 
-    # Tools que sempre pedem confirmação (ações externas/destrutivas)
     if tool_name in ("whatsapp_send", "docker_manage", "n8n_workflow",
                       "supabase_query", "image_gen"):
         return True
 
-    # Tools de escrita de arquivo
     if tool_name in ("pdf_tool", "spreadsheet"):
         return not config.AUTO_APPROVE_WRITE
 
-    # HTTP request e git_advanced: pede confirmação
     if tool_name in ("http_request", "git_advanced"):
         return not config.AUTO_APPROVE_BASH
 
-    # Default: pede confirmação
     return True
 
 
+def is_tool_allowed(tool_name: str) -> bool:
+    """Verifica se a ferramenta e permitida no nivel atual (sem prompt)."""
+    current = get_current_level()
+    required = get_tool_requirement(tool_name)
+    return current >= required
+
+
 def format_confirmation_prompt(tool_name: str, arguments: dict) -> str:
-    """Formata a mensagem de confirmação para o usuário."""
+    """Formata a mensagem de confirmacao para o usuario."""
+    level = get_current_level()
+    level_name = level.name.replace("_", " ").title()
 
     if tool_name == "bash":
         cmd = arguments.get("command", "")
         cwd = arguments.get("cwd", "")
-        danger = " ⚠️  COMANDO PERIGOSO!" if is_dangerous_command(cmd) else ""
+        danger = " COMANDO PERIGOSO!" if is_dangerous_command(cmd) else ""
         location = f" (em {cwd})" if cwd else ""
-        return f"Executar bash{location}?{danger}\n  $ {cmd}"
+        return f"[{level_name}] Executar bash{location}?{danger}\n  $ {cmd}"
 
     elif tool_name == "write":
         path = arguments.get("file_path", "")
         content = arguments.get("content", "")
         lines = content.count("\n") + 1
-        return f"Escrever arquivo?\n  {path} ({lines} linhas)"
+        return f"[{level_name}] Escrever arquivo?\n  {path} ({lines} linhas)"
 
     elif tool_name == "edit":
         path = arguments.get("file_path", "")
         old = arguments.get("old_string", "")[:80]
         new = arguments.get("new_string", "")[:80]
-        return f"Editar arquivo?\n  {path}\n  - {old!r}\n  + {new!r}"
+        return f"[{level_name}] Editar arquivo?\n  {path}\n  - {old!r}\n  + {new!r}"
 
-    return f"Executar {tool_name} com {arguments}?"
+    return f"[{level_name}] Executar {tool_name} com {arguments}?"
 
 
 def _check_custom_rules(tool_name: str, arguments: dict) -> bool | None:
@@ -99,6 +219,7 @@ def _check_custom_rules(tool_name: str, arguments: dict) -> bool | None:
     Formato em settings.json:
     {
       "permissions": {
+        "mode": "default",
         "rules": [
           {
             "tool": "bash",
@@ -126,14 +247,12 @@ def _check_custom_rules(tool_name: str, arguments: dict) -> bool | None:
         return None
 
     for rule in rules:
-        # Filtra por tool
         rule_tool = rule.get("tool", "")
         if rule_tool and rule_tool != tool_name:
             continue
 
         matched = False
 
-        # Command pattern (para bash)
         cmd_pattern = rule.get("command_pattern", "")
         if cmd_pattern and tool_name == "bash":
             cmd = arguments.get("command", "")
@@ -143,30 +262,28 @@ def _check_custom_rules(tool_name: str, arguments: dict) -> bool | None:
             except re.error:
                 continue
 
-        # Path pattern (para write/edit/read)
         path_pattern = rule.get("path_pattern", "")
         if path_pattern and tool_name in ("write", "edit", "read"):
             path = arguments.get("file_path", "")
             if fnmatch.fnmatch(path, path_pattern):
                 matched = True
 
-        # Tool-only rule (sem pattern = aplica pra toda tool)
         if not cmd_pattern and not path_pattern and rule_tool == tool_name:
             matched = True
 
         if matched:
             action = rule.get("action", "")
             if action == "allow":
-                return False  # Não precisa confirmação
+                return False
             elif action == "deny":
-                return True  # Sempre pede confirmação
+                return True
             elif action == "block":
-                return True  # Bloqueia (pede confirmação que será negada)
+                return True
 
-    return None  # Nenhuma regra aplicável
+    return None
 
 
-# ── Classificação de ações por risco ──────────────────────────
+# ── Classificacao de acoes por risco ──────────────────────────
 
 ACTION_CLASSIFICATIONS = {
     "read": {"reversible": True, "external": False, "level": "safe"},
@@ -234,7 +351,7 @@ def classify_bash_command(command: str) -> str:
 
 
 def classify_action(tool_name: str, arguments: dict) -> dict:
-    """Classifica ação completa por risco, reversibilidade e visibilidade."""
+    """Classifica acao completa por risco, reversibilidade e visibilidade."""
     base = ACTION_CLASSIFICATIONS.get(tool_name, {"reversible": None, "external": None, "level": "write"})
     result = dict(base)
     if tool_name == "bash":

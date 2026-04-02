@@ -6,8 +6,12 @@ import sys
 import time
 import argparse
 import threading
-import tty
-import termios
+try:
+    import tty
+    import termios
+    _HAS_TERMIOS = True
+except ImportError:
+    _HAS_TERMIOS = False
 from pathlib import Path
 
 import re as _re
@@ -404,14 +408,18 @@ def _show_diff(output: str) -> None:
 
 def _read_single_key() -> str:
     """Lê uma única tecla sem precisar pressionar Enter."""
-    fd = sys.stdin.fileno()
-    old_settings = termios.tcgetattr(fd)
-    try:
-        tty.setraw(fd)
-        ch = sys.stdin.read(1)
-    finally:
-        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-    return ch
+    if _HAS_TERMIOS:
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return ch
+    else:
+        import msvcrt
+        return msvcrt.getwch()
 
 
 def ask_confirmation(message: str) -> bool:
@@ -448,7 +456,7 @@ def ask_confirmation(message: str) -> bool:
         else:
             console.print(f"  [red]✗ Denied[/]\n")
             return False
-    except (EOFError, KeyboardInterrupt, termios.error):
+    except (EOFError, KeyboardInterrupt) if not _HAS_TERMIOS else (EOFError, KeyboardInterrupt, termios.error):
         # Fallback para input padrão se terminal não suportar raw mode
         try:
             sys.stdout.write(f"  [Y] Yes  [N] No  [A] Always  ")
@@ -512,6 +520,78 @@ def show_rate_limit_warning(wait_seconds: int, attempt: int, max_retries: int) -
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # SLASH COMMANDS
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# ── Todos os slash commands conhecidos (para sugestao Levenshtein) ──
+
+KNOWN_SLASH_COMMANDS = [
+    "/help", "/exit", "/quit", "/q", "/clear", "/reset",
+    "/sessions", "/resume", "/save", "/model", "/tokens",
+    "/cwd", "/cd", "/approve", "/compact", "/plan",
+    "/memory", "/tasks", "/cron", "/trigger", "/diff",
+    "/status", "/init", "/hooks", "/plugins", "/mcp",
+    "/tools", "/agents", "/stale", "/skills",
+    "/background", "/web", "/pipeline", "/backup", "/chatwoot",
+    # Skills comuns
+    "/commit", "/review", "/test", "/refactor", "/explain",
+    "/fix", "/simplify",
+]
+
+
+def _levenshtein_distance(s1: str, s2: str) -> int:
+    """Calcula a distancia de Levenshtein entre duas strings."""
+    if len(s1) < len(s2):
+        return _levenshtein_distance(s2, s1)
+    if len(s2) == 0:
+        return len(s1)
+
+    prev_row = list(range(len(s2) + 1))
+    for i, c1 in enumerate(s1):
+        curr_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = prev_row[j + 1] + 1
+            deletions = curr_row[j] + 1
+            substitutions = prev_row[j] + (c1 != c2)
+            curr_row.append(min(insertions, deletions, substitutions))
+        prev_row = curr_row
+
+    return prev_row[-1]
+
+
+def suggest_slash_command(user_input: str) -> str | None:
+    """Sugere o slash command mais proximo usando distancia de Levenshtein.
+
+    Retorna a sugestao se a distancia for <= 3, ou None.
+    """
+    parts = user_input.strip().split(maxsplit=1)
+    cmd = parts[0].lower()
+
+    # Coleta todas as skills registradas tambem
+    all_commands = list(KNOWN_SLASH_COMMANDS)
+    for skill in _skill_registry.list_all():
+        skill_cmd = f"/{skill.name}"
+        if skill_cmd not in all_commands:
+            all_commands.append(skill_cmd)
+        for alias in skill.aliases:
+            alias_cmd = f"/{alias}"
+            if alias_cmd not in all_commands:
+                all_commands.append(alias_cmd)
+
+    best_match = None
+    best_distance = 999
+
+    for known in all_commands:
+        dist = _levenshtein_distance(cmd, known)
+        if dist < best_distance:
+            best_distance = dist
+            best_match = known
+
+    # So sugere se a distancia for razoavel (max 3 edicoes)
+    max_threshold = min(3, len(cmd) // 2 + 1)
+    if best_distance <= max_threshold and best_match:
+        return best_match
+
+    return None
+
 
 def handle_slash_command(cmd: str, agent: Agent) -> bool:
     parts = cmd.strip().split(maxsplit=1)
@@ -1194,6 +1274,13 @@ def run_repl(args: argparse.Namespace) -> None:
             if user_input.startswith("/"):
                 if handle_slash_command(user_input, agent):
                     continue
+                # Comando nao reconhecido — sugere similar por Levenshtein
+                suggestion = suggest_slash_command(user_input)
+                if suggestion:
+                    console.print(f"  [warning]Comando desconhecido. Voce quis dizer [bold]{suggestion}[/bold]?[/]")
+                else:
+                    console.print(f"  [warning]Comando desconhecido. Use /help para ver comandos disponiveis.[/]")
+                continue
 
             if user_input.startswith("!"):
                 bash_cmd = user_input[1:].strip()

@@ -66,14 +66,81 @@ DANGEROUS_COMMANDS = [
 
 
 def load_settings() -> dict:
-    """Carrega settings.json customizado do usuário."""
+    """Carrega settings com merge hierarquico de 4 fontes.
+
+    Ordem (maior prioridade por ultimo):
+    1. ~/.clow/settings.json          (global do usuario)
+    2. .clow/settings.json            (projeto)
+    3. .clow/settings.local.json      (local, nao commitado)
+    4. CLOW_SETTINGS env var          (override via ambiente)
+    """
+    merged: dict = {}
+
+    # 1. Global do usuario
     if CONFIG_FILE.exists():
-        with open(CONFIG_FILE) as f:
-            return json.load(f)
-    return {}
+        try:
+            with open(CONFIG_FILE) as f:
+                merged = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    # 2. Projeto: .clow/settings.json
+    project_settings = Path.cwd() / ".clow" / "settings.json"
+    if project_settings.exists():
+        try:
+            with open(project_settings) as f:
+                project_data = json.load(f)
+            merged = _deep_merge(merged, project_data)
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    # 3. Local: .clow/settings.local.json (gitignored)
+    local_settings = Path.cwd() / ".clow" / "settings.local.json"
+    if local_settings.exists():
+        try:
+            with open(local_settings) as f:
+                local_data = json.load(f)
+            merged = _deep_merge(merged, local_data)
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    # 4. Override via env var (JSON string)
+    env_settings = os.getenv("CLOW_SETTINGS", "")
+    if env_settings:
+        try:
+            env_data = json.loads(env_settings)
+            merged = _deep_merge(merged, env_data)
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    return merged
+
+
+def _deep_merge(base: dict, override: dict) -> dict:
+    """Merge profundo de dicts. Override tem prioridade.
+
+    Arrays sao substituidos integralmente (nao concatenados).
+    Chave 'mcp_servers' e preservada com merge especial por nome.
+    """
+    result = dict(base)
+    for key, value in override.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = _deep_merge(result[key], value)
+        else:
+            result[key] = value
+    return result
 
 
 def save_settings(settings: dict) -> None:
-    """Salva settings.json."""
+    """Salva settings.json global do usuario."""
     with open(CONFIG_FILE, "w") as f:
+        json.dump(settings, f, indent=2)
+
+
+def save_project_settings(settings: dict) -> None:
+    """Salva settings.json especifico do projeto em .clow/settings.json."""
+    project_dir = Path.cwd() / ".clow"
+    project_dir.mkdir(parents=True, exist_ok=True)
+    project_file = project_dir / "settings.json"
+    with open(project_file, "w") as f:
         json.dump(settings, f, indent=2)

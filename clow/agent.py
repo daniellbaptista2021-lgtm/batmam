@@ -561,12 +561,13 @@ class Agent:
         )
         turn.tool_calls.append(tool_call)
 
-        # Hook pre_tool_call
+        # Hook pre_tool_call (protocolo exit-code: 0=allow, 2=deny, outro=warn)
         pre_results = self.hooks.run_hooks(
             "pre_tool_call",
             {"tool_name": tool_call.name, "tool_args": json.dumps(tool_call.arguments)},
             self.cwd,
         )
+        hook_warnings = []
         for hr in pre_results:
             if hr.blocked:
                 tr = ToolResult(
@@ -577,6 +578,8 @@ class Agent:
                 turn.tool_results.append(tr)
                 self.on_tool_result(tool_call.name, "denied", tr.output)
                 return tr
+            if hr.is_warning and hr.feedback:
+                hook_warnings.append(hr.feedback)
 
         # Plan mode: bloqueia ferramentas de escrita
         if self.plan_mode and tool_call.name not in READ_ONLY_TOOLS and tool_call.name not in (
@@ -641,8 +644,12 @@ class Agent:
                 self.cwd,
             )
 
-        # Hook post_tool_call
-        self.hooks.run_hooks(
+        # Injeta warnings dos pre-hooks no output
+        if hook_warnings:
+            tr.output = "\n".join(hook_warnings) + "\n" + tr.output
+
+        # Hook post_tool_call (exit 2 = marca resultado como erro)
+        post_results = self.hooks.run_hooks(
             "post_tool_call",
             {
                 "tool_name": tool_call.name,
@@ -652,6 +659,13 @@ class Agent:
             },
             self.cwd,
         )
+        for hr in post_results:
+            if hr.blocked:
+                tr.status = ToolResultStatus.ERROR
+                tr.output += f"\n{hr.feedback}"
+            elif hr.is_warning and hr.feedback:
+                tr.output += f"\n{hr.feedback}"
+
         log_action("tool_exec", f"{tool_call.name}: {tr.status.value}", tool_name=tool_call.name)
 
         turn.tool_results.append(tr)
@@ -702,11 +716,62 @@ class Agent:
             self.session.messages = [system] + recent
 
     def _summarize_messages(self, messages: list[dict]) -> str:
-        """Resume mensagens antigas via LLM para smart context."""
+        """Resume mensagens antigas com extracao semantica estruturada.
+
+        Extrai antes de resumir:
+        - Arquivos mencionados/modificados
+        - Itens de trabalho pendentes
+        - Decisoes tomadas
+        - Padroes de uso de ferramentas
+        - Erros encontrados e suas solucoes
+        """
         if not messages:
             return ""
 
         try:
+            # Fase 1: Extracao semantica local (sem LLM)
+            files_mentioned: set[str] = set()
+            tools_used: dict[str, int] = {}
+            errors_found: list[str] = []
+            decisions: list[str] = []
+
+            for msg in messages:
+                role = msg.get("role", "")
+                content = msg.get("content", "")
+
+                if isinstance(content, str):
+                    # Extrai caminhos de arquivo
+                    import re as _re
+                    file_matches = _re.findall(
+                        r'(?:^|\s|[`"\'])([a-zA-Z_./\\][\w./\\-]*\.\w{1,10})(?:\s|$|[`"\'])',
+                        content,
+                    )
+                    for fm in file_matches:
+                        if not fm.startswith("http") and len(fm) < 200:
+                            files_mentioned.add(fm)
+
+                    # Extrai decisoes (frases com "vamos", "decidi", "escolhi", etc)
+                    for pattern in [
+                        r"(?:vamos|decidi|escolhi|optei|melhor)\s+.{10,80}",
+                        r"(?:decided|chose|will use|going with)\s+.{10,80}",
+                    ]:
+                        for match in _re.findall(pattern, content, _re.IGNORECASE):
+                            if len(decisions) < 5:
+                                decisions.append(match.strip())
+
+                # Conta ferramentas usadas
+                if role == "assistant":
+                    for tc in msg.get("tool_calls", []):
+                        name = tc.get("function", {}).get("name", tc.get("name", ""))
+                        if name:
+                            tools_used[name] = tools_used.get(name, 0) + 1
+
+                # Coleta erros
+                if role == "tool":
+                    if isinstance(content, str) and ("erro" in content.lower() or "error" in content.lower()):
+                        errors_found.append(content[:100])
+
+            # Fase 2: Resumo via LLM com contexto estruturado
             text_parts = []
             for msg in messages[:50]:
                 role = msg.get("role", "")
@@ -720,7 +785,8 @@ class Agent:
             conversation_text = "\n".join(text_parts)
             summary_prompt = (
                 "Resuma a conversa abaixo em 3-5 frases curtas, mantendo "
-                "informacoes tecnicas importantes (arquivos, decisoes, erros encontrados)."
+                "informacoes tecnicas importantes (arquivos, decisoes, erros encontrados).\n\n"
+                "Foque em: o que foi feito, o que ficou pendente, e decisoes tecnicas."
             )
 
             if self._provider == "anthropic":
@@ -728,9 +794,9 @@ class Agent:
                     model="claude-haiku-4-5-20251001",
                     system=summary_prompt,
                     messages=[{"role": "user", "content": conversation_text[:4000]}],
-                    max_tokens=500,
+                    max_tokens=600,
                 )
-                return response.content[0].text if response.content else ""
+                llm_summary = response.content[0].text if response.content else ""
             else:
                 response = self._client.chat.completions.create(
                     model="gpt-4.1-mini",
@@ -738,10 +804,29 @@ class Agent:
                         {"role": "system", "content": summary_prompt},
                         {"role": "user", "content": conversation_text[:4000]},
                     ],
-                    max_tokens=500,
+                    max_tokens=600,
                     temperature=0.1,
                 )
-                return response.choices[0].message.content or ""
+                llm_summary = response.choices[0].message.content or ""
+
+            # Fase 3: Monta resumo estruturado
+            parts = []
+            if llm_summary:
+                parts.append(f"Resumo: {llm_summary}")
+            if files_mentioned:
+                sorted_files = sorted(files_mentioned)[:20]
+                parts.append(f"Arquivos referenciados: {', '.join(sorted_files)}")
+            if tools_used:
+                top_tools = sorted(tools_used.items(), key=lambda x: -x[1])[:10]
+                tools_str = ", ".join(f"{n}({c}x)" for n, c in top_tools)
+                parts.append(f"Ferramentas usadas: {tools_str}")
+            if decisions:
+                parts.append("Decisoes: " + "; ".join(decisions[:5]))
+            if errors_found:
+                parts.append("Erros encontrados: " + "; ".join(errors_found[:3]))
+
+            return "\n".join(parts)
+
         except Exception:
             return ""
 
