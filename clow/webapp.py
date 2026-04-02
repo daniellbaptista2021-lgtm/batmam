@@ -898,6 +898,49 @@ WEBAPP_HTML = r'''<!DOCTYPE html>
     font-size: 12px;
   }
 
+  /* ── File Card ── */
+  .file-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    margin: 10px 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: border-color 0.2s;
+  }
+  .file-card:hover { border-color: var(--border-focus); }
+  .file-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+    background: var(--purple-glow);
+    border: 1px solid rgba(167,139,250,0.2);
+  }
+  .file-info { flex: 1; min-width: 0; }
+  .file-name {
+    font-size: 13px; font-weight: 600; color: var(--text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .file-meta { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+  .file-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .file-btn {
+    padding: 8px 14px; border-radius: 8px; font-family: var(--font-mono);
+    font-size: 11px; font-weight: 600; cursor: pointer; text-decoration: none;
+    transition: all 0.15s; border: none;
+  }
+  .file-btn:active { transform: scale(0.95); }
+  .file-btn.primary {
+    background: linear-gradient(135deg, var(--purple-dim), var(--violet));
+    color: white;
+  }
+  .file-btn.secondary {
+    background: var(--bg-tertiary); color: var(--purple);
+    border: 1px solid var(--border);
+  }
+
   /* ── Responsive ── */
   @media (min-width: 768px) {
     .terminal { padding: 20px 24px; }
@@ -1071,6 +1114,7 @@ async function sendMessageHTTP(text) {
       for (const t of data.tools) { showToolCall(t.name, t.args); showToolResult(t.name, t.status, t.output || ''); }
     }
     if (data.response) { appendText(data.response); finishText(); }
+    if (data.file) { showFileCard(data.file); }
     finishTurn();
   } catch (e) { hideThinking(); showError('Erro: ' + e.message); finishTurn(); }
 }
@@ -1203,6 +1247,30 @@ function showToolResult(name, status, output) {
     if (dur) dur.textContent = ((Date.now() - toolStartTime) / 1000).toFixed(1) + 's';
     currentToolEl = null;
   }
+  scrollEnd();
+}
+
+function showFileCard(file) {
+  ensureMsgEl();
+  const icons = {
+    'landing_page': '\ud83c\udf10', 'app': '\u26a1', 'xlsx': '\ud83d\udcca',
+    'docx': '\ud83d\udcc4', 'pptx': '\ud83d\udcfd\ufe0f',
+  };
+  const icon = icons[file.type] || '\ud83d\udcc1';
+  const isWeb = file.type === 'landing_page' || file.type === 'app';
+  const card = document.createElement('div');
+  card.className = 'file-card';
+  card.innerHTML = `
+    <div class="file-icon">${icon}</div>
+    <div class="file-info">
+      <div class="file-name">${esc(file.name)}</div>
+      <div class="file-meta">${esc(file.size)}</div>
+    </div>
+    <div class="file-actions">
+      ${isWeb ? `<a href="${esc(file.url)}" target="_blank" rel="noopener" class="file-btn primary">Abrir</a>` : ''}
+      <a href="${esc(file.url)}" download class="file-btn ${isWeb ? 'secondary' : 'primary'}">Download</a>
+    </div>`;
+  currentMsgEl.appendChild(card);
   scrollEnd();
 }
 
@@ -1755,7 +1823,7 @@ if HAS_FASTAPI:
             resp.set_cookie(
                 "clow_session", token,
                 max_age=_SESSION_TTL, httponly=True,
-                samesite="lax", secure=True,
+                samesite="lax", secure=False,
             )
             return resp
 
@@ -1879,7 +1947,7 @@ if HAS_FASTAPI:
 
     @app.post("/api/v1/chat", dependencies=[Depends(_rate_limit_dependency)])
     async def api_chat(request: Request):
-        """Fallback HTTP para chat quando WebSocket não conecta (mobile)."""
+        """Chat HTTP com deteccao automatica de geracao de arquivos."""
         if not _get_session_from_request(request):
             return JSONResponse({"error": "Nao autenticado"}, status_code=401)
         from .agent import Agent
@@ -1892,7 +1960,66 @@ if HAS_FASTAPI:
         if not content:
             return JSONResponse({"error": "content vazio"}, status_code=400)
 
-        # Cria ou reutiliza agente para esta sessao
+        track_action("user_message_http", content[:60])
+
+        # ── Detecta geracao de arquivo ──
+        from .generators.dispatcher import detect, run_generator
+        gen_module, gen_type = detect(content)
+
+        if gen_module:
+            loop = asyncio.get_event_loop()
+            try:
+                result = await loop.run_in_executor(None, run_generator, gen_module, content)
+                track_action("file_generated", f"{gen_type}: {result.get('name', '')}", "ok")
+
+                if result.get("type") == "text":
+                    return JSONResponse({
+                        "session_id": session_id or str(uuid.uuid4())[:8],
+                        "response": result["content"],
+                        "tools": [],
+                        "file": None,
+                    })
+
+                # Formata tamanho
+                size_bytes = result.get("size", 0)
+                if size_bytes > 1024 * 1024:
+                    size_str = f"{size_bytes / (1024*1024):.1f} MB"
+                elif size_bytes > 1024:
+                    size_str = f"{size_bytes / 1024:.1f} KB"
+                else:
+                    size_str = f"{size_bytes} bytes"
+
+                type_labels = {
+                    "landing_page": "Landing Page",
+                    "app": "Web App",
+                    "xlsx": "Planilha Excel",
+                    "docx": "Documento Word",
+                    "pptx": "Apresentacao PowerPoint",
+                }
+                type_label = type_labels.get(result["type"], result["type"])
+                msg = f"Pronto! Aqui esta seu arquivo:\n\n**{type_label}** — {result['name']} ({size_str})"
+
+                return JSONResponse({
+                    "session_id": session_id or str(uuid.uuid4())[:8],
+                    "response": msg,
+                    "tools": [],
+                    "file": {
+                        "type": result["type"],
+                        "name": result["name"],
+                        "url": result["url"],
+                        "size": size_str,
+                    },
+                })
+            except Exception as e:
+                track_action("file_gen_error", str(e)[:60], "error")
+                return JSONResponse({
+                    "session_id": session_id or str(uuid.uuid4())[:8],
+                    "response": f"Erro ao gerar arquivo: {str(e)}",
+                    "tools": [],
+                    "file": None,
+                }, status_code=500)
+
+        # ── Chat normal via Agent ──
         if session_id and session_id in _http_sessions:
             agent = _http_sessions[session_id]["agent"]
         else:
@@ -1902,13 +2029,10 @@ if HAS_FASTAPI:
 
         _http_sessions[session_id]["last_used"] = time.time()
 
-        # Limpa sessoes antigas (>30min)
         now = time.time()
         stale = [k for k, v in _http_sessions.items() if now - v["last_used"] > 1800]
         for k in stale:
             del _http_sessions[k]
-
-        track_action("user_message_http", content[:60])
 
         loop = asyncio.get_event_loop()
         collected_text: list[str] = []
@@ -1949,6 +2073,7 @@ if HAS_FASTAPI:
             "session_id": session_id,
             "response": response_text,
             "tools": tools_used,
+            "file": None,
         })
 
     @app.websocket("/ws")
