@@ -663,6 +663,7 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
 .chat-audio .ca-fill{height:100%;background:var(--p);border-radius:2px;width:0%;transition:width .1s linear}
 .chat-audio .ca-dur{font-size:10px;color:var(--tm);font-family:var(--mono);flex-shrink:0}
 .chat-transcription{font-style:italic;color:var(--tm);font-size:12px;margin:4px 0 6px;max-width:280px}
+.ap-transcript{font-style:italic;color:var(--tm);font-size:12px;margin:4px 0 2px;padding:0 4px}
 /* Lightbox */
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:200;display:none;align-items:center;justify-content:center;cursor:zoom-out;padding:20px}
 .lightbox.show{display:flex}
@@ -1139,6 +1140,8 @@ let lte=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lte<=
 // ── FILE & AUDIO SUPPORT ──────────────────────────────────────
 const MIC=document.getElementById('micBtn'),FP=document.getElementById('filePreview');
 let pendingFile=null,mediaRec=null,audioChunks=[],recStart=0,recTimer=null,audioBlob=null,audioUrl=null;
+let speechRec=null,audioTranscript='';
+const hasSpeechRec=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
 const fileInput=document.createElement('input');fileInput.type='file';fileInput.style.display='none';document.body.appendChild(fileInput);
 
 function toggleInputBtns(){
@@ -1202,13 +1205,23 @@ function toggleRec(){
 }
 
 async function startRec(){
+  if(!hasSpeechRec){showToast('Seu navegador nao suporta transcricao de audio. Digite sua mensagem.','error');return}
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     mediaRec=new MediaRecorder(stream,{mimeType:'audio/webm'});
-    audioChunks=[];
+    audioChunks=[];audioTranscript='';
     mediaRec.ondataavailable=e=>{if(e.data.size>0)audioChunks.push(e.data)};
     mediaRec.onstop=()=>{stream.getTracks().forEach(t=>t.stop());audioBlob=new Blob(audioChunks,{type:'audio/webm'});audioUrl=URL.createObjectURL(audioBlob);showAudioPreview()};
     mediaRec.start();
+    // Web Speech API — transcricao em tempo real
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    speechRec=new SR();
+    speechRec.lang='pt-BR';
+    speechRec.continuous=true;
+    speechRec.interimResults=false;
+    speechRec.onresult=(ev)=>{audioTranscript=Array.from(ev.results).map(r=>r[0].transcript).join(' ')};
+    speechRec.onerror=()=>{};
+    speechRec.start();
     MIC.classList.add('recording');
     recStart=Date.now();
     recTimer=setInterval(()=>{
@@ -1216,7 +1229,6 @@ async function startRec(){
       const mm=Math.floor(s/60),ss=s%60;
       MIC.title=mm+':'+(ss<10?'0':'')+ss;
     },500);
-    // Auto-stop at 5 min
     setTimeout(()=>{if(mediaRec&&mediaRec.state==='recording')stopRec()},300000);
   }catch(e){showToast('Nao foi possivel acessar o microfone','error')}
 }
@@ -1224,6 +1236,7 @@ async function startRec(){
 function stopRec(){
   if(mediaRec&&mediaRec.state==='recording'){
     mediaRec.stop();
+    if(speechRec){try{speechRec.stop()}catch(e){}}
     MIC.classList.remove('recording');
     clearInterval(recTimer);
     MIC.title='Gravar audio';
@@ -1234,7 +1247,9 @@ function showAudioPreview(){
   const dur=Math.floor((Date.now()-recStart)/1000);
   const mm=Math.floor(dur/60),ss=dur%60;
   const ts=mm+':'+(ss<10?'0':'')+ss;
-  FP.innerHTML='<div class="audio-preview"><button class="ap-play" id="apPlay" onclick="playPreviewAudio()">&#x25B6;</button><div class="ap-bar"><div class="ap-fill" id="apFill"></div></div><span class="ap-dur">'+ts+'</span><button class="ap-del" onclick="clearAudio()">&#x1F5D1;</button></div>';
+  let html='<div class="audio-preview"><button class="ap-play" id="apPlay" onclick="playPreviewAudio()">&#x25B6;</button><div class="ap-bar"><div class="ap-fill" id="apFill"></div></div><span class="ap-dur">'+ts+'</span><button class="ap-del" onclick="clearAudio()">&#x1F5D1;</button></div>';
+  if(audioTranscript)html+='<div class="ap-transcript">&#x1F3A4; '+esc(audioTranscript)+'</div>';
+  FP.innerHTML=html;
   toggleInputBtns();
 }
 
@@ -1249,7 +1264,7 @@ function playPreviewAudio(){
   previewAudio.play();
 }
 
-function clearAudio(){audioBlob=null;audioUrl=null;FP.innerHTML='';if(previewAudio){previewAudio.pause();previewAudio=null}toggleInputBtns()}
+function clearAudio(){audioBlob=null;audioUrl=null;audioTranscript='';speechRec=null;FP.innerHTML='';if(previewAudio){previewAudio.pause();previewAudio=null}toggleInputBtns()}
 
 // ── Upload & Send ──
 async function uploadFile(f){
@@ -1269,7 +1284,36 @@ sendMessage=async function(){
   // Audio pending?
   if(audioBlob){
     const text=I.value.trim();
-    addUserWithAttachment(text,'audio','&#x1F3A4;','Audio',null,audioUrl);
+    const localAudioUrl=audioUrl;
+    const trans=audioTranscript;
+    // Abordagem 1: Web Speech API transcreveu — envia como texto normal
+    if(trans){
+      const msgText=text||trans;
+      addUserWithAttachment(msgText,'audio','&#x1F3A4;','Audio',null,localAudioUrl,trans);
+      I.value='';I.style.height='auto';proc=true;SB.disabled=true;
+      clearAudio();
+      showThink();
+      if(http){
+        try{
+          const body={content:msgText,session_id:hSid,conversation_id:cid,model:selMod};
+          const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+          hideThink();
+          if(!r.ok){const e=await r.json().catch(()=>({error:'Erro'}));showErr(e.error||'Erro');finishTurn();return}
+          const d=await r.json();
+          hSid=d.session_id||hSid;
+          if(!cid&&d.conversation_id)cid=d.conversation_id;
+          if(d.response){appendTxt(d.response);finishTxt()}
+          finishTurn();
+        }catch(e){hideThink();showErr('Erro: '+e.message);finishTurn()}
+      }else if(ws&&ws.readyState===1){
+        hideThink();
+        ws.send(JSON.stringify({type:'message',content:msgText}));
+        proc=true;SB.disabled=true;
+      }else{hideThink();finishTurn()}
+      return;
+    }
+    // Abordagem 2 (fallback): sem SpeechRecognition — upload pro backend
+    addUserWithAttachment(text,'audio','&#x1F3A4;','Audio',null,localAudioUrl);
     I.value='';I.style.height='auto';proc=true;SB.disabled=true;
     const audioFile=new File([audioBlob],'audio.webm',{type:'audio/webm'});
     clearAudio();
@@ -1277,7 +1321,10 @@ sendMessage=async function(){
     const res=await uploadFile(audioFile);
     hideThink();
     if(!res||!res.ok){finishTurn();return}
-    // Send to chat
+    if(!res.has_transcription){
+      showToast('Seu navegador nao suporta transcricao. Digite sua mensagem.','error');
+      finishTurn();return;
+    }
     const fileData={type:'audio',transcription:res.transcription||'',has_transcription:res.has_transcription,file_name:'audio.webm',file_url:res.file_url};
     if(http){await sendFileHTTP(text,fileData)}
     else if(ws&&ws.readyState===1){ws.send(JSON.stringify({type:'message',content:text||res.transcription||'[audio]',file_data:fileData}));proc=true;SB.disabled=true}
@@ -1310,7 +1357,7 @@ sendMessage=async function(){
   _origSendMessage();
 };
 
-function addUserWithAttachment(text,type,icon,name,imgUrl,audUrl){
+function addUserWithAttachment(text,type,icon,name,imgUrl,audUrl,transcript){
   const w=document.getElementById('welc');if(w)w.remove();
   const wm=document.getElementById('wmark');if(wm)wm.classList.remove('empty');
   const d=document.createElement('div');d.className='ml user';
@@ -1319,6 +1366,7 @@ function addUserWithAttachment(text,type,icon,name,imgUrl,audUrl){
     attachHtml='<img class="chat-img" src="'+imgUrl+'" onclick="openLightbox(this.src)" alt="imagem">';
   }else if(type==='audio'){
     attachHtml='<div class="chat-audio"><button class="ca-play" onclick="playChatAudio(this,\''+esc(audUrl||'')+'\')">&#x25B6;</button><div class="ca-bar"><div class="ca-fill"></div></div><span class="ca-dur">0:00</span></div>';
+    if(transcript)attachHtml+='<div class="chat-transcription">&#x1F3A4; '+esc(transcript)+'</div>';
   }else{
     const sz=pendingFile?(pendingFile.size>1024*1024?(pendingFile.size/1024/1024).toFixed(1)+' MB':(pendingFile.size/1024).toFixed(1)+' KB'):'';
     attachHtml='<div class="chat-file-card"><span class="cfc-icon">'+icon+'</span><div class="cfc-info"><div class="cfc-name">'+esc(name)+'</div><div class="cfc-meta">'+sz+'</div></div></div>';
@@ -2148,22 +2196,9 @@ if HAS_FASTAPI:
         return data
 
     async def _transcribe_audio(file_path: str) -> str:
-        """Transcreve audio usando Whisper API da OpenAI."""
-        openai_key = config.OPENAI_API_KEY
-        if not openai_key:
-            return ""
-        try:
-            from openai import OpenAI
-            client = OpenAI(api_key=openai_key)
-            with open(file_path, "rb") as f:
-                result = client.audio.transcriptions.create(
-                    model="whisper-1",
-                    file=f,
-                    language="pt",
-                )
-            return result.text or ""
-        except Exception as e:
-            return f"[Erro na transcricao: {e}]"
+        """Transcricao de audio — agora feita no frontend via Web Speech API.
+        Backend nao usa mais OpenAI Whisper. Retorna vazio para fallback."""
+        return ""
 
     @app.post("/api/v1/upload")
     async def api_upload(request: Request, file: UploadFile = File(...), message: str = Form("")):

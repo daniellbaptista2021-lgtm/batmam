@@ -161,7 +161,7 @@ Skills são atalhos para prompts de produção:
 - Referencie arquivos como `file_path:line_number`.
 
 # Comunicação
-- Use português brasileiro quando o usuário falar em português.
+- SEMPRE responda em português brasileiro (pt-BR), independente do idioma da pergunta do usuário.
 - Seja proativo. Se o usuário pedir algo, faça direto — não fique só sugerindo.
 - Quando algo falhar, diagnostique o porquê antes de tentar outra abordagem.
 - Quando a tarefa é ambígua, pergunte antes de assumir.
