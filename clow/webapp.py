@@ -338,7 +338,7 @@ def _build_multimodal_message(text: str, file_data: dict) -> Any:
         if text:
             content_blocks.append({"type": "text", "text": text})
         else:
-            content_blocks.append({"type": "text", "text": "Analise esta imagem e descreva o que voce ve."})
+            content_blocks.append({"type": "text", "text": "Analise esta imagem e descreva o que você vê."})
 
     elif ftype == "pdf":
         content_blocks.append({
@@ -352,7 +352,7 @@ def _build_multimodal_message(text: str, file_data: dict) -> Any:
         if text:
             content_blocks.append({"type": "text", "text": text})
         else:
-            content_blocks.append({"type": "text", "text": "Analise este PDF e resuma o conteudo."})
+            content_blocks.append({"type": "text", "text": "Analise este PDF e resuma o conteúdo."})
 
     elif ftype == "audio":
         transcription = file_data.get("transcription", "")
@@ -763,7 +763,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
       <div class="sb-ct">
         <button class="sb-btn" onclick="qa('Cria uma landing page de ')"><span class="ic">&#x1F310;</span>Landing Page</button>
         <button class="sb-btn" onclick="qa('Gera uma planilha de ')"><span class="ic">&#x1F4CA;</span>Planilha</button>
-        <button class="sb-btn" onclick="qa('Cria uma apresentacao sobre ')"><span class="ic">&#x1F3AC;</span>Apresentacao</button>
+        <button class="sb-btn" onclick="qa('Cria uma apresentacao sobre ')"><span class="ic">&#x1F3AC;</span>Apresentação</button>
         <button class="sb-btn" onclick="qa('Faz um documento de ')"><span class="ic">&#x1F4C4;</span>Documento</button>
         <button class="sb-btn" onclick="qa('Me faz um app de ')"><span class="ic">&#x26A1;</span>Web App</button>
       </div>
@@ -771,42 +771,42 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
     <div class="sb-sec">
       <div class="sb-lbl" onclick="this.classList.toggle('open')">Marketing <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="qa('Analise minha campanha de trafego pago ')"><span class="ic">&#x1F4B0;</span>Trafego Pago</button>
+        <button class="sb-btn" onclick="qa('Analise minha campanha de tráfego pago ')"><span class="ic">&#x1F4B0;</span>Tráfego Pago</button>
         <button class="sb-btn" onclick="qa('Gera copy para anuncio de ')"><span class="ic">&#x270F;</span>Copy</button>
-        <button class="sb-btn" onclick="qa('Cria conteudo para instagram sobre ')"><span class="ic">&#x1F4F1;</span>Redes Sociais</button>
-        <button class="sb-btn" onclick="qa('Cria sequencia de emails para ')"><span class="ic">&#x1F4E7;</span>Email Marketing</button>
+        <button class="sb-btn" onclick="qa('Cria conteúdo para instagram sobre ')"><span class="ic">&#x1F4F1;</span>Redes Sociais</button>
+        <button class="sb-btn" onclick="qa('Cria sequência de emails para ')"><span class="ic">&#x1F4E7;</span>Email Marketing</button>
         <button class="sb-btn" onclick="qa('Faz auditoria SEO de ')"><span class="ic">&#x1F50D;</span>SEO</button>
-        <button class="sb-btn" onclick="qa('Define estrategia de precificacao para ')"><span class="ic">&#x1F4B2;</span>Pricing</button>
+        <button class="sb-btn" onclick="qa('Define estratégia de precificação para ')"><span class="ic">&#x1F4B2;</span>Pricing</button>
       </div>
     </div>
     <div class="sb-sec">
-      <div class="sb-lbl" onclick="this.classList.toggle('open')">Negocios <span class="ar">&#9654;</span></div>
+      <div class="sb-lbl" onclick="this.classList.toggle('open')">Negócios <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
         <button class="sb-btn" onclick="qa('Cria proposta comercial para ')"><span class="ic">&#x1F4DD;</span>Proposta</button>
-        <button class="sb-btn" onclick="qa('Analise metricas SaaS: ')"><span class="ic">&#x1F4CA;</span>Metricas SaaS</button>
+        <button class="sb-btn" onclick="qa('Analise métricas SaaS: ')"><span class="ic">&#x1F4CA;</span>Métricas SaaS</button>
         <button class="sb-btn" onclick="qa('Cria contrato de ')"><span class="ic">&#x1F4C3;</span>Contrato</button>
       </div>
     </div>
     <div class="sb-sec">
-      <div class="sb-lbl" onclick="this.classList.toggle('open')">Missoes <span class="ar">&#9654;</span></div>
+      <div class="sb-lbl" onclick="this.classList.toggle('open')">Missões <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
         <button class="sb-btn" onclick="qa('/mission Cria um site completo para ')"><span class="ic">&#x1F680;</span>Site Completo</button>
-        <button class="sb-btn" onclick="qa('/mission Campanha de trafego para ')"><span class="ic">&#x1F4CA;</span>Campanha</button>
+        <button class="sb-btn" onclick="qa('/mission Campanha de tráfego para ')"><span class="ic">&#x1F4CA;</span>Campanha</button>
         <button class="sb-btn" onclick="qa('/mission Setup digital completo para ')"><span class="ic">&#x1F3D7;</span>Setup Digital</button>
       </div>
     </div>
     <div class="sb-sep"></div>
     <div class="sb-sec">
-      <div class="sb-lbl" onclick="this.classList.toggle('open')">Conexoes <span class="ar">&#9654;</span></div>
+      <div class="sb-lbl" onclick="this.classList.toggle('open')">Conexões <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="sendCmd('/connections')"><span class="ic">&#x1F517;</span>Ver conexoes</button>
+        <button class="sb-btn" onclick="sendCmd('/connections')"><span class="ic">&#x1F517;</span>Ver conexões</button>
         <button class="sb-btn" onclick="sendCmd('/connect')"><span class="ic">&#x2795;</span>Conectar</button>
       </div>
     </div>
     <div class="sb-sec" id="admSec" style="display:none">
       <div class="sb-lbl" onclick="this.classList.toggle('open')">Admin <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="showAdmUsers()"><span class="ic">&#x1F465;</span>Usuarios</button>
+        <button class="sb-btn" onclick="showAdmUsers()"><span class="ic">&#x1F465;</span>Usuários</button>
         <button class="sb-btn" onclick="showAdmStats()"><span class="ic">&#x1F4CA;</span>Consumo</button>
         <button class="sb-btn" onclick="showCreateUsr()"><span class="ic">&#x2795;</span>Cadastrar</button>
       </div>
@@ -825,7 +825,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
       <div class="hdr-drop" id="hdrDrop">
         <button onclick="sendCmd('/usage');clsDrop()">&#x1F4CA; Meu consumo</button>
         <button onclick="sendCmd('/plan');clsDrop()">&#x1F4E6; Meu plano</button>
-        <button onclick="sendCmd('/memories');clsDrop()">&#x1F9E0; Memorias</button>
+        <button onclick="sendCmd('/memories');clsDrop()">&#x1F9E0; Memórias</button>
         <button onclick="sendCmd('/help');clsDrop()">&#x2753; Ajuda</button>
         <a href="/logout">&#x1F6AA; Sair</a>
       </div>
@@ -840,11 +840,11 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
       <p>Escolha abaixo ou descreva o que precisa</p>
       <div class="qgrid">
         <div class="qc" onclick="qa('Cria uma landing page de ')"><div class="qi">&#x1F310;</div><div class="qt">Landing Page</div><div class="qd">Site completo e responsivo</div></div>
-        <div class="qc" onclick="qa('Gera uma planilha de ')"><div class="qi">&#x1F4CA;</div><div class="qt">Planilha</div><div class="qd">Excel com formulas</div></div>
-        <div class="qc" onclick="qa('Cria uma apresentacao sobre ')"><div class="qi">&#x1F3AC;</div><div class="qt">Apresentacao</div><div class="qd">PowerPoint profissional</div></div>
+        <div class="qc" onclick="qa('Gera uma planilha de ')"><div class="qi">&#x1F4CA;</div><div class="qt">Planilha</div><div class="qd">Excel com fórmulas</div></div>
+        <div class="qc" onclick="qa('Cria uma apresentacao sobre ')"><div class="qi">&#x1F3AC;</div><div class="qt">Apresentação</div><div class="qd">PowerPoint profissional</div></div>
         <div class="qc" onclick="qa('Me faz um app de ')"><div class="qi">&#x26A1;</div><div class="qt">Web App</div><div class="qd">App funcional completo</div></div>
-        <div class="qc" onclick="qa('Gera copy para anuncio de ')"><div class="qi">&#x270F;</div><div class="qt">Copy Ads</div><div class="qd">Textos para anuncios</div></div>
-        <div class="qc" onclick="qa('/mission Setup digital completo para ')"><div class="qi">&#x1F680;</div><div class="qt">Missao</div><div class="qd">Projeto autonomo completo</div></div>
+        <div class="qc" onclick="qa('Gera copy para anuncio de ')"><div class="qi">&#x270F;</div><div class="qt">Copy Ads</div><div class="qd">Textos para anúncios</div></div>
+        <div class="qc" onclick="qa('/mission Setup digital completo para ')"><div class="qi">&#x1F680;</div><div class="qt">Missão</div><div class="qd">Projeto autônomo completo</div></div>
       </div>
     </div>
   </div>
@@ -859,7 +859,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
         <button class="am-item" onclick="pickFile('','.xlsx,.xls,.csv')"><span class="am-icon">&#x1F4CA;</span>Planilha</button>
         <button class="am-item" onclick="pickFile('','*')"><span class="am-icon">&#x1F4C1;</span>Qualquer arquivo</button>
       </div>
-      <textarea id="inp" rows="1" placeholder="O que voce precisa?" autofocus></textarea>
+      <textarea id="inp" rows="1" placeholder="O que você precisa?" autofocus></textarea>
       <div class="ibox-right">
         <button class="mic-btn vis" id="micBtn" onclick="toggleRec()" title="Gravar audio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
         <button class="sbtn" id="sBtn" onclick="sendMessage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
@@ -1116,7 +1116,7 @@ function sendCmd(c){I.value=c;sendMessage()}
 function qa(t){const w=document.getElementById('welc');if(w)w.remove();I.value=t;I.focus();if(window.innerWidth<769)toggleSB()}
 function now(){return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
 let convMsgCount=0;
-function addUser(t,save=true){const w=document.getElementById('welc');if(w)w.remove();const wm=document.getElementById('wmark');if(wm)wm.classList.remove('empty');const d=document.createElement('div');d.className='ml user';d.innerHTML=`<div class="mh"><span class="mt">${now()}</span><span class="mn">voce</span><div class="mav">${me?me.email[0].toUpperCase():'?'}</div></div><div class="mb-wrap"><div class="mb">${esc(t)}</div></div>`;T.appendChild(d);scrl();convMsgCount++;if(!cid&&save){fetch('/api/v1/conversations',{method:'POST'}).then(r=>r.json()).then(d=>{cid=d.id;autoTitle(t);loadConvs()})}else if(convMsgCount===1&&cid){autoTitle(t)}else if(convMsgCount===2&&cid){const hdr=document.getElementById('hdrT');if(!hdr.textContent||hdr.textContent==='Nova conversa')autoTitle(t)}}
+function addUser(t,save=true){const w=document.getElementById('welc');if(w)w.remove();const wm=document.getElementById('wmark');if(wm)wm.classList.remove('empty');const d=document.createElement('div');d.className='ml user';d.innerHTML=`<div class="mh"><span class="mt">${now()}</span><span class="mn">você</span><div class="mav">${me?me.email[0].toUpperCase():'?'}</div></div><div class="mb-wrap"><div class="mb">${esc(t)}</div></div>`;T.appendChild(d);scrl();convMsgCount++;if(!cid&&save){fetch('/api/v1/conversations',{method:'POST'}).then(r=>r.json()).then(d=>{cid=d.id;autoTitle(t);loadConvs()})}else if(convMsgCount===1&&cid){autoTitle(t)}else if(convMsgCount===2&&cid){const hdr=document.getElementById('hdrT');if(!hdr.textContent||hdr.textContent==='Nova conversa')autoTitle(t)}}
 function autoTitle(t){
   const generic=['oi','ola','bom dia','boa tarde','boa noite','hey','hello','hi','e ai','fala','oi!','ola!'];
   const w=t.trim().toLowerCase().replace(/[!?.]/g,'');
@@ -1140,8 +1140,8 @@ function scrl(){T.scrollTop=T.scrollHeight}
 function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
 let mPolls={};
 function startPoll(m){const mid=m.id;let lt=0;const card=document.createElement('div');card.className='mission-card';card.id='mc-'+mid;card.innerHTML=`<div class="mctitle">\ud83d\ude80 ${esc(m.title)}</div><div class="mission-bar"><div class="mission-fill" id="mf-${mid}" style="width:0%"></div></div><div id="ms-${mid}"></div>`;ensureMsg();curMsg.querySelector('.mb-wrap').appendChild(card);scrl();const poll=async()=>{try{const r=await fetch(`/api/v1/missions/${mid}/progress?after=${lt}`);const d=await r.json();d.events.forEach(e=>{lt=Math.max(lt,e.time);const sl=document.getElementById('ms-'+mid);const fl=document.getElementById('mf-'+mid);if(e.type==='step_start'){const p=((e.data.step+1)/e.data.total*100).toFixed(0);if(fl)fl.style.width=p+'%';sl.innerHTML+=`<div class="mission-step running" id="mss-${mid}-${e.data.step}"><span class="ms-icon">\u23f3</span>${esc(e.data.title)}</div>`;scrl()}else if(e.type==='step_done'){const el=document.getElementById(`mss-${mid}-${e.data.step}`);if(el){el.className='mission-step done';el.querySelector('.ms-icon').textContent='\u2705'}if(e.data.file)showFile(e.data.file);scrl()}else if(e.type==='step_retry'){const el=document.getElementById(`mss-${mid}-${e.data.step}`);if(el)el.querySelector('.ms-icon').textContent='\ud83d\udd04'}else if(e.type==='step_failed'){const el=document.getElementById(`mss-${mid}-${e.data.step}`);if(el){el.className='mission-step failed';el.querySelector('.ms-icon').textContent='\u274c'}}else if(e.type==='completed'){const c=document.getElementById('mc-'+mid);if(c)c.className='mission-done';const tt=c?.querySelector('.mctitle');if(tt)tt.innerHTML='\ud83c\udf89 '+esc(e.data.title)+' — Concluida!';if(fl)fl.style.width='100%';if(e.data.summary){appendTxt(e.data.summary);finishTxt()}clearInterval(mPolls[mid]);scrl()}});if(d.status==='completed'||d.status==='failed')clearInterval(mPolls[mid])}catch(e){}};mPolls[mid]=setInterval(poll,2000);setTimeout(poll,500)}
-async function showAdmUsers(){const r=await fetch('/api/v1/admin/users');const d=await r.json();let h='<h3>Usuarios</h3><table class="adm-tbl"><tr><th>Email</th><th>Plano</th><th>Status</th><th></th></tr>';d.users.forEach(u=>{const st=u.active?'<span style="color:var(--g)">ativo</span>':'<span style="color:var(--r)">inativo</span>';h+=`<tr><td>${u.email}</td><td><select onchange="setPlan('${u.id}',this.value)">${['free','basic','pro','unlimited'].map(p=>`<option ${u.plan===p?'selected':''}>${p}</option>`).join('')}</select></td><td>${st}</td><td><button onclick="togUsr('${u.id}',${u.active?0:1})">${u.active?'Off':'On'}</button></td></tr>`});h+='</table>';document.getElementById('modalC').innerHTML=h;document.getElementById('modalBg').classList.add('show')}
-async function showAdmStats(){const r=await fetch('/api/v1/admin/stats');const d=await r.json();let h=`<h3>Consumo</h3><div class="adm-cards"><div class="adm-card"><div class="al">Usuarios</div><div class="av">${d.total_users}</div></div><div class="adm-card"><div class="al">Custo Hoje</div><div class="av">$${d.cost_today.toFixed(3)}</div></div><div class="adm-card"><div class="al">Custo Semana</div><div class="av">$${d.cost_week.toFixed(3)}</div></div><div class="adm-card"><div class="al">Tokens Hoje</div><div class="av">${(d.tokens_today/1000).toFixed(0)}k</div></div></div>`;document.getElementById('modalC').innerHTML=h;document.getElementById('modalBg').classList.add('show')}
+async function showAdmUsers(){const r=await fetch('/api/v1/admin/users');const d=await r.json();let h='<h3>Usuários</h3><table class="adm-tbl"><tr><th>Email</th><th>Plano</th><th>Status</th><th></th></tr>';d.users.forEach(u=>{const st=u.active?'<span style="color:var(--g)">ativo</span>':'<span style="color:var(--r)">inativo</span>';h+=`<tr><td>${u.email}</td><td><select onchange="setPlan('${u.id}',this.value)">${['free','basic','pro','unlimited'].map(p=>`<option ${u.plan===p?'selected':''}>${p}</option>`).join('')}</select></td><td>${st}</td><td><button onclick="togUsr('${u.id}',${u.active?0:1})">${u.active?'Off':'On'}</button></td></tr>`});h+='</table>';document.getElementById('modalC').innerHTML=h;document.getElementById('modalBg').classList.add('show')}
+async function showAdmStats(){const r=await fetch('/api/v1/admin/stats');const d=await r.json();let h=`<h3>Consumo</h3><div class="adm-cards"><div class="adm-card"><div class="al">Usuários</div><div class="av">${d.total_users}</div></div><div class="adm-card"><div class="al">Custo Hoje</div><div class="av">$${d.cost_today.toFixed(3)}</div></div><div class="adm-card"><div class="al">Custo Semana</div><div class="av">$${d.cost_week.toFixed(3)}</div></div><div class="adm-card"><div class="al">Tokens Hoje</div><div class="av">${(d.tokens_today/1000).toFixed(0)}k</div></div></div>`;document.getElementById('modalC').innerHTML=h;document.getElementById('modalBg').classList.add('show')}
 function showCreateUsr(){document.getElementById('modalC').innerHTML='<h3>Cadastrar Usuario</h3><label>Email</label><input id="nuE" type="email" placeholder="email@exemplo.com"><label>Senha</label><input id="nuP" type="password" placeholder="minimo 6 chars"><label>Nome</label><input id="nuN" placeholder="opcional"><label>Plano</label><select id="nuPl"><option>free</option><option>basic</option><option>pro</option><option>unlimited</option></select><button class="mbtn" onclick="createUsr()">Cadastrar</button><div id="nuM" style="margin-top:8px;font-size:12px"></div>';document.getElementById('modalBg').classList.add('show')}
 async function createUsr(){const e=document.getElementById('nuE').value,p=document.getElementById('nuP').value,n=document.getElementById('nuN').value,pl=document.getElementById('nuPl').value;const r=await fetch('/api/v1/admin/create-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:e,password:p,name:n,plan:pl})});const d=await r.json();document.getElementById('nuM').innerHTML=d.ok?'<span style="color:var(--g)">Criado!</span>':`<span style="color:var(--r)">${d.error}</span>`}
 async function setPlan(id,p){await fetch(`/api/v1/admin/users/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:p})});showAdmUsers()}
@@ -1184,7 +1184,7 @@ async function handleFile(f){
   if(f.size>20*1024*1024){showToast('Arquivo muito grande. Maximo: 20MB','error');return}
   const blocked=['.exe','.bat','.sh','.cmd','.com','.msi','.scr','.ps1'];
   const ext='.'+f.name.split('.').pop().toLowerCase();
-  if(blocked.includes(ext)){showToast('Tipo de arquivo nao permitido','error');return}
+  if(blocked.includes(ext)){showToast('Tipo de arquivo não permitido','error');return}
   pendingFile={file:f,name:f.name,size:f.size,ext:ext};
   showFilePreview(f);
   toggleInputBtns();
@@ -1219,7 +1219,7 @@ function toggleRec(){
 }
 
 async function startRec(){
-  if(!hasSpeechRec){showToast('Seu navegador nao suporta transcricao de audio. Digite sua mensagem.','error');return}
+  if(!hasSpeechRec){showToast('Seu navegador não suporta transcrição de áudio. Digite sua mensagem.','error');return}
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     mediaRec=new MediaRecorder(stream,{mimeType:'audio/webm'});
@@ -1244,7 +1244,7 @@ async function startRec(){
       MIC.title=mm+':'+(ss<10?'0':'')+ss;
     },500);
     setTimeout(()=>{if(mediaRec&&mediaRec.state==='recording')stopRec()},300000);
-  }catch(e){showToast('Nao foi possivel acessar o microfone','error')}
+  }catch(e){showToast('Não foi possível acessar o microfone','error')}
 }
 
 function stopRec(){
@@ -1393,7 +1393,7 @@ function addUserWithAttachment(text,type,icon,name,imgUrl,audUrl,transcript){
     const sz=pendingFile?(pendingFile.size>1024*1024?(pendingFile.size/1024/1024).toFixed(1)+' MB':(pendingFile.size/1024).toFixed(1)+' KB'):'';
     attachHtml='<div class="chat-file-card"><span class="cfc-icon">'+icon+'</span><div class="cfc-info"><div class="cfc-name">'+esc(name)+'</div><div class="cfc-meta">'+sz+'</div></div></div>';
   }
-  d.innerHTML='<div class="mh"><span class="mt">'+now()+'</span><span class="mn">voce</span><div class="mav">'+(me?me.email[0].toUpperCase():'?')+'</div></div><div class="mb-wrap">'+attachHtml+(text?'<div class="mb">'+esc(text)+'</div>':'')+'</div>';
+  d.innerHTML='<div class="mh"><span class="mt">'+now()+'</span><span class="mn">você</span><div class="mav">'+(me?me.email[0].toUpperCase():'?')+'</div></div><div class="mb-wrap">'+attachHtml+(text?'<div class="mb">'+esc(text)+'</div>':'')+'</div>';
   T.appendChild(d);scrl();
   convMsgCount++;
   if(!cid){fetch('/api/v1/conversations',{method:'POST'}).then(r=>r.json()).then(d=>{cid=d.id;autoTitle(text||name);loadConvs()})}
@@ -1823,7 +1823,7 @@ async function refresh() {
     const actionsBody = document.getElementById('actionsBody');
     const actions = d.recent_actions || [];
     if (actions.length === 0) {
-      actionsBody.innerHTML = '<tr><td colspan="4" class="s-muted">Nenhuma acao recente</td></tr>';
+      actionsBody.innerHTML = '<tr><td colspan="4" class="s-muted">Nenhuma ação recente</td></tr>';
     } else {
       actionsBody.innerHTML = actions.reverse().map(a => {
         const t = new Date(a.timestamp * 1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -1961,7 +1961,7 @@ button:hover{border-color:var(--bf);color:var(--p)}
 <div class="bar"><span class="logo">CLOW ADMIN</span><div class="nav"><a href="/">Terminal</a><a href="/dashboard">Dashboard</a><a href="/logout">Sair</a></div></div>
 <div class="wrap">
 <div class="row" id="stats"></div>
-<div class="sec">Usuarios</div>
+<div class="sec">Usuários</div>
 <div class="tbl"><table><thead><tr><th>Email</th><th>Plano</th><th>Status</th><th>Criado</th><th>Acao</th></tr></thead><tbody id="usersBody"></tbody></table></div>
 <div class="sec">Top Consumo (Hoje)</div>
 <div class="tbl"><table><thead><tr><th>Email</th><th>Plano</th><th>Tokens</th><th>Custo</th></tr></thead><tbody id="topBody"></tbody></table></div>
@@ -1970,7 +1970,7 @@ button:hover{border-color:var(--bf);color:var(--p)}
 async function load(){
   const [sr,ur]=await Promise.all([fetch('/api/v1/admin/stats').then(r=>r.json()),fetch('/api/v1/admin/users').then(r=>r.json())]);
   document.getElementById('stats').innerHTML=`
-    <div class="stat"><div class="stat-label">Usuarios</div><div class="stat-val">${sr.total_users}</div><div class="stat-sub">${sr.active_users} ativos</div></div>
+    <div class="stat"><div class="stat-label">Usuários</div><div class="stat-val">${sr.total_users}</div><div class="stat-sub">${sr.active_users} ativos</div></div>
     <div class="stat"><div class="stat-label">Custo Hoje</div><div class="stat-val">$${sr.cost_today.toFixed(3)}</div></div>
     <div class="stat"><div class="stat-label">Custo Semana</div><div class="stat-val">$${sr.cost_week.toFixed(3)}</div></div>
     <div class="stat"><div class="stat-label">Custo Mes</div><div class="stat-val">$${sr.cost_month.toFixed(3)}</div></div>
@@ -2311,7 +2311,7 @@ if HAS_FASTAPI:
         ext = Path(original_name).suffix.lower()
 
         if ext in _BLOCKED_EXT:
-            return JSONResponse({"error": f"Tipo de arquivo nao permitido: {ext}"}, status_code=400)
+            return JSONResponse({"error": f"Tipo de arquivo não permitido: {ext}"}, status_code=400)
 
         # Salva arquivo
         upload_dir = Path(__file__).parent.parent / "static" / "uploads" / user_id
@@ -2572,7 +2572,7 @@ if HAS_FASTAPI:
         from .database import get_mission
         m = get_mission(mission_id)
         if not m:
-            return JSONResponse({"error": "Missao nao encontrada"}, status_code=404)
+            return JSONResponse({"error": "Missão não encontrada"}, status_code=404)
         return JSONResponse({"mission": m})
 
     # ── HTTP Chat Fallback (para mobile sem WebSocket) ────────────
@@ -2646,11 +2646,11 @@ if HAS_FASTAPI:
                 mission_desc = content[8:].strip() if len(content) > 8 else ""
                 if not mission_desc:
                     cmd_resp = (
-                        "## Missoes Autonomas\n\n"
+                        "## Missões Autônomas\n\n"
                         "Descreva uma missao complexa e o Clow executa sozinho:\n\n"
                         "**Exemplos:**\n"
                         "- `/mission Cria um site completo para uma pizzaria com cardapio e contato`\n"
-                        "- `/mission Campanha de trafego para seguro de vida com landing page e copies`\n"
+                        "- `/mission Campanha de tráfego para seguro de vida com landing page e copies`\n"
                         "- `/mission Setup digital completo para barbearia`\n\n"
                         "O Clow vai planejar, mostrar as etapas, e executar tudo automaticamente."
                     )
@@ -2678,7 +2678,7 @@ if HAS_FASTAPI:
                         # Mostra plano e inicia
                         steps_text = "\n".join(f"{i+1}. {s.get('title', '?')}" for i, s in enumerate(steps))
                         cmd_resp = (
-                            f"## Missao Iniciada\n\n"
+                            f"## Missão Iniciada\n\n"
                             f"**{title}**\n\n"
                             f"### Plano ({len(steps)} etapas, ~{est} min):\n{steps_text}\n\n"
                             f"Executando em background... Acompanhe o progresso abaixo."
@@ -2705,12 +2705,12 @@ if HAS_FASTAPI:
                     "| `/memories` | Ver memorias salvas |\n"
                     "| `/forget X` | Esquecer memoria |\n"
                     "| `/connect` | Conectar servico externo |\n"
-                    "| `/connections` | Ver conexoes ativas |\n"
+                    "| `/connections` | Ver conexões ativas |\n"
                     "| `/disconnect X` | Desconectar servico |\n"
                     "| `/usage` | Ver consumo de tokens hoje |\n"
                     "| `/plan` | Ver plano atual e limites |\n"
                     "| `/help` | Esta lista de comandos |\n\n"
-                    "**Missoes:** `/mission cria um site completo para pizzaria`\n\n"
+                    "**Missões:** `/mission cria um site completo para pizzaria`\n\n"
                     "**Geracao de arquivos:** peca naturalmente (ex: 'cria uma planilha de vendas')\n\n"
                     "**Integracoes:** pergunte direto (ex: 'mostra minhas campanhas meta ads')"
                 )
@@ -2802,7 +2802,7 @@ if HAS_FASTAPI:
                     "app": "Web App",
                     "xlsx": "Planilha Excel",
                     "docx": "Documento Word",
-                    "pptx": "Apresentacao PowerPoint",
+                    "pptx": "Apresentação PowerPoint",
                 }
                 type_label = type_labels.get(result["type"], result["type"])
                 msg = f"Pronto! Aqui esta seu arquivo:\n\n**{type_label}** — {result['name']} ({size_str})"
