@@ -1945,7 +1945,7 @@ if HAS_FASTAPI:
         if gen_module:
             loop = asyncio.get_event_loop()
             try:
-                result = await loop.run_in_executor(None, run_generator, gen_module, content)
+                result = await loop.run_in_executor(None, run_generator, gen_module, content, model_id, user_id)
                 track_action("file_generated", f"{gen_type}: {result.get('name', '')}", "ok")
 
                 if result.get("type") == "text":
@@ -1957,13 +1957,15 @@ if HAS_FASTAPI:
                     })
 
                 # Formata tamanho
-                size_bytes = result.get("size", 0)
-                if size_bytes > 1024 * 1024:
-                    size_str = f"{size_bytes / (1024*1024):.1f} MB"
-                elif size_bytes > 1024:
-                    size_str = f"{size_bytes / 1024:.1f} KB"
+                size_raw = result.get("size", 0)
+                if isinstance(size_raw, str):
+                    size_str = size_raw
+                elif isinstance(size_raw, (int, float)) and size_raw > 1024 * 1024:
+                    size_str = f"{size_raw / (1024*1024):.1f} MB"
+                elif isinstance(size_raw, (int, float)) and size_raw > 1024:
+                    size_str = f"{size_raw / 1024:.1f} KB"
                 else:
-                    size_str = f"{size_bytes} bytes"
+                    size_str = f"{size_raw} bytes"
 
                 type_labels = {
                     "landing_page": "Landing Page",

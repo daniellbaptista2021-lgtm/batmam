@@ -72,8 +72,16 @@ def detect(message: str) -> tuple[str | None, str | None]:
     return None, None
 
 
-def run_generator(module_name: str, prompt: str) -> dict:
-    """Executa o generator pelo nome do modulo."""
+SKILLS_MODULES = {"xlsx_generator": "xlsx", "docx_generator": "docx", "pptx_generator": "pptx"}
+
+
+def run_generator(module_name: str, prompt: str, model: str = "", user_id: str = "") -> dict:
+    """Executa o generator. Para xlsx/docx/pptx tenta Skills API primeiro."""
+    skill_type = SKILLS_MODULES.get(module_name)
+    if skill_type:
+        from .skills_wrapper import generate_with_fallback
+        return generate_with_fallback(prompt, skill_type, model=model or "claude-haiku-4-5-20251001", user_id=user_id)
+
     import importlib
     mod = importlib.import_module(f".{module_name}", package="clow.generators")
     return mod.generate(prompt)
