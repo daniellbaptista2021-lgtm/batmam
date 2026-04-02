@@ -427,7 +427,7 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
 .sb-uplan{font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--pg);color:var(--p);letter-spacing:.3px;text-transform:uppercase}
 
 /* MAIN */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg-0);position:relative}
 .hdr{display:flex;align-items:center;padding:0 16px;padding-top:var(--st);height:calc(48px + var(--st));background:var(--bg-1);border-bottom:1px solid var(--bd);flex-shrink:0;gap:10px}
 .ham{display:none;background:none;border:none;color:var(--t2);font-size:20px;cursor:pointer;padding:4px}
 .hdr-t{flex:1;font-size:14px;font-weight:500;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--sans)}
@@ -448,7 +448,7 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
 .hdr-drop a:hover,.hdr-drop button:hover{background:var(--bg-h);color:var(--t1)}
 
 /* TERMINAL */
-.term{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;background:var(--bg-0);position:relative;
+.term{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;background:transparent;position:relative;z-index:1;
   background-image:radial-gradient(rgba(255,255,255,.012) 1px,transparent 1px);background-size:24px 24px}
 
 /* WELCOME */
@@ -556,11 +556,21 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
 .adm-tbl select,.adm-tbl button{background:var(--bg-h);border:1px solid var(--bd);color:var(--t1);font-family:var(--sans);font-size:10px;padding:3px 6px;border-radius:4px;cursor:pointer}
 .adm-tbl button:hover{color:var(--p);border-color:var(--bdf)}
 
-/* WATERMARK */
-.watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:200px;pointer-events:none;z-index:0;opacity:.02;transition:opacity .3s}
-.watermark.empty{opacity:.05}
+/* WATERMARK — infinity glow */
+@keyframes infinityPulse{
+  0%,100%{opacity:.04;filter:drop-shadow(0 0 20px rgba(124,92,252,.1));transform:translate(-50%,-50%) scale(1)}
+  50%{opacity:.08;filter:drop-shadow(0 0 60px rgba(124,92,252,.2));transform:translate(-50%,-50%) scale(1.02)}
+}
+@keyframes glowPulse{
+  0%,100%{opacity:.6;transform:translate(-50%,-50%) scale(1)}
+  50%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
+}
+.watermark{position:fixed;top:50%;left:calc(50% + var(--sw)/2);transform:translate(-50%,-50%);width:300px;height:300px;pointer-events:none;z-index:0;user-select:none;animation:infinityPulse 4s ease-in-out infinite;opacity:.04}
+.watermark.empty{opacity:.07;animation-name:infinityPulse}
 .watermark svg{width:100%;height:100%}
-.watermark svg path{fill:none;stroke:var(--t1);stroke-width:1.5;stroke-linecap:round}
+.watermark svg path{fill:none;stroke:var(--p);stroke-width:1.2;stroke-linecap:round}
+/* Glow ambient light behind watermark */
+.main::before{content:'';position:fixed;top:50%;left:calc(50% + var(--sw)/2);transform:translate(-50%,-50%);width:500px;height:500px;background:radial-gradient(circle,rgba(124,92,252,.04) 0%,transparent 70%);pointer-events:none;z-index:0;animation:glowPulse 4s ease-in-out infinite}
 
 /* RESPONSIVE */
 @media(max-width:768px){
@@ -570,6 +580,8 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
   .sb-ov{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:25;display:none}.sb-ov.show{display:block}
   .qgrid{grid-template-columns:repeat(2,1fr)}
   .mb-wrap{max-width:85%!important}
+  .watermark{left:50%;width:200px;height:200px}
+  .main::before{left:50%;width:350px;height:350px}
 }
 @media(min-width:769px){.ham{display:none}}
 </style>
@@ -667,8 +679,8 @@ body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14
       </div>
     </div>
   </div>
+  <div class="watermark empty" id="wmark"><svg viewBox="0 0 32 32"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)"/></svg></div>
   <div class="term" id="term">
-    <div class="watermark empty" id="wmark"><svg viewBox="0 0 32 32"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)"/></svg></div>
     <div class="welc" id="welc">
       <svg class="welc-inf" viewBox="0 0 32 32"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)"/></svg>
       <h2>Ola, o que vamos <span>criar</span>?</h2>
@@ -928,7 +940,7 @@ async function showAllConvs(){showAllPast=true;loadConvs()}
 
 async function newConv(){try{const r=await fetch('/api/v1/conversations',{method:'POST'});const d=await r.json();cid=d.id;convMsgCount=0;T.innerHTML='';showWelc();document.getElementById('hdrT').textContent='Nova conversa';loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
 async function loadConv(id){cid=id;T.innerHTML='';try{const r=await fetch(`/api/v1/conversations/${id}/messages`);const d=await r.json();d.messages.forEach(m=>{if(m.role==='user')addUser(m.content,false);else{curMsg=null;curBody=null;appendTxt(m.content);finishTxt();curMsg=null;curBody=null}});const cs=await(await fetch('/api/v1/conversations')).json();const c=cs.conversations.find(x=>x.id===id);if(c)document.getElementById('hdrT').textContent=c.title;loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
-function showWelc(){const w=document.createElement('div');w.className='welc';w.id='welc';w.innerHTML='<svg class="welc-inf" viewBox="0 0 32 32"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)" fill="none" stroke="var(--p)" stroke-width="2.5" stroke-linecap="round"/></svg><h2>Ola, o que vamos <span>criar</span>?</h2><p>Escolha abaixo ou descreva o que precisa</p>';T.appendChild(w)}
+function showWelc(){const w=document.createElement('div');w.className='welc';w.id='welc';w.innerHTML='<svg class="welc-inf" viewBox="0 0 32 32"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)" fill="none" stroke="var(--p)" stroke-width="2.5" stroke-linecap="round"/></svg><h2>Ola, o que vamos <span>criar</span>?</h2><p>Escolha abaixo ou descreva o que precisa</p>';T.appendChild(w);const wm=document.getElementById('wmark');if(wm)wm.classList.add('empty')}
 function connectWS(){const pr=location.protocol==='https:'?'wss:':'ws:';try{ws=new WebSocket(`${pr}//${location.host}/ws`)}catch(e){http=true;setOn('http');return}const to=setTimeout(()=>{if(!ws||ws.readyState!==1){try{ws.close()}catch(e){}http=true;setOn('http')}},4000);ws.onopen=()=>{clearTimeout(to);http=false;setOn('online');rA=0};ws.onmessage=e=>hMsg(JSON.parse(e.data));ws.onclose=()=>{clearTimeout(to);if(rA>=3){http=true;setOn('http');return}setOn('offline');setTimeout(()=>{rA++;connectWS()},Math.min(1000*rA,5000))};ws.onerror=()=>setOn('offline')}
 function setOn(s){const b=document.getElementById('onBdg'),l=document.getElementById('onLbl');b.style.color=s==='offline'?'var(--r)':'var(--g)';l.textContent=s}
 function hMsg(m){switch(m.type){case'thinking_start':showThink();break;case'thinking_end':hideThink();break;case'text_delta':appendTxt(m.content);break;case'text_done':finishTxt();break;case'tool_call':showTool(m.name,m.args);break;case'tool_result':showToolR(m.name,m.status,m.output);break;case'turn_complete':finishTurn();break;case'error':showErr(m.content);break}}
