@@ -19,11 +19,13 @@ import hashlib
 import secrets
 from collections import defaultdict
 from typing import Any
+from pathlib import Path
 
 try:
     from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException, Depends
-    from fastapi.responses import HTMLResponse, JSONResponse
+    from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
     from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.staticfiles import StaticFiles
     HAS_FASTAPI = True
 except ImportError:
     HAS_FASTAPI = False
@@ -273,224 +275,471 @@ WEBAPP_HTML = r'''<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Clow — AI Code Agent</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/static/manifest.json">
+<title>Clow</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
   :root {
-    --bg-primary: #0d1117;
-    --bg-secondary: #161b22;
-    --bg-tertiary: #1c2128;
-    --bg-code: #0d1117;
-    --text-primary: #e6edf3;
-    --text-secondary: #8b949e;
-    --text-muted: #484f58;
-    --accent: #FFD700;
-    --accent-dim: #B8860B;
-    --green: #4ade80;
+    --bg-deep: #06060b;
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #111118;
+    --bg-tertiary: #16161f;
+    --bg-surface: #1a1a25;
+    --bg-elevated: #1e1e2a;
+    --text-primary: #f0f0f5;
+    --text-secondary: #9d9db5;
+    --text-muted: #55556a;
+    --purple: #a78bfa;
+    --purple-bright: #c4b5fd;
+    --purple-dim: #7c3aed;
+    --purple-deep: #5b21b6;
+    --purple-glow: rgba(167,139,250,0.15);
+    --purple-glow-strong: rgba(167,139,250,0.3);
+    --violet: #8b5cf6;
+    --green: #34d399;
+    --green-dim: rgba(52,211,153,0.15);
     --red: #f87171;
-    --blue: #58a6ff;
-    --purple: #bc8cff;
-    --border: #30363d;
-    --border-subtle: #21262d;
-    --font-mono: "Fira Code", "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    --red-dim: rgba(248,113,113,0.15);
+    --amber: #fbbf24;
+    --border: rgba(167,139,250,0.12);
+    --border-focus: rgba(167,139,250,0.4);
+    --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", monospace;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html { height: 100%; overflow: hidden; }
 
   body {
-    background: var(--bg-primary);
+    background: var(--bg-deep);
     color: var(--text-primary);
     font-family: var(--font-mono);
-    font-size: 14px;
-    line-height: 1.6;
-    height: 100vh;
+    font-size: 13px;
+    line-height: 1.65;
+    height: 100%;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    -webkit-font-smoothing: antialiased;
   }
 
-  /* ── Top Bar ── */
-  .top-bar {
+  /* ── Title Bar ── */
+  .title-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 16px;
-    background: var(--bg-secondary);
+    padding: 0 16px;
+    padding-top: var(--safe-top);
+    background: var(--bg-primary);
     border-bottom: 1px solid var(--border);
-    height: 40px;
+    height: calc(52px + var(--safe-top));
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+
+  .title-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-infinity {
+    width: 28px;
+    height: 28px;
     flex-shrink: 0;
   }
-  .top-bar .logo { color: var(--accent); font-weight: 600; font-size: 15px; }
-  .top-bar .version { color: var(--text-muted); font-size: 12px; margin-left: 8px; }
-  .top-bar .status { font-size: 12px; display: flex; align-items: center; gap: 6px; }
-  .top-bar .nav-links { display: flex; gap: 12px; }
-  .top-bar .nav-links a {
-    color: var(--text-secondary); font-size: 12px; text-decoration: none;
-    padding: 2px 8px; border-radius: 4px; transition: all 0.2s;
+  .logo-infinity path {
+    fill: none;
+    stroke: var(--purple);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
-  .top-bar .nav-links a:hover { color: var(--accent); background: var(--bg-tertiary); }
-  .top-bar .nav-links a.active { color: var(--accent); border-bottom: 1px solid var(--accent); }
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; }
-  .status-dot.connected { background: var(--green); }
-  .status-dot.disconnected { background: var(--red); }
-  .status-dot.reconnecting { background: var(--accent); animation: blink-cursor 1s infinite; }
 
-  /* ── Messages Area ── */
-  .messages {
+  .logo-text {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--purple-bright) 0%, var(--purple) 50%, var(--violet) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-transform: uppercase;
+  }
+
+  .title-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .conn-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .conn-badge.online {
+    background: var(--green-dim);
+    color: var(--green);
+    border: 1px solid rgba(52,211,153,0.25);
+  }
+  .conn-badge.offline {
+    background: var(--red-dim);
+    color: var(--red);
+    border: 1px solid rgba(248,113,113,0.25);
+  }
+  .conn-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .conn-badge.online .conn-dot { animation: pulse-dot 2s ease-in-out infinite; }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; }
+    50% { opacity: 0.6; box-shadow: 0 0 6px 2px currentColor; }
+  }
+
+  .nav-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+  .nav-btn:hover, .nav-btn:active { background: var(--bg-surface); color: var(--purple); border-color: var(--border-focus); }
+
+  /* ── Terminal Session Area ── */
+  .terminal {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 16px;
+    padding-bottom: 8px;
     scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    background: var(--bg-deep);
   }
-  .messages::-webkit-scrollbar { width: 6px; }
-  .messages::-webkit-scrollbar-track { background: transparent; }
-  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  .messages::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+  .terminal::-webkit-scrollbar { width: 4px; }
+  .terminal::-webkit-scrollbar-track { background: transparent; }
+  .terminal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-  .message { margin-bottom: 16px; padding: 8px 0; }
-  .message.user .msg-label { color: var(--accent); font-weight: 600; font-size: 13px; }
-  .message.assistant .msg-label { color: var(--blue); font-weight: 600; font-size: 13px; }
-  .msg-content {
-    margin-top: 4px;
+  /* ── Welcome Block ── */
+  .welcome {
+    text-align: center;
+    padding: 24px 16px 32px;
+    margin-bottom: 8px;
+  }
+  .welcome-infinity {
+    width: 48px; height: 48px;
+    margin: 0 auto 16px;
+    opacity: 0.7;
+  }
+  .welcome-infinity path {
+    fill: none;
+    stroke: var(--purple);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+  }
+  .welcome h2 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .welcome p {
+    font-size: 12px;
+    color: var(--text-muted);
+    max-width: 280px;
+    margin: 0 auto;
+  }
+  .welcome .ver {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--bg-tertiary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── Message Lines ── */
+  .msg-line {
+    margin-bottom: 20px;
+    animation: msg-in 0.25s ease-out;
+  }
+  @keyframes msg-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .msg-avatar {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .msg-line.user .msg-avatar {
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+  .msg-line.assistant .msg-avatar {
+    background: var(--purple-glow-strong);
+    border: 1px solid rgba(167,139,250,0.3);
+    padding: 3px;
+  }
+  .msg-line.assistant .msg-avatar svg {
+    width: 14px; height: 14px;
+  }
+  .msg-line.assistant .msg-avatar svg path {
+    fill: none;
+    stroke: var(--purple-bright);
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+
+  .msg-name {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .msg-line.user .msg-name { color: var(--text-secondary); }
+  .msg-line.assistant .msg-name { color: var(--purple); }
+
+  .msg-time {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+
+  .msg-body {
+    padding-left: 30px;
     white-space: pre-wrap;
     word-wrap: break-word;
-    font-size: 14px;
-  }
-  .message.user .msg-content { color: var(--text-primary); }
-  .message.assistant .msg-content { color: var(--text-primary); }
-
-  /* ── Code blocks ── */
-  .msg-content code {
-    background: var(--bg-code);
-    padding: 1px 4px;
-    border-radius: 3px;
+    word-break: break-word;
     font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-primary);
   }
-  .msg-content pre {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
-    padding: 12px;
-    margin: 8px 0;
+  .msg-line.user .msg-body { color: var(--text-secondary); }
+
+  /* ── Code in messages ── */
+  .msg-body code {
+    background: var(--bg-surface);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    color: var(--purple-bright);
+  }
+  .msg-body pre {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--purple-dim);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin: 10px 0;
     overflow-x: auto;
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1.6;
   }
-  .msg-content pre code { background: none; padding: 0; }
-
-  /* ── Thinking Indicator ── */
-  .thinking-container { display: flex; align-items: center; gap: 10px; padding: 12px 0; }
-  .thinking-icon { font-size: 24px; animation: clow-thinking 1.5s ease-in-out infinite; }
-  .thinking-text { color: var(--text-secondary); font-size: 13px; }
-  .thinking-dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
-
-  @keyframes clow-thinking {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.95); }
+  .msg-body pre code {
+    background: none;
+    padding: 0;
+    border: none;
+    color: var(--text-primary);
   }
-  @keyframes dots {
-    0% { content: ''; }
-    25% { content: '.'; }
-    50% { content: '..'; }
-    75% { content: '...'; }
+
+  /* ── Thinking / Infinity Animation ── */
+  .thinking-block {
+    margin-bottom: 20px;
+    animation: msg-in 0.25s ease-out;
+  }
+  .thinking-inner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .infinity-spinner {
+    width: 36px; height: 36px;
+    flex-shrink: 0;
+    animation: infinity-draw 2s ease-in-out infinite;
+  }
+  .infinity-spinner path {
+    fill: none;
+    stroke: var(--purple);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 120;
+    stroke-dashoffset: 0;
+    animation: infinity-trace 2s ease-in-out infinite;
+  }
+  @keyframes infinity-trace {
+    0% { stroke-dashoffset: 0; stroke: var(--purple); }
+    50% { stroke-dashoffset: 120; stroke: var(--purple-bright); }
+    100% { stroke-dashoffset: 240; stroke: var(--purple); }
+  }
+  @keyframes infinity-draw {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  .thinking-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  .thinking-dots::after {
+    content: '';
+    animation: tdots 1.5s steps(4, end) infinite;
+  }
+  @keyframes tdots {
+    0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; }
   }
 
   /* ── Shimmer Bar ── */
-  .shimmer-bar {
+  .shimmer {
     height: 2px;
     background: var(--bg-tertiary);
     overflow: hidden;
     position: relative;
     border-radius: 1px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
-  .shimmer-bar::after {
+  .shimmer::after {
     content: '';
     position: absolute;
     top: 0; left: 0;
-    width: 40%;
+    width: 30%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    animation: shimmer 1.5s ease-in-out infinite;
+    background: linear-gradient(90deg, transparent, var(--purple), transparent);
+    animation: shimmer-move 1.8s ease-in-out infinite;
   }
-  @keyframes shimmer {
+  @keyframes shimmer-move {
     0% { transform: translateX(-100%); }
-    100% { transform: translateX(350%); }
+    100% { transform: translateX(450%); }
   }
 
   /* ── Streaming Cursor ── */
-  .streaming-cursor {
+  .stream-cursor {
     display: inline-block;
-    width: 8px;
-    height: 16px;
-    background: var(--accent);
-    animation: blink-cursor 0.8s step-end infinite;
+    width: 2px;
+    height: 15px;
+    background: var(--purple);
+    animation: cursor-blink 0.8s step-end infinite;
     vertical-align: text-bottom;
-    margin-left: 2px;
+    margin-left: 1px;
+    border-radius: 1px;
   }
-  @keyframes blink-cursor {
+  @keyframes cursor-blink {
     0%, 50% { opacity: 1; }
     51%, 100% { opacity: 0; }
   }
 
-  /* ── Tool Call Blocks ── */
+  /* ── Tool Blocks ── */
   .tool-block {
     margin: 8px 0;
-    border: 1px solid var(--border-subtle);
-    border-radius: 6px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
     overflow: hidden;
-    font-size: 13px;
+    font-size: 12px;
+    background: var(--bg-secondary);
   }
-  .tool-header {
+  .tool-head {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 12px;
-    background: var(--bg-secondary);
+    padding: 8px 12px;
     cursor: pointer;
     user-select: none;
+    transition: background 0.15s;
   }
-  .tool-header:hover { background: var(--bg-tertiary); }
-  .tool-spinner { animation: spin 1s linear infinite; display: inline-block; }
+  .tool-head:active { background: var(--bg-tertiary); }
+  .tool-icon { font-size: 13px; flex-shrink: 0; }
+  .tool-icon.spinning { animation: spin 1s linear infinite; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  .tool-name { color: var(--purple); font-weight: 600; }
-  .tool-duration { color: var(--text-muted); margin-left: auto; font-size: 12px; }
-  .tool-status-icon { font-size: 14px; }
-  .tool-body {
+  .tool-label { color: var(--purple); font-weight: 600; flex: 1; }
+  .tool-dur { color: var(--text-muted); font-size: 11px; }
+  .tool-output {
     padding: 8px 12px;
     background: var(--bg-primary);
-    border-top: 1px solid var(--border-subtle);
-    max-height: 200px;
+    border-top: 1px solid var(--border);
+    max-height: 160px;
     overflow-y: auto;
     color: var(--text-secondary);
+    font-size: 11px;
     display: none;
   }
-  .tool-block.expanded .tool-body { display: block; }
-  .tool-block.running .tool-body { display: block; }
-
-  /* ── Diff Visual ── */
-  .diff-add { color: var(--green); }
-  .diff-del { color: var(--red); }
+  .tool-block.open .tool-output { display: block; }
+  .tool-block.active .tool-output { display: block; }
 
   /* ── Input Area ── */
   .input-area {
-    padding: 12px 16px;
-    background: var(--bg-secondary);
-    border-top: 1px solid var(--border);
     flex-shrink: 0;
+    padding: 10px 12px;
+    padding-bottom: calc(10px + var(--safe-bottom));
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border);
   }
-  .input-wrapper {
+  .input-box {
     display: flex;
     align-items: flex-end;
     gap: 8px;
-    background: var(--bg-tertiary);
+    background: var(--bg-secondary);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 8px 12px;
-    transition: border-color 0.2s;
+    border-radius: 14px;
+    padding: 10px 12px;
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
-  .input-wrapper:focus-within { border-color: var(--accent-dim); }
-  .input-prompt { color: var(--accent); font-weight: 600; padding-bottom: 2px; user-select: none; }
-  .input-wrapper textarea {
+  .input-box:focus-within {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px var(--purple-glow);
+  }
+  .input-chevron {
+    color: var(--purple);
+    font-weight: 700;
+    font-size: 14px;
+    padding-bottom: 1px;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .input-box textarea {
     flex: 1;
     background: none;
     border: none;
@@ -500,336 +749,405 @@ WEBAPP_HTML = r'''<!DOCTYPE html>
     line-height: 1.5;
     resize: none;
     outline: none;
-    max-height: 120px;
+    max-height: 100px;
     min-height: 20px;
   }
-  .input-wrapper textarea::placeholder { color: var(--text-muted); }
+  .input-box textarea::placeholder { color: var(--text-muted); font-size: 13px; }
+
   .send-btn {
-    background: var(--accent);
-    color: var(--bg-primary);
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     border: none;
-    border-radius: 4px;
-    padding: 4px 12px;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 600;
+    background: linear-gradient(135deg, var(--purple-dim), var(--violet));
+    color: white;
     cursor: pointer;
-    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.15s, opacity 0.15s;
   }
-  .send-btn:hover { opacity: 0.85; }
-  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .send-btn:active { transform: scale(0.92); }
+  .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .send-btn svg { width: 18px; height: 18px; }
 
   .input-hint {
-    margin-top: 4px;
-    font-size: 11px;
+    margin-top: 6px;
+    font-size: 10px;
     color: var(--text-muted);
     text-align: center;
+    letter-spacing: 0.3px;
   }
 
-  /* ── Reconnecting overlay ── */
-  .reconnecting {
+  /* ── Reconnecting banner ── */
+  .reconnect-bar {
     position: fixed;
-    top: 44px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--red);
-    color: #fff;
-    padding: 4px 16px;
-    border-radius: 0 0 6px 6px;
-    font-size: 12px;
-    z-index: 100;
+    top: calc(52px + var(--safe-top));
+    left: 0; right: 0;
+    background: rgba(248,113,113,0.15);
+    border-bottom: 1px solid rgba(248,113,113,0.3);
+    color: var(--red);
+    padding: 6px 16px;
+    font-size: 11px;
+    text-align: center;
+    z-index: 20;
     display: none;
+    backdrop-filter: blur(8px);
   }
-  .reconnecting.active { display: block; }
+  .reconnect-bar.active { display: block; }
+
+  /* ── Error display ── */
+  .error-line {
+    color: var(--red);
+    background: var(--red-dim);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin: 8px 0;
+    font-size: 12px;
+  }
+
+  /* ── Responsive ── */
+  @media (min-width: 768px) {
+    .terminal { padding: 20px 24px; }
+    .msg-body { padding-left: 30px; }
+  }
+  @media (max-width: 380px) {
+    body { font-size: 12px; }
+    .logo-text { font-size: 17px; letter-spacing: 1.5px; }
+    .msg-body { font-size: 12px; }
+  }
 </style>
 </head>
 <body>
 
-<div class="top-bar">
-  <div style="display:flex;align-items:center;">
-    <span class="logo">🃏 Clow</span>
-    <span class="version">v''' + __version__ + r'''</span>
-    <div class="nav-links" style="margin-left:24px;">
-      <a href="/" class="active">Chat</a>
-      <a href="/dashboard">Dashboard</a>
+<!-- Title Bar -->
+<div class="title-bar">
+  <div class="title-left">
+    <svg class="logo-infinity" viewBox="0 0 32 32">
+      <path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(0.95)"/>
+    </svg>
+    <span class="logo-text">Clow</span>
+  </div>
+  <div class="title-right">
+    <div class="conn-badge online" id="connBadge">
+      <span class="conn-dot"></span>
+      <span id="connLabel">online</span>
     </div>
-  </div>
-  <div class="status">
-    <div class="status-dot connected" id="statusDot"></div>
-    <span id="statusText" style="color: var(--text-muted); font-size: 12px;">Conectado</span>
+    <a href="/dashboard" class="nav-btn">dash</a>
   </div>
 </div>
 
-<div class="reconnecting" id="reconnectBanner">Reconectando...</div>
+<!-- Reconnect Banner -->
+<div class="reconnect-bar" id="reconnectBar">Reconectando ao servidor...</div>
 
-<div class="messages" id="messages">
-  <div class="message assistant">
-    <div class="msg-label">🃏 Clow</div>
-    <div class="msg-content">Pronto para ajudar. Digite sua mensagem abaixo.</div>
+<!-- Terminal -->
+<div class="terminal" id="terminal">
+  <div class="welcome">
+    <svg class="welcome-infinity" viewBox="0 0 32 32">
+      <path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(0.95)" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <h2>System Clow</h2>
+    <p>AI Code Agent — terminal inteligente na palma da mao</p>
+    <span class="ver">v''' + __version__ + r'''</span>
   </div>
 </div>
 
+<!-- Input -->
 <div class="input-area">
-  <div class="input-wrapper">
-    <span class="input-prompt">❯</span>
-    <textarea id="input" rows="1" placeholder="Digite sua mensagem..." autofocus></textarea>
-    <button class="send-btn" id="sendBtn" onclick="sendMessage()">Enviar</button>
+  <div class="input-box">
+    <span class="input-chevron">&#x276f;</span>
+    <textarea id="input" rows="1" placeholder="Digite um comando..." autofocus></textarea>
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()" aria-label="Enviar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+      </svg>
+    </button>
   </div>
-  <div class="input-hint">Enter para enviar · Shift+Enter para nova linha</div>
+  <div class="input-hint">Enter envia &middot; Shift+Enter nova linha</div>
 </div>
 
 <script>
-const messagesEl = document.getElementById('messages');
+const INFINITY_SVG = '<svg viewBox="0 0 32 32" style="width:14px;height:14px"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(0.95)" fill="none" stroke="var(--purple-bright)" stroke-width="3" stroke-linecap="round"/></svg>';
+const SPINNER_SVG = '<svg viewBox="0 0 32 32" style="width:36px;height:36px"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(0.95)" fill="none" stroke="var(--purple)" stroke-width="3" stroke-linecap="round" stroke-dasharray="120" style="animation:infinity-trace 2s ease-in-out infinite"/></svg>';
+
+const terminal = document.getElementById('terminal');
 const inputEl = document.getElementById('input');
 const sendBtn = document.getElementById('sendBtn');
-const statusDot = document.getElementById('statusDot');
-const statusText = document.getElementById('statusText');
-const reconnectBanner = document.getElementById('reconnectBanner');
+const connBadge = document.getElementById('connBadge');
+const connLabel = document.getElementById('connLabel');
+const reconnectBar = document.getElementById('reconnectBar');
 
 let ws = null;
 let isProcessing = false;
-let currentAssistantEl = null;
-let currentContentEl = null;
+let currentMsgEl = null;
+let currentBodyEl = null;
 let currentToolEl = null;
 let toolStartTime = 0;
 let toolTimer = null;
 let reconnectAttempts = 0;
+let useHttpFallback = false;
+let httpSessionId = '';
+let wsConnectTimeout = null;
+
+function setOnline(label) {
+  connBadge.className = 'conn-badge online';
+  connLabel.textContent = label || 'online';
+  reconnectBar.classList.remove('active');
+}
+function setOffline() {
+  connBadge.className = 'conn-badge offline';
+  connLabel.textContent = 'offline';
+}
 
 function connectWS() {
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(`${protocol}//${location.host}/ws`);
+  try { ws = new WebSocket(`${protocol}//${location.host}/ws`); }
+  catch(e) { activateHttpMode(); return; }
+
+  wsConnectTimeout = setTimeout(() => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      if (ws) { try { ws.close(); } catch(e){} }
+      activateHttpMode();
+    }
+  }, 4000);
 
   ws.onopen = () => {
-    statusDot.className = 'status-dot connected';
-    statusText.textContent = 'Conectado';
-    reconnectBanner.classList.remove('active');
+    clearTimeout(wsConnectTimeout);
+    useHttpFallback = false;
+    setOnline();
     reconnectAttempts = 0;
   };
-
-  ws.onmessage = (event) => {
-    const msg = JSON.parse(event.data);
-    handleMessage(msg);
-  };
-
+  ws.onmessage = (event) => handleMessage(JSON.parse(event.data));
   ws.onclose = () => {
-    statusDot.className = 'status-dot disconnected';
-    statusText.textContent = 'Desconectado';
-    reconnectBanner.classList.add('active');
-    reconnectBanner.textContent = 'Reconectando...';
-    setTimeout(() => {
-      reconnectAttempts++;
-      connectWS();
-    }, Math.min(1000 * reconnectAttempts, 5000));
+    clearTimeout(wsConnectTimeout);
+    if (reconnectAttempts >= 3) { activateHttpMode(); return; }
+    setOffline();
+    reconnectBar.classList.add('active');
+    setTimeout(() => { reconnectAttempts++; connectWS(); }, Math.min(1000 * reconnectAttempts, 5000));
   };
+  ws.onerror = () => setOffline();
+}
 
-  ws.onerror = () => {
-    statusDot.className = 'status-dot reconnecting';
-  };
+function activateHttpMode() {
+  useHttpFallback = true; ws = null;
+  setOnline('http');
 }
 
 function handleMessage(msg) {
   switch (msg.type) {
-    case 'thinking_start':
-      showThinking();
-      break;
-    case 'thinking_end':
-      hideThinking();
-      break;
-    case 'text_delta':
-      appendText(msg.content);
-      break;
-    case 'text_done':
-      finishText();
-      break;
-    case 'tool_call':
-      showToolCall(msg.name, msg.args);
-      break;
-    case 'tool_result':
-      showToolResult(msg.name, msg.status, msg.output);
-      break;
-    case 'turn_complete':
-      finishTurn();
-      break;
-    case 'error':
-      showError(msg.content);
-      break;
+    case 'thinking_start': showThinking(); break;
+    case 'thinking_end': hideThinking(); break;
+    case 'text_delta': appendText(msg.content); break;
+    case 'text_done': finishText(); break;
+    case 'tool_call': showToolCall(msg.name, msg.args); break;
+    case 'tool_result': showToolResult(msg.name, msg.status, msg.output); break;
+    case 'turn_complete': finishTurn(); break;
+    case 'error': showError(msg.content); break;
   }
 }
 
 function sendMessage() {
   const text = inputEl.value.trim();
-  if (!text || isProcessing || !ws || ws.readyState !== WebSocket.OPEN) return;
-
-  addUserMessage(text);
+  if (!text || isProcessing) return;
+  if (useHttpFallback) { sendMessageHTTP(text); return; }
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  addUserMsg(text);
   ws.send(JSON.stringify({ type: 'message', content: text }));
-  inputEl.value = '';
-  inputEl.style.height = 'auto';
-  isProcessing = true;
-  sendBtn.disabled = true;
+  inputEl.value = ''; inputEl.style.height = 'auto';
+  isProcessing = true; sendBtn.disabled = true;
 }
 
-function addUserMessage(text) {
+async function sendMessageHTTP(text) {
+  addUserMsg(text);
+  inputEl.value = ''; inputEl.style.height = 'auto';
+  isProcessing = true; sendBtn.disabled = true;
+  showThinking();
+  try {
+    const resp = await fetch('/api/v1/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: text, session_id: httpSessionId }),
+    });
+    hideThinking();
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: 'Erro de conexao' }));
+      showError(err.error || 'Erro no servidor'); finishTurn(); return;
+    }
+    const data = await resp.json();
+    httpSessionId = data.session_id || httpSessionId;
+    if (data.tools && data.tools.length > 0) {
+      for (const t of data.tools) { showToolCall(t.name, t.args); showToolResult(t.name, t.status, t.output || ''); }
+    }
+    if (data.response) { appendText(data.response); finishText(); }
+    finishTurn();
+  } catch (e) { hideThinking(); showError('Erro: ' + e.message); finishTurn(); }
+}
+
+function now() {
+  return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function addUserMsg(text) {
   const div = document.createElement('div');
-  div.className = 'message user';
-  div.innerHTML = `<div class="msg-label" style="color:var(--accent)">❯ Você</div><div class="msg-content">${escapeHtml(text)}</div>`;
-  messagesEl.appendChild(div);
-  scrollToBottom();
+  div.className = 'msg-line user';
+  div.innerHTML = `
+    <div class="msg-header">
+      <div class="msg-avatar">vc</div>
+      <span class="msg-name">voce</span>
+      <span class="msg-time">${now()}</span>
+    </div>
+    <div class="msg-body">${esc(text)}</div>`;
+  terminal.appendChild(div);
+  scrollEnd();
 }
 
 function showThinking() {
   hideThinking();
   const div = document.createElement('div');
-  div.className = 'message assistant';
-  div.id = 'thinkingMsg';
+  div.className = 'thinking-block';
+  div.id = 'thinkingEl';
   div.innerHTML = `
-    <div class="shimmer-bar"></div>
-    <div class="thinking-container">
-      <span class="thinking-icon">🃏</span>
-      <span class="thinking-text">Pensando<span class="thinking-dots"></span></span>
+    <div class="shimmer"></div>
+    <div class="thinking-inner">
+      <div class="infinity-spinner">${SPINNER_SVG}</div>
+      <span class="thinking-label">Processando<span class="thinking-dots"></span></span>
     </div>`;
-  messagesEl.appendChild(div);
-  scrollToBottom();
+  terminal.appendChild(div);
+  scrollEnd();
 }
 
 function hideThinking() {
-  const el = document.getElementById('thinkingMsg');
+  const el = document.getElementById('thinkingEl');
   if (el) el.remove();
 }
 
-function ensureAssistantEl() {
-  if (!currentAssistantEl) {
+function ensureMsgEl() {
+  if (!currentMsgEl) {
     hideThinking();
-    currentAssistantEl = document.createElement('div');
-    currentAssistantEl.className = 'message assistant';
-    currentAssistantEl.innerHTML = '<div class="msg-label">🃏 Clow</div>';
-    currentContentEl = document.createElement('div');
-    currentContentEl.className = 'msg-content';
-    currentAssistantEl.appendChild(currentContentEl);
-    messagesEl.appendChild(currentAssistantEl);
+    currentMsgEl = document.createElement('div');
+    currentMsgEl.className = 'msg-line assistant';
+    currentMsgEl.innerHTML = `
+      <div class="msg-header">
+        <div class="msg-avatar">${INFINITY_SVG}</div>
+        <span class="msg-name">clow</span>
+        <span class="msg-time">${now()}</span>
+      </div>`;
+    currentBodyEl = document.createElement('div');
+    currentBodyEl.className = 'msg-body';
+    currentMsgEl.appendChild(currentBodyEl);
+    terminal.appendChild(currentMsgEl);
   }
 }
 
 function appendText(text) {
-  ensureAssistantEl();
-  // Remove old cursor
-  const oldCursor = currentContentEl.querySelector('.streaming-cursor');
-  if (oldCursor) oldCursor.remove();
-  // Append text
-  currentContentEl.insertAdjacentText('beforeend', text);
-  // Add cursor
-  const cursor = document.createElement('span');
-  cursor.className = 'streaming-cursor';
-  currentContentEl.appendChild(cursor);
-  scrollToBottom();
+  ensureMsgEl();
+  const old = currentBodyEl.querySelector('.stream-cursor');
+  if (old) old.remove();
+  currentBodyEl.insertAdjacentText('beforeend', text);
+  const c = document.createElement('span');
+  c.className = 'stream-cursor';
+  currentBodyEl.appendChild(c);
+  scrollEnd();
 }
 
 function finishText() {
-  if (currentContentEl) {
-    const cursor = currentContentEl.querySelector('.streaming-cursor');
-    if (cursor) cursor.remove();
+  if (currentBodyEl) {
+    const c = currentBodyEl.querySelector('.stream-cursor');
+    if (c) c.remove();
   }
 }
 
 function showToolCall(name, args) {
-  ensureAssistantEl();
+  ensureMsgEl();
   const block = document.createElement('div');
-  block.className = 'tool-block running';
-  block.id = 'tool-' + Date.now();
+  block.className = 'tool-block active';
   const argsStr = typeof args === 'string' ? args : JSON.stringify(args, null, 2);
   block.innerHTML = `
-    <div class="tool-header" onclick="this.parentElement.classList.toggle('expanded')">
-      <span class="tool-spinner tool-status-icon">⚙</span>
-      <span class="tool-name">${escapeHtml(name)}</span>
-      <span class="tool-duration">0.0s</span>
+    <div class="tool-head" onclick="this.parentElement.classList.toggle('open')">
+      <span class="tool-icon spinning">&#x2699;</span>
+      <span class="tool-label">${esc(name)}</span>
+      <span class="tool-dur">0.0s</span>
     </div>
-    <div class="tool-body"><pre>${escapeHtml(argsStr).substring(0, 500)}</pre></div>`;
-  currentAssistantEl.appendChild(block);
+    <div class="tool-output"><pre>${esc(argsStr).substring(0, 500)}</pre></div>`;
+  currentMsgEl.appendChild(block);
   currentToolEl = block;
   toolStartTime = Date.now();
   if (toolTimer) clearInterval(toolTimer);
   toolTimer = setInterval(() => {
     if (!currentToolEl) { clearInterval(toolTimer); return; }
-    const elapsed = ((Date.now() - toolStartTime) / 1000).toFixed(1);
-    const dur = currentToolEl.querySelector('.tool-duration');
-    if (dur) dur.textContent = elapsed + 's';
+    const dur = currentToolEl.querySelector('.tool-dur');
+    if (dur) dur.textContent = ((Date.now() - toolStartTime) / 1000).toFixed(1) + 's';
   }, 100);
-  scrollToBottom();
+  scrollEnd();
 }
 
 function showToolResult(name, status, output) {
   if (toolTimer) { clearInterval(toolTimer); toolTimer = null; }
   if (currentToolEl) {
-    currentToolEl.classList.remove('running');
-    const icon = currentToolEl.querySelector('.tool-status-icon');
+    currentToolEl.classList.remove('active');
+    const icon = currentToolEl.querySelector('.tool-icon');
     if (icon) {
-      icon.classList.remove('tool-spinner');
-      if (status === 'success') {
-        icon.textContent = '✓';
-        icon.style.color = 'var(--green)';
-      } else if (status === 'error') {
-        icon.textContent = '✗';
-        icon.style.color = 'var(--red)';
-      } else {
-        icon.textContent = '⊘';
-        icon.style.color = 'var(--accent)';
-      }
+      icon.classList.remove('spinning');
+      if (status === 'success') { icon.textContent = '\u2713'; icon.style.color = 'var(--green)'; }
+      else if (status === 'error') { icon.textContent = '\u2717'; icon.style.color = 'var(--red)'; }
+      else { icon.textContent = '\u25cb'; icon.style.color = 'var(--purple)'; }
     }
-    // Add output to body
     if (output) {
-      const body = currentToolEl.querySelector('.tool-body');
-      if (body) {
-        body.innerHTML += `<pre style="margin-top:4px;color:${status==='error'?'var(--red)':'var(--text-secondary)'}">${escapeHtml(output).substring(0, 1000)}</pre>`;
-      }
+      const body = currentToolEl.querySelector('.tool-output');
+      if (body) body.innerHTML += `<pre style="margin-top:4px;color:${status==='error'?'var(--red)':'var(--text-secondary)'}">${esc(output).substring(0, 1000)}</pre>`;
     }
-    const elapsed = ((Date.now() - toolStartTime) / 1000).toFixed(1);
-    const dur = currentToolEl.querySelector('.tool-duration');
-    if (dur) dur.textContent = elapsed + 's';
+    const dur = currentToolEl.querySelector('.tool-dur');
+    if (dur) dur.textContent = ((Date.now() - toolStartTime) / 1000).toFixed(1) + 's';
     currentToolEl = null;
   }
-  scrollToBottom();
+  scrollEnd();
 }
 
 function showError(text) {
-  ensureAssistantEl();
-  const errDiv = document.createElement('div');
-  errDiv.style.cssText = 'color:var(--red);margin:8px 0;';
-  errDiv.textContent = '✗ ' + text;
-  currentAssistantEl.appendChild(errDiv);
-  scrollToBottom();
+  ensureMsgEl();
+  const e = document.createElement('div');
+  e.className = 'error-line';
+  e.textContent = '\u2717 ' + text;
+  currentMsgEl.appendChild(e);
+  scrollEnd();
 }
 
 function finishTurn() {
   finishText();
   isProcessing = false;
   sendBtn.disabled = false;
-  currentAssistantEl = null;
-  currentContentEl = null;
+  currentMsgEl = null;
+  currentBodyEl = null;
   inputEl.focus();
 }
 
-function scrollToBottom() {
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
+function scrollEnd() { terminal.scrollTop = terminal.scrollHeight; }
 
-function escapeHtml(text) {
+function esc(t) {
   const d = document.createElement('div');
-  d.textContent = text;
+  d.textContent = t;
   return d.innerHTML;
 }
 
-// ── Input handling ──
+// Input
 inputEl.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
 inputEl.addEventListener('input', () => {
   inputEl.style.height = 'auto';
-  inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 100) + 'px';
 });
 
-// ── Init ──
+// Prevent zoom on double tap
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) e.preventDefault();
+  lastTouchEnd = now;
+}, false);
+
+// Init
 connectWS();
 </script>
 </body>
@@ -843,163 +1161,337 @@ DASHBOARD_HTML = r'''<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0f">
 <title>Clow — Dashboard</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
   :root {
-    --bg-primary: #0d1117;
-    --bg-secondary: #161b22;
-    --bg-tertiary: #1c2128;
-    --text-primary: #e6edf3;
-    --text-secondary: #8b949e;
-    --text-muted: #484f58;
-    --accent: #FFD700;
-    --accent-dim: #B8860B;
-    --green: #4ade80;
+    --bg-deep: #06060b;
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #111118;
+    --bg-tertiary: #16161f;
+    --bg-surface: #1a1a25;
+    --bg-elevated: #1e1e2a;
+    --text-primary: #f0f0f5;
+    --text-secondary: #9d9db5;
+    --text-muted: #55556a;
+    --purple: #a78bfa;
+    --purple-bright: #c4b5fd;
+    --purple-dim: #7c3aed;
+    --purple-deep: #5b21b6;
+    --purple-glow: rgba(167,139,250,0.15);
+    --violet: #8b5cf6;
+    --green: #34d399;
+    --green-dim: rgba(52,211,153,0.15);
     --red: #f87171;
-    --blue: #58a6ff;
-    --purple: #bc8cff;
-    --border: #30363d;
-    --font-mono: "Fira Code", "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    --red-dim: rgba(248,113,113,0.15);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.15);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.15);
+    --border: rgba(167,139,250,0.12);
+    --border-focus: rgba(167,139,250,0.4);
+    --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", monospace;
+    --safe-top: env(safe-area-inset-top, 0px);
   }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { height: 100%; }
+
   body {
-    background: var(--bg-primary);
+    background: var(--bg-deep);
     color: var(--text-primary);
     font-family: var(--font-mono);
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 13px;
+    line-height: 1.65;
+    min-height: 100%;
+    -webkit-font-smoothing: antialiased;
   }
-  .top-bar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 16px; background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border); height: 40px;
-  }
-  .top-bar .logo { color: var(--accent); font-weight: 600; font-size: 15px; }
-  .top-bar .version { color: var(--text-muted); font-size: 12px; margin-left: 8px; }
-  .top-bar .nav-links { display: flex; gap: 12px; margin-left: 24px; }
-  .top-bar .nav-links a {
-    color: var(--text-secondary); font-size: 12px; text-decoration: none;
-    padding: 2px 8px; border-radius: 4px; transition: all 0.2s;
-  }
-  .top-bar .nav-links a:hover { color: var(--accent); background: var(--bg-tertiary); }
-  .top-bar .nav-links a.active { color: var(--accent); border-bottom: 1px solid var(--accent); }
 
-  .dashboard { padding: 20px; max-width: 1200px; margin: 0 auto; }
-  .dashboard h2 { color: var(--accent); margin-bottom: 16px; font-size: 16px; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  /* ── Title Bar ── */
+  .title-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    padding-top: var(--safe-top);
+    background: var(--bg-primary);
+    border-bottom: 1px solid var(--border);
+    height: calc(52px + var(--safe-top));
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(12px);
+  }
+  .title-left { display: flex; align-items: center; gap: 10px; }
+  .logo-infinity { width: 28px; height: 28px; flex-shrink: 0; }
+  .logo-infinity path {
+    fill: none; stroke: var(--purple); stroke-width: 3;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  .logo-text {
+    font-size: 20px; font-weight: 700; letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--purple-bright) 0%, var(--purple) 50%, var(--violet) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; text-transform: uppercase;
+  }
+  .title-right { display: flex; align-items: center; gap: 10px; }
+  .nav-pill {
+    background: var(--bg-tertiary); border: 1px solid var(--border);
+    color: var(--text-secondary); font-family: var(--font-mono);
+    font-size: 10px; font-weight: 500; padding: 5px 12px;
+    border-radius: 6px; cursor: pointer; text-decoration: none;
+    transition: all 0.2s; letter-spacing: 0.3px;
+  }
+  .nav-pill:hover, .nav-pill:active { background: var(--bg-surface); color: var(--purple); border-color: var(--border-focus); }
+  .nav-pill.active { background: var(--purple-glow); color: var(--purple); border-color: var(--border-focus); }
+
+  /* ── Dashboard Body ── */
+  .dash {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 20px 40px;
+  }
+
+  .dash-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .dash-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.5px;
+  }
+  .refresh-tag {
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--bg-tertiary);
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── Cards ── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+    margin-bottom: 32px;
+  }
   .card {
-    background: var(--bg-secondary); border: 1px solid var(--border);
-    border-radius: 8px; padding: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: border-color 0.2s;
   }
-  .card h3 { color: var(--blue); font-size: 13px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .card .big-num { font-size: 32px; font-weight: 600; color: var(--accent); }
-  .card .detail { color: var(--text-secondary); font-size: 12px; margin-top: 4px; }
-  .card .badge {
-    display: inline-block; padding: 1px 6px; border-radius: 3px;
-    font-size: 11px; margin-right: 4px;
+  .card:hover { border-color: var(--border-focus); }
+  .card-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
   }
-  .badge.ok { background: rgba(74,222,128,0.15); color: var(--green); }
-  .badge.warn { background: rgba(248,113,113,0.15); color: var(--red); }
-  .badge.info { background: rgba(88,166,255,0.15); color: var(--blue); }
+  .card-value {
+    font-size: 36px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--purple-bright), var(--purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+  .card-value .unit {
+    font-size: 14px;
+    -webkit-text-fill-color: var(--text-muted);
+  }
+  .card-detail {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+  .badge.ok { background: var(--green-dim); color: var(--green); }
+  .badge.warn { background: var(--red-dim); color: var(--red); }
+  .badge.info { background: var(--blue-dim); color: var(--blue); }
+  .badge.purple { background: var(--purple-glow); color: var(--purple); }
 
-  table {
-    width: 100%; border-collapse: collapse;
-    background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px;
-    overflow: hidden; margin-bottom: 24px;
+  /* ── Section Headers ── */
+  .section-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--purple);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
   }
-  th { background: var(--bg-tertiary); color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; padding: 8px 12px; }
-  td { padding: 6px 12px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-primary); }
-  .status-ok { color: var(--green); }
-  .status-err { color: var(--red); }
-  .status-run { color: var(--blue); }
-  .refresh-info { color: var(--text-muted); font-size: 11px; text-align: right; margin-bottom: 8px; }
+
+  /* ── Tables ── */
+  .table-wrap {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 10px 14px;
+  }
+  td {
+    padding: 8px 14px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-primary);
+  }
+  tr:hover td { background: var(--bg-tertiary); }
+  .s-ok { color: var(--green); }
+  .s-err { color: var(--red); }
+  .s-run { color: var(--blue); }
+  .s-muted { color: var(--text-muted); }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .cards { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .card { padding: 14px; }
+    .card-value { font-size: 28px; }
+    .dash { padding: 16px 14px 32px; }
+    .table-wrap { overflow-x: auto; }
+    th, td { padding: 6px 10px; white-space: nowrap; }
+  }
 </style>
 </head>
 <body>
-<div class="top-bar">
-  <div style="display:flex;align-items:center;">
-    <span class="logo">🃏 Clow</span>
-    <span class="version">v''' + __version__ + r'''</span>
-    <div class="nav-links" style="margin-left:24px;">
-      <a href="/">Chat</a>
-      <a href="/dashboard" class="active">Dashboard</a>
-    </div>
+
+<!-- Title Bar -->
+<div class="title-bar">
+  <div class="title-left">
+    <svg class="logo-infinity" viewBox="0 0 32 32">
+      <path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(0.95)"/>
+    </svg>
+    <span class="logo-text">Clow</span>
+  </div>
+  <div class="title-right">
+    <a href="/" class="nav-pill">terminal</a>
+    <a href="/dashboard" class="nav-pill active">dashboard</a>
   </div>
 </div>
-<div class="dashboard">
-  <h2>📊 Dashboard</h2>
-  <div class="refresh-info">Auto-refresh a cada 10s · <span id="lastUpdate">-</span></div>
+
+<div class="dash">
+  <div class="dash-header">
+    <span class="dash-title">System Overview</span>
+    <span class="refresh-tag">auto-refresh 10s &middot; <span id="lastUpdate">--:--</span></span>
+  </div>
+
   <div class="cards" id="cards">
-    <div class="card"><h3>Carregando...</h3></div>
+    <div class="card"><div class="card-label">carregando</div><div class="card-value">...</div></div>
   </div>
-  <h2>🕐 Cron Jobs</h2>
-  <table id="cronTable"><thead><tr><th>ID</th><th>Prompt</th><th>Intervalo</th><th>Status</th><th>Execuções</th><th>Próxima</th></tr></thead><tbody id="cronBody"><tr><td colspan="6" style="color:var(--text-muted)">Carregando...</td></tr></tbody></table>
-  <h2>🔄 Ações Recentes</h2>
-  <table id="actionsTable"><thead><tr><th>Hora</th><th>Ação</th><th>Detalhes</th><th>Status</th></tr></thead><tbody id="actionsBody"><tr><td colspan="4" style="color:var(--text-muted)">Carregando...</td></tr></tbody></table>
+
+  <div class="section-title">Cron Jobs</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Prompt</th><th>Intervalo</th><th>Status</th><th>Runs</th><th>Proxima</th></tr></thead>
+      <tbody id="cronBody"><tr><td colspan="6" class="s-muted">Carregando...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-title">Acoes Recentes</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Hora</th><th>Acao</th><th>Detalhes</th><th>Status</th></tr></thead>
+      <tbody id="actionsBody"><tr><td colspan="4" class="s-muted">Carregando...</td></tr></tbody>
+    </table>
+  </div>
 </div>
+
 <script>
 async function refresh() {
   try {
     const r = await fetch('/health');
     const d = await r.json();
-    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
 
     const c = d.components;
     document.getElementById('cards').innerHTML = `
-      <div class="card"><h3>Tasks</h3>
-        <div class="big-num">${c.tasks.total}</div>
-        <div class="detail">${Object.entries(c.tasks.by_status).map(([k,v])=>`<span class="badge ${k==='completed'?'ok':k==='failed'?'warn':'info'}">${k}: ${v}</span>`).join('')}</div>
+      <div class="card">
+        <div class="card-label">Tasks</div>
+        <div class="card-value">${c.tasks.total}</div>
+        <div class="card-detail">${Object.entries(c.tasks.by_status).map(([k,v])=>`<span class="badge ${k==='completed'?'ok':k==='failed'?'warn':'info'}">${k}: ${v}</span>`).join('')}</div>
       </div>
-      <div class="card"><h3>Cron Jobs</h3>
-        <div class="big-num">${c.cron.active_jobs}<span style="font-size:14px;color:var(--text-muted)"> / ${c.cron.total_jobs}</span></div>
-        <div class="detail">ativos</div>
+      <div class="card">
+        <div class="card-label">Cron Jobs</div>
+        <div class="card-value">${c.cron.active_jobs}<span class="unit"> / ${c.cron.total_jobs}</span></div>
+        <div class="card-detail"><span class="badge purple">ativos</span></div>
       </div>
-      <div class="card"><h3>Memória</h3>
-        <div class="big-num">${c.memory.total}</div>
-        <div class="detail">${Object.entries(c.memory.by_type).map(([k,v])=>`<span class="badge info">${k}: ${v}</span>`).join('')}</div>
+      <div class="card">
+        <div class="card-label">Memoria</div>
+        <div class="card-value">${c.memory.total}</div>
+        <div class="card-detail">${Object.entries(c.memory.by_type).map(([k,v])=>`<span class="badge purple">${k}: ${v}</span>`).join('')}</div>
       </div>
-      <div class="card"><h3>Triggers</h3>
-        <div class="big-num">${c.triggers.results_count}</div>
-        <div class="detail">${c.triggers.running?'<span class="badge ok">online porta '+c.triggers.port+'</span>':'<span class="badge warn">offline</span>'}</div>
+      <div class="card">
+        <div class="card-label">Triggers</div>
+        <div class="card-value">${c.triggers.results_count}</div>
+        <div class="card-detail">${c.triggers.running?'<span class="badge ok">online :'+c.triggers.port+'</span>':'<span class="badge warn">offline</span>'}</div>
       </div>`;
 
-    // Cron table
     const cronBody = document.getElementById('cronBody');
     if (c.cron.jobs.length === 0) {
-      cronBody.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">Nenhum cron job</td></tr>';
+      cronBody.innerHTML = '<tr><td colspan="6" class="s-muted">Nenhum cron job</td></tr>';
     } else {
       cronBody.innerHTML = c.cron.jobs.map(j => {
-        const next = new Date(j.next_run * 1000).toLocaleTimeString();
+        const next = new Date(j.next_run * 1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
         return `<tr>
-          <td>${j.id}</td>
+          <td style="color:var(--purple)">${j.id}</td>
           <td>${j.prompt}</td>
-          <td>${j.interval}</td>
-          <td class="${j.active?'status-ok':'status-err'}">${j.active?'ativo':'pausado'}</td>
+          <td><span class="badge purple">${j.interval}</span></td>
+          <td class="${j.active?'s-ok':'s-err'}">${j.active?'ativo':'pausado'}</td>
           <td>${j.run_count}x</td>
-          <td>${next}</td>
+          <td class="s-muted">${next}</td>
         </tr>`;
       }).join('');
     }
 
-    // Actions table
     const actionsBody = document.getElementById('actionsBody');
     const actions = d.recent_actions || [];
     if (actions.length === 0) {
-      actionsBody.innerHTML = '<tr><td colspan="4" style="color:var(--text-muted)">Nenhuma ação recente</td></tr>';
+      actionsBody.innerHTML = '<tr><td colspan="4" class="s-muted">Nenhuma acao recente</td></tr>';
     } else {
       actionsBody.innerHTML = actions.reverse().map(a => {
-        const t = new Date(a.timestamp * 1000).toLocaleTimeString();
+        const t = new Date(a.timestamp * 1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
         return `<tr>
-          <td>${t}</td>
+          <td class="s-muted">${t}</td>
           <td>${a.action}</td>
           <td style="color:var(--text-secondary)">${a.details}</td>
-          <td class="${a.status==='ok'?'status-ok':'status-err'}">${a.status}</td>
+          <td class="${a.status==='ok'?'s-ok':'s-err'}">${a.status}</td>
         </tr>`;
       }).join('');
     }
   } catch(e) {
-    document.getElementById('cards').innerHTML = `<div class="card"><h3 style="color:var(--red)">Erro ao carregar</h3><div class="detail">${e.message}</div></div>`;
+    document.getElementById('cards').innerHTML = `<div class="card"><div class="card-label" style="color:var(--red)">Erro</div><div class="card-detail">${e.message}</div></div>`;
   }
 }
 refresh();
@@ -1014,6 +1506,48 @@ if HAS_FASTAPI:
     @app.get("/", response_class=HTMLResponse)
     async def index():
         return WEBAPP_HTML
+
+    # ── PWA Routes (System Clow App) ──────────────────────────────
+    @app.get("/pwa", response_class=HTMLResponse)
+    async def pwa_index():
+        """Página principal do PWA."""
+        static_dir = Path(__file__).parent.parent / "static"
+        if (static_dir / "index.html").exists():
+            with open(static_dir / "index.html") as f:
+                return f.read()
+        return HTMLResponse("<h1>System Clow</h1><p>PWA app</p>")
+
+    @app.get("/static/manifest.json")
+    async def manifest():
+        """Manifest do PWA."""
+        static_dir = Path(__file__).parent.parent / "static"
+        manifest_path = static_dir / "manifest.json"
+        if manifest_path.exists():
+            return FileResponse(manifest_path, media_type="application/manifest+json")
+        return JSONResponse({"name": "System Clow", "short_name": "Clow"})
+
+    @app.get("/static/service-worker.js")
+    async def service_worker():
+        """Service Worker para PWA."""
+        static_dir = Path(__file__).parent.parent / "static"
+        sw_path = static_dir / "service-worker.js"
+        if sw_path.exists():
+            return FileResponse(sw_path, media_type="application/javascript")
+        return JSONResponse({"error": "Service Worker not found"}, status_code=404)
+
+    @app.get("/static/{file_path:path}")
+    async def static_files(file_path: str):
+        """Serve arquivos estáticos (CSS, JS, imagens, etc)."""
+        static_dir = Path(__file__).parent.parent / "static"
+        full_path = (static_dir / file_path).resolve()
+        
+        # Security: previne path traversal
+        if not str(full_path).startswith(str(static_dir)):
+            return JSONResponse({"error": "Forbidden"}, status_code=403)
+        
+        if full_path.exists() and full_path.is_file():
+            return FileResponse(full_path)
+        return JSONResponse({"error": "Not found"}, status_code=404)
 
     # Feature #24: Dashboard (protegido)
     @app.get("/dashboard", response_class=HTMLResponse, dependencies=[Depends(_auth_dependency)])
@@ -1066,6 +1600,81 @@ if HAS_FASTAPI:
         registry = create_default_registry()
         tools = [{"name": t.name, "description": t.description} for t in registry.all_tools()]
         return JSONResponse({"tools": tools, "count": len(tools)})
+
+    # ── HTTP Chat Fallback (para mobile sem WebSocket) ────────────
+    _http_sessions: dict[str, Any] = {}
+
+    @app.post("/api/v1/chat", dependencies=[Depends(_rate_limit_dependency)])
+    async def api_chat(request: Request):
+        """Fallback HTTP para chat quando WebSocket não conecta (mobile)."""
+        from .agent import Agent
+        import uuid
+
+        body = await request.json()
+        content = body.get("content", "").strip()
+        session_id = body.get("session_id", "")
+
+        if not content:
+            return JSONResponse({"error": "content vazio"}, status_code=400)
+
+        # Cria ou reutiliza agente para esta sessao
+        if session_id and session_id in _http_sessions:
+            agent = _http_sessions[session_id]["agent"]
+        else:
+            session_id = str(uuid.uuid4())[:8]
+            agent = Agent(cwd=os.getcwd(), auto_approve=True)
+            _http_sessions[session_id] = {"agent": agent, "last_used": time.time()}
+
+        _http_sessions[session_id]["last_used"] = time.time()
+
+        # Limpa sessoes antigas (>30min)
+        now = time.time()
+        stale = [k for k, v in _http_sessions.items() if now - v["last_used"] > 1800]
+        for k in stale:
+            del _http_sessions[k]
+
+        track_action("user_message_http", content[:60])
+
+        loop = asyncio.get_event_loop()
+        collected_text: list[str] = []
+        tools_used: list[dict] = []
+
+        def on_text_delta(delta: str):
+            collected_text.append(delta)
+
+        def on_tool_call(name: str, args: dict):
+            tools_used.append({"name": name, "args": args, "status": "running", "output": ""})
+            track_action("tool_call", name, "running")
+
+        def on_tool_result(name: str, status: str, output: str):
+            for t in tools_used:
+                if t["name"] == name and t["status"] == "running":
+                    t["status"] = status
+                    t["output"] = output[:500]
+                    break
+            track_action("tool_result", f"{name}: {status}", status)
+
+        agent.on_text_delta = on_text_delta
+        agent.on_text_done = lambda t: None
+        agent.on_tool_call = on_tool_call
+        agent.on_tool_result = on_tool_result
+
+        try:
+            result = await loop.run_in_executor(None, agent.run_turn, content)
+        except Exception as e:
+            return JSONResponse({
+                "session_id": session_id,
+                "error": str(e),
+            }, status_code=500)
+
+        response_text = "".join(collected_text) if collected_text else (result or "")
+        track_action("agent_response_http", response_text[:60] if response_text else "")
+
+        return JSONResponse({
+            "session_id": session_id,
+            "response": response_text,
+            "tools": tools_used,
+        })
 
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):

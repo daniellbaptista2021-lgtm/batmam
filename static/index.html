@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="description" content="System Clow - AI Code Agent">
+
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Clow">
+    <link rel="apple-touch-icon" href="/static/icon.svg">
+
+    <title>System Clow</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --bg-deep: #06060b;
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #111118;
+            --bg-tertiary: #16161f;
+            --text-primary: #f0f0f5;
+            --text-secondary: #9d9db5;
+            --text-muted: #55556a;
+            --purple: #a78bfa;
+            --purple-bright: #c4b5fd;
+            --purple-dim: #7c3aed;
+            --violet: #8b5cf6;
+            --green: #34d399;
+            --green-dim: rgba(52,211,153,0.15);
+            --red: #f87171;
+            --red-dim: rgba(248,113,113,0.15);
+            --border: rgba(167,139,250,0.12);
+            --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: var(--font-mono);
+            background: var(--bg-deep);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            text-align: center;
+            color: var(--text-primary);
+            padding: 24px;
+            max-width: 380px;
+        }
+
+        .infinity-logo {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 24px;
+            animation: float 3s ease-in-out infinite;
+        }
+        .infinity-logo path {
+            fill: none;
+            stroke: var(--purple);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-dasharray: 120;
+            animation: trace 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        @keyframes trace {
+            0% { stroke-dashoffset: 0; stroke: var(--purple); }
+            50% { stroke-dashoffset: 120; stroke: var(--purple-bright); }
+            100% { stroke-dashoffset: 240; stroke: var(--purple); }
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, var(--purple-bright) 0%, var(--purple) 50%, var(--violet) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            letter-spacing: 0.5px;
+        }
+
+        .status-card {
+            padding: 14px 24px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        .status-card.online {
+            background: var(--green-dim);
+            border: 1px solid rgba(52,211,153,0.25);
+            color: var(--green);
+        }
+        .status-card.offline {
+            background: var(--red-dim);
+            border: 1px solid rgba(248,113,113,0.25);
+            color: var(--red);
+        }
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; }
+            50% { opacity: 0.5; box-shadow: 0 0 8px 3px currentColor; }
+        }
+
+        .open-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--purple-dim), var(--violet));
+            color: white;
+            border: none;
+            padding: 14px 36px;
+            border-radius: 12px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.15s, box-shadow 0.2s;
+            letter-spacing: 0.5px;
+            margin-bottom: 16px;
+        }
+        .open-btn:active { transform: scale(0.96); }
+        .open-btn:hover { box-shadow: 0 4px 20px rgba(167,139,250,0.3); }
+
+        .install-btn {
+            display: none;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--purple);
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+        .install-btn:hover { background: rgba(167,139,250,0.1); border-color: var(--purple); }
+
+        .hints {
+            font-size: 10px;
+            color: var(--text-muted);
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <svg class="infinity-logo" viewBox="0 0 32 32">
+            <path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(0.95)"/>
+        </svg>
+
+        <h1>Clow</h1>
+        <p class="subtitle">AI Code Agent para Terminal</p>
+
+        <div class="status-card online" id="statusCard">
+            <span class="status-dot"></span>
+            <span id="statusLabel">Sistema online</span>
+        </div>
+
+        <a href="/" class="open-btn">Abrir Terminal</a><br>
+
+        <button class="install-btn" id="installBtn">Instalar App</button>
+
+        <div class="hints">
+            <p>iPhone: Compartilhar > Adicionar a Tela de Inicio</p>
+            <p>Android: o botao "Instalar App" aparece automaticamente</p>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/service-worker.js')
+                .then(() => console.log('SW registered'))
+                .catch(err => console.log('SW error:', err));
+        }
+
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'inline-block';
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                installBtn.style.display = 'none';
+            }
+        });
+
+        window.addEventListener('online', () => {
+            document.getElementById('statusCard').className = 'status-card online';
+            document.getElementById('statusLabel').textContent = 'Sistema online';
+        });
+        window.addEventListener('offline', () => {
+            document.getElementById('statusCard').className = 'status-card offline';
+            document.getElementById('statusLabel').textContent = 'Sem conexao';
+        });
+        if (!navigator.onLine) {
+            document.getElementById('statusCard').className = 'status-card offline';
+            document.getElementById('statusLabel').textContent = 'Sem conexao';
+        }
+    </script>
+</body>
+</html>
