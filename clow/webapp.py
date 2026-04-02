@@ -484,6 +484,18 @@ body{background:var(--bg);color:var(--t1);font-family:var(--f);font-size:13px;he
 .badge-s{padding:1px 5px;border-radius:3px;font-size:9px;font-weight:500}
 .badge-s.g{background:var(--gd);color:var(--g)}.badge-s.r{background:var(--rd);color:var(--r)}.badge-s.p{background:var(--pg);color:var(--p)}
 
+/* MISSION */
+.mission-card{background:var(--s2);border:1px solid var(--pgs);border-radius:12px;padding:14px;margin:10px 0}
+.mission-card .mctitle{font-size:13px;font-weight:700;color:var(--pb);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.mission-bar{height:6px;background:var(--s3);border-radius:3px;overflow:hidden;margin:8px 0}
+.mission-fill{height:100%;background:linear-gradient(90deg,var(--pd),var(--v));border-radius:3px;transition:width .5s ease}
+.mission-step{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px;color:var(--t2)}
+.mission-step .ms-icon{width:16px;text-align:center;flex-shrink:0}
+.mission-step.done{color:var(--g)}.mission-step.running{color:var(--pb)}.mission-step.failed{color:var(--r)}
+.mission-step.pending{color:var(--tm)}
+.mission-done{background:var(--gd);border:1px solid rgba(52,211,153,.3);border-radius:12px;padding:14px;margin:10px 0}
+.mission-done .mctitle{color:var(--g)}
+
 /* RESPONSIVE */
 @media(max-width:768px){
   .sidebar{position:fixed;left:0;top:0;height:100%;transform:translateX(-100%);box-shadow:4px 0 20px rgba(0,0,0,.5)}
@@ -526,6 +538,16 @@ body{background:var(--bg);color:var(--t1);font-family:var(--f);font-size:13px;he
         <button class="sb-btn" onclick="qa('Me faz um app de ')"><span class="icon">&#x26A1;</span>Web App</button>
         <button class="sb-btn" onclick="qa('Gera copy para anuncio de ')"><span class="icon">&#x1F4DD;</span>Copy Ads</button>
         <button class="sb-btn" onclick="qa('Ideias de conteudo para instagram sobre ')"><span class="icon">&#x1F4F1;</span>Conteudo</button>
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-title" onclick="this.classList.toggle('open')">Missoes <span class="arr">&#9654;</span></div>
+      <div class="sb-content">
+        <button class="sb-btn" onclick="qa('/mission Cria um site completo para ')"><span class="icon">&#x1F680;</span>Site Completo</button>
+        <button class="sb-btn" onclick="qa('/mission Campanha de trafego com landing page e copies para ')"><span class="icon">&#x1F4CA;</span>Campanha Trafego</button>
+        <button class="sb-btn" onclick="qa('/mission Setup digital completo para ')"><span class="icon">&#x1F3D7;</span>Setup Digital</button>
+        <button class="sb-btn" onclick="sendCmd('/mission')"><span class="icon">&#x2753;</span>Ver exemplos</button>
       </div>
     </div>
 
@@ -702,6 +724,7 @@ async function sendHTTP(text){
     if(d.tools&&d.tools.length)d.tools.forEach(t=>{showTool(t.name,t.args);showToolRes(t.name,t.status,t.output||'')});
     if(d.response){appendText(d.response);finishText()}
     if(d.file)showFile(d.file);
+    if(d.mission)startMissionPolling(d.mission);
     finishTurn();
   }catch(e){hideThink();showErr('Erro: '+e.message);finishTurn()}
 }
@@ -769,6 +792,56 @@ async function createUser(){
 }
 async function setPlan(id,plan){await fetch(`/api/v1/admin/users/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan})});showAdminUsers()}
 async function togUser(id,active){await fetch(`/api/v1/admin/users/${id}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({active})});showAdminUsers()}
+// ── Mission Polling ──
+let missionPollers={};
+function startMissionPolling(m){
+  const mid=m.id;let lastTime=0;
+  const card=document.createElement('div');card.className='mission-card';card.id='mc-'+mid;
+  card.innerHTML=`<div class="mctitle">\ud83d\ude80 ${esc(m.title)}</div><div class="mission-bar"><div class="mission-fill" id="mf-${mid}" style="width:0%"></div></div><div id="ms-${mid}"></div>`;
+  ensureMsg();curMsg.appendChild(card);scroll();
+
+  const poll=async()=>{
+    try{
+      const r=await fetch(`/api/v1/missions/${mid}/progress?after=${lastTime}`);
+      const d=await r.json();
+      d.events.forEach(e=>{
+        lastTime=Math.max(lastTime,e.time);
+        const sl=document.getElementById('ms-'+mid);
+        const fl=document.getElementById('mf-'+mid);
+        if(e.type==='step_start'){
+          const pct=((e.data.step+1)/e.data.total*100).toFixed(0);
+          if(fl)fl.style.width=pct+'%';
+          sl.innerHTML+= `<div class="mission-step running" id="mss-${mid}-${e.data.step}"><span class="ms-icon">\u23f3</span>${esc(e.data.title)}</div>`;
+          scroll();
+        }else if(e.type==='step_done'){
+          const el=document.getElementById(`mss-${mid}-${e.data.step}`);
+          if(el){el.className='mission-step done';el.querySelector('.ms-icon').textContent='\u2705'}
+          if(e.data.file){showFile(e.data.file)}
+          scroll();
+        }else if(e.type==='step_retry'){
+          const el=document.getElementById(`mss-${mid}-${e.data.step}`);
+          if(el){el.querySelector('.ms-icon').textContent='\ud83d\udd04'}
+        }else if(e.type==='step_failed'){
+          const el=document.getElementById(`mss-${mid}-${e.data.step}`);
+          if(el){el.className='mission-step failed';el.querySelector('.ms-icon').textContent='\u274c'}
+        }else if(e.type==='completed'){
+          const c=document.getElementById('mc-'+mid);
+          if(c)c.className='mission-done';
+          const tt=c?.querySelector('.mctitle');
+          if(tt)tt.innerHTML='\ud83c\udf89 '+esc(e.data.title)+' — Concluida!';
+          if(fl)fl.style.width='100%';
+          if(e.data.summary){appendText(e.data.summary);finishText()}
+          clearInterval(missionPollers[mid]);
+          scroll();
+        }
+      });
+      if(d.status==='completed'||d.status==='failed'){clearInterval(missionPollers[mid])}
+    }catch(e){}
+  };
+  missionPollers[mid]=setInterval(poll,2000);
+  setTimeout(poll,500);
+}
+
 function closeModal(){document.getElementById('modalBg').classList.remove('show')}
 
 // ── Input ──
@@ -1562,6 +1635,90 @@ if HAS_FASTAPI:
             update_user(user["id"], plan=plan)
         return JSONResponse({"ok": True, "user": user})
 
+    # ── API: Missions ────────────────────────────────────────────────
+    _mission_progress: dict[str, list] = {}  # mission_id -> [events]
+
+    @app.post("/api/v1/missions/plan")
+    async def api_mission_plan(request: Request):
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        description = body.get("description", "").strip()
+        if not description:
+            return JSONResponse({"error": "Descricao vazia"}, status_code=400)
+
+        from .agents.mission_engine import plan_mission
+        loop = asyncio.get_event_loop()
+        try:
+            plan = await loop.run_in_executor(None, plan_mission, description)
+            return JSONResponse({"plan": plan})
+        except Exception as e:
+            return JSONResponse({"error": str(e)[:300]}, status_code=500)
+
+    @app.post("/api/v1/missions/start")
+    async def api_mission_start(request: Request):
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        description = body.get("description", "")
+        plan_data = body.get("plan", {})
+        title = plan_data.get("title", description[:60])
+        steps = plan_data.get("steps", [])
+
+        if not steps:
+            return JSONResponse({"error": "Plano sem etapas"}, status_code=400)
+
+        from .database import create_mission
+        mission_id = create_mission(sess["user_id"], title, description, steps)
+        _mission_progress[mission_id] = []
+
+        async def on_progress(mid, event_type, data):
+            _mission_progress.setdefault(mid, []).append({
+                "type": event_type, "data": data, "time": time.time()
+            })
+
+        from .agents.mission_engine import execute_mission
+        asyncio.create_task(execute_mission(mission_id, sess["user_id"], on_progress))
+
+        return JSONResponse({"mission_id": mission_id, "title": title, "total_steps": len(steps)})
+
+    @app.get("/api/v1/missions/{mission_id}/progress")
+    async def api_mission_progress(mission_id: str, request: Request):
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+
+        after = float(request.query_params.get("after", "0"))
+        events = _mission_progress.get(mission_id, [])
+        new_events = [e for e in events if e["time"] > after]
+
+        from .database import get_mission
+        mission = get_mission(mission_id)
+        status = mission["status"] if mission else "unknown"
+
+        return JSONResponse({"status": status, "events": new_events})
+
+    @app.get("/api/v1/missions")
+    async def api_list_missions(request: Request):
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        from .database import list_missions
+        return JSONResponse({"missions": list_missions(sess["user_id"])})
+
+    @app.get("/api/v1/missions/{mission_id}")
+    async def api_get_mission(mission_id: str, request: Request):
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        from .database import get_mission
+        m = get_mission(mission_id)
+        if not m:
+            return JSONResponse({"error": "Missao nao encontrada"}, status_code=404)
+        return JSONResponse({"mission": m})
+
     # ── HTTP Chat Fallback (para mobile sem WebSocket) ────────────
     _http_sessions: dict[str, Any] = {}
 
@@ -1605,16 +1762,72 @@ if HAS_FASTAPI:
             cmd_lower = content.lower().strip()
             cmd_resp = None
 
-            if cmd_lower == "/help":
+            if cmd_lower.startswith("/mission"):
+                mission_desc = content[8:].strip() if len(content) > 8 else ""
+                if not mission_desc:
+                    cmd_resp = (
+                        "## Missoes Autonomas\n\n"
+                        "Descreva uma missao complexa e o Clow executa sozinho:\n\n"
+                        "**Exemplos:**\n"
+                        "- `/mission Cria um site completo para uma pizzaria com cardapio e contato`\n"
+                        "- `/mission Campanha de trafego para seguro de vida com landing page e copies`\n"
+                        "- `/mission Setup digital completo para barbearia`\n\n"
+                        "O Clow vai planejar, mostrar as etapas, e executar tudo automaticamente."
+                    )
+                else:
+                    # Planeja e inicia missao
+                    from .agents.mission_engine import plan_mission
+                    loop = asyncio.get_event_loop()
+                    try:
+                        plan_data = await loop.run_in_executor(None, plan_mission, mission_desc)
+                        steps = plan_data.get("steps", [])
+                        title = plan_data.get("title", mission_desc[:60])
+                        est = plan_data.get("estimated_minutes", 5)
+
+                        # Cria e inicia missao
+                        from .database import create_mission as db_create_mission
+                        mid = db_create_mission(user_id, title, mission_desc, steps)
+                        _mission_progress[mid] = []
+
+                        async def on_progress(m_id, evt, data):
+                            _mission_progress.setdefault(m_id, []).append({"type": evt, "data": data, "time": time.time()})
+
+                        from .agents.mission_engine import execute_mission
+                        asyncio.create_task(execute_mission(mid, user_id, on_progress))
+
+                        # Mostra plano e inicia
+                        steps_text = "\n".join(f"{i+1}. {s.get('title', '?')}" for i, s in enumerate(steps))
+                        cmd_resp = (
+                            f"## Missao Iniciada\n\n"
+                            f"**{title}**\n\n"
+                            f"### Plano ({len(steps)} etapas, ~{est} min):\n{steps_text}\n\n"
+                            f"Executando em background... Acompanhe o progresso abaixo."
+                        )
+
+                        # Retorna com mission_id pra frontend fazer polling
+                        if conv_id:
+                            save_message(conv_id, "assistant", cmd_resp)
+                        return JSONResponse({
+                            "session_id": session_id or str(uuid.uuid4())[:8],
+                            "response": cmd_resp,
+                            "tools": [], "file": None,
+                            "mission": {"id": mid, "title": title, "total_steps": len(steps)},
+                        })
+                    except Exception as e:
+                        cmd_resp = f"Erro ao planejar missao: {str(e)[:200]}"
+
+            elif cmd_lower == "/help":
                 cmd_resp = (
                     "## Comandos Disponiveis\n\n"
                     "| Comando | Descricao |\n|---------|----------|\n"
+                    "| `/mission X` | Iniciar missao autonoma |\n"
                     "| `/connect` | Conectar servico externo |\n"
                     "| `/connections` | Ver conexoes ativas |\n"
                     "| `/disconnect X` | Desconectar servico |\n"
                     "| `/usage` | Ver consumo de tokens hoje |\n"
                     "| `/plan` | Ver plano atual e limites |\n"
                     "| `/help` | Esta lista de comandos |\n\n"
+                    "**Missoes:** `/mission cria um site completo para pizzaria`\n\n"
                     "**Geracao de arquivos:** peca naturalmente (ex: 'cria uma planilha de vendas')\n\n"
                     "**Integracoes:** pergunte direto (ex: 'mostra minhas campanhas meta ads')"
                 )

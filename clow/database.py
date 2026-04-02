@@ -82,6 +82,42 @@ def init_db():
         CREATE INDEX IF NOT EXISTS idx_usage_user_date ON usage_log(user_id, created_at);
         CREATE INDEX IF NOT EXISTS idx_conv_user ON conversations(user_id, updated_at);
         CREATE INDEX IF NOT EXISTS idx_msg_conv ON messages(conversation_id, created_at);
+
+        CREATE TABLE IF NOT EXISTS missions (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            status TEXT DEFAULT 'planning',
+            plan_json TEXT,
+            context_json TEXT DEFAULT '{}',
+            current_step INTEGER DEFAULT 0,
+            total_steps INTEGER DEFAULT 0,
+            error_count INTEGER DEFAULT 0,
+            created_at REAL NOT NULL,
+            updated_at REAL NOT NULL,
+            completed_at REAL,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS mission_steps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            mission_id TEXT NOT NULL,
+            step_number INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            status TEXT DEFAULT 'pending',
+            model TEXT DEFAULT 'haiku',
+            result_json TEXT,
+            error TEXT,
+            attempts INTEGER DEFAULT 0,
+            started_at REAL,
+            completed_at REAL,
+            FOREIGN KEY (mission_id) REFERENCES missions(id) ON DELETE CASCADE
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_missions_user ON missions(user_id, created_at);
+        CREATE INDEX IF NOT EXISTS idx_msteps_mission ON mission_steps(mission_id, step_number);
         """)
 
 
@@ -268,6 +304,68 @@ def get_messages(conv_id: str, limit: int = 100) -> list[dict]:
 def update_conversation_title(conv_id: str, title: str):
     with get_db() as db:
         db.execute("UPDATE conversations SET title=? WHERE id=?", (title[:100], conv_id))
+
+
+# ── Missions ─────────────────────────────────────────────────────
+
+def create_mission(user_id: str, title: str, description: str, plan: list[dict]) -> str:
+    mid = str(uuid.uuid4())[:12]
+    now = time.time()
+    with get_db() as db:
+        db.execute(
+            "INSERT INTO missions (id, user_id, title, description, status, plan_json, total_steps, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)",
+            (mid, user_id, title, description, "planning", json.dumps(plan), len(plan), now, now),
+        )
+        for i, step in enumerate(plan):
+            db.execute(
+                "INSERT INTO mission_steps (mission_id, step_number, title, description, model) VALUES (?,?,?,?,?)",
+                (mid, i, step.get("title", f"Etapa {i+1}"), step.get("description", ""), step.get("model", "haiku")),
+            )
+    return mid
+
+
+def get_mission(mission_id: str) -> dict | None:
+    with get_db() as db:
+        row = db.execute("SELECT * FROM missions WHERE id=?", (mission_id,)).fetchone()
+        if not row:
+            return None
+        m = dict(row)
+        m["plan"] = json.loads(m["plan_json"] or "[]")
+        m["context"] = json.loads(m["context_json"] or "{}")
+        steps = db.execute("SELECT * FROM mission_steps WHERE mission_id=? ORDER BY step_number", (mission_id,)).fetchall()
+        m["steps"] = [dict(s) for s in steps]
+        return m
+
+
+def update_mission(mission_id: str, **kwargs):
+    allowed = {"status", "current_step", "error_count", "context_json", "completed_at", "updated_at"}
+    fields = {k: v for k, v in kwargs.items() if k in allowed}
+    if not fields:
+        return
+    fields["updated_at"] = time.time()
+    sets = ", ".join(f"{k}=?" for k in fields)
+    vals = list(fields.values()) + [mission_id]
+    with get_db() as db:
+        db.execute(f"UPDATE missions SET {sets} WHERE id=?", vals)
+
+
+def update_mission_step(mission_id: str, step_number: int, **kwargs):
+    allowed = {"status", "result_json", "error", "attempts", "started_at", "completed_at"}
+    fields = {k: v for k, v in kwargs.items() if k in allowed}
+    if not fields:
+        return
+    sets = ", ".join(f"{k}=?" for k in fields)
+    vals = list(fields.values()) + [mission_id, step_number]
+    with get_db() as db:
+        db.execute(f"UPDATE mission_steps SET {sets} WHERE mission_id=? AND step_number=?", vals)
+
+
+def list_missions(user_id: str, limit: int = 20) -> list[dict]:
+    with get_db() as db:
+        rows = db.execute(
+            "SELECT id, title, status, current_step, total_steps, created_at, completed_at FROM missions WHERE user_id=? ORDER BY created_at DESC LIMIT ?",
+            (user_id, limit)).fetchall()
+    return [dict(r) for r in rows]
 
 
 # Init on import
