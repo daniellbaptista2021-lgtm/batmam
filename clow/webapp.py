@@ -392,9 +392,21 @@ WEBAPP_HTML = r'''<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=3.0,user-scalable=yes,viewport-fit=cover">
 <meta name="theme-color" content="#050510">
-<meta name="description" content="Clow - AI Code Agent | Inteligência Infinita • Possibilidades Premium">
+<meta name="description" content="Clow - AI Code Agent | Inteligência Infinita • Possibilidades Premium. Crie landing pages, planilhas, documentos, apps e muito mais com inteligência artificial.">
+<meta name="keywords" content="AI, inteligência artificial, code agent, landing page, automação, marketing digital">
+<meta name="author" content="Clow AI">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="Clow — Inteligência Infinita">
+<meta property="og:description" content="AI Code Agent premium. Crie landing pages, planilhas, apps e muito mais.">
+<meta property="og:image" content="/static/brand/logo.png">
+<meta property="og:url" content="https://clow.pvcorretor01.com.br">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Clow — Inteligência Infinita">
+<meta name="twitter:description" content="AI Code Agent premium.">
+<meta name="twitter:image" content="/static/brand/logo.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/static/manifest.json">
@@ -532,8 +544,8 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .welc-tagline{font-size:10px;letter-spacing:3px;color:var(--tm);text-transform:uppercase;margin-bottom:16px}
 .welc-dot{color:var(--p)}
-.welc h2{font-family:var(--sans);font-size:28px;font-weight:300;color:var(--t1);margin-bottom:8px;letter-spacing:-0.5px}
-.welc h2 span{font-weight:700;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.welc h1{font-family:var(--sans);font-size:28px;font-weight:300;color:var(--t1);margin-bottom:8px;letter-spacing:-0.5px}
+.welc h1 span{font-weight:700;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .welc p{font-size:14px;color:var(--tm);max-width:300px;margin:0 auto;font-weight:300}
 .qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:480px;margin:28px auto 0}
 @media(max-width:600px){.qgrid{grid-template-columns:repeat(2,1fr)}}
@@ -732,6 +744,14 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
   .main::before{left:50%;width:350px;height:350px}
 }
 @media(min-width:769px){.ham{display:none}}
+/* SR-ONLY */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* STOP BUTTON */
+.stop-btn{position:absolute;width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;background:var(--r);color:#fff;transition:all .2s;animation:fadeInStop .2s ease}
+.stop-btn.vis{display:flex}
+.stop-btn:hover{background:#ef4444;box-shadow:0 0 15px rgba(248,113,113,.3)}
+.stop-btn svg{width:14px;height:14px}
+@keyframes fadeInStop{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
 </style>
 </head>
 <body>
@@ -741,16 +761,17 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
 <linearGradient id="wmGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#9B59FC"/><stop offset="100%" stop-color="#4A9EFF"/></linearGradient>
 </defs></svg>
 <div class="sb-ov" id="sbOv" onclick="toggleSB()"></div>
-<aside class="sb" id="sb">
+<aside class="sb" id="sb" role="navigation" aria-label="Menu lateral">
   <div class="sb-head">
-    <img src="/static/brand/logo-sidebar.png" alt="Clow" class="sb-logo-img">
+    <a href="/"><img src="/static/brand/logo-sidebar.png" alt="Clow - Inteligência Infinita" class="sb-logo-img"></a>
   </div>
   <div class="sb-body">
-    <div class="sb-sec"><button class="sb-new" onclick="newConv()">+ Nova Conversa</button></div>
+    <div class="sb-sec"><button class="sb-new" onclick="newConv()" aria-label="Iniciar nova conversa">+ Nova Conversa</button></div>
     <div class="sb-sec" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
       <div class="sb-lbl open" onclick="this.classList.toggle('open')">Conversas <span class="ar">&#9654;</span></div>
       <div class="sb-ct" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
         <div class="sb-conv-search" id="convSearchWrap" style="display:none">
+          <label for="convSearchInp" class="sr-only">Buscar conversas</label>
           <span class="search-icon">&#x1F50D;</span>
           <input type="text" id="convSearchInp" placeholder="Buscar conversas..." oninput="filterConvs(this.value)" onkeydown="if(event.key==='Escape'){closeConvSearch()}">
         </div>
@@ -763,7 +784,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
       <div class="sb-ct">
         <button class="sb-btn" onclick="qa('Cria uma landing page de ')"><span class="ic">&#x1F310;</span>Landing Page</button>
         <button class="sb-btn" onclick="qa('Gera uma planilha de ')"><span class="ic">&#x1F4CA;</span>Planilha</button>
-        <button class="sb-btn" onclick="qa('Cria uma apresentacao sobre ')"><span class="ic">&#x1F3AC;</span>Apresentação</button>
+        <button class="sb-btn" onclick="qa('Cria uma apresentação sobre ')"><span class="ic">&#x1F3AF;</span>Apresentação</button>
         <button class="sb-btn" onclick="qa('Faz um documento de ')"><span class="ic">&#x1F4C4;</span>Documento</button>
         <button class="sb-btn" onclick="qa('Me faz um app de ')"><span class="ic">&#x26A1;</span>Web App</button>
       </div>
@@ -772,7 +793,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
       <div class="sb-lbl" onclick="this.classList.toggle('open')">Marketing <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
         <button class="sb-btn" onclick="qa('Analise minha campanha de tráfego pago ')"><span class="ic">&#x1F4B0;</span>Tráfego Pago</button>
-        <button class="sb-btn" onclick="qa('Gera copy para anuncio de ')"><span class="ic">&#x270F;</span>Copy</button>
+        <button class="sb-btn" onclick="qa('Gera copy para anúncio de ')"><span class="ic">&#x270F;</span>Copy</button>
         <button class="sb-btn" onclick="qa('Cria conteúdo para instagram sobre ')"><span class="ic">&#x1F4F1;</span>Redes Sociais</button>
         <button class="sb-btn" onclick="qa('Cria sequência de emails para ')"><span class="ic">&#x1F4E7;</span>Email Marketing</button>
         <button class="sb-btn" onclick="qa('Faz auditoria SEO de ')"><span class="ic">&#x1F50D;</span>SEO</button>
@@ -814,15 +835,16 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
   </div>
   <div class="sb-foot"><div class="sb-user" id="sbUsr"><div class="sb-av" id="sbAv">?</div><span class="sb-uname" id="sbEm">...</span><span class="sb-uplan" id="sbPl">...</span></div></div>
 </aside>
-<div class="main">
+<div class="main" role="main">
   <div class="hdr">
-    <button class="ham" onclick="toggleSB()">&#9776;</button>
+    <button class="ham" onclick="toggleSB()" aria-label="Abrir menu lateral">&#9776;</button>
     <div class="hdr-t" id="hdrT">Nova conversa</div>
-    <select class="mod-pill haiku" id="modSel" onchange="onMod()" title="Modelo AI"><option value="haiku">Haiku</option><option value="sonnet">Sonnet</option></select>
-    <div class="on-badge" id="onBdg"><span class="on-dot"></span><span id="onLbl">online</span></div>
+    <label for="modSel" class="sr-only">Modelo AI</label>
+    <select class="mod-pill haiku" id="modSel" onchange="onMod()" title="Modelo AI" aria-label="Selecionar modelo AI"><option value="haiku">Haiku</option><option value="sonnet">Sonnet</option></select>
+    <div class="on-badge" id="onBdg" aria-live="polite"><span class="on-dot"></span><span id="onLbl">online</span></div>
     <div class="hdr-menu">
-      <button class="hdr-mbtn" onclick="togDrop()">&#x22EE;</button>
-      <div class="hdr-drop" id="hdrDrop">
+      <button class="hdr-mbtn" onclick="togDrop()" aria-label="Menu de opções">&#x22EE;</button>
+      <div class="hdr-drop" id="hdrDrop" role="menu">
         <button onclick="sendCmd('/usage');clsDrop()">&#x1F4CA; Meu consumo</button>
         <button onclick="sendCmd('/plan');clsDrop()">&#x1F4E6; Meu plano</button>
         <button onclick="sendCmd('/memories');clsDrop()">&#x1F9E0; Memórias</button>
@@ -834,17 +856,17 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
   <img src="/static/brand/logo.png" alt="" class="watermark empty" id="wmark">
   <div class="term" id="term">
     <div class="welc" id="welc">
-      <img src="/static/brand/logo.png" alt="Clow" class="welc-logo">
+      <img src="/static/brand/logo.png" alt="Clow - Inteligência Infinita" class="welc-logo">
       <div class="welc-tagline">INTELIG&Ecirc;NCIA INFINITA <span class="welc-dot">&bull;</span> POSSIBILIDADES PREMIUM</div>
-      <h2>O que vamos <span>criar</span>?</h2>
+      <h1>O que vamos <span>criar</span>?</h1>
       <p>Escolha abaixo ou descreva o que precisa</p>
       <div class="qgrid">
-        <div class="qc" onclick="qa('Cria uma landing page de ')"><div class="qi">&#x1F310;</div><div class="qt">Landing Page</div><div class="qd">Site completo e responsivo</div></div>
-        <div class="qc" onclick="qa('Gera uma planilha de ')"><div class="qi">&#x1F4CA;</div><div class="qt">Planilha</div><div class="qd">Excel com fórmulas</div></div>
-        <div class="qc" onclick="qa('Cria uma apresentacao sobre ')"><div class="qi">&#x1F3AC;</div><div class="qt">Apresentação</div><div class="qd">PowerPoint profissional</div></div>
-        <div class="qc" onclick="qa('Me faz um app de ')"><div class="qi">&#x26A1;</div><div class="qt">Web App</div><div class="qd">App funcional completo</div></div>
-        <div class="qc" onclick="qa('Gera copy para anuncio de ')"><div class="qi">&#x270F;</div><div class="qt">Copy Ads</div><div class="qd">Textos para anúncios</div></div>
-        <div class="qc" onclick="qa('/mission Setup digital completo para ')"><div class="qi">&#x1F680;</div><div class="qt">Missão</div><div class="qd">Projeto autônomo completo</div></div>
+        <div class="qc" role="button" tabindex="0" onclick="qa('Cria uma landing page de ')" onkeydown="if(event.key==='Enter')this.click()"><div class="qi">&#x1F310;</div><div class="qt">Landing Page</div><div class="qd">Site completo e responsivo</div></div>
+        <div class="qc" role="button" tabindex="0" onclick="qa('Gera uma planilha de ')" onkeydown="if(event.key==='Enter')this.click()"><div class="qi">&#x1F4CA;</div><div class="qt">Planilha</div><div class="qd">Excel com fórmulas</div></div>
+        <div class="qc" role="button" tabindex="0" onclick="qa('Cria uma apresentação sobre ')" onkeydown="if(event.key==='Enter')this.click()"><div class="qi">&#x1F3AF;</div><div class="qt">Apresentação</div><div class="qd">PowerPoint profissional</div></div>
+        <div class="qc" role="button" tabindex="0" onclick="qa('Me faz um app de ')" onkeydown="if(event.key==='Enter')this.click()"><div class="qi">&#x26A1;</div><div class="qt">Web App</div><div class="qd">App funcional completo</div></div>
+        <div class="qc" role="button" tabindex="0" onclick="qa('Gera copy para anúncio de ')" onkeydown="if(event.key==='Enter')this.click()"><div class="qi">&#x270D;&#xFE0F;</div><div class="qt">Copy Ads</div><div class="qd">Textos para anúncios</div></div>
+        <div class="qc" role="button" tabindex="0" onclick="qa('/mission Setup digital completo para ')" onkeydown="if(event.key==='Enter')this.click()"><div class="qi">&#x1F680;</div><div class="qt">Missão</div><div class="qd">Projeto autônomo completo</div></div>
       </div>
     </div>
   </div>
@@ -852,23 +874,25 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
   <div class="input-area">
     <div id="filePreview"></div>
     <div class="ibox">
-      <button class="attach-btn" id="attachBtn" onclick="toggleAttachMenu()" title="Anexar arquivo">&#x1F4CE;</button>
-      <div class="attach-menu" id="attachMenu" style="display:none">
+      <button class="attach-btn" id="attachBtn" onclick="toggleAttachMenu()" title="Anexar arquivo" aria-label="Anexar arquivo">&#x1F4CE;</button>
+      <div class="attach-menu" id="attachMenu" style="display:none" role="menu" aria-label="Tipo de arquivo">
         <button class="am-item" onclick="pickFile('image/*','.jpg,.jpeg,.png,.gif,.webp')"><span class="am-icon">&#x1F4F7;</span>Foto / Imagem</button>
         <button class="am-item" onclick="pickFile('','.pdf,.docx,.doc,.txt,.md')"><span class="am-icon">&#x1F4C4;</span>Documento</button>
         <button class="am-item" onclick="pickFile('','.xlsx,.xls,.csv')"><span class="am-icon">&#x1F4CA;</span>Planilha</button>
         <button class="am-item" onclick="pickFile('','*')"><span class="am-icon">&#x1F4C1;</span>Qualquer arquivo</button>
       </div>
-      <textarea id="inp" rows="1" placeholder="O que você precisa?" autofocus></textarea>
+      <label for="inp" class="sr-only">Digite sua mensagem</label>
+      <textarea id="inp" rows="1" placeholder="O que você precisa?" autofocus aria-label="Digite sua mensagem"></textarea>
       <div class="ibox-right">
-        <button class="mic-btn vis" id="micBtn" onclick="toggleRec()" title="Gravar audio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-        <button class="sbtn" id="sBtn" onclick="sendMessage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        <button class="mic-btn vis" id="micBtn" onclick="toggleRec()" title="Gravar áudio" aria-label="Gravar áudio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+        <button class="sbtn" id="sBtn" onclick="sendMessage()" aria-label="Enviar mensagem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        <button class="stop-btn" id="stopBtn" onclick="stopGeneration()" aria-label="Parar geração"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
       </div>
     </div>
   </div>
   <div class="lightbox" id="lightbox" onclick="closeLightbox()"><button class="lb-close" onclick="closeLightbox()">&times;</button><img id="lbImg" src=""></div>
 </div>
-<div class="modal-bg" id="modalBg" onclick="if(event.target===this)clsModal()"><div class="modal" id="modalC"></div></div>
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)clsModal()" role="dialog" aria-modal="true"><div class="modal" id="modalC"></div></div>
 <script>
 const INF='<svg viewBox="0 0 32 32" style="width:16px;height:16px"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)" fill="none" stroke="var(--p)" stroke-width="3" stroke-linecap="round"/></svg>';
 const T=document.getElementById('term'),I=document.getElementById('inp'),SB=document.getElementById('sBtn');
@@ -963,8 +987,8 @@ function convBtn(c,isPinned){
     +(isPinned?'<span class="conv-pin-static">&#x1F4CC;</span>':'')
     +'<span class="conv-title">'+esc(t)+'</span>'
     +'<span class="conv-actions">'
-    +'<button class="ca-btn ca-pin" data-cid="'+c.id+'" data-pinned="'+(isPinned?'1':'0')+'" title="'+(isPinned?'Desafixar':'Fixar')+'">&#x1F4CC;</button>'
-    +'<button class="ca-btn ca-menu" data-cid="'+c.id+'" data-pinned="'+(isPinned?'1':'0')+'" title="Menu">\u22EF</button>'
+    +'<button class="ca-btn ca-pin" data-cid="'+c.id+'" data-pinned="'+(isPinned?'1':'0')+'" title="'+(isPinned?'Desafixar':'Fixar')+'" aria-label="'+(isPinned?'Desafixar conversa':'Fixar conversa')+'">&#x1F4CC;</button>'
+    +'<button class="ca-btn ca-menu" data-cid="'+c.id+'" data-pinned="'+(isPinned?'1':'0')+'" title="Menu" aria-label="Opções da conversa">\u22EF</button>'
     +'</span></div>';
 }
 function bindConvEvents(){
@@ -1106,11 +1130,11 @@ async function showAllConvs(){showAllPast=true;loadConvs()}
 
 async function newConv(){try{const r=await fetch('/api/v1/conversations',{method:'POST'});const d=await r.json();cid=d.id;convMsgCount=0;T.innerHTML='';showWelc();document.getElementById('hdrT').textContent='Nova conversa';loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
 async function loadConv(id){cid=id;T.innerHTML='';try{const r=await fetch(`/api/v1/conversations/${id}/messages`);const d=await r.json();d.messages.forEach(m=>{if(m.role==='user')addUser(m.content,false);else{curMsg=null;curBody=null;appendTxt(m.content);finishTxt();curMsg=null;curBody=null}});const cs=await(await fetch('/api/v1/conversations')).json();const c=cs.conversations.find(x=>x.id===id);if(c)document.getElementById('hdrT').textContent=c.title;loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
-function showWelc(){const w=document.createElement('div');w.className='welc';w.id='welc';w.innerHTML='<img src="/static/brand/logo.png" alt="Clow" class="welc-logo"><div class="welc-tagline">INTELIG\u00caNCIA INFINITA <span class="welc-dot">\u2022</span> POSSIBILIDADES PREMIUM</div><h2>O que vamos <span>criar</span>?</h2><p>Escolha abaixo ou descreva o que precisa</p>';T.appendChild(w);const wm=document.getElementById('wmark');if(wm)wm.classList.add('empty')}
+function showWelc(){const w=document.createElement('div');w.className='welc';w.id='welc';w.innerHTML='<img src="/static/brand/logo.png" alt="Clow - Intelig\u00eancia Infinita" class="welc-logo"><div class="welc-tagline">INTELIG\u00caNCIA INFINITA <span class="welc-dot">\u2022</span> POSSIBILIDADES PREMIUM</div><h1>O que vamos <span>criar</span>?</h1><p>Escolha abaixo ou descreva o que precisa</p>';T.appendChild(w);const wm=document.getElementById('wmark');if(wm)wm.classList.add('empty')}
 function connectWS(){const pr=location.protocol==='https:'?'wss:':'ws:';try{ws=new WebSocket(`${pr}//${location.host}/ws`)}catch(e){http=true;setOn('http');return}const to=setTimeout(()=>{if(!ws||ws.readyState!==1){try{ws.close()}catch(e){}http=true;setOn('http')}},4000);ws.onopen=()=>{clearTimeout(to);http=false;setOn('online');rA=0};ws.onmessage=e=>hMsg(JSON.parse(e.data));ws.onclose=()=>{clearTimeout(to);if(rA>=3){http=true;setOn('http');return}setOn('offline');setTimeout(()=>{rA++;connectWS()},Math.min(1000*rA,5000))};ws.onerror=()=>setOn('offline')}
 function setOn(s){const b=document.getElementById('onBdg'),l=document.getElementById('onLbl');b.style.color=s==='offline'?'var(--r)':'var(--g)';l.textContent=s}
 function hMsg(m){switch(m.type){case'thinking_start':showThink();break;case'thinking_end':hideThink();break;case'text_delta':appendTxt(m.content);break;case'text_done':finishTxt();break;case'tool_call':showTool(m.name,m.args);break;case'tool_result':showToolR(m.name,m.status,m.output);break;case'turn_complete':finishTurn();break;case'error':showErr(m.content);break}}
-function sendMessage(){const t=I.value.trim();if(!t||proc)return;if(http){sendHTTP(t);return}if(!ws||ws.readyState!==1)return;addUser(t);ws.send(JSON.stringify({type:'message',content:t}));I.value='';I.style.height='auto';proc=true;SB.disabled=true}
+function sendMessage(){const t=I.value.trim();if(!t||proc)return;if(http){sendHTTP(t);return}if(!ws||ws.readyState!==1)return;addUser(t);ws.send(JSON.stringify({type:'message',content:t}));I.value='';I.style.height='auto';proc=true;SB.disabled=true;document.getElementById('stopBtn').classList.add('vis')}
 async function sendHTTP(t){addUser(t);I.value='';I.style.height='auto';proc=true;SB.disabled=true;showThink();const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),60000);try{const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:t,session_id:hSid,conversation_id:cid,model:selMod}),signal:ac.signal});clearTimeout(tm);hideThink();if(!r.ok){const e=await r.json().catch(()=>({error:'Erro'}));showErr(e.error||e.response||'Erro');finishTurn();return}const d=await r.json();hSid=d.session_id||hSid;if(d.tools&&d.tools.length)d.tools.forEach(x=>{showTool(x.name,x.args);showToolR(x.name,x.status,x.output||'')});if(d.response){appendTxt(d.response);finishTxt()}if(d.file)showFile(d.file);if(d.mission)startPoll(d.mission);finishTurn()}catch(e){clearTimeout(tm);hideThink();showErr(e.name==='AbortError'?'Tempo esgotado, tente novamente':'Erro: '+e.message);finishTurn()}}
 function sendCmd(c){I.value=c;sendMessage()}
 function qa(t){const w=document.getElementById('welc');if(w)w.remove();I.value=t;I.focus();if(window.innerWidth<769)toggleSB()}
@@ -1135,7 +1159,8 @@ function showTool(n,a){ensureMsg();const b=document.createElement('div');b.class
 function showToolR(n,s,o){if(tTimer){clearInterval(tTimer);tTimer=null}if(curTool){curTool.classList.remove('act');const i=curTool.querySelector('.tsp');if(i){i.classList.remove('tsp');i.textContent=s==='success'?'\u2713':s==='error'?'\u2717':'\u25cb';i.style.color=s==='success'?'var(--g)':s==='error'?'var(--r)':'var(--p)'}if(o){const b=curTool.querySelector('.tout');if(b)b.innerHTML+=`<pre style="margin-top:3px;color:${s==='error'?'var(--r)':'var(--t2)'}">${esc(o).substring(0,800)}</pre>`}const d=curTool.querySelector('.tdr');if(d)d.textContent=((Date.now()-tStart)/1000).toFixed(1)+'s';curTool=null}scrl()}
 function showFile(f){ensureMsg();const ic={'landing_page':'\ud83c\udf10','app':'\u26a1','xlsx':'\ud83d\udcca','docx':'\ud83d\udcc4','pptx':'\ud83c\udfac'};const i=ic[f.type]||'\ud83d\udcc1';const wb=f.type==='landing_page'||f.type==='app';const c=document.createElement('div');c.className='fcard';c.innerHTML=`<div class="ficon">${i}</div><div class="finfo"><div class="fname">${esc(f.name)}</div><div class="fmeta">${esc(f.size)}</div></div><div style="display:flex;gap:6px">${wb?`<a href="${esc(f.url)}" target="_blank" class="fbtn pr">Abrir</a>`:''}<a href="${esc(f.url)}" download class="fbtn ${wb?'sc':'pr'}">Download</a></div>`;curMsg.querySelector('.mb-wrap').appendChild(c);scrl()}
 function showErr(t){ensureMsg();const e=document.createElement('div');e.className='eline';e.textContent='\u2717 '+t;curMsg.querySelector('.mb-wrap').appendChild(e);scrl()}
-function finishTurn(){finishTxt();proc=false;SB.disabled=false;curMsg=null;curBody=null;I.focus();loadConvs()}
+function finishTurn(){finishTxt();proc=false;SB.disabled=false;curMsg=null;curBody=null;I.focus();loadConvs();document.getElementById('stopBtn').classList.remove('vis');toggleInputBtns()}
+function stopGeneration(){if(ws&&ws.readyState===1){ws.send(JSON.stringify({type:'stop'}))}finishTurn()}
 function scrl(){T.scrollTop=T.scrollHeight}
 function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
 let mPolls={};
@@ -1852,9 +1877,13 @@ LOGIN_HTML = r'''<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=3.0,user-scalable=yes,viewport-fit=cover">
 <meta name="theme-color" content="#050510">
-<meta name="description" content="Clow - AI Code Agent | Inteligência Infinita • Possibilidades Premium">
+<meta name="description" content="Clow - AI Code Agent | Inteligência Infinita • Possibilidades Premium. Crie landing pages, planilhas, documentos, apps e muito mais.">
+<meta property="og:title" content="Clow — Inteligência Infinita">
+<meta property="og:description" content="AI Code Agent premium. Crie landing pages, planilhas, apps e muito mais.">
+<meta property="og:image" content="/static/brand/logo.png">
+<meta property="og:type" content="website">
 <link rel="icon" type="image/png" href="/static/brand/favicon.png">
 <link rel="apple-touch-icon" href="/static/brand/icon.png">
 <title>Clow — Inteligência Infinita</title>
@@ -1886,20 +1915,21 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 .fg input::placeholder{color:var(--tm);font-weight:300}
 .lbtn{width:100%;padding:14px;margin-top:8px;height:48px;background:var(--gp);border:none;border-radius:10px;color:#fff;font-family:var(--sans);font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}.lbtn:hover{box-shadow:0 0 30px var(--pg);filter:brightness(1.1)}.lbtn:active{transform:scale(.98)}
 .err{margin-top:16px;padding:10px 14px;border-radius:8px;background:var(--rd);border:1px solid rgba(248,113,113,.15);color:var(--r);font-size:12px;text-align:center;display:none}.err.show{display:block}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--p),var(--bl));border-radius:3px}
 </style>
 </head>
 <body>
-<div class="card">
+<div class="card" role="main">
   <div class="logo">
-    <img src="/static/brand/logo.png" alt="Clow">
+    <img src="/static/brand/logo.png" alt="Clow - Inteligência Infinita">
     <div class="lens-flare"></div>
     <p class="tagline">INTELIG&Ecirc;NCIA INFINITA <span class="dot">&bull;</span> POSSIBILIDADES PREMIUM</p>
   </div>
   <form method="POST" action="/login">
-    <div class="fg"><label>Email</label><input type="email" name="email" placeholder="seu@email.com" required autofocus></div>
-    <div class="fg"><label>Senha</label><input type="password" name="password" placeholder="sua senha" required></div>
-    <button class="lbtn" type="submit">Entrar</button>
+    <div class="fg"><label for="login-email">Email</label><input id="login-email" type="email" name="email" placeholder="seu@email.com" required autofocus autocomplete="email"></div>
+    <div class="fg"><label for="login-pass">Senha</label><input id="login-pass" type="password" name="password" placeholder="sua senha" required autocomplete="current-password"></div>
+    <button class="lbtn" type="submit" aria-label="Entrar no sistema">Entrar</button>
   </form>
   <div class="err __ERROR_CLASS__">__ERROR_MSG__</div>
 </div>
