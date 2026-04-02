@@ -281,6 +281,7 @@ WEBAPP_HTML = r'''<!DOCTYPE html>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/static/manifest.json">
 <title>Clow</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
@@ -581,6 +582,57 @@ WEBAPP_HTML = r'''<!DOCTYPE html>
     padding: 0;
     border: none;
     color: var(--text-primary);
+  }
+  .msg-body h1, .msg-body h2, .msg-body h3 {
+    color: var(--purple-bright);
+    margin: 12px 0 6px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .msg-body h1 { font-size: 16px; }
+  .msg-body h2 { font-size: 15px; }
+  .msg-body ul, .msg-body ol {
+    margin: 6px 0;
+    padding-left: 20px;
+  }
+  .msg-body li { margin-bottom: 3px; }
+  .msg-body p { margin: 6px 0; }
+  .msg-body a {
+    color: var(--purple);
+    text-decoration: underline;
+    text-decoration-color: rgba(167,139,250,0.4);
+  }
+  .msg-body a:hover { text-decoration-color: var(--purple); }
+  .msg-body strong { color: var(--text-primary); font-weight: 700; }
+  .msg-body em { color: var(--text-secondary); font-style: italic; }
+  .msg-body blockquote {
+    border-left: 3px solid var(--purple-dim);
+    padding: 4px 12px;
+    margin: 8px 0;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border-radius: 0 6px 6px 0;
+  }
+  .msg-body hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 12px 0;
+  }
+  .msg-body table {
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 12px;
+    width: 100%;
+  }
+  .msg-body th, .msg-body td {
+    border: 1px solid var(--border);
+    padding: 4px 8px;
+    text-align: left;
+  }
+  .msg-body th {
+    background: var(--bg-tertiary);
+    color: var(--purple);
+    font-weight: 600;
   }
 
   /* ── Thinking / Infinity Animation ── */
@@ -1025,6 +1077,7 @@ function hideThinking() {
 function ensureMsgEl() {
   if (!currentMsgEl) {
     hideThinking();
+    rawTextBuffer = '';
     currentMsgEl = document.createElement('div');
     currentMsgEl.className = 'msg-line assistant';
     currentMsgEl.innerHTML = `
@@ -1040,8 +1093,11 @@ function ensureMsgEl() {
   }
 }
 
+let rawTextBuffer = '';
+
 function appendText(text) {
   ensureMsgEl();
+  rawTextBuffer += text;
   const old = currentBodyEl.querySelector('.stream-cursor');
   if (old) old.remove();
   currentBodyEl.insertAdjacentText('beforeend', text);
@@ -1055,6 +1111,13 @@ function finishText() {
   if (currentBodyEl) {
     const c = currentBodyEl.querySelector('.stream-cursor');
     if (c) c.remove();
+    if (rawTextBuffer && typeof marked !== 'undefined') {
+      marked.setOptions({ breaks: true, gfm: true });
+      currentBodyEl.innerHTML = marked.parse(rawTextBuffer);
+      // Open links in new tab
+      currentBodyEl.querySelectorAll('a').forEach(a => { a.target = '_blank'; a.rel = 'noopener'; });
+    }
+    rawTextBuffer = '';
   }
 }
 
