@@ -23,7 +23,7 @@ from pathlib import Path
 
 try:
     from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException, Depends
-    from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+    from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.staticfiles import StaticFiles
     HAS_FASTAPI = True
@@ -86,6 +86,44 @@ async def _auth_dependency(request: Request) -> None:
         return
 
     raise HTTPException(status_code=401, detail="API key invalida ou ausente")
+
+
+# ── Login / Sessao Web ──────────────────────────────────────────
+
+_WEB_USERS: dict[str, str] = {
+    "daniellbaptista2021@gmail.com": hashlib.sha256("Dan24851388.@".encode()).hexdigest(),
+}
+
+_web_sessions: dict[str, dict] = {}  # token -> {"email": ..., "created": ...}
+_SESSION_TTL = 86400 * 7  # 7 dias
+
+
+def _create_session(email: str) -> str:
+    token = secrets.token_urlsafe(48)
+    _web_sessions[token] = {"email": email, "created": time.time()}
+    return token
+
+
+def _validate_session(token: str) -> str | None:
+    sess = _web_sessions.get(token)
+    if not sess:
+        return None
+    if time.time() - sess["created"] > _SESSION_TTL:
+        del _web_sessions[token]
+        return None
+    return sess["email"]
+
+
+def _get_session_from_request(request: Request) -> str | None:
+    token = request.cookies.get("clow_session", "")
+    return _validate_session(token)
+
+
+def _require_login(request: Request) -> str:
+    email = _get_session_from_request(request)
+    if not email:
+        raise HTTPException(status_code=302, headers={"Location": "/login"})
+    return email
 
 
 # ── Rate Limiting ────────────────────────────────────────────────
@@ -888,6 +926,7 @@ WEBAPP_HTML = r'''<!DOCTYPE html>
       <span id="connLabel">online</span>
     </div>
     <a href="/dashboard" class="nav-btn">dash</a>
+    <a href="/logout" class="nav-btn" style="color:var(--red);border-color:rgba(248,113,113,0.2)">sair</a>
   </div>
 </div>
 
@@ -1461,6 +1500,7 @@ DASHBOARD_HTML = r'''<!DOCTYPE html>
   <div class="title-right">
     <a href="/" class="nav-pill">terminal</a>
     <a href="/dashboard" class="nav-pill active">dashboard</a>
+    <a href="/logout" class="nav-pill" style="color:var(--red);border-color:rgba(248,113,113,0.2)">sair</a>
   </div>
 </div>
 
@@ -1565,9 +1605,177 @@ setInterval(refresh, 10000);
 '''
 
 
+LOGIN_HTML = r'''<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0f">
+<title>Clow — Login</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+  :root {
+    --bg-deep: #06060b;
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #111118;
+    --bg-tertiary: #16161f;
+    --text-primary: #f0f0f5;
+    --text-secondary: #9d9db5;
+    --text-muted: #55556a;
+    --purple: #a78bfa;
+    --purple-bright: #c4b5fd;
+    --purple-dim: #7c3aed;
+    --violet: #8b5cf6;
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.15);
+    --green: #34d399;
+    --border: rgba(167,139,250,0.12);
+    --border-focus: rgba(167,139,250,0.4);
+    --purple-glow: rgba(167,139,250,0.15);
+    --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; background: var(--bg-deep); font-family: var(--font-mono);
+    display: flex; justify-content: center; align-items: center;
+    -webkit-font-smoothing: antialiased;
+  }
+  .login-card {
+    width: 100%; max-width: 380px; padding: 24px;
+  }
+  .logo-area {
+    text-align: center; margin-bottom: 36px;
+  }
+  .logo-infinity {
+    width: 52px; height: 52px; margin: 0 auto 16px;
+  }
+  .logo-infinity path {
+    fill: none; stroke: var(--purple); stroke-width: 2.5;
+    stroke-linecap: round; stroke-dasharray: 120;
+    animation: trace 3s ease-in-out infinite;
+  }
+  @keyframes trace {
+    0% { stroke-dashoffset: 0; stroke: var(--purple); }
+    50% { stroke-dashoffset: 120; stroke: var(--purple-bright); }
+    100% { stroke-dashoffset: 240; stroke: var(--purple); }
+  }
+  .logo-text {
+    font-size: 28px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+    background: linear-gradient(135deg, var(--purple-bright) 0%, var(--purple) 50%, var(--violet) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .logo-sub {
+    font-size: 11px; color: var(--text-muted); margin-top: 6px; letter-spacing: 0.5px;
+  }
+  .form-group {
+    margin-bottom: 16px;
+  }
+  .form-label {
+    display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.8px;
+    text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;
+  }
+  .form-input {
+    width: 100%; padding: 12px 14px;
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text-primary);
+    font-family: var(--font-mono); font-size: 14px;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-input:focus {
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px var(--purple-glow);
+  }
+  .form-input::placeholder { color: var(--text-muted); font-size: 13px; }
+  .login-btn {
+    width: 100%; padding: 14px; margin-top: 8px;
+    background: linear-gradient(135deg, var(--purple-dim), var(--violet));
+    border: none; border-radius: 12px; color: white;
+    font-family: var(--font-mono); font-size: 14px; font-weight: 600;
+    cursor: pointer; letter-spacing: 0.5px;
+    transition: transform 0.15s, box-shadow 0.2s;
+  }
+  .login-btn:active { transform: scale(0.97); }
+  .login-btn:hover { box-shadow: 0 4px 20px rgba(167,139,250,0.3); }
+  .error-msg {
+    margin-top: 16px; padding: 10px 14px; border-radius: 8px;
+    background: var(--red-dim); border: 1px solid rgba(248,113,113,0.25);
+    color: var(--red); font-size: 12px; text-align: center;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+</style>
+</head>
+<body>
+<div class="login-card">
+  <div class="logo-area">
+    <svg class="logo-infinity" viewBox="0 0 32 32">
+      <path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(0.95)"/>
+    </svg>
+    <div class="logo-text">Clow</div>
+    <div class="logo-sub">Acesso ao Sistema</div>
+  </div>
+  <form method="POST" action="/login">
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" name="email" placeholder="seu@email.com" required autofocus>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Senha</label>
+      <input class="form-input" type="password" name="password" placeholder="********" required>
+    </div>
+    <button class="login-btn" type="submit">Entrar</button>
+  </form>
+  <div class="error-msg __ERROR_CLASS__">__ERROR_MSG__</div>
+</div>
+</body>
+</html>
+'''
+
+
 if HAS_FASTAPI:
+    # ── Login routes (sem auth) ──────────────────────────────────
+    @app.get("/login", response_class=HTMLResponse)
+    async def login_page(request: Request):
+        if _get_session_from_request(request):
+            return RedirectResponse("/", status_code=302)
+        html = LOGIN_HTML.replace("__ERROR_CLASS__", "").replace("__ERROR_MSG__", "")
+        return HTMLResponse(html)
+
+    @app.post("/login")
+    async def login_submit(request: Request):
+        form = await request.form()
+        email = form.get("email", "").strip().lower()
+        password = form.get("password", "")
+        pw_hash = hashlib.sha256(password.encode()).hexdigest()
+
+        expected = _WEB_USERS.get(email)
+        if expected and pw_hash == expected:
+            token = _create_session(email)
+            resp = RedirectResponse("/", status_code=302)
+            resp.set_cookie(
+                "clow_session", token,
+                max_age=_SESSION_TTL, httponly=True,
+                samesite="lax", secure=True,
+            )
+            return resp
+
+        html = LOGIN_HTML.replace("__ERROR_CLASS__", "show").replace("__ERROR_MSG__", "Email ou senha incorretos")
+        return HTMLResponse(html, status_code=401)
+
+    @app.get("/logout")
+    async def logout(request: Request):
+        token = request.cookies.get("clow_session", "")
+        if token in _web_sessions:
+            del _web_sessions[token]
+        resp = RedirectResponse("/login", status_code=302)
+        resp.delete_cookie("clow_session")
+        return resp
+
+    # ── Protected routes ─────────────────────────────────────────
     @app.get("/", response_class=HTMLResponse)
-    async def index():
+    async def index(request: Request):
+        if not _get_session_from_request(request):
+            return RedirectResponse("/login", status_code=302)
         return WEBAPP_HTML
 
     # ── PWA Routes (System Clow App) ──────────────────────────────
@@ -1612,9 +1820,11 @@ if HAS_FASTAPI:
             return FileResponse(full_path)
         return JSONResponse({"error": "Not found"}, status_code=404)
 
-    # Feature #24: Dashboard (protegido)
-    @app.get("/dashboard", response_class=HTMLResponse, dependencies=[Depends(_auth_dependency)])
-    async def dashboard():
+    # Feature #24: Dashboard (protegido por login)
+    @app.get("/dashboard", response_class=HTMLResponse)
+    async def dashboard(request: Request):
+        if not _get_session_from_request(request):
+            return RedirectResponse("/login", status_code=302)
         return DASHBOARD_HTML
 
     # Feature #19: Health Check (publico — sem auth)
@@ -1670,6 +1880,8 @@ if HAS_FASTAPI:
     @app.post("/api/v1/chat", dependencies=[Depends(_rate_limit_dependency)])
     async def api_chat(request: Request):
         """Fallback HTTP para chat quando WebSocket não conecta (mobile)."""
+        if not _get_session_from_request(request):
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
         from .agent import Agent
         import uuid
 
@@ -1741,12 +1953,18 @@ if HAS_FASTAPI:
 
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):
-        # Verificacao de API key via query param para WebSocket
-        api_key = websocket.query_params.get("api_key", "")
-        keys = _get_api_keys()
-        if keys and not _verify_api_key(api_key):
-            await websocket.close(code=4001, reason="API key invalida")
-            return
+        # Verificacao de sessao via cookie para WebSocket
+        ws_cookie = websocket.cookies.get("clow_session", "")
+        if not _validate_session(ws_cookie):
+            # Fallback: API key via query param
+            api_key = websocket.query_params.get("api_key", "")
+            keys = _get_api_keys()
+            if keys and not _verify_api_key(api_key):
+                await websocket.close(code=4001, reason="Nao autenticado")
+                return
+            elif not keys and not ws_cookie:
+                await websocket.close(code=4001, reason="Nao autenticado")
+                return
 
         # Rate limit para WebSocket
         client_ip = websocket.client.host if websocket.client else "unknown"
