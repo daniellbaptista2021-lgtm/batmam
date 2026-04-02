@@ -185,30 +185,30 @@ def is_tool_allowed(tool_name: str) -> bool:
 
 
 def format_confirmation_prompt(tool_name: str, arguments: dict) -> str:
-    """Formata a mensagem de confirmacao para o usuario."""
-    level = get_current_level()
-    level_name = level.name.replace("_", " ").title()
+    """Formata a mensagem de confirmacao no estilo Claude Code."""
 
     if tool_name == "bash":
         cmd = arguments.get("command", "")
-        cwd = arguments.get("cwd", "")
-        danger = " COMANDO PERIGOSO!" if is_dangerous_command(cmd) else ""
-        location = f" (em {cwd})" if cwd else ""
-        return f"[{level_name}] Executar bash{location}?{danger}\n  $ {cmd}"
+        danger = " \033[31m[DANGER]\033[0m" if is_dangerous_command(cmd) else ""
+        return f"Run bash command?{danger}\n  \033[36m$\033[0m {cmd}"
 
     elif tool_name == "write":
         path = arguments.get("file_path", "")
         content = arguments.get("content", "")
         lines = content.count("\n") + 1
-        return f"[{level_name}] Escrever arquivo?\n  {path} ({lines} linhas)"
+        return f"Create file {path}?\n  {lines} lines"
 
     elif tool_name == "edit":
         path = arguments.get("file_path", "")
-        old = arguments.get("old_string", "")[:80]
-        new = arguments.get("new_string", "")[:80]
-        return f"[{level_name}] Editar arquivo?\n  {path}\n  - {old!r}\n  + {new!r}"
+        old = arguments.get("old_string", "")[:100]
+        new = arguments.get("new_string", "")[:100]
+        return f"Edit {path}?\n  \033[31m- {old!r}\033[0m\n  \033[32m+ {new!r}\033[0m"
 
-    return f"[{level_name}] Executar {tool_name} com {arguments}?"
+    elif tool_name == "notebook_edit":
+        path = arguments.get("file_path", "")
+        return f"Edit notebook {path}?"
+
+    return f"Execute {tool_name}?"
 
 
 def _check_custom_rules(tool_name: str, arguments: dict) -> bool | None:

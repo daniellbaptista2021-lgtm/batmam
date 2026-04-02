@@ -406,71 +406,182 @@ def _show_diff(output: str) -> None:
     sys.stdout.flush()
 
 
-def _read_single_key() -> str:
-    """Lê uma única tecla sem precisar pressionar Enter."""
+def _read_key() -> str:
+    """Le uma tecla ou sequencia de escape (arrows, shift+tab, etc)."""
     if _HAS_TERMIOS:
         fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
+        old = termios.tcgetattr(fd)
         try:
             tty.setraw(fd)
             ch = sys.stdin.read(1)
+            # Escape sequences
+            if ch == "\x1b":
+                ch2 = sys.stdin.read(1) if _select_readable(fd) else ""
+                if ch2 == "[":
+                    ch3 = sys.stdin.read(1) if _select_readable(fd) else ""
+                    if ch3 == "A": return "UP"
+                    if ch3 == "B": return "DOWN"
+                    if ch3 == "Z": return "SHIFT_TAB"
+                    return "ESC"
+                return "ESC"
+            if ch == "\r" or ch == "\n": return "ENTER"
+            if ch == "\t": return "TAB"
+            if ch == "\x1b": return "ESC"
+            return ch
         finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
     else:
         import msvcrt
-        return msvcrt.getwch()
+        ch = msvcrt.getwch()
+        if ch in ("\r", "\n"): return "ENTER"
+        if ch == "\x1b": return "ESC"
+        if ch == "\t": return "TAB"
+        if ch == "\x00" or ch == "\xe0":
+            ch2 = msvcrt.getwch()
+            if ch2 == "H": return "UP"
+            if ch2 == "P": return "DOWN"
+        return ch
+
+
+def _select_readable(fd, timeout=0.05) -> bool:
+    """Checa se ha dados disponiveis para leitura no fd."""
+    import select
+    r, _, _ = select.select([fd], [], [], timeout)
+    return bool(r)
+
+
+def _render_menu(options: list[str], selected: int, hints: str):
+    """Renderiza menu de selecao sem Rich (ANSI puro) para controle preciso."""
+    _P = "\033[38;2;139;92;246m"  # #8B5CF6
+    _W = "\033[97m"               # branco
+    _G = "\033[38;2;107;114;128m" # #6B7280
+    _R = _RESET
+
+    # Move cursor pra cima pra reescrever (linhas = opcoes + 1 hint)
+    total_lines = len(options) + 1
+    sys.stdout.write(f"\033[{total_lines}A")
+
+    for i, opt in enumerate(options):
+        if i == selected:
+            sys.stdout.write(f"  {_P}>{_R} {_W}{opt}{_R}\033[K\n")
+        else:
+            sys.stdout.write(f"    {_G}{opt}{_R}\033[K\n")
+
+    sys.stdout.write(f"  {_G}{hints}{_R}\033[K\n")
+    sys.stdout.flush()
 
 
 def ask_confirmation(message: str) -> bool:
-    """Permissão com botões visuais coloridos e captura de tecla única."""
-    sys.stdout.write(f"\n  Do you want to allow this action?\n\n")
+    """Menu de selecao visual estilo Claude Code para confirmacao."""
+    _P = "\033[38;2;139;92;246m"
+    _W = "\033[97m"
+    _G = "\033[38;2;107;114;128m"
+    _R = _RESET
+
+    # Header
+    sys.stdout.write(f"\n  {_W}Do you want to allow this action?{_R}\n\n")
     for line in message.splitlines():
-        sys.stdout.write(f"  {_DIM}{line}{_RESET}\n")
+        sys.stdout.write(f"  {_DIM}{line}{_R}\n")
     sys.stdout.write("\n")
+
+    options = [
+        "Yes",
+        "Yes, allow all during this session",
+        "No",
+    ]
+    hints = "Esc to cancel \u00b7 \u2191\u2193 to navigate"
+    selected = 0
+
+    # Renderiza menu inicial
+    for i, opt in enumerate(options):
+        if i == selected:
+            sys.stdout.write(f"  {_P}>{_R} {_W}{opt}{_R}\n")
+        else:
+            sys.stdout.write(f"    {_G}{opt}{_R}\n")
+    sys.stdout.write(f"  {_G}{hints}{_R}\n")
     sys.stdout.flush()
 
-    # Renderiza botões com fundo colorido
-    buttons = Text()
-    buttons.append("  ")
-    buttons.append(" Yes ", style="bold white on green")
-    buttons.append("  ")
-    buttons.append(" No ", style="bold white on red")
-    buttons.append("  ")
-    buttons.append(" Always ", style="bold white on blue")
-    buttons.append("  ")
-    buttons.append("(y / n / a)", style="dim")
-    console.print(buttons)
+    # Auto-approve ativo? Mostra e aprova
+    if config.AUTO_APPROVE_BASH and config.AUTO_APPROVE_WRITE:
+        total = len(options) + 1
+        sys.stdout.write(f"\033[{total}A")
+        for i in range(len(options)):
+            sys.stdout.write(f"\033[2K\n")
+        sys.stdout.write(f"\033[2K\n")
+        sys.stdout.write(f"\033[{total}A")
+        sys.stdout.write(f"  {_P}\u2713{_R} {_G}Auto-approved (allow all active){_R}\n\n")
+        sys.stdout.flush()
+        return True
 
     try:
-        choice = _read_single_key()
+        while True:
+            key = _read_key()
 
-        if choice in ("y", "Y", "s", "S"):
-            console.print("  [green]✓ Approved[/]\n")
+            if key == "UP":
+                selected = (selected - 1) % len(options)
+                _render_menu(options, selected, hints)
+            elif key == "DOWN":
+                selected = (selected + 1) % len(options)
+                _render_menu(options, selected, hints)
+            elif key == "ENTER":
+                break
+            elif key == "SHIFT_TAB":
+                selected = 1  # "Allow all"
+                _render_menu(options, selected, hints)
+                break
+            elif key == "ESC":
+                selected = 2  # "No"
+                _render_menu(options, selected, hints)
+                break
+            elif key in ("y", "Y", "s", "S"):
+                selected = 0
+                break
+            elif key in ("n", "N"):
+                selected = 2
+                break
+            elif key in ("a", "A"):
+                selected = 1
+                break
+
+        # Resultado
+        total = len(options) + 1
+        sys.stdout.write(f"\033[{total}A")
+        for i in range(total):
+            sys.stdout.write(f"\033[2K\n")
+        sys.stdout.write(f"\033[{total}A")
+
+        if selected == 0:
+            sys.stdout.write(f"  {_P}\u2713{_R} {_W}Approved{_R}\n\n")
+            sys.stdout.flush()
             return True
-        elif choice in ("a", "A"):
+        elif selected == 1:
             config.AUTO_APPROVE_BASH = True
             config.AUTO_APPROVE_WRITE = True
-            console.print("  [blue]✓ Always allowed for this session[/]\n")
+            sys.stdout.write(f"  {_P}\u2713{_R} {_W}Always allowed for this session{_R}\n\n")
+            sys.stdout.flush()
             return True
         else:
-            console.print(f"  [red]✗ Denied[/]\n")
+            sys.stdout.write(f"  \033[31m\u2717\033[0m {_G}Denied{_R}\n\n")
+            sys.stdout.flush()
             return False
-    except (EOFError, KeyboardInterrupt) if not _HAS_TERMIOS else (EOFError, KeyboardInterrupt, termios.error):
-        # Fallback para input padrão se terminal não suportar raw mode
+
+    except (EOFError, KeyboardInterrupt):
+        return False
+    except Exception:
+        # Fallback se terminal nao suportar
         try:
-            sys.stdout.write(f"  [Y] Yes  [N] No  [A] Always  ")
+            sys.stdout.write(f"\n  [Y] Yes  [N] No  [A] Always  ")
             sys.stdout.flush()
             resp = console.input("").strip().lower()
             if resp in ("a", "always"):
                 config.AUTO_APPROVE_BASH = True
                 config.AUTO_APPROVE_WRITE = True
-                console.print("  [blue]✓ Always allowed for this session[/]\n")
+                console.print("  [blue]\u2713 Always allowed[/]\n")
                 return True
             if resp in ("y", "yes", "s", "sim", ""):
-                console.print("  [green]✓ Approved[/]\n")
+                console.print("  [green]\u2713 Approved[/]\n")
                 return True
-            console.print(f"  [red]✗ Denied[/]\n")
+            console.print("  [red]\u2717 Denied[/]\n")
             return False
         except (EOFError, KeyboardInterrupt):
             return False
