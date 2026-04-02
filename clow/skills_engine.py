@@ -20,15 +20,16 @@ SKILL_MAP = {
 }
 
 CLOW_BRAND = """
-Aplique esta identidade visual:
-- Cor primaria: #8B5CF6 (roxo)
-- Cor secundaria: #6D28D9 (roxo escuro)
-- Headers: fundo roxo #8B5CF6, texto branco
-- Textos: Calibri ou Arial
+Aplique esta identidade visual do Clow:
+- Cor primaria: #7C5CFC (roxo vibrante)
+- Cor secundaria: #6B4FE0 (roxo escuro)
+- Headers: fundo #7C5CFC, texto branco, font-weight bold
+- Textos: Satoshi ou IBM Plex Sans (NAO use Arial, Calibri ou fonts genericas)
 - Footer: "Gerado por Clow AI"
 - Formato monetario: R$ brasileiro
 - Datas: DD/MM/YYYY
 - Idioma: portugues brasileiro
+- Graficos: paleta roxa (#7C5CFC, #6B4FE0, #9B8AFB, #C4B5FD)
 """
 
 

@@ -6,15 +6,22 @@ import time
 
 
 def generate(prompt: str) -> dict:
-    system = """Voce e um desenvolvedor fullstack expert. Gere um app web single-page COMPLETO e FUNCIONAL.
-Regras:
+    from ..skills.loader import get_design_prompt_for
+    design_rules = get_design_prompt_for(prompt) or get_design_prompt_for("app")
+
+    system = f"""Voce e um desenvolvedor fullstack expert. Gere um app web single-page COMPLETO e FUNCIONAL.
+
+{design_rules}
+
+Regras tecnicas:
 - HTML unico arquivo com CSS e JS embutidos
 - Comece com <!DOCTYPE html>
 - Use Tailwind CSS via CDN: <script src="https://cdn.tailwindcss.com"></script>
+- Carregue fonts do Google Fonts (NAO use fonts genericas)
 - App 100% funcional com logica JS completa
-- Design moderno, dark theme com tons de roxo (#7c3aed, #a78bfa)
+- Escolha estetica adequada ao tipo de app (nao sempre dark roxo)
+- Background com profundidade, animacoes de entrada
 - Responsivo e mobile-first
-- UX profissional com animacoes suaves
 - Dados persistidos em localStorage quando aplicavel
 - Textos em portugues brasileiro
 - Retorne APENAS o codigo HTML, sem explicacoes, sem markdown, sem ```"""
