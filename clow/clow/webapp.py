@@ -744,7 +744,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
   0%,100%{opacity:.6;transform:translate(-50%,-50%) scale(1)}
   50%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
 }
-.watermark{position:fixed;top:50%;left:calc(50% + var(--sw)/2);transform:translate(-50%,-50%);pointer-events:none;z-index:0;user-select:none;opacity:.04;font-size:180px;font-weight:800;letter-spacing:20px;background:linear-gradient(135deg,rgba(155,89,252,.8),rgba(74,158,255,.6));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;font-family:var(--sans);filter:blur(0.5px);text-transform:uppercase}
+.watermark{position:fixed;top:50%;left:calc(50% + var(--sw)/2);transform:translate(-50%,-50%);pointer-events:none;z-index:2;user-select:none;opacity:.06;font-size:200px;font-weight:800;letter-spacing:24px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;font-family:var(--sans);filter:blur(0.5px);text-transform:uppercase}
 
 /* glow now handled by body::after */
 
