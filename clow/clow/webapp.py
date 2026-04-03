@@ -433,7 +433,7 @@ WEBAPP_HTML = r'''<!DOCTYPE html>
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;overflow:hidden;touch-action:manipulation}input,textarea,select{font-size:16px !important;touch-action:manipulation}
-body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14px;font-weight:400;line-height:1.6;letter-spacing:-0.01em;height:100dvh;display:flex;overflow:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;position:relative;touch-action:pan-x pan-y;overscroll-behavior:none}
+body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14px;font-weight:400;line-height:1.6;letter-spacing:-0.01em;height:100dvh;height:100vh;display:flex;overflow:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;position:relative;touch-action:pan-x pan-y;overscroll-behavior:none}
 body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;
   background:
     repeating-linear-gradient(-45deg,transparent,transparent 8px,rgba(80,70,140,.04) 8px,rgba(80,70,140,.04) 9px),
@@ -636,7 +636,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 .mission-done{background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.2);border-radius:12px;padding:14px;margin:10px 0}.mission-done .mctitle{color:var(--g)}
 
 /* INPUT */
-.input-area{flex-shrink:0;padding:12px 16px;padding-bottom:calc(12px + var(--sb));background:var(--bg-1);border-top:1px solid var(--bd);z-index:10;position:relative}
+.input-area{flex-shrink:0;padding:12px 16px;padding-bottom:calc(12px + var(--sb));background:var(--bg-1);border-top:1px solid var(--bd);z-index:10;position:relative;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 .file-preview{padding:8px 12px;display:flex;align-items:center;gap:10px;background:var(--bg-2);border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;animation:mIn .2s ease-out}
 .file-preview .fp-thumb{width:48px;height:48px;border-radius:8px;object-fit:cover;background:var(--bg-3);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;overflow:hidden}
 .file-preview .fp-thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px}
@@ -908,7 +908,7 @@ async function init(){
     if(me.is_admin)document.getElementById('admSec').style.display='block';
     initMod(me.plan,me.is_admin);
   }catch(e){}
-  loadConvs();connectWS();document.addEventListener("gesturestart",function(e){e.preventDefault()},{passive:false});document.addEventListener("gesturechange",function(e){e.preventDefault()},{passive:false});let lte=0;document.addEventListener("touchend",function(e){var n=Date.now();if(n-lte<300)e.preventDefault();lte=n},{passive:false});if(window.visualViewport){window.visualViewport.addEventListener("resize",function(){document.documentElement.style.height=window.visualViewport.height+"px";window.scrollTo(0,0)});window.visualViewport.addEventListener("scroll",function(){window.scrollTo(0,0)})}
+  loadConvs();connectWS();document.addEventListener("gesturestart",function(e){e.preventDefault()},{passive:false});document.addEventListener("gesturechange",function(e){e.preventDefault()},{passive:false});let lte=0;document.addEventListener("touchend",function(e){var n=Date.now();if(n-lte<300)e.preventDefault();lte=n},{passive:false});if(window.visualViewport){var ia=document.querySelector(".input-area");window.visualViewport.addEventListener("resize",function(){var h=window.visualViewport.height;document.documentElement.style.height=h+"px";if(ia)ia.style.paddingBottom=Math.max(12,window.innerHeight-h)+"px";setTimeout(function(){window.scrollTo(0,0)},50)});window.visualViewport.addEventListener("scroll",function(){window.scrollTo(0,0)})}document.querySelectorAll("textarea,input").forEach(function(el){el.addEventListener("focus",function(){setTimeout(function(){el.scrollIntoView({block:"center",behavior:"smooth"})},300)})});
 }
 function initMod(plan,adm){const s=document.getElementById('modSel');if(adm){selMod='claude-code';s.style.display='none';const b=document.createElement('span');b.className='mod-pill claude-code';b.style.cssText='pointer-events:none;cursor:default;padding:4px 12px;font-weight:600';b.textContent='Opus';s.parentNode.insertBefore(b,s);return}const can=plan==='pro'||plan==='unlimited';if(!can){s.value='haiku';selMod='haiku';s.disabled=true;const o=s.querySelector('option[value="sonnet"]');if(o)o.disabled=true}s.className='mod-pill '+selMod}
 function onMod(){const s=document.getElementById('modSel');selMod=s.value;s.className='mod-pill '+selMod}
