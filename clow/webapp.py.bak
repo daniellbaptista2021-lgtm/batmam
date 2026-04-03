@@ -393,7 +393,7 @@ WEBAPP_HTML = r'''<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=3.0,user-scalable=yes,viewport-fit=cover">
 <meta name="theme-color" content="#050510">
 <meta name="description" content="Clow - AI Code Agent | Inteligência Infinita • Possibilidades Premium. Crie landing pages, planilhas, documentos, apps e muito mais com inteligência artificial.">
 <meta name="keywords" content="AI, inteligência artificial, code agent, landing page, automação, marketing digital">
@@ -432,32 +432,27 @@ WEBAPP_HTML = r'''<!DOCTYPE html>
   --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--sw:260px;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{height:100%;overflow:hidden;touch-action:manipulation;position:fixed;width:100%}input,textarea,select{font-size:16px !important;touch-action:manipulation}
-body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14px;font-weight:400;line-height:1.6;letter-spacing:-0.01em;height:100dvh;height:100vh;display:flex;overflow:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;position:relative;touch-action:pan-x pan-y;overscroll-behavior:none}
+html{height:100%;overflow:hidden}
+body{background:var(--bg-0);color:var(--t1);font-family:var(--sans);font-size:14px;font-weight:400;line-height:1.6;letter-spacing:-0.01em;height:100dvh;display:flex;overflow:hidden;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;position:relative}
 body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;
-  background:
-    repeating-linear-gradient(-45deg,transparent,transparent 8px,rgba(80,70,140,.04) 8px,rgba(80,70,140,.04) 9px),
-    radial-gradient(ellipse at 50% 40%,rgba(155,89,252,.06) 0%,rgba(74,158,255,.03) 35%,transparent 65%)}
-body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;
-  background:radial-gradient(circle at 30% 20%,rgba(155,89,252,.04) 0%,transparent 50%),
-  radial-gradient(circle at 70% 80%,rgba(74,158,255,.03) 0%,transparent 50%)}
+  background:repeating-linear-gradient(-45deg,transparent,transparent 10px,rgba(100,100,180,.03) 10px,rgba(100,100,180,.03) 11px),
+  url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E")}
 .particle{position:fixed;border-radius:50%;pointer-events:none;z-index:1;filter:blur(1px)}
 @keyframes floatParticle{0%,100%{transform:translateY(0) translateX(0);opacity:.3}25%{transform:translateY(-30px) translateX(10px);opacity:.6}50%{transform:translateY(-15px) translateX(-10px);opacity:.4}75%{transform:translateY(-40px) translateX(5px);opacity:.5}}
 ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--p),var(--bl));border-radius:3px}::-webkit-scrollbar-thumb:hover{box-shadow:0 0 6px var(--pg)}
 
 /* SIDEBAR */
 .sb{width:var(--sw);height:100%;background:var(--bg-1);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;z-index:30;transition:transform .25s ease;box-shadow:1px 0 20px rgba(155,89,252,.03)}
-.sb-head{padding:24px 16px 20px;padding-top:calc(20px + var(--st));display:flex;align-items:center;justify-content:center}
-.sb-logo-img{height:52px;object-fit:contain;filter:drop-shadow(0 0 16px rgba(155,89,252,.25)) drop-shadow(0 0 8px rgba(74,158,255,.15))}
+.sb-head{padding:20px 16px 16px;padding-top:calc(16px + var(--st));display:flex;align-items:center;gap:10px}
+.sb-logo-img{height:36px;object-fit:contain;filter:drop-shadow(0 0 12px rgba(155,89,252,.2))}
 .sb-body{flex:1;overflow-y:auto;padding:4px 0;display:flex;flex-direction:column}
 .sb-sep{height:1px;background:var(--bd);margin:8px 12px}
 .sb-sec{padding:0 12px;margin-bottom:2px}
 .sb-lbl{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--tm);padding:12px 4px 6px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
 .sb-lbl:hover{color:var(--t2)}.sb-lbl .ar{transition:transform .2s;font-size:8px;opacity:.5}.sb-lbl.open .ar{transform:rotate(90deg)}
 .sb-ct{display:none;padding-bottom:4px}.sb-lbl.open+.sb-ct{display:block}
-.sb-btn{display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--t2);transition:all .15s;border:none;background:none;width:100%;text-align:left;font-family:var(--sans);letter-spacing:.2px}
-.sb-btn:hover,.sb-btn:active{background:rgba(155,89,252,.08);color:var(--t1);padding-left:16px}
-.sb-btn:hover::before{content:'';width:2px;height:14px;background:var(--gp);border-radius:1px;flex-shrink:0}
+.sb-btn{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:400;color:var(--t2);transition:all .15s;border:none;background:none;width:100%;text-align:left;font-family:var(--sans)}
+.sb-btn:hover,.sb-btn:active{background:rgba(155,89,252,.06);color:var(--t1)}
 .sb-btn.act{background:rgba(155,89,252,.1);color:var(--p);border-left:2px solid;border-image:var(--gp) 1;padding-left:10px}
 .sb-btn .ic{font-size:15px;width:20px;text-align:center;flex-shrink:0;color:var(--tm)}.sb-btn:hover .ic,.sb-btn.act .ic{background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .sb-new{margin:8px 12px 12px;padding:10px;border-radius:8px;border:none;background:transparent;color:#fff;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:all .25s ease;letter-spacing:.3px;position:relative;overflow:hidden}
@@ -542,12 +537,12 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 .hdr-drop a:hover,.hdr-drop button:hover{background:var(--bg-h);color:var(--t1)}
 
 /* TERMINAL */
-.term{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;background:var(--bg-0);position:relative;z-index:1;background-image:linear-gradient(135deg,rgba(5,5,16,.85) 0%,rgba(15,10,30,.8) 30%,rgba(20,10,40,.75) 50%,rgba(10,15,35,.8) 70%,rgba(5,5,16,.85) 100%),url(/static/brand/bg-texture.jpg);background-size:cover;background-position:center;background-attachment:fixed}
+.term{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;background:var(--bg-0);position:relative;z-index:1}
 
 /* WELCOME */
 .welc{text-align:center;padding:32px 16px;animation:fadeUp .5s ease-out}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.welc-logo{height:120px;margin:0 auto 12px;display:block;filter:drop-shadow(0 0 20px rgba(155,89,252,.2)) drop-shadow(0 0 20px rgba(74,158,255,.15));animation:float 4s ease-in-out infinite}
+.welc-logo{height:80px;margin:0 auto 12px;display:block;filter:drop-shadow(0 0 20px rgba(155,89,252,.2)) drop-shadow(0 0 20px rgba(74,158,255,.15));animation:float 4s ease-in-out infinite}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .welc-tagline{font-size:10px;letter-spacing:3px;color:var(--tm);text-transform:uppercase;margin-bottom:16px}
 .welc-dot{color:var(--p)}
@@ -557,71 +552,68 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 .qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:480px;margin:28px auto 0}
 @media(max-width:600px){.qgrid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:380px){.qgrid{grid-template-columns:1fr}}
-.qc{background:var(--bg-2);border:1px solid var(--bd);border-left:2px solid var(--p);border-radius:8px;padding:16px 18px;cursor:pointer;transition:all .25s ease;text-align:left}
-.qc:hover{border-color:rgba(155,89,252,.3);border-left-color:var(--bl);background:var(--bg-3);box-shadow:0 4px 20px rgba(0,0,0,.3),0 0 20px rgba(155,89,252,.04);transform:translateY(-2px)}
-.qc .qi{display:none}
-.qc .qt{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--t1);letter-spacing:.2px}
-.qc .qd{font-size:12px;color:var(--t2);margin-top:3px;font-weight:400}
+.qc{background:var(--bg-2);border:1px solid var(--bd);border-radius:12px;padding:24px 20px;cursor:pointer;transition:all .3s ease;text-align:left}
+.qc:hover{border-color:transparent;background:var(--bg-3);box-shadow:0 0 0 1px rgba(155,89,252,.2),0 8px 30px rgba(0,0,0,.3),0 0 30px rgba(155,89,252,.05);transform:translateY(-3px)}
+.qc .qi{font-size:20px;margin-bottom:8px}.qc .qt{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--t1)}.qc .qd{font-size:12px;color:var(--t2);margin-top:4px;font-weight:400}
 
 /* MESSAGES */
-.ml{margin-bottom:2px;animation:mIn .15s ease-out;display:flex;flex-direction:column}
-@keyframes mIn{from{opacity:0}to{opacity:1}}
+.ml{margin-bottom:16px;animation:mIn .2s ease-out;display:flex;flex-direction:column}
+@keyframes mIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .ml.user{align-items:flex-end}
-.ml.assistant{align-items:flex-start;width:100%}
+.ml.assistant{align-items:flex-start}
 .mh{display:flex;align-items:center;gap:8px;margin-bottom:4px}
 .ml.user .mh{flex-direction:row-reverse}
-.mav{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.ml.user .mav{background:var(--gp);font-size:10px;font-weight:700;color:#fff}
-.ml.assistant .mav{display:none}
+.mav{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ml.user .mav{background:var(--gp);font-size:11px;font-weight:700;color:#fff}
+.ml.assistant .mav{background:var(--bg-3);border:1.5px solid transparent;padding:4px;position:relative;background-clip:padding-box}
+.ml.assistant .mav::before{content:'';position:absolute;inset:-1.5px;border-radius:50%;background:var(--gp);z-index:-1}
+.ml.assistant .mav svg{width:16px;height:16px}
+.ml.assistant .mav svg path{fill:none;stroke:var(--p);stroke-width:3;stroke-linecap:round}
 .mn{font-size:11px;font-weight:600;letter-spacing:.2px}.ml.user .mn{color:var(--t2)}.ml.assistant .mn{color:var(--p)}
 .mt{font-family:var(--mono);font-size:10px;font-weight:400;color:var(--tm);opacity:0;transition:opacity .2s}.ml:hover .mt{opacity:1}
-.mb-wrap{max-width:100%;position:relative;width:100%}
-.ml.assistant .mb-wrap{max-width:100%;width:100%}
-.ml.user .mb-wrap{background:var(--bg-3);border:1px solid var(--bd);border-radius:12px 12px 4px 12px;padding:10px 14px;max-width:75%;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.mb-wrap{max-width:75%;position:relative}
+.ml.assistant .mb-wrap{max-width:85%}
+.ml.user .mb-wrap{background:var(--bg-3);border:1px solid var(--bd);border-radius:16px 16px 4px 16px;padding:12px 16px;box-shadow:0 2px 10px rgba(0,0,0,.2);transition:border-color .2s}
 .ml.user .mb-wrap:hover{border-color:var(--bdh)}
-.ml.assistant .mb-wrap{padding:0}
-.mb{white-space:pre-wrap;word-wrap:break-word;font-size:14px;line-height:1.65;color:var(--t1);font-weight:400;font-family:var(--mono)}
-.ml.user .mb{color:var(--t2);font-size:13px;font-family:var(--sans)}
-.mb h1,.mb h2,.mb h3{font-family:var(--sans);color:var(--t1);margin:14px 0 6px}.mb h1{font-size:18px;font-weight:700}.mb h2{font-size:16px;font-weight:700}.mb h3{font-size:14px;font-weight:700;color:var(--p)}
-.mb ul,.mb ol{margin:4px 0;padding-left:20px}.mb li{margin-bottom:3px;color:var(--t1);font-family:var(--mono);font-size:14px}.mb li::marker{color:var(--p)}.mb p{margin:3px 0 8px}
-.mb a{color:var(--bl);text-decoration:none}.mb a:hover{text-decoration:underline}
-.mb strong{font-weight:700;color:#FFFFFF}.mb em{font-style:italic;color:var(--t2)}
-.mb code{background:rgba(155,89,252,.08);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:13px;font-weight:500;color:#C4B5FD}
-.mb pre{background:rgba(0,0,0,.5);border:none;border-left:2px solid var(--p);border-radius:4px;padding:12px 16px;margin:6px 0;overflow-x:auto;font-size:13px;line-height:1.5;tab-size:2}
+.ml.assistant .mb-wrap{padding:4px 0}
+.mb{white-space:pre-wrap;word-wrap:break-word;font-size:14px;line-height:1.55;color:var(--t1);font-weight:400}
+.ml.user .mb{color:var(--t2);font-size:14px}
+.mb h1,.mb h2,.mb h3{font-family:var(--sans);color:var(--t1);margin:16px 0 8px}.mb h1{font-size:20px;font-weight:600}.mb h2{font-size:17px;font-weight:600}.mb h3{font-size:15px;font-weight:600;color:var(--p)}
+.mb ul,.mb ol{margin:4px 0;padding-left:20px}.mb li{margin-bottom:4px;color:var(--t1)}.mb li::marker{color:var(--tm)}.mb p{margin:4px 0 10px}
+.mb a{color:var(--bl);text-decoration:none;transition:color .2s}.mb a:hover{color:var(--p)}
+.mb strong{font-weight:600;color:#FFFFFF}.mb em{font-style:italic;color:var(--t2)}
+.mb code{background:rgba(255,255,255,.06);padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:13px;font-weight:400;color:#E0E0F0}
+.mb pre{background:rgba(0,0,0,.4);border:none;border-left:3px solid;border-image:var(--gp) 1;border-radius:8px;padding:16px;margin:8px 0;overflow-x:auto;font-size:13px;line-height:1.5;tab-size:2;position:relative}
+.mb pre::before{content:attr(data-lang);position:absolute;top:0;right:0;background:rgba(155,89,252,.1);padding:2px 8px;border-radius:0 8px;font-size:10px;text-transform:uppercase;color:var(--p);font-family:var(--mono)}
 .mb pre code{background:none;padding:0;color:var(--t1);font-size:13px;font-weight:400}
-.mb table{border-collapse:collapse;margin:8px 0;font-size:13px;font-family:var(--mono)}.mb th,.mb td{border:1px solid rgba(255,255,255,.06);padding:6px 10px;text-align:left}.mb th{background:rgba(155,89,252,.06);color:var(--p);font-weight:600}
-.mb blockquote{border-left:2px solid var(--p);padding:4px 12px;margin:6px 0;color:var(--t2);font-size:13px}
-.mb hr{border:none;border-top:1px solid rgba(155,89,252,.15);margin:12px 0}
+.mb table{border-collapse:collapse;margin:8px 0;font-size:13px;width:100%}.mb th,.mb td{border:1px solid rgba(255,255,255,.06);padding:8px 12px;text-align:left}.mb th{background:rgba(255,255,255,.04);color:var(--t1);font-weight:600}
+.mb blockquote{border-left:3px solid var(--p);padding:6px 14px;margin:8px 0;color:var(--t2);background:var(--bg-2);border-radius:0 8px 8px 0}
+.mb hr{border:none;border-top:1px solid var(--bd);margin:16px 0}
+
 /* THINKING */
-.think{margin-bottom:8px;animation:mIn .15s ease-out}
-.think-in{display:flex;align-items:center;gap:10px;padding:8px 0}
-.think-logo{width:8px;height:8px;border-radius:50%;background:var(--p);animation:thinkDot 1.5s ease-in-out infinite;flex-shrink:0;box-shadow:0 0 12px rgba(155,89,252,.5)}
-@keyframes thinkDot{0%,100%{opacity:.4;box-shadow:0 0 8px rgba(155,89,252,.3)}50%{opacity:1;box-shadow:0 0 16px rgba(155,89,252,.6)}}
-.think-t{font-size:13px;color:var(--p);font-weight:500;font-family:var(--mono)}
-.dots{display:none}
-.scur{display:inline-block;width:2px;height:14px;background:var(--p);animation:cbk .6s step-end infinite;vertical-align:text-bottom;margin-left:1px;border-radius:1px}
+.think{margin-bottom:16px;animation:mIn .2s ease-out}
+.think-in{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-2);border:1px solid var(--bd);border-radius:12px}
+.think-logo{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#9B59FC,#4A9EFF);display:flex;align-items:center;justify-content:center;animation:thinkPulse 1.2s ease-in-out infinite;flex-shrink:0;box-shadow:0 0 20px rgba(155,89,252,.3)}
+.think-logo span{color:#fff;font-size:14px;font-weight:700;line-height:1}
+.dots{display:flex;gap:4px}.dot{width:4px;height:4px;border-radius:50%;background:var(--p);animation:pulse-d 1.4s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.2s;background:#7B6FFC}.dot:nth-child(3){animation-delay:.4s;background:var(--bl)}
+@keyframes pulse-d{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.3)}}
+@keyframes thinkPulse{0%,100%{transform:scale(1);box-shadow:0 0 15px rgba(155,89,252,.2)}50%{transform:scale(1.15);box-shadow:0 0 30px rgba(155,89,252,.4)}}
+.think-t{font-size:13px;color:var(--t2);font-weight:400}
+.scur{display:inline-block;width:2px;height:15px;background:var(--p);animation:cbk .7s step-end infinite;vertical-align:text-bottom;margin-left:1px;border-radius:1px}
 @keyframes cbk{0%,50%{opacity:1}51%,100%{opacity:0}}
-/* TOOLS - Claude Code terminal style */
-.tblk{margin:4px 0;border:none;border-radius:0;overflow:hidden;font-size:13px;background:transparent;border-left:2px solid transparent;padding-left:0;transition:all .2s}
-.thd{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-family:var(--mono)}
-.thd:hover{background:rgba(155,89,252,.03)}
-.tdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:all .3s}
-.tlb{color:var(--t1);font-weight:500;font-family:var(--mono);flex:1;font-size:13px}
-.tlb .tn{color:var(--p);font-weight:700}
-.tlb .ta{color:var(--t2);font-weight:400}
-.tdr{color:var(--tm);font-size:11px;font-family:var(--mono)}
-.tout{padding:0 0 0 18px;max-height:160px;overflow-y:auto;color:var(--t2);font-size:12px;font-family:var(--mono);display:none;border:none;background:transparent}
-.tout pre{margin:0;background:transparent;border:none;padding:0;font-size:12px;color:var(--t2);white-space:pre-wrap}
-.tout .tline{color:var(--tm);display:flex;gap:4px}
-.tout .tline::before{content:'└';color:var(--tm)}
-.tblk.act{border-left-color:var(--p)}
-.tblk.act .tdot{background:var(--p);box-shadow:0 0 10px rgba(155,89,252,.5);animation:dotPulse 1.2s ease-in-out infinite}
-.tblk.act .tlb .tn{color:var(--p)}
-.tblk.done .tdot{background:var(--g);box-shadow:0 0 6px rgba(74,222,128,.3)}
-.tblk.err .tdot{background:var(--r);box-shadow:0 0 6px rgba(248,113,113,.3)}
-@keyframes dotPulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+
+/* TOOL/FILE/MISSION/ERROR */
+.tblk{margin:8px 0;border:1px solid var(--bd);border-radius:8px;overflow:hidden;font-size:12px;background:var(--bg-2)}
+.thd{display:flex;align-items:center;gap:6px;padding:8px 12px;cursor:pointer}.thd:active{background:var(--bg-h)}
+.tsp{animation:sp 1s linear infinite;display:inline-block}@keyframes sp{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.tlb{color:var(--p);font-weight:600;font-family:var(--mono);flex:1;font-size:11px}.tdr{color:var(--tm);font-size:10px;font-family:var(--mono)}
+.tout{padding:8px 12px;background:var(--bg-0);border-top:1px solid var(--bd);max-height:140px;overflow-y:auto;color:var(--t2);font-size:11px;font-family:var(--mono);display:none}
+.tblk.act{border-color:rgba(155,89,252,.4);background:rgba(155,89,252,.06);animation:toolPulse 1.5s ease-in-out infinite}
+.tblk.act .tlb{color:#9B59FC;font-weight:600}
+.tblk.act .tsp{color:#9B59FC}
+@keyframes toolPulse{0%,100%{border-color:rgba(155,89,252,.3);box-shadow:0 0 8px rgba(155,89,252,.1)}50%{border-color:rgba(155,89,252,.6);box-shadow:0 0 16px rgba(155,89,252,.2)}}
 .tblk.open .tout,.tblk.act .tout{display:block}
-.tmore{color:var(--tm);font-size:11px;cursor:pointer;padding:2px 0 2px 18px;font-family:var(--mono)}.tmore:hover{color:var(--p)}
 .fcard{display:flex;align-items:center;gap:12px;padding:14px;margin:8px 0;background:var(--bg-2);border:1px solid var(--bd);border-radius:12px;transition:border-color .2s}.fcard:hover{border-color:var(--bdf)}
 .ficon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--pg);border:1px solid rgba(124,92,252,.15);flex-shrink:0}
 .finfo{flex:1;min-width:0}.fname{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fmeta{font-size:10px;color:var(--tm);margin-top:2px}
@@ -636,7 +628,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 .mission-done{background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.2);border-radius:12px;padding:14px;margin:10px 0}.mission-done .mctitle{color:var(--g)}
 
 /* INPUT */
-.input-area{flex-shrink:0;padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg-1);border-top:1px solid var(--bd);z-index:10;position:relative}
+.input-area{flex-shrink:0;padding:12px 16px;padding-bottom:calc(12px + var(--sb));background:var(--bg-1);border-top:1px solid var(--bd);z-index:2;position:relative}
 .file-preview{padding:8px 12px;display:flex;align-items:center;gap:10px;background:var(--bg-2);border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;animation:mIn .2s ease-out}
 .file-preview .fp-thumb{width:48px;height:48px;border-radius:8px;object-fit:cover;background:var(--bg-3);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;overflow:hidden}
 .file-preview .fp-thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px}
@@ -656,7 +648,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 .ibox{position:relative;display:flex;align-items:flex-end;gap:6px}
 .attach-btn{width:40px;height:40px;border-radius:50%;border:none;background:transparent;color:var(--tm);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:18px;flex-shrink:0}
 .attach-btn:hover{color:var(--bl);background:var(--bg-h)}
-.ibox textarea{flex:1;background:var(--bg-2);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;color:var(--t1);font-family:var(--sans);font-size:16px;line-height:1.5;resize:none;outline:none;max-height:120px;min-height:20px;transition:border-color .2s,box-shadow .2s}
+.ibox textarea{flex:1;background:var(--bg-2);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;color:var(--t1);font-family:var(--sans);font-size:14px;line-height:1.5;resize:none;outline:none;max-height:120px;min-height:20px;transition:border-color .2s,box-shadow .2s}
 .ibox textarea::placeholder{color:var(--tm);font-weight:300}
 .ibox textarea:focus{border-color:var(--bdf);box-shadow:0 0 20px rgba(155,89,252,.08)}
 .ibox-right{display:flex;align-items:center;flex-shrink:0;position:relative;width:40px;height:40px}
@@ -744,8 +736,10 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
   0%,100%{opacity:.6;transform:translate(-50%,-50%) scale(1)}
   50%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
 }
-
-/* glow now handled by body::after */
+.watermark{position:fixed;top:50%;left:calc(50% + var(--sw)/2);transform:translate(-50%,-50%);width:250px;pointer-events:none;z-index:0;user-select:none;animation:logoPulse 5s ease-in-out infinite;opacity:.025}
+.watermark.empty{opacity:.04;animation-name:logoPulse}
+/* Glow ambient light behind watermark */
+.main::before{content:'';position:fixed;top:50%;left:calc(50% + var(--sw)/2);transform:translate(-50%,-50%);width:500px;height:500px;background:radial-gradient(circle,rgba(155,89,252,.03) 0%,rgba(74,158,255,.02) 40%,transparent 70%);pointer-events:none;z-index:0;animation:glowPulse 4s ease-in-out infinite}
 
 /* RESPONSIVE */
 @media(max-width:768px){
@@ -755,6 +749,8 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
   .sb-ov{position:fixed;inset:0;background:rgba(5,5,16,.85);backdrop-filter:blur(12px);z-index:25;display:none}.sb-ov.show{display:block}
   .qgrid{grid-template-columns:repeat(2,1fr)}
   .mb-wrap{max-width:85%!important}
+  .watermark{left:50%;width:200px;height:200px}
+  .main::before{left:50%;width:350px;height:350px}
 }
 @media(min-width:769px){.ham{display:none}}
 /* SR-ONLY */
@@ -785,7 +781,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
       <div class="sb-ct" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
         <div class="sb-conv-search" id="convSearchWrap" style="display:none">
           <label for="convSearchInp" class="sr-only">Buscar conversas</label>
-          <span class="search-icon" style="font-size:12px;color:var(--tm)">&#x25CB;</span>
+          <span class="search-icon">&#x1F50D;</span>
           <input type="text" id="convSearchInp" placeholder="Buscar conversas..." oninput="filterConvs(this.value)" onkeydown="if(event.key==='Escape'){closeConvSearch()}">
         </div>
         <div class="sb-convs" id="convList"></div>
@@ -795,54 +791,54 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
     <div class="sb-sec">
       <div class="sb-lbl open" onclick="this.classList.toggle('open')">Criar <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="qa('Cria uma landing page de ')">Landing Page</button>
-        <button class="sb-btn" onclick="qa('Gera uma planilha de ')">Planilha</button>
-        <button class="sb-btn" onclick="qa('Cria uma apresentação sobre ')">Apresentação</button>
-        <button class="sb-btn" onclick="qa('Faz um documento de ')">Documento</button>
-        <button class="sb-btn" onclick="qa('Me faz um app de ')">Web App</button>
+        <button class="sb-btn" onclick="qa('Cria uma landing page de ')"><span class="ic">&#x1F310;</span>Landing Page</button>
+        <button class="sb-btn" onclick="qa('Gera uma planilha de ')"><span class="ic">&#x1F4CA;</span>Planilha</button>
+        <button class="sb-btn" onclick="qa('Cria uma apresentação sobre ')"><span class="ic">&#x1F3AF;</span>Apresentação</button>
+        <button class="sb-btn" onclick="qa('Faz um documento de ')"><span class="ic">&#x1F4C4;</span>Documento</button>
+        <button class="sb-btn" onclick="qa('Me faz um app de ')"><span class="ic">&#x26A1;</span>Web App</button>
       </div>
     </div>
     <div class="sb-sec">
       <div class="sb-lbl" onclick="this.classList.toggle('open')">Marketing <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="qa('Analise minha campanha de tráfego pago ')">Tráfego Pago</button>
-        <button class="sb-btn" onclick="qa('Gera copy para anúncio de ')">Copy</button>
-        <button class="sb-btn" onclick="qa('Cria conteúdo para instagram sobre ')">Redes Sociais</button>
-        <button class="sb-btn" onclick="qa('Cria sequência de emails para ')">Email Marketing</button>
-        <button class="sb-btn" onclick="qa('Faz auditoria SEO de ')">SEO</button>
-        <button class="sb-btn" onclick="qa('Define estratégia de precificação para ')">Pricing</button>
+        <button class="sb-btn" onclick="qa('Analise minha campanha de tráfego pago ')"><span class="ic">&#x1F4B0;</span>Tráfego Pago</button>
+        <button class="sb-btn" onclick="qa('Gera copy para anúncio de ')"><span class="ic">&#x270F;</span>Copy</button>
+        <button class="sb-btn" onclick="qa('Cria conteúdo para instagram sobre ')"><span class="ic">&#x1F4F1;</span>Redes Sociais</button>
+        <button class="sb-btn" onclick="qa('Cria sequência de emails para ')"><span class="ic">&#x1F4E7;</span>Email Marketing</button>
+        <button class="sb-btn" onclick="qa('Faz auditoria SEO de ')"><span class="ic">&#x1F50D;</span>SEO</button>
+        <button class="sb-btn" onclick="qa('Define estratégia de precificação para ')"><span class="ic">&#x1F4B2;</span>Pricing</button>
       </div>
     </div>
     <div class="sb-sec">
       <div class="sb-lbl" onclick="this.classList.toggle('open')">Negócios <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="qa('Cria proposta comercial para ')">Proposta</button>
-        <button class="sb-btn" onclick="qa('Analise métricas SaaS: ')">Métricas SaaS</button>
-        <button class="sb-btn" onclick="qa('Cria contrato de ')">Contrato</button>
+        <button class="sb-btn" onclick="qa('Cria proposta comercial para ')"><span class="ic">&#x1F4DD;</span>Proposta</button>
+        <button class="sb-btn" onclick="qa('Analise métricas SaaS: ')"><span class="ic">&#x1F4CA;</span>Métricas SaaS</button>
+        <button class="sb-btn" onclick="qa('Cria contrato de ')"><span class="ic">&#x1F4C3;</span>Contrato</button>
       </div>
     </div>
     <div class="sb-sec">
       <div class="sb-lbl" onclick="this.classList.toggle('open')">Missões <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="qa('/mission Cria um site completo para ')">Site Completo</button>
-        <button class="sb-btn" onclick="qa('/mission Campanha de tráfego para ')">Campanha</button>
-        <button class="sb-btn" onclick="qa('/mission Setup digital completo para ')">Setup Digital</button>
+        <button class="sb-btn" onclick="qa('/mission Cria um site completo para ')"><span class="ic">&#x1F680;</span>Site Completo</button>
+        <button class="sb-btn" onclick="qa('/mission Campanha de tráfego para ')"><span class="ic">&#x1F4CA;</span>Campanha</button>
+        <button class="sb-btn" onclick="qa('/mission Setup digital completo para ')"><span class="ic">&#x1F3D7;</span>Setup Digital</button>
       </div>
     </div>
     <div class="sb-sep"></div>
     <div class="sb-sec">
       <div class="sb-lbl" onclick="this.classList.toggle('open')">Conexões <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="sendCmd('/connections')">Ver conexões</button>
-        <button class="sb-btn" onclick="sendCmd('/connect')">Conectar</button>
+        <button class="sb-btn" onclick="sendCmd('/connections')"><span class="ic">&#x1F517;</span>Ver conexões</button>
+        <button class="sb-btn" onclick="sendCmd('/connect')"><span class="ic">&#x2795;</span>Conectar</button>
       </div>
     </div>
     <div class="sb-sec" id="admSec" style="display:none">
       <div class="sb-lbl" onclick="this.classList.toggle('open')">Admin <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="showAdmUsers()">Usuários</button>
-        <button class="sb-btn" onclick="showAdmStats()">Consumo</button>
-        <button class="sb-btn" onclick="showCreateUsr()">Cadastrar</button>
+        <button class="sb-btn" onclick="showAdmUsers()"><span class="ic">&#x1F465;</span>Usuários</button>
+        <button class="sb-btn" onclick="showAdmStats()"><span class="ic">&#x1F4CA;</span>Consumo</button>
+        <button class="sb-btn" onclick="showCreateUsr()"><span class="ic">&#x2795;</span>Cadastrar</button>
       </div>
     </div>
   </div>
@@ -860,17 +856,27 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
       <div class="hdr-drop" id="hdrDrop" role="menu">
         <button onclick="sendCmd('/usage');clsDrop()">&#x1F4CA; Meu consumo</button>
         <button onclick="sendCmd('/plan');clsDrop()">&#x1F4E6; Meu plano</button>
-        <button onclick="sendCmd('/memories');clsDrop()">Memórias</button>
-        <button onclick="sendCmd('/help');clsDrop()">Ajuda</button>
-        <a href="/logout">Sair</a>
+        <button onclick="sendCmd('/memories');clsDrop()">&#x1F9E0; Memórias</button>
+        <button onclick="sendCmd('/help');clsDrop()">&#x2753; Ajuda</button>
+        <a href="/logout">&#x1F6AA; Sair</a>
       </div>
     </div>
   </div>
+  <img src="/static/brand/logo.png" alt="" class="watermark empty" id="wmark">
   <div class="term" id="term">
     <div class="welc" id="welc">
       <img src="/static/brand/logo.png" alt="Clow - Inteligência Infinita" class="welc-logo">
       <div class="welc-tagline">INTELIG&Ecirc;NCIA INFINITA <span class="welc-dot">&bull;</span> POSSIBILIDADES PREMIUM</div>
-      <h1>Como posso <span>ajudar</span>?</h1>
+      <h1>O que vamos <span>criar</span>?</h1>
+      <p>Escolha abaixo ou descreva o que precisa</p>
+      <div class="qgrid">
+        <div class="qc" role="button" tabindex="0" onclick="qa('Cria uma landing page de ')" onkeydown="if(event.key==='Enter')this.click()"><div class="qi">&#x1F310;</div><div class="qt">Landing Page</div><div class="qd">Site completo e responsivo</div></div>
+        <div class="qc" role="button" tabindex="0" onclick="qa('Gera uma planilha de ')" onkeydown="if(event.key==='Enter')this.click()"><div class="qi">&#x1F4CA;</div><div class="qt">Planilha</div><div class="qd">Excel com fórmulas</div></div>
+        <div class="qc" role="button" tabindex="0" onclick="qa('Cria uma apresentação sobre ')" onkeydown="if(event.key==='Enter')this.click()"><div class="qi">&#x1F3AF;</div><div class="qt">Apresentação</div><div class="qd">PowerPoint profissional</div></div>
+        <div class="qc" role="button" tabindex="0" onclick="qa('Me faz um app de ')" onkeydown="if(event.key==='Enter')this.click()"><div class="qi">&#x26A1;</div><div class="qt">Web App</div><div class="qd">App funcional completo</div></div>
+        <div class="qc" role="button" tabindex="0" onclick="qa('Gera copy para anúncio de ')" onkeydown="if(event.key==='Enter')this.click()"><div class="qi">&#x270D;&#xFE0F;</div><div class="qt">Copy Ads</div><div class="qd">Textos para anúncios</div></div>
+        <div class="qc" role="button" tabindex="0" onclick="qa('/mission Setup digital completo para ')" onkeydown="if(event.key==='Enter')this.click()"><div class="qi">&#x1F680;</div><div class="qt">Missão</div><div class="qd">Projeto autônomo completo</div></div>
+      </div>
     </div>
   </div>
   <div class="drag-overlay" id="dragOv"><div class="do-icon">&#x1F4CE;</div><div class="do-text">Solte o arquivo aqui</div></div>
@@ -879,10 +885,10 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
     <div class="ibox">
       <button class="attach-btn" id="attachBtn" onclick="toggleAttachMenu()" title="Anexar arquivo" aria-label="Anexar arquivo">&#x1F4CE;</button>
       <div class="attach-menu" id="attachMenu" style="display:none" role="menu" aria-label="Tipo de arquivo">
-        <button class="am-item" onclick="pickFile('image/*','.jpg,.jpeg,.png,.gif,.webp')">Foto / Imagem</button>
-        <button class="am-item" onclick="pickFile('','.pdf,.docx,.doc,.txt,.md')">Documento</button>
-        <button class="am-item" onclick="pickFile('','.xlsx,.xls,.csv')">Planilha</button>
-        <button class="am-item" onclick="pickFile('','*')">Qualquer arquivo</button>
+        <button class="am-item" onclick="pickFile('image/*','.jpg,.jpeg,.png,.gif,.webp')"><span class="am-icon">&#x1F4F7;</span>Foto / Imagem</button>
+        <button class="am-item" onclick="pickFile('','.pdf,.docx,.doc,.txt,.md')"><span class="am-icon">&#x1F4C4;</span>Documento</button>
+        <button class="am-item" onclick="pickFile('','.xlsx,.xls,.csv')"><span class="am-icon">&#x1F4CA;</span>Planilha</button>
+        <button class="am-item" onclick="pickFile('','*')"><span class="am-icon">&#x1F4C1;</span>Qualquer arquivo</button>
       </div>
       <label for="inp" class="sr-only">Digite sua mensagem</label>
       <textarea id="inp" rows="1" placeholder="O que você precisa?" autofocus aria-label="Digite sua mensagem"></textarea>
@@ -908,7 +914,7 @@ async function init(){
     if(me.is_admin)document.getElementById('admSec').style.display='block';
     initMod(me.plan,me.is_admin);
   }catch(e){}
-  loadConvs();connectWS();if(window.visualViewport){var mc=document.querySelector(".main");window.visualViewport.addEventListener("resize",function(){if(mc)mc.style.height=window.visualViewport.height+"px"});window.visualViewport.addEventListener("scroll",function(e){e.preventDefault();window.scrollTo(0,0)})}
+  loadConvs();connectWS();
 }
 function initMod(plan,adm){const s=document.getElementById('modSel');if(adm){selMod='claude-code';s.style.display='none';const b=document.createElement('span');b.className='mod-pill claude-code';b.style.cssText='pointer-events:none;cursor:default;padding:4px 12px;font-weight:600';b.textContent='Opus';s.parentNode.insertBefore(b,s);return}const can=plan==='pro'||plan==='unlimited';if(!can){s.value='haiku';selMod='haiku';s.disabled=true;const o=s.querySelector('option[value="sonnet"]');if(o)o.disabled=true}s.className='mod-pill '+selMod}
 function onMod(){const s=document.getElementById('modSel');selMod=s.value;s.className='mod-pill '+selMod}
@@ -1133,6 +1139,7 @@ async function showAllConvs(){showAllPast=true;loadConvs()}
 
 async function newConv(){try{const r=await fetch('/api/v1/conversations',{method:'POST'});const d=await r.json();cid=d.id;convMsgCount=0;T.innerHTML='';showWelc();document.getElementById('hdrT').textContent='Nova conversa';loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
 async function loadConv(id){cid=id;T.innerHTML='';try{const r=await fetch(`/api/v1/conversations/${id}/messages`);const d=await r.json();d.messages.forEach(m=>{if(m.role==='user')addUser(m.content,false);else{curMsg=null;curBody=null;appendTxt(m.content);finishTxt();curMsg=null;curBody=null}});const cs=await(await fetch('/api/v1/conversations')).json();const c=cs.conversations.find(x=>x.id===id);if(c)document.getElementById('hdrT').textContent=c.title;loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
+function showWelc(){const w=document.createElement('div');w.className='welc';w.id='welc';w.innerHTML='<img src="/static/brand/logo.png" alt="Clow - Intelig\u00eancia Infinita" class="welc-logo"><div class="welc-tagline">INTELIG\u00caNCIA INFINITA <span class="welc-dot">\u2022</span> POSSIBILIDADES PREMIUM</div><h1>O que vamos <span>criar</span>?</h1><p>Escolha abaixo ou descreva o que precisa</p>';T.appendChild(w);const wm=document.getElementById('wmark');if(wm)wm.classList.add('empty')}
 function connectWS(){const pr=location.protocol==='https:'?'wss:':'ws:';try{ws=new WebSocket(`${pr}//${location.host}/ws`)}catch(e){http=true;setOn('http');return}const to=setTimeout(()=>{if(!ws||ws.readyState!==1){try{ws.close()}catch(e){}http=true;setOn('http')}},4000);ws.onopen=()=>{clearTimeout(to);http=false;setOn('online');rA=0};ws.onmessage=e=>hMsg(JSON.parse(e.data));ws.onclose=()=>{clearTimeout(to);if(rA>=3){http=true;setOn('http');return}setOn('offline');setTimeout(()=>{rA++;connectWS()},Math.min(1000*rA,5000))};ws.onerror=()=>setOn('offline')}
 function setOn(s){const b=document.getElementById('onBdg'),l=document.getElementById('onLbl');b.style.color=s==='offline'?'var(--r)':'var(--g)';l.textContent=s}
 function hMsg(m){switch(m.type){case'thinking_start':showThink();break;case'thinking_end':hideThink();break;case'text_delta':appendTxt(m.content);break;case'text_done':finishTxt();break;case'tool_call':showTool(m.name,m.args);break;case'tool_result':showToolR(m.name,m.status,m.output);break;case'turn_complete':finishTurn();break;case'error':showErr(m.content);break}}
@@ -1152,13 +1159,13 @@ function autoTitle(t){
   document.getElementById('hdrT').textContent=title;
   fetch(`/api/v1/conversations/${cid}/title`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title})}).then(()=>loadConvs());
 }
-function showThink(){hideThink();const d=document.createElement('div');d.className='think';d.id='thinkEl';const st=Date.now();d.innerHTML='<div class="think-in"><div class="think-logo"></div><span class="think-t">Working\u2026</span></div>';T.appendChild(d);d._thinkTimer=setInterval(()=>{const el=d.querySelector('.think-t');if(el){const s=((Date.now()-st)/1000);if(s<60)el.textContent='Working\u2026 ('+s.toFixed(0)+'s)';else el.textContent='Working\u2026 ('+Math.floor(s/60)+'m '+Math.floor(s%60)+'s)'}},1000);scrl()}
-function hideThink(){const e=document.getElementById('thinkEl');if(e){if(e._thinkTimer)clearInterval(e._thinkTimer);e.remove()}}
-function ensureMsg(){if(!curMsg){hideThink();curMsg=document.createElement('div');curMsg.className='ml assistant';curBody=document.createElement('div');curBody.className='mb';const wrap=document.createElement('div');wrap.className='mb-wrap';wrap.appendChild(curBody);curMsg.appendChild(wrap);T.appendChild(curMsg);raw=''}}
+function showThink(){hideThink();const d=document.createElement('div');d.className='think';d.id='thinkEl';d.innerHTML='<div class="think-in"><div class="think-logo"><span>\u221E</span></div><span class="think-t">Clow est\u00E1 pensando...</span><div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>';T.appendChild(d);scrl()}
+function hideThink(){const e=document.getElementById('thinkEl');if(e)e.remove()}
+function ensureMsg(){if(!curMsg){hideThink();curMsg=document.createElement('div');curMsg.className='ml assistant';curMsg.innerHTML=`<div class="mh"><div class="mav">${INF}</div><span class="mn">clow</span><span class="mt">${now()}</span></div>`;curBody=document.createElement('div');curBody.className='mb';const wrap=document.createElement('div');wrap.className='mb-wrap';wrap.appendChild(curBody);curMsg.appendChild(wrap);T.appendChild(curMsg);raw=''}}
 function appendTxt(t){ensureMsg();raw+=t;const c=curBody.querySelector('.scur');if(c)c.remove();curBody.insertAdjacentText('beforeend',t);const s=document.createElement('span');s.className='scur';curBody.appendChild(s);scrl()}
 function finishTxt(){if(curBody){const c=curBody.querySelector('.scur');if(c)c.remove();if(raw&&typeof marked!=='undefined'){marked.setOptions({breaks:true,gfm:true});curBody.innerHTML=marked.parse(raw);curBody.querySelectorAll('a').forEach(a=>{a.target='_blank';a.rel='noopener'})}raw=''}}
-function showTool(n,a){ensureMsg();const b=document.createElement('div');b.className='tblk act';const as=typeof a==='string'?a:JSON.stringify(a);const short=as.length>80?as.substring(0,80)+'\u2026':as;b.innerHTML=`<div class="thd" onclick="this.parentElement.classList.toggle('open')"><div class="tdot"></div><span class="tlb"><span class="tn">${esc(n)}</span>(<span class="ta">${esc(short)}</span>)</span><span class="tdr">0.0s</span></div><div class="tout"></div>`;curMsg.querySelector('.mb-wrap').appendChild(b);curTool=b;tStart=Date.now();if(tTimer)clearInterval(tTimer);tTimer=setInterval(()=>{if(!curTool){clearInterval(tTimer);return}const d=curTool.querySelector('.tdr');if(d){const s=(Date.now()-tStart)/1000;if(s<60)d.textContent=s.toFixed(1)+'s';else d.textContent=Math.floor(s/60)+'m '+Math.floor(s%60)+'s'}},100);scrl()}
-function showToolR(n,s,o){if(tTimer){clearInterval(tTimer);tTimer=null}if(curTool){curTool.classList.remove('act');curTool.classList.add(s==='success'?'done':'err');if(o){const b=curTool.querySelector('.tout');if(b){const lines=o.split('\n').slice(0,4);const rest=o.split('\n').length-4;let h='';lines.forEach(l=>{h+='<div class="tline">'+esc(l)+'</div>'});if(rest>0)h+='<div class="tmore" onclick="this.parentElement.style.maxHeight=\'none\';this.remove()">\u2026 +'+rest+' lines (click to expand)</div>';b.innerHTML=h;b.style.display='block'}}const d=curTool.querySelector('.tdr');if(d){const s2=(Date.now()-tStart)/1000;if(s2<60)d.textContent=s2.toFixed(1)+'s';else d.textContent=Math.floor(s2/60)+'m '+Math.floor(s2%60)+'s'}curTool=null}scrl()}
+function showTool(n,a){ensureMsg();const b=document.createElement('div');b.className='tblk act';const as=typeof a==='string'?a:JSON.stringify(a,null,2);b.innerHTML=`<div class="thd" onclick="this.parentElement.classList.toggle('open')"><span class="tsp" style="font-size:12px">&#x2699;</span><span class="tlb">${esc(n)}</span><span class="tdr">0.0s</span></div><div class="tout"><pre>${esc(as).substring(0,400)}</pre></div>`;curMsg.querySelector('.mb-wrap').appendChild(b);curTool=b;tStart=Date.now();if(tTimer)clearInterval(tTimer);tTimer=setInterval(()=>{if(!curTool){clearInterval(tTimer);return}const d=curTool.querySelector('.tdr');if(d)d.textContent=((Date.now()-tStart)/1000).toFixed(1)+'s'},100);scrl()}
+function showToolR(n,s,o){if(tTimer){clearInterval(tTimer);tTimer=null}if(curTool){curTool.classList.remove('act');const i=curTool.querySelector('.tsp');if(i){i.classList.remove('tsp');i.textContent=s==='success'?'\u2713':s==='error'?'\u2717':'\u25cb';i.style.color=s==='success'?'var(--g)':s==='error'?'var(--r)':'var(--p)'}if(o){const b=curTool.querySelector('.tout');if(b)b.innerHTML+=`<pre style="margin-top:3px;color:${s==='error'?'var(--r)':'var(--t2)'}">${esc(o).substring(0,800)}</pre>`}const d=curTool.querySelector('.tdr');if(d)d.textContent=((Date.now()-tStart)/1000).toFixed(1)+'s';curTool=null}scrl()}
 function showFile(f){ensureMsg();const ic={'landing_page':'\ud83c\udf10','app':'\u26a1','xlsx':'\ud83d\udcca','docx':'\ud83d\udcc4','pptx':'\ud83c\udfac'};const i=ic[f.type]||'\ud83d\udcc1';const wb=f.type==='landing_page'||f.type==='app';const c=document.createElement('div');c.className='fcard';c.innerHTML=`<div class="ficon">${i}</div><div class="finfo"><div class="fname">${esc(f.name)}</div><div class="fmeta">${esc(f.size)}</div></div><div style="display:flex;gap:6px">${wb?`<a href="${esc(f.url)}" target="_blank" class="fbtn pr">Abrir</a>`:''}<a href="${esc(f.url)}" download class="fbtn ${wb?'sc':'pr'}">Download</a></div>`;curMsg.querySelector('.mb-wrap').appendChild(c);scrl()}
 function showErr(t){ensureMsg();const e=document.createElement('div');e.className='eline';e.textContent='\u2717 '+t;curMsg.querySelector('.mb-wrap').appendChild(e);scrl()}
 function finishTurn(){finishTxt();proc=false;SB.disabled=false;curMsg=null;curBody=null;I.focus();loadConvs();document.getElementById('stopBtn').classList.remove('vis');toggleInputBtns()}
@@ -1879,7 +1886,7 @@ LOGIN_HTML = r'''<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=3.0,user-scalable=yes,viewport-fit=cover">
 <meta name="theme-color" content="#050510">
 <meta name="description" content="Clow - AI Code Agent | Inteligência Infinita • Possibilidades Premium. Crie landing pages, planilhas, documentos, apps e muito mais.">
 <meta property="og:title" content="Clow — Inteligência Infinita">
