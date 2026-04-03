@@ -42,11 +42,19 @@ OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 
 # Modelos padrao por provider
 _DEFAULT_MODELS = {
-    "anthropic": "claude-sonnet-4-20250514",
+    "anthropic": "claude-haiku-4-5-20251001",
     "openai": "gpt-4.1",
     "ollama": "qwen2.5-coder:7b",
 }
-CLOW_MODEL = os.getenv("CLOW_MODEL", _DEFAULT_MODELS.get(CLOW_PROVIDER, "claude-sonnet-4-20250514"))
+CLOW_MODEL = os.getenv("CLOW_MODEL", _DEFAULT_MODELS.get(CLOW_PROVIDER, "claude-haiku-4-5-20251001"))
+
+# Modelo pesado — usado automaticamente para tarefas complexas
+_DEFAULT_HEAVY = {
+    "anthropic": "claude-sonnet-4-20250514",
+    "openai": "gpt-4.1",
+    "ollama": "qwen2.5-coder:14b",
+}
+CLOW_MODEL_HEAVY = os.getenv("CLOW_MODEL_HEAVY", _DEFAULT_HEAVY.get(CLOW_PROVIDER, "claude-sonnet-4-20250514"))
 
 # ── Limites ─────────────────────────────────────────────────
 MAX_TOKENS = 16384

@@ -210,5 +210,5 @@ WELCOME_BANNER = r"""
 |____/ \__,_|\__|_| |_| |_|\__,_|_| |_| |_|
 
   Agente de Código AI — v0.2.0
-  Powered by OpenAI | Criado por Daniel
+  Multi-Provider AI | Criado por Daniel
 """

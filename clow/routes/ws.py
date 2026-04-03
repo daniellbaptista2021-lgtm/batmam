@@ -166,7 +166,7 @@ def register_ws_routes(app: FastAPI) -> None:
                             elapsed = await loop.run_in_executor(
                                 None, lambda: ask_claude_code_stream(
                                     content, _on_delta, _on_done, _on_error,
-                                    "/root/clow", _on_tool_call, _on_tool_result,
+                                    "/root/clow/static/files", _on_tool_call, _on_tool_result,
                                     ws_conv_id
                                 )
                             )

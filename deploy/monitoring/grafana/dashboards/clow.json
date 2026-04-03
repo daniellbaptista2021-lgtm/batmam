@@ -1,0 +1,75 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Uptime",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+      "targets": [{"expr": "clow_uptime_seconds", "legendFormat": "uptime"}],
+      "fieldConfig": {"defaults": {"unit": "s", "thresholds": {"steps": [{"color": "green", "value": null}]}}}
+    },
+    {
+      "title": "Total Requests",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+      "targets": [{"expr": "sum(clow_http_requests_total)", "legendFormat": "total"}],
+      "fieldConfig": {"defaults": {"thresholds": {"steps": [{"color": "blue", "value": null}]}}}
+    },
+    {
+      "title": "Requests by Status",
+      "type": "piechart",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
+      "targets": [{"expr": "clow_http_requests_total", "legendFormat": "{{status}}"}]
+    },
+    {
+      "title": "Error Rate",
+      "type": "stat",
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 0},
+      "targets": [{"expr": "sum(clow_http_requests_total{status=~\"4..|5..\"})", "legendFormat": "errors"}],
+      "fieldConfig": {"defaults": {"thresholds": {"steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 10}, {"color": "red", "value": 50}]}}}
+    },
+    {
+      "title": "Latency P50 / P95 / P99",
+      "type": "timeseries",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {"expr": "clow_http_request_duration_seconds_p50", "legendFormat": "p50"},
+        {"expr": "clow_http_request_duration_seconds_p95", "legendFormat": "p95"},
+        {"expr": "clow_http_request_duration_seconds_p99", "legendFormat": "p99"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s", "custom": {"drawStyle": "line", "fillOpacity": 10}}}
+    },
+    {
+      "title": "Requests per Endpoint",
+      "type": "bargauge",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [{"expr": "clow_http_requests_total", "legendFormat": "{{method}} {{status}}"}],
+      "fieldConfig": {"defaults": {"thresholds": {"steps": [{"color": "blue", "value": null}]}}}
+    },
+    {
+      "title": "Request Duration by Path",
+      "type": "table",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+      "targets": [
+        {"expr": "clow_http_request_duration_seconds_p50", "legendFormat": "p50 {{path}}", "format": "table", "instant": true},
+        {"expr": "clow_http_request_duration_seconds_p95", "legendFormat": "p95 {{path}}", "format": "table", "instant": true},
+        {"expr": "clow_http_request_duration_seconds_count", "legendFormat": "count {{path}}", "format": "table", "instant": true}
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["clow", "production"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Clow — Production Dashboard",
+  "uid": "clow-prod",
+  "version": 1
+}

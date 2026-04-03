@@ -2656,7 +2656,7 @@ if HAS_FASTAPI:
                 save_message(conv_id, "user", content)
 
             loop = asyncio.get_event_loop()
-            response_text, elapsed = await loop.run_in_executor(None, lambda: ask_claude_code(content, "/root/clow/workspace", conv_id))
+            response_text, elapsed = await loop.run_in_executor(None, lambda: ask_claude_code(content, "/root/clow/static/files", conv_id))
 
             log_claude_code_usage(user_id, content, elapsed)
             track_action("claude_code_response", response_text[:60] if response_text else "")
@@ -3147,7 +3147,7 @@ if HAS_FASTAPI:
                             elapsed = await loop.run_in_executor(
                                 None, lambda: ask_claude_code_stream(
                                     content, _on_delta, _on_done, _on_error,
-                                    "/root/clow/workspace", _on_tool_call, _on_tool_result,
+                                    "/root/clow/static/files", _on_tool_call, _on_tool_result,
                                     ws_conv_id
                                 )
                             )

@@ -180,6 +180,15 @@ class Agent:
             if hr.blocked:
                 return f"[Hook bloqueou execucao] {hr.feedback}"
 
+        # Smart routing: troca modelo se tarefa pesada
+        if not self.is_subagent and isinstance(user_message, str):
+            if self._should_use_heavy_model(user_message):
+                self._original_model = self.model
+                self.model = config.CLOW_MODEL_HEAVY
+                log_action("smart_routing", f"Modelo pesado: {self.model}", session_id=self.session.id)
+            else:
+                self._original_model = None
+
         self.session.messages.append({"role": "user", "content": user_message})
         log_action("turn_start", msg_text[:80], session_id=self.session.id)
 
@@ -253,7 +262,42 @@ class Agent:
         # Notifica background agents completados
         self._check_background_notifications()
 
+        # Restaura modelo leve apos turno pesado
+        if hasattr(self, "_original_model") and self._original_model:
+            self.model = self._original_model
+            self._original_model = None
+
         return turn.assistant_message
+
+
+    # ── Smart Routing ──────────────────────────────────────────
+    HEAVY_TRIGGERS = {
+        "skills": ["/refactor", "/plan", "/review", "/fix", "/init", "/simplify"],
+        "patterns": [
+            r"(?:refator|arquitetur|migra|redesign|reescrev)",
+            r"(?:analise?\s+completa|analise?\s+profunda|analise?\s+geral)",
+            r"(?:crie?\s+(?:um|o)\s+projeto|criar?\s+sistema|implementar?\s+do\s+zero)",
+            r"(?:debug|depurar|diagnosticar|investigar)",
+            r"(?:otimiz|melhorar?\s+performance|performance)",
+            r"(?:explique?\s+tudo|explique?\s+o\s+(?:projeto|codebase|sistema))",
+        ],
+        "min_tokens_for_heavy": 2000,
+    }
+
+    def _should_use_heavy_model(self, user_message: str) -> bool:
+        import re as _re
+        msg = user_message.lower().strip() if isinstance(user_message, str) else ""
+        if not msg:
+            return False
+        for skill in self.HEAVY_TRIGGERS["skills"]:
+            if msg.startswith(skill):
+                return True
+        for pattern in self.HEAVY_TRIGGERS["patterns"]:
+            if _re.search(pattern, msg, _re.IGNORECASE):
+                return True
+        if len(msg) > self.HEAVY_TRIGGERS["min_tokens_for_heavy"]:
+            return True
+        return False
 
     # ── Streaming Call ─────────────────────────────────────────
 

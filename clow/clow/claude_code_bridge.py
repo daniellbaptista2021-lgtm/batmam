@@ -11,7 +11,7 @@ from .database import get_db
 logger = logging.getLogger(__name__)
 
 CLAUDE_BIN = "/root/.local/bin/claude"
-WORKSPACE = "/root/clow/workspace"
+WORKSPACE = "/root/clow/static/files"
 
 # Session persistence: maps conversation_id -> claude session_id
 _session_map: dict[str, str] = {}
