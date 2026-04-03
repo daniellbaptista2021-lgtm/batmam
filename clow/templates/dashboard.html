@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#050510">
+<link rel="icon" type="image/png" href="/static/brand/favicon.png">
+<title>Clow — Dashboard</title>
+<link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+
+<!-- Title Bar -->
+<svg style="position:absolute;width:0;height:0"><defs><linearGradient id="dashGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#9B59FC"/><stop offset="100%" stop-color="#4A9EFF"/></linearGradient></defs></svg>
+<div class="title-bar">
+  <div class="title-left">
+    <svg class="logo-infinity" viewBox="0 0 32 32">
+      <path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(0.95)"/>
+    </svg>
+    <span class="logo-text">Clow</span>
+  </div>
+  <div class="title-right">
+    <a href="/" class="nav-pill">terminal</a>
+    <a href="/dashboard" class="nav-pill active">dashboard</a>
+    <a href="/logout" class="nav-pill" style="color:var(--red);border-color:rgba(248,113,113,0.2)">sair</a>
+  </div>
+</div>
+
+<div class="dash">
+  <div class="dash-header">
+    <span class="dash-title">System Overview</span>
+    <span class="refresh-tag">auto-refresh 10s &middot; <span id="lastUpdate">--:--</span></span>
+  </div>
+
+  <div class="cards" id="cards">
+    <div class="card"><div class="card-label">carregando</div><div class="card-value">...</div></div>
+  </div>
+
+  <div class="section-title">Cron Jobs</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Prompt</th><th>Intervalo</th><th>Status</th><th>Runs</th><th>Proxima</th></tr></thead>
+      <tbody id="cronBody"><tr><td colspan="6" class="s-muted">Carregando...</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-title">Acoes Recentes</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Hora</th><th>Acao</th><th>Detalhes</th><th>Status</th></tr></thead>
+      <tbody id="actionsBody"><tr><td colspan="4" class="s-muted">Carregando...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="/static/js/dashboard.js"></script>
+</body>
+</html>

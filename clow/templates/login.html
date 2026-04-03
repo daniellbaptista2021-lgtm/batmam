@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#050510">
+<meta name="description" content="Clow - AI Code Agent | Inteligência Infinita • Possibilidades Premium. Crie landing pages, planilhas, documentos, apps e muito mais.">
+<meta property="og:title" content="Clow — Inteligência Infinita">
+<meta property="og:description" content="AI Code Agent premium. Crie landing pages, planilhas, apps e muito mais.">
+<meta property="og:image" content="/static/brand/logo.png">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/png" href="/static/brand/favicon.png">
+<link rel="apple-touch-icon" href="/static/brand/icon.png">
+<title>Clow — Inteligência Infinita</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/login.css">
+</head>
+<body>
+<div class="card" role="main">
+  <div class="logo">
+    <img src="/static/brand/logo.png" alt="Clow - Inteligência Infinita">
+    <div class="lens-flare"></div>
+    <p class="tagline">INTELIG&Ecirc;NCIA INFINITA <span class="dot">&bull;</span> POSSIBILIDADES PREMIUM</p>
+  </div>
+  <form method="POST" action="/login">
+    <div class="fg"><label for="login-email">Email</label><input id="login-email" type="email" name="email" placeholder="seu@email.com" required autofocus autocomplete="email"></div>
+    <div class="fg"><label for="login-pass">Senha</label><input id="login-pass" type="password" name="password" placeholder="sua senha" required autocomplete="current-password"></div>
+    <button class="lbtn" type="submit" aria-label="Entrar no sistema">Entrar</button>
+  </form>
+  <div class="err __ERROR_CLASS__">__ERROR_MSG__</div>
+</div>
+<script src="/static/js/login.js"></script>
+</body>
+</html>
