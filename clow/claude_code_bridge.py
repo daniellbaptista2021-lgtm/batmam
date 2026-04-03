@@ -10,6 +10,8 @@ from .database import get_db
 
 logger = logging.getLogger(__name__)
 
+CLAUDE_BIN = "/root/.local/bin/claude"
+
 
 def ask_claude_code(prompt: str, work_dir: str = "/root/clow") -> tuple[str, float]:
     """Executa prompt via Claude Code CLI (sem streaming).
@@ -20,7 +22,7 @@ def ask_claude_code(prompt: str, work_dir: str = "/root/clow") -> tuple[str, flo
     start = time.time()
     try:
         result = subprocess.run(
-            ["claude", "-p", prompt, "--permission-mode", "dontAsk"],
+            [CLAUDE_BIN, "-p", prompt, "--permission-mode", "dontAsk"],
             capture_output=True,
             text=True,
             timeout=120,
@@ -28,10 +30,14 @@ def ask_claude_code(prompt: str, work_dir: str = "/root/clow") -> tuple[str, flo
             env={**os.environ, "CLAUDE_CODE_NO_INTERACTIVE": "1"},
         )
         elapsed = time.time() - start
+        print(f"BRIDGE RETURNCODE: {result.returncode}", flush=True)
+        print(f"BRIDGE STDOUT: {result.stdout[:200]!r}", flush=True)
+        print(f"BRIDGE STDERR: {result.stderr[:200]!r}", flush=True)
         if result.returncode == 0:
             return result.stdout.strip(), elapsed
         else:
-            return f"Erro: {result.stderr.strip()}", elapsed
+            err_msg = result.stderr.strip() or result.stdout.strip()
+            return f"Erro: {err_msg}", elapsed
     except subprocess.TimeoutExpired:
         elapsed = time.time() - start
         return "Timeout: Claude Code demorou mais de 120 segundos.", elapsed
@@ -60,7 +66,7 @@ def ask_claude_code_stream(
     try:
         proc = subprocess.Popen(
             [
-                "claude", "-p", prompt,
+                CLAUDE_BIN, "-p", prompt,
                 "--permission-mode", "dontAsk",
                 "--output-format", "stream-json",
                 "--verbose",
@@ -81,6 +87,7 @@ def ask_claude_code_stream(
             try:
                 data = json.loads(line)
                 evt_type = data.get("type", "")
+                logger.info(f"BRIDGE STREAM evt_type={evt_type}")
 
                 if evt_type == "stream_event":
                     event = data.get("event", {})
@@ -89,12 +96,14 @@ def ask_claude_code_stream(
                         if delta_text:
                             full_text += delta_text
                             on_delta(delta_text)
+                            logger.info(f"BRIDGE DELTA: {delta_text[:100]}")
 
             except (json.JSONDecodeError, KeyError):
                 continue
 
         proc.wait(timeout=10)
         elapsed = time.time() - start
+        logger.info(f"BRIDGE STREAM DONE full_text={full_text[:200]}")
         on_done(full_text)
         return elapsed
 
