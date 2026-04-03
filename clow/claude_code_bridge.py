@@ -219,17 +219,10 @@ def ask_claude_code_stream(
 
 
 def log_claude_code_usage(user_id: str, prompt: str, elapsed: float):
-    """Registra uso do Claude Code CLI no SQLite."""
+    """Registra uso do Claude Code CLI no SQLite.
+    Table created by migrations.py (v3).
+    """
     with get_db() as db:
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS claude_code_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id TEXT NOT NULL,
-                prompt_preview TEXT NOT NULL,
-                elapsed_seconds REAL NOT NULL,
-                created_at REAL NOT NULL
-            )
-        """)
         db.execute(
             "INSERT INTO claude_code_log (user_id, prompt_preview, elapsed_seconds, created_at) VALUES (?,?,?,?)",
             (user_id, prompt[:50], elapsed, time.time()),

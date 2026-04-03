@@ -8,7 +8,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 try:
     from fastapi.testclient import TestClient
-    from clow.webapp import app, _create_session, _template_cache
+    from clow.webapp import app
+    from clow.routes.auth import _create_session
+    from clow.routes.pages import _template_cache
     HAS_DEPS = app is not None
 except (ImportError, Exception):
     HAS_DEPS = False
@@ -78,30 +80,30 @@ class TestTemplateLoading(unittest.TestCase):
     """Testes do sistema de template loading."""
 
     def test_chat_template_loads(self):
-        from clow.webapp import _webapp_html
+        from clow.routes.pages import _webapp_html
         html = _webapp_html()
         self.assertIn("<!DOCTYPE html>", html)
         self.assertIn("chat.css", html)
         self.assertIn("chat.js", html)
 
     def test_login_template_loads(self):
-        from clow.webapp import _login_html
+        from clow.routes.pages import _login_html
         html = _login_html()
         self.assertIn("<!DOCTYPE html>", html)
         self.assertIn("__ERROR_MSG__", html)
 
     def test_dashboard_template_loads(self):
-        from clow.webapp import _dashboard_html
+        from clow.routes.pages import _dashboard_html
         html = _dashboard_html()
         self.assertIn("<!DOCTYPE html>", html)
 
     def test_admin_template_loads(self):
-        from clow.webapp import _admin_html
+        from clow.routes.pages import _admin_html
         html = _admin_html()
         self.assertIn("<!DOCTYPE html>", html)
 
     def test_template_cache_works(self):
-        from clow.webapp import _get_template, _template_cache
+        from clow.routes.pages import _get_template, _template_cache
         _template_cache.clear()
         html1 = _get_template("chat.html")
         html2 = _get_template("chat.html")

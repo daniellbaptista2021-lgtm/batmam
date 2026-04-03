@@ -7,7 +7,7 @@ import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from clow.webapp import (
+from clow.routes.auth import (
     _verify_api_key, _generate_api_key, _get_api_keys,
     RateLimiter,
 )

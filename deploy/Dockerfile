@@ -1,33 +1,24 @@
-FROM python:3.12-slim AS builder
-
-WORKDIR /build
-COPY pyproject.toml ./
-COPY clow/ clow/
-
-RUN pip install --no-cache-dir --prefix=/install ".[web]"
-
-# ── Runtime ──
 FROM python:3.12-slim
-
-RUN useradd --create-home --shell /bin/bash clow
-
-COPY --from=builder /install /usr/local
-COPY --from=builder /build /app
 
 WORKDIR /app
 
-RUN mkdir -p /home/clow/.clow/sessions /home/clow/.clow/memory /home/clow/.clow/logs \
-    && chown -R clow:clow /home/clow/.clow /app
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git curl && rm -rf /var/lib/apt/lists/*
 
-USER clow
+# Python deps
+COPY pyproject.toml poetry.lock* ./
+RUN pip install --no-cache-dir -e "." 2>/dev/null || pip install --no-cache-dir fastapi uvicorn httpx anthropic openai
 
-ENV PYTHONUNBUFFERED=1 \
-    CLOW_PROVIDER=anthropic \
-    CLOW_MODEL=claude-sonnet-4-20250514
+# App code
+COPY . .
 
-EXPOSE 8080
+# Create required directories
+RUN mkdir -p /root/.clow/app /root/.clow/memory /root/.clow/logs
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')" || exit 1
+EXPOSE 8001
 
-CMD ["uvicorn", "clow.webapp:app", "--host", "0.0.0.0", "--port", "8080", "--log-level", "info"]
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:8001/health || exit 1
+
+CMD ["uvicorn", "clow.webapp:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "2"]

@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  clow:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: clow-app
+    restart: always
+    ports:
+      - "8001:8001"
+    volumes:
+      - /root/.clow:/root/.clow
+      - /root/.claude:/root/.claude
+      - clow-data:/app/data
+    environment:
+      - CLOW_PROVIDER=anthropic
+      - CLOW_MODEL=claude-opus-4-1-20250805
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  clow-data:
