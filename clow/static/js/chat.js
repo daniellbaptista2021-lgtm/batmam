@@ -11,7 +11,7 @@ async function init(){
   }catch(e){}
   loadConvs();connectWS();_setupMobileViewport();
 }
-function initMod(plan,adm){const s=document.getElementById('modSel');if(adm){selMod='claude-code';s.style.display='none';const b=document.createElement('span');b.className='mod-pill claude-code';b.style.cssText='pointer-events:none;cursor:default;padding:4px 12px;font-weight:600';b.textContent='Opus';s.parentNode.insertBefore(b,s);return}const can=plan==='pro'||plan==='unlimited';if(!can){s.value='haiku';selMod='haiku';s.disabled=true;const o=s.querySelector('option[value="sonnet"]');if(o)o.disabled=true}s.className='mod-pill '+selMod}
+function initMod(plan,adm){const s=document.getElementById('modSel');if(adm){selMod='haiku';s.value='haiku';s.disabled=false;s.className='mod-pill haiku';return}const can=plan==='pro'||plan==='unlimited';if(!can){s.value='haiku';selMod='haiku';s.disabled=true;const o=s.querySelector('option[value="sonnet"]');if(o)o.disabled=true}s.className='mod-pill '+selMod}
 function onMod(){const s=document.getElementById('modSel');selMod=s.value;s.className='mod-pill '+selMod}
 function toggleSB(){document.getElementById('sb').classList.toggle('open');document.getElementById('sbOv').classList.toggle('show')}
 function togDrop(){document.getElementById('hdrDrop').classList.toggle('show')}
