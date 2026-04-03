@@ -20,7 +20,7 @@ def ask_claude_code(prompt: str, work_dir: str = "/root/clow") -> tuple[str, flo
     start = time.time()
     try:
         result = subprocess.run(
-            ["claude", "-p", prompt],
+            ["claude", "-p", prompt, "--permission-mode", "dontAsk"],
             capture_output=True,
             text=True,
             timeout=120,
@@ -61,6 +61,7 @@ def ask_claude_code_stream(
         proc = subprocess.Popen(
             [
                 "claude", "-p", prompt,
+                "--permission-mode", "dontAsk",
                 "--output-format", "stream-json",
                 "--verbose",
                 "--include-partial-messages",
