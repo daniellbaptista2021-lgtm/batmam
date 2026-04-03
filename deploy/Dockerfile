@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Python deps
 COPY pyproject.toml poetry.lock* ./
-RUN pip install --no-cache-dir -e "." 2>/dev/null || pip install --no-cache-dir fastapi uvicorn httpx anthropic openai
+RUN pip install --no-cache-dir -e ".[web]" 2>/dev/null || pip install --no-cache-dir fastapi "uvicorn[standard]" httpx anthropic openai
 
 # App code
 COPY . .
