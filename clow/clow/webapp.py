@@ -447,8 +447,8 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 
 /* SIDEBAR */
 .sb{width:var(--sw);height:100%;background:var(--bg-1);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;z-index:30;transition:transform .25s ease;box-shadow:1px 0 20px rgba(155,89,252,.03)}
-.sb-head{padding:20px 16px 16px;padding-top:calc(16px + var(--st));display:flex;align-items:center;gap:10px}
-.sb-logo-img{height:36px;object-fit:contain;filter:drop-shadow(0 0 12px rgba(155,89,252,.2))}
+.sb-head{padding:24px 16px 20px;padding-top:calc(20px + var(--st));display:flex;align-items:center;justify-content:center}
+.sb-logo-img{height:52px;object-fit:contain;filter:drop-shadow(0 0 16px rgba(155,89,252,.25)) drop-shadow(0 0 8px rgba(74,158,255,.15))}
 .sb-body{flex:1;overflow-y:auto;padding:4px 0;display:flex;flex-direction:column}
 .sb-sep{height:1px;background:var(--bd);margin:8px 12px}
 .sb-sec{padding:0 12px;margin-bottom:2px}
@@ -744,7 +744,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
   0%,100%{opacity:.6;transform:translate(-50%,-50%) scale(1)}
   50%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
 }
-.watermark{position:fixed;top:50%;left:calc(50% + var(--sw)/2);transform:translate(-50%,-50%);pointer-events:none;z-index:0;user-select:none;opacity:.05;font-size:320px;font-weight:100;background:linear-gradient(135deg,rgba(155,89,252,.9),rgba(74,158,255,.7));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;font-family:var(--sans);filter:blur(1px)}
+.watermark{position:fixed;top:50%;left:calc(50% + var(--sw)/2);transform:translate(-50%,-50%);pointer-events:none;z-index:0;user-select:none;opacity:.04;font-size:180px;font-weight:800;letter-spacing:20px;background:linear-gradient(135deg,rgba(155,89,252,.8),rgba(74,158,255,.6));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;font-family:var(--sans);filter:blur(0.5px);text-transform:uppercase}
 
 /* glow now handled by body::after */
 
@@ -756,7 +756,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
   .sb-ov{position:fixed;inset:0;background:rgba(5,5,16,.85);backdrop-filter:blur(12px);z-index:25;display:none}.sb-ov.show{display:block}
   .qgrid{grid-template-columns:repeat(2,1fr)}
   .mb-wrap{max-width:85%!important}
-  .watermark{left:50%;font-size:180px}
+  .watermark{left:50%;font-size:100px;letter-spacing:12px}
 }
 @media(min-width:769px){.ham{display:none}}
 /* SR-ONLY */
@@ -868,7 +868,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
       </div>
     </div>
   </div>
-  <div class="watermark empty" id="wmark">&#8734;</div>
+  <div class="watermark empty" id="wmark">CLOW</div>
   <div class="term" id="term">
     <div class="welc" id="welc">
       <img src="/static/brand/logo.png" alt="Clow - Inteligência Infinita" class="welc-logo">
