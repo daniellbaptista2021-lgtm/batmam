@@ -196,7 +196,7 @@ def register_chat_routes(app: FastAPI) -> None:
                 save_message(conv_id, "user", content)
 
             loop = asyncio.get_event_loop()
-            response_text, elapsed = await loop.run_in_executor(None, lambda: ask_claude_code(content, "/root/clow/workspace", conv_id))
+            response_text, elapsed = await loop.run_in_executor(None, lambda: ask_claude_code(content, "/root/clow", conv_id))
 
             log_claude_code_usage(user_id, content, elapsed)
             track_action("claude_code_response", response_text[:60] if response_text else "")
