@@ -542,7 +542,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 .hdr-drop a:hover,.hdr-drop button:hover{background:var(--bg-h);color:var(--t1)}
 
 /* TERMINAL */
-.term{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;background:var(--bg-0);position:relative;z-index:1}
+.term{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;background:var(--bg-0);position:relative;z-index:1;background-image:linear-gradient(135deg,rgba(5,5,16,.85) 0%,rgba(15,10,30,.8) 30%,rgba(20,10,40,.75) 50%,rgba(10,15,35,.8) 70%,rgba(5,5,16,.85) 100%),url(/static/brand/bg-texture.jpg);background-size:cover;background-position:center;background-attachment:fixed}
 
 /* WELCOME */
 .welc{text-align:center;padding:32px 16px;animation:fadeUp .5s ease-out}
