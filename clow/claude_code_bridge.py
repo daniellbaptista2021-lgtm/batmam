@@ -18,7 +18,7 @@ def ask_claude_code(prompt: str, work_dir: str = "/root/clow") -> tuple[str, flo
     start = time.time()
     try:
         result = subprocess.run(
-            ["claude", "-p", prompt, "--no-input"],
+            ["claude", "-p", prompt],
             capture_output=True,
             text=True,
             timeout=120,
