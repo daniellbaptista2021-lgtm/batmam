@@ -40,6 +40,11 @@ spec:
                 configMapKeyRef:
                   name: clow-config
                   key: model
+            - name: CLOW_MODEL_HEAVY
+              valueFrom:
+                configMapKeyRef:
+                  name: clow-config
+                  key: model-heavy
           resources:
             requests:
               memory: "128Mi"
@@ -90,7 +95,8 @@ metadata:
   name: clow-config
 data:
   provider: "anthropic"
-  model: "claude-sonnet-4-20250514"
+  model: "claude-haiku-4-5-20251001"
+  model-heavy: "claude-sonnet-4-20250514"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
