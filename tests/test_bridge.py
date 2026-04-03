@@ -33,7 +33,6 @@ class TestBridgeModule(unittest.TestCase):
         self.assertIn("--permission-mode", cmd)
         self.assertIn("dontAsk", cmd)
         self.assertIn("--max-turns", cmd)
-        self.assertIn("--append-system-prompt", cmd)
 
     def test_build_cmd_stream_flags(self):
         from clow.claude_code_bridge import _build_cmd
@@ -57,10 +56,11 @@ class TestBridgeModule(unittest.TestCase):
         self.assertNotIn("ANTHROPIC_API_KEY", env)
         os.environ.pop("ANTHROPIC_API_KEY", None)
 
-    def test_clow_append_prompt_exists(self):
-        from clow.claude_code_bridge import _CLOW_APPEND_PROMPT
-        self.assertIn("Clow", _CLOW_APPEND_PROMPT)
-        self.assertIn("português", _CLOW_APPEND_PROMPT)
+    def test_bridge_runs_pure_claude_code(self):
+        """Bridge runs Claude Code without custom system prompts."""
+        from clow.claude_code_bridge import _build_cmd
+        cmd = _build_cmd("test")
+        self.assertNotIn("--append-system-prompt", cmd)
 
 
 class TestStreamParsing(unittest.TestCase):

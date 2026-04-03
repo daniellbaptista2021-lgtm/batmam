@@ -64,10 +64,10 @@ class TestHookExecution(unittest.TestCase):
 
     @unittest.skipIf(platform.system() == "Windows", "Shell commands differ on Windows")
     def test_hook_allow_exit_0(self):
-        h = Hook(event="test", command="echo 'aprovado'", timeout=5)
-        runner = HookRunner.__new__(HookRunner)
-        runner._hooks = {"test": [h]}
-        results = runner.run_hooks("test")
+        h = Hook(event="on_start", command="echo 'aprovado'", timeout=5)
+        runner = HookRunner()
+        runner._hooks["on_start"] = [h]
+        results = runner.run_hooks("on_start")
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0].action, "allow")
         self.assertIn("aprovado", results[0].output)

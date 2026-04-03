@@ -2,6 +2,9 @@
 __pycache__/
 *.pyc
 *.pyo
+*.bak
+*.bak2
+nohup.out
 .venv/
 venv/
 dist/
