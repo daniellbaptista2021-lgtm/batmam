@@ -11,6 +11,13 @@ from .database import get_db
 logger = logging.getLogger(__name__)
 
 CLAUDE_BIN = "/root/.local/bin/claude"
+WORKSPACE = "/root/clow/workspace"
+
+# Session persistence: maps conversation_id -> claude session_id
+_session_map: dict[str, str] = {}
+
+os.makedirs(WORKSPACE, exist_ok=True)
+
 
 def _get_claude_env():
     """Build environment for Claude Code CLI subprocess.
@@ -21,7 +28,6 @@ def _get_claude_env():
     env.pop("ANTHROPIC_API_KEY", None)
     env.pop("CLAUDE_CODE_OAUTH_TOKEN", None)
     env["CLAUDE_CODE_NO_INTERACTIVE"] = "1"
-    # Read token dynamically so it stays valid after refresh
     creds_path = os.path.expanduser("~/.claude/.credentials.json")
     try:
         with open(creds_path) as f:
@@ -34,8 +40,18 @@ def _get_claude_env():
     return env
 
 
+def _build_cmd(prompt: str, stream: bool = False, conversation_id: str | None = None) -> list[str]:
+    """Build Claude Code CLI command with all flags."""
+    cmd = [CLAUDE_BIN, "-p", prompt, "--model", "claude-opus-4-6", "--permission-mode", "dontAsk"]
+    if stream:
+        cmd.extend(["--output-format", "stream-json", "--verbose"])
+    cmd.extend(["--max-turns", "50"])
+    if conversation_id and conversation_id in _session_map:
+        cmd.extend(["--resume", _session_map[conversation_id]])
+    return cmd
 
-def ask_claude_code(prompt: str, work_dir: str = "/root/clow") -> tuple[str, float]:
+
+def ask_claude_code(prompt: str, work_dir: str = WORKSPACE, conversation_id: str | None = None) -> tuple[str, float]:
     """Executa prompt via Claude Code CLI (sem streaming).
 
     Returns:
@@ -44,17 +60,14 @@ def ask_claude_code(prompt: str, work_dir: str = "/root/clow") -> tuple[str, flo
     start = time.time()
     try:
         result = subprocess.run(
-            [CLAUDE_BIN, "-p", prompt, "--model", "claude-opus-4-6", "--permission-mode", "dontAsk"],
+            _build_cmd(prompt, stream=False, conversation_id=conversation_id),
             capture_output=True,
             text=True,
-            timeout=120,
+            timeout=600,
             cwd=work_dir,
             env=_get_claude_env(),
         )
         elapsed = time.time() - start
-        print(f"BRIDGE RETURNCODE: {result.returncode}", flush=True)
-        print(f"BRIDGE STDOUT: {result.stdout[:200]!r}", flush=True)
-        print(f"BRIDGE STDERR: {result.stderr[:200]!r}", flush=True)
         if result.returncode == 0:
             return result.stdout.strip(), elapsed
         else:
@@ -62,7 +75,7 @@ def ask_claude_code(prompt: str, work_dir: str = "/root/clow") -> tuple[str, flo
             return f"Erro: {err_msg}", elapsed
     except subprocess.TimeoutExpired:
         elapsed = time.time() - start
-        return "Timeout: Claude Code demorou mais de 120 segundos.", elapsed
+        return "Timeout: Claude Code demorou mais de 10 minutos.", elapsed
     except FileNotFoundError:
         elapsed = time.time() - start
         return "Claude Code CLI nao encontrado. Verifique a instalacao.", elapsed
@@ -73,30 +86,22 @@ def ask_claude_code_stream(
     on_delta: Callable[[str], None],
     on_done: Callable[[str], None],
     on_error: Callable[[str], None],
-    work_dir: str = "/root/clow",
+    work_dir: str = WORKSPACE,
     on_tool_call: Callable[[str, dict], None] | None = None,
     on_tool_result: Callable[[str, str, str], None] | None = None,
+    conversation_id: str | None = None,
 ) -> float:
-    """Executa prompt via Claude Code CLI com streaming de texto.
-
-    Usa --output-format stream-json para receber content_block_delta
-    e chama on_delta(text) para cada chunk.
+    """Executa prompt via Claude Code CLI com streaming.
 
     Returns:
         elapsed_seconds
     """
     start = time.time()
     full_text = ""
+    proc = None
     try:
         proc = subprocess.Popen(
-            [
-                CLAUDE_BIN, "-p", prompt,
-                "--model", "claude-opus-4-6",
-                "--permission-mode", "dontAsk",
-                "--output-format", "stream-json",
-                "--verbose",
-                "--include-partial-messages",
-            ],
+            _build_cmd(prompt, stream=True, conversation_id=conversation_id),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
@@ -112,7 +117,10 @@ def ask_claude_code_stream(
             try:
                 data = json.loads(line)
                 evt_type = data.get("type", "")
-                logger.info(f"BRIDGE STREAM evt_type={evt_type}")
+
+                # Capture session_id for resume
+                if "session_id" in data and conversation_id:
+                    _session_map[conversation_id] = data["session_id"]
 
                 if evt_type == "assistant":
                     msg = data.get("message", {})
@@ -129,46 +137,34 @@ def ask_claude_code_stream(
                                 on_delta(text)
 
                 elif evt_type == "user":
-                    msg = data.get("message", {})
                     tool_result_info = data.get("tool_use_result", {})
+                    msg = data.get("message", {})
                     for block in msg.get("content", []):
                         if block.get("type") == "tool_result":
                             is_error = block.get("is_error", False)
                             output = tool_result_info.get("stdout", "") or block.get("content", "")
+                            if isinstance(output, list):
+                                output = str(output)
                             if on_tool_result:
-                                on_tool_result("", "error" if is_error else "success", output[:500])
+                                on_tool_result("", "error" if is_error else "success", str(output)[:500])
 
-                # Keep old stream_event parsing for backwards compat
-                elif evt_type == "stream_event":
-                    event = data.get("event", {})
-                    if event.get("type") == "content_block_delta":
-                        delta_text = event.get("delta", {}).get("text", "")
-                        if delta_text:
-                            full_text += delta_text
-                            on_delta(delta_text)
-                            logger.info(f"BRIDGE DELTA: {delta_text[:100]}")
+                elif evt_type == "result":
+                    # Final result — extract session_id
+                    if "session_id" in data and conversation_id:
+                        _session_map[conversation_id] = data["session_id"]
 
-            except (json.JSONDecodeError, KeyError):
+            except (json.JSONDecodeError, KeyError, TypeError):
                 continue
 
-        proc.wait(timeout=10)
+        proc.wait(timeout=30)
         elapsed = time.time() - start
-        logger.info(f"BRIDGE STREAM DONE full_text={full_text[:200]}")
         on_done(full_text)
         return elapsed
 
-    except subprocess.TimeoutExpired:
-        if proc:
-            proc.kill()
-        elapsed = time.time() - start
-        on_error("Timeout: Claude Code demorou demais.")
-        return elapsed
-    except FileNotFoundError:
-        elapsed = time.time() - start
-        on_error("Claude Code CLI nao encontrado.")
-        return elapsed
     except Exception as e:
         elapsed = time.time() - start
+        if proc and proc.poll() is None:
+            proc.kill()
         on_error(f"Erro: {str(e)}")
         return elapsed
 
