@@ -873,16 +873,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
     <div class="welc" id="welc">
       <img src="/static/brand/logo.png" alt="Clow - Inteligência Infinita" class="welc-logo">
       <div class="welc-tagline">INTELIG&Ecirc;NCIA INFINITA <span class="welc-dot">&bull;</span> POSSIBILIDADES PREMIUM</div>
-      <h1>O que vamos <span>criar</span>?</h1>
-      <p>Escolha abaixo ou descreva o que precisa</p>
-      <div class="qgrid">
-        <div class="qc" role="button" tabindex="0" onclick="qa('Cria uma landing page de ')"><div class="qt">Landing Page</div><div class="qd">Site completo e responsivo</div></div>
-        <div class="qc" role="button" tabindex="0" onclick="qa('Gera uma planilha de ')"><div class="qt">Planilha</div><div class="qd">Excel com fórmulas</div></div>
-        <div class="qc" role="button" tabindex="0" onclick="qa('Cria uma apresentação sobre ')"><div class="qt">Apresentação</div><div class="qd">PowerPoint profissional</div></div>
-        <div class="qc" role="button" tabindex="0" onclick="qa('Me faz um app de ')"><div class="qt">Web App</div><div class="qd">App funcional completo</div></div>
-        <div class="qc" role="button" tabindex="0" onclick="qa('Gera copy para anúncio de ')"><div class="qt">Copy Ads</div><div class="qd">Textos para anúncios</div></div>
-        <div class="qc" role="button" tabindex="0" onclick="qa('/mission Setup digital completo para ')"><div class="qt">Missão</div><div class="qd">Projeto autônomo completo</div></div>
-      </div>
+      <h1>Como posso <span>ajudar</span>?</h1>
     </div>
   </div>
   <div class="drag-overlay" id="dragOv"><div class="do-icon">&#x1F4CE;</div><div class="do-text">Solte o arquivo aqui</div></div>
@@ -1145,7 +1136,6 @@ async function showAllConvs(){showAllPast=true;loadConvs()}
 
 async function newConv(){try{const r=await fetch('/api/v1/conversations',{method:'POST'});const d=await r.json();cid=d.id;convMsgCount=0;T.innerHTML='';showWelc();document.getElementById('hdrT').textContent='Nova conversa';loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
 async function loadConv(id){cid=id;T.innerHTML='';try{const r=await fetch(`/api/v1/conversations/${id}/messages`);const d=await r.json();d.messages.forEach(m=>{if(m.role==='user')addUser(m.content,false);else{curMsg=null;curBody=null;appendTxt(m.content);finishTxt();curMsg=null;curBody=null}});const cs=await(await fetch('/api/v1/conversations')).json();const c=cs.conversations.find(x=>x.id===id);if(c)document.getElementById('hdrT').textContent=c.title;loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
-function showWelc(){const w=document.createElement('div');w.className='welc';w.id='welc';w.innerHTML='<img src="/static/brand/logo.png" alt="Clow - Intelig\u00eancia Infinita" class="welc-logo"><div class="welc-tagline">INTELIG\u00caNCIA INFINITA <span class="welc-dot">\u2022</span> POSSIBILIDADES PREMIUM</div><h1>O que vamos <span>criar</span>?</h1><p>Escolha abaixo ou descreva o que precisa</p>';T.appendChild(w);const wm=document.getElementById('wmark');if(wm)wm.classList.add('empty')}
 function connectWS(){const pr=location.protocol==='https:'?'wss:':'ws:';try{ws=new WebSocket(`${pr}//${location.host}/ws`)}catch(e){http=true;setOn('http');return}const to=setTimeout(()=>{if(!ws||ws.readyState!==1){try{ws.close()}catch(e){}http=true;setOn('http')}},4000);ws.onopen=()=>{clearTimeout(to);http=false;setOn('online');rA=0};ws.onmessage=e=>hMsg(JSON.parse(e.data));ws.onclose=()=>{clearTimeout(to);if(rA>=3){http=true;setOn('http');return}setOn('offline');setTimeout(()=>{rA++;connectWS()},Math.min(1000*rA,5000))};ws.onerror=()=>setOn('offline')}
 function setOn(s){const b=document.getElementById('onBdg'),l=document.getElementById('onLbl');b.style.color=s==='offline'?'var(--r)':'var(--g)';l.textContent=s}
 function hMsg(m){switch(m.type){case'thinking_start':showThink();break;case'thinking_end':hideThink();break;case'text_delta':appendTxt(m.content);break;case'text_done':finishTxt();break;case'tool_call':showTool(m.name,m.args);break;case'tool_result':showToolR(m.name,m.status,m.output);break;case'turn_complete':finishTurn();break;case'error':showErr(m.content);break}}
