@@ -17,6 +17,7 @@ import os
 import time
 import hashlib
 import secrets
+import logging
 from collections import defaultdict
 from typing import Any
 from pathlib import Path
@@ -522,6 +523,7 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
 .mod-pill option{background:var(--bg-2);color:var(--t1)}
 .mod-pill.haiku{background-color:rgba(74,222,128,.08);color:var(--g);border-color:rgba(74,222,128,.2)}
 .mod-pill.sonnet{background-color:rgba(155,89,252,.08);color:var(--p);border-color:rgba(155,89,252,.2)}
+.mod-pill.claude-code{background-color:rgba(251,191,36,.08);color:#FBBF24;border-color:rgba(251,191,36,.2)}
 .mod-pill:disabled{opacity:.4;cursor:not-allowed}
 .on-badge{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:500;color:var(--g);letter-spacing:.3px}
 .on-dot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:pls 2s ease-in-out infinite}
@@ -907,7 +909,7 @@ async function init(){
   }catch(e){}
   loadConvs();connectWS();
 }
-function initMod(plan,adm){const s=document.getElementById('modSel');const can=adm||plan==='pro'||plan==='unlimited';if(!can){s.value='haiku';selMod='haiku';s.disabled=true;const o=s.querySelector('option[value="sonnet"]');if(o)o.disabled=true}s.className='mod-pill '+selMod}
+function initMod(plan,adm){const s=document.getElementById('modSel');const can=adm||plan==='pro'||plan==='unlimited';if(!can){s.value='haiku';selMod='haiku';s.disabled=true;const o=s.querySelector('option[value="sonnet"]');if(o)o.disabled=true}if(adm){const cc=document.createElement('option');cc.value='claude-code';cc.textContent='Opus';s.appendChild(cc)}s.className='mod-pill '+selMod}
 function onMod(){const s=document.getElementById('modSel');selMod=s.value;s.className='mod-pill '+selMod}
 function toggleSB(){document.getElementById('sb').classList.toggle('open');document.getElementById('sbOv').classList.toggle('show')}
 function togDrop(){document.getElementById('hdrDrop').classList.toggle('show')}
@@ -2469,6 +2471,8 @@ if HAS_FASTAPI:
         models = ["haiku"]
         if plan in ("pro", "unlimited") or is_admin:
             models.append("sonnet")
+        if is_admin:
+            models.append("claude-code")
         return JSONResponse({
             "email": sess["email"],
             "user_id": sess["user_id"],
@@ -2647,6 +2651,40 @@ if HAS_FASTAPI:
         allowed_models = ["haiku"]
         if user_plan in ("pro", "unlimited") or is_admin:
             allowed_models.append("sonnet")
+        if is_admin:
+            allowed_models.append("claude-code")
+
+        # Bloqueia claude-code para nao-admin no backend
+        if chosen_model == "claude-code" and not is_admin:
+            return JSONResponse({
+                "session_id": "",
+                "response": "Modelo disponivel apenas para administradores.",
+                "tools": [], "file": None,
+            }, status_code=403)
+
+        # Se claude-code, despacha via CLI bridge
+        if chosen_model == "claude-code" and is_admin:
+            from .claude_code_bridge import ask_claude_code, log_claude_code_usage
+            track_action("user_message_claude_code", content[:60])
+
+            if conv_id:
+                save_message(conv_id, "user", content)
+
+            loop = asyncio.get_event_loop()
+            response_text, elapsed = await loop.run_in_executor(None, ask_claude_code, content)
+
+            log_claude_code_usage(user_id, content, elapsed)
+            track_action("claude_code_response", response_text[:60] if response_text else "")
+
+            if conv_id:
+                save_message(conv_id, "assistant", response_text)
+
+            return JSONResponse({
+                "session_id": session_id or str(uuid.uuid4())[:8],
+                "response": response_text,
+                "tools": [], "file": None,
+            })
+
         if chosen_model not in allowed_models:
             chosen_model = "haiku"
         model_id = AI_MODELS.get(chosen_model, AI_MODELS["haiku"])
@@ -2928,6 +2966,59 @@ if HAS_FASTAPI:
             "file": None,
         })
 
+    # ── Helpers para geração de imagens ────────────────────────────
+
+    def _should_generate_image(content: str) -> bool:
+        """Detecta se o pedido é para gerar imagem."""
+        keywords = [
+            "gera imagem", "cria imagem", "faz uma imagem", "gerar imagem",
+            "criar imagem", "desenha", "ilustração", "arte", "visual",
+            "criativo visual", "banner", "thumbnail", "foto", "picture", "image",
+            "criativo pra", "criativo de", "criativo para"
+        ]
+        content_lower = content.lower()
+        return any(kw in content_lower for kw in keywords)
+
+    async def _process_image_request(content: str, agent) -> tuple[str | None, str | None, str]:
+        """
+        Processa pedido de imagem:
+        1. Otimiza prompt em inglês via Claude
+        2. Gera imagem via Pollinations
+        3. Retorna (filepath, filename, resposta_formatada)
+        """
+        from .generators.image_gen import optimize_prompt_for_image, generate_image
+        
+        # Step 1: Otimiza prompt
+        try:
+            optimized_prompt = optimize_prompt_for_image(content, agent._anthropic)
+            if not optimized_prompt:
+                optimized_prompt = content
+        except Exception as e:
+            optimized_prompt = content
+            logging.error(f"Erro ao otimizar prompt: {e}")
+
+        # Step 2: Gera imagem
+        try:
+            filepath, filename = await asyncio.get_event_loop().run_in_executor(
+                None, lambda: generate_image(optimized_prompt, 1024, 1024)
+            )
+            
+            if filepath and filename:
+                html = f'''<div style="margin: 12px 0;">
+  <img src="/static/files/{filename}" style="max-width:400px;border-radius:12px;cursor:pointer;border:1px solid #ddd;" onclick="window.open(this.src)">
+  <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+    <a href="/static/files/{filename}" download style="padding:8px 16px;background:#5b5fc7;color:#fff;border-radius:6px;text-decoration:none;font-size:12px;cursor:pointer;">⬇️ Baixar</a>
+    <span style="font-size:11px;color:#999;">Prompt: {optimized_prompt[:60]}...</span>
+  </div>
+</div>'''
+                response = f"✨ Pronto! Aqui está sua imagem.\n\n{html}"
+                return filepath, filename, response
+            else:
+                return None, None, "⏳ A geração de imagem demorou mais que o esperado. Tente novamente ou peça um briefing visual que eu monto pra você usar no Canva."
+        except Exception as e:
+            logging.error(f"Erro ao gerar imagem: {e}")
+            return None, None, f"❌ Erro ao gerar imagem: {str(e)}"
+
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):
         # Verificacao de sessao via cookie para WebSocket
@@ -3019,13 +3110,31 @@ if HAS_FASTAPI:
                     # Envia thinking
                     await websocket.send_json({"type": "thinking_start"})
 
+                    # ── Detecta e processa pedido de imagem ──
+                    if _should_generate_image(content) and not file_data:
+                        await websocket.send_json({"type": "thinking_end"})
+                        
+                        # Gera imagem
+                        try:
+                            filepath, filename, response_html = await _process_image_request(content, agent)
+                            await websocket.send_json({"type": "text_delta", "content": response_html})
+                            await websocket.send_json({"type": "text_done"})
+                            track_action("image_generated", filename or "failed")
+                        except Exception as e:
+                            await websocket.send_json({"type": "error", "content": f"Erro ao gerar imagem: {str(e)}"})
+                            track_action("image_error", str(e)[:60], "error")
+                        
+                        # Finaliza turno
+                        await websocket.send_json({"type": "turn_complete"})
+                        continue
+
                     # Monta mensagem multimodal se tem arquivo
                     if file_data:
                         user_msg = _build_multimodal_message(content, file_data)
                     else:
                         user_msg = content
 
-                    # Executa agente em thread separada
+                    # Executa agente em thread separada (chat normal)
                     try:
                         result = await loop.run_in_executor(
                             None, agent.run_turn, user_msg
@@ -3045,3 +3154,14 @@ if HAS_FASTAPI:
             pass
         finally:
             sender_task.cancel()
+
+
+# ── Mount de arquivos estáticos ──────────────────────────────────
+if app and HAS_FASTAPI:
+    try:
+        # Garante que diretório existe
+        os.makedirs("/root/clow/static/files", exist_ok=True)
+        # Mount da pasta /static
+        app.mount("/static", StaticFiles(directory="/root/clow/static"), name="static")
+    except Exception as e:
+        logging.error(f"Erro ao montar /static: {e}")
