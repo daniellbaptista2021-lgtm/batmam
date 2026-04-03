@@ -21,6 +21,13 @@ class Metrics:
             return f"{name}{{{lbl}}}"
         return name
 
+    def _split_key(self, key: str) -> tuple[str, str]:
+        """Split 'name{labels}' into ('name', '{labels}') or ('name', '')."""
+        if "{" in key:
+            idx = key.index("{")
+            return key[:idx], key[idx:]
+        return key, ""
+
     def inc(self, name: str, value: int = 1, labels: dict | None = None) -> None:
         """Increment a counter."""
         key = self._key(name, labels)
@@ -60,11 +67,12 @@ class Metrics:
                 lines.append(f"clow_{key} {val}")
             for key, vals in sorted(self._histograms.items()):
                 if vals:
-                    lines.append(f"clow_{key}_count {len(vals)}")
-                    lines.append(f"clow_{key}_sum {sum(vals):.3f}")
-                    lines.append(f"clow_{key}_p50 {self._percentile(vals, 50):.3f}")
-                    lines.append(f"clow_{key}_p95 {self._percentile(vals, 95):.3f}")
-                    lines.append(f"clow_{key}_p99 {self._percentile(vals, 99):.3f}")
+                    name, lbl = self._split_key(key)
+                    lines.append(f"clow_{name}_count{lbl} {len(vals)}")
+                    lines.append(f"clow_{name}_sum{lbl} {sum(vals):.3f}")
+                    lines.append(f"clow_{name}_p50{lbl} {self._percentile(vals, 50):.3f}")
+                    lines.append(f"clow_{name}_p95{lbl} {self._percentile(vals, 95):.3f}")
+                    lines.append(f"clow_{name}_p99{lbl} {self._percentile(vals, 99):.3f}")
             for key, val in sorted(self._gauges.items()):
                 lines.append(f"clow_{key} {val:.2f}")
         return "\n".join(lines) + "\n"
