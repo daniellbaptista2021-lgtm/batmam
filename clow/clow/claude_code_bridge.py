@@ -74,6 +74,8 @@ def ask_claude_code_stream(
     on_done: Callable[[str], None],
     on_error: Callable[[str], None],
     work_dir: str = "/root/clow",
+    on_tool_call: Callable[[str, dict], None] | None = None,
+    on_tool_result: Callable[[str, str, str], None] | None = None,
 ) -> float:
     """Executa prompt via Claude Code CLI com streaming de texto.
 
@@ -112,7 +114,32 @@ def ask_claude_code_stream(
                 evt_type = data.get("type", "")
                 logger.info(f"BRIDGE STREAM evt_type={evt_type}")
 
-                if evt_type == "stream_event":
+                if evt_type == "assistant":
+                    msg = data.get("message", {})
+                    for block in msg.get("content", []):
+                        if block.get("type") == "tool_use":
+                            tool_name = block.get("name", "")
+                            tool_input = block.get("input", {})
+                            if on_tool_call:
+                                on_tool_call(tool_name, tool_input)
+                        elif block.get("type") == "text":
+                            text = block.get("text", "")
+                            if text:
+                                full_text += text
+                                on_delta(text)
+
+                elif evt_type == "user":
+                    msg = data.get("message", {})
+                    tool_result_info = data.get("tool_use_result", {})
+                    for block in msg.get("content", []):
+                        if block.get("type") == "tool_result":
+                            is_error = block.get("is_error", False)
+                            output = tool_result_info.get("stdout", "") or block.get("content", "")
+                            if on_tool_result:
+                                on_tool_result("", "error" if is_error else "success", output[:500])
+
+                # Keep old stream_event parsing for backwards compat
+                elif evt_type == "stream_event":
                     event = data.get("event", {})
                     if event.get("type") == "content_block_delta":
                         delta_text = event.get("delta", {}).get("text", "")
