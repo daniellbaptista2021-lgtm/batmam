@@ -1,4 +1,9 @@
-"""Bridge para Claude Code CLI — permite usar o CLI como backend de chat."""
+"""Bridge para Claude Code CLI — permite usar o CLI como backend de chat.
+
+Usa OAuth Max (lê token de ~/.claude/.credentials.json).
+Injeta system prompt do Clow para manter identidade e skills.
+Suporta session resume para conversas contínuas.
+"""
 
 import subprocess
 import os
@@ -17,6 +22,17 @@ WORKSPACE = "/root/clow/workspace"
 _session_map: dict[str, str] = {}
 
 os.makedirs(WORKSPACE, exist_ok=True)
+
+# ── Clow system prompt appended to Claude Code ──────────────────
+
+_CLOW_APPEND_PROMPT = """
+Você é o Clow, um agente de código AI criado por Daniel. Você está rodando dentro do sistema Clow (webapp/PWA).
+Responda em português brasileiro. Seja direto e eficiente.
+Você tem acesso a TODAS as ferramentas do Claude Code: Bash, Read, Write, Edit, Glob, Grep, WebSearch, WebFetch, Agent, etc.
+USE essas ferramentas ativamente — não diga "eu não consigo", execute diretamente.
+Quando o usuário pedir para criar, editar, buscar ou executar algo, FAÇA usando as ferramentas disponíveis.
+Formate respostas em Markdown para boa renderização no chat web.
+""".strip()
 
 
 def _get_claude_env():
@@ -42,10 +58,15 @@ def _get_claude_env():
 
 def _build_cmd(prompt: str, stream: bool = False, conversation_id: str | None = None) -> list[str]:
     """Build Claude Code CLI command with all flags."""
-    cmd = [CLAUDE_BIN, "-p", prompt, "--model", "claude-opus-4-6", "--permission-mode", "dontAsk"]
+    cmd = [
+        CLAUDE_BIN, "-p", prompt,
+        "--model", "claude-opus-4-6",
+        "--permission-mode", "dontAsk",
+        "--append-system-prompt", _CLOW_APPEND_PROMPT,
+        "--max-turns", "50",
+    ]
     if stream:
         cmd.extend(["--output-format", "stream-json", "--verbose"])
-    cmd.extend(["--max-turns", "50"])
     if conversation_id and conversation_id in _session_map:
         cmd.extend(["--resume", _session_map[conversation_id]])
     return cmd
@@ -116,6 +137,10 @@ def ask_claude_code_stream(
                 continue
             try:
                 data = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+            try:
                 evt_type = data.get("type", "")
 
                 # Capture session_id for resume
@@ -123,37 +148,61 @@ def ask_claude_code_stream(
                     _session_map[conversation_id] = data["session_id"]
 
                 if evt_type == "assistant":
-                    msg = data.get("message", {})
-                    for block in msg.get("content", []):
-                        if block.get("type") == "tool_use":
+                    msg = data.get("message")
+                    if not isinstance(msg, dict):
+                        continue
+                    content = msg.get("content")
+                    if not isinstance(content, list):
+                        continue
+                    for block in content:
+                        if not isinstance(block, dict):
+                            continue
+                        btype = block.get("type", "")
+                        if btype == "tool_use":
                             tool_name = block.get("name", "")
                             tool_input = block.get("input", {})
                             if on_tool_call:
                                 on_tool_call(tool_name, tool_input)
-                        elif block.get("type") == "text":
+                        elif btype == "text":
                             text = block.get("text", "")
                             if text:
                                 full_text += text
                                 on_delta(text)
 
                 elif evt_type == "user":
-                    tool_result_info = data.get("tool_use_result", {})
-                    msg = data.get("message", {})
-                    for block in msg.get("content", []):
+                    msg = data.get("message")
+                    if not isinstance(msg, dict):
+                        continue
+                    content = msg.get("content")
+                    if not isinstance(content, list):
+                        continue
+                    for block in content:
+                        if not isinstance(block, dict):
+                            continue
                         if block.get("type") == "tool_result":
                             is_error = block.get("is_error", False)
-                            output = tool_result_info.get("stdout", "") or block.get("content", "")
-                            if isinstance(output, list):
-                                output = str(output)
+                            # content inside tool_result can be string or list
+                            raw_output = block.get("content", "")
+                            if isinstance(raw_output, list):
+                                # Extract text from content blocks
+                                parts = []
+                                for part in raw_output:
+                                    if isinstance(part, dict):
+                                        parts.append(part.get("text", ""))
+                                    else:
+                                        parts.append(str(part))
+                                raw_output = "\n".join(parts)
+                            elif not isinstance(raw_output, str):
+                                raw_output = str(raw_output)
                             if on_tool_result:
-                                on_tool_result("", "error" if is_error else "success", str(output)[:500])
+                                on_tool_result("", "error" if is_error else "success", raw_output[:2000])
 
                 elif evt_type == "result":
-                    # Final result — extract session_id
                     if "session_id" in data and conversation_id:
                         _session_map[conversation_id] = data["session_id"]
 
-            except (json.JSONDecodeError, KeyError, TypeError):
+            except (KeyError, TypeError, AttributeError) as e:
+                logger.debug("Stream parse skip: %s", e)
                 continue
 
         proc.wait(timeout=30)
