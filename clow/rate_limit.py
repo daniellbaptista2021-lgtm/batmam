@@ -66,5 +66,55 @@ class RateLimiter:
         return True, ip_rem
 
 
-# Global instance
-limiter = RateLimiter()
+# ── Redis-backed rate limiter (optional) ─────────────────────
+
+class RedisRateLimiter:
+    """Rate limiter using Redis INCR + EXPIRE for persistence across restarts."""
+
+    def __init__(self, redis_url: str):
+        import redis as _redis
+        self._r = _redis.from_url(redis_url, decode_responses=True)
+
+    def _check(self, key: str, limit: RateLimit) -> tuple[bool, int]:
+        pipe = self._r.pipeline()
+        pipe.incr(key)
+        pipe.expire(key, limit.window_seconds)
+        results = pipe.execute()
+        count = results[0]
+        remaining = max(0, limit.requests - count)
+        return count <= limit.requests, remaining
+
+    def check_ip(self, ip: str) -> tuple[bool, int]:
+        return self._check(f"rl:ip:{ip}", IP_LIMIT)
+
+    def check_user(self, user_id: str, plan: str = "free") -> tuple[bool, int]:
+        limit = PLAN_LIMITS.get(plan, PLAN_LIMITS["free"])
+        return self._check(f"rl:user:{user_id}", limit)
+
+    def check(self, ip: str, user_id: str = "", plan: str = "free") -> tuple[bool, int]:
+        ip_ok, ip_rem = self.check_ip(ip)
+        if not ip_ok:
+            return False, 0
+        if user_id:
+            user_ok, user_rem = self.check_user(user_id, plan)
+            if not user_ok:
+                return False, 0
+            return True, min(ip_rem, user_rem)
+        return True, ip_rem
+
+
+# Global instance — uses Redis if available, otherwise in-memory
+def _create_limiter():
+    import os
+    redis_url = os.getenv("REDIS_URL", "")
+    if redis_url:
+        try:
+            rl = RedisRateLimiter(redis_url)
+            rl._r.ping()
+            return rl
+        except Exception:
+            pass
+    return RateLimiter()
+
+
+limiter = _create_limiter()

@@ -157,6 +157,10 @@ def _setup_middleware():
         allow_headers=["*"],
     )
 
+    # Security headers (CSP, X-Frame-Options, HSTS, etc.)
+    from .security import SecurityHeadersMiddleware
+    app.add_middleware(SecurityHeadersMiddleware)
+
 
 if HAS_FASTAPI:
     _setup_middleware()
@@ -173,6 +177,41 @@ if HAS_FASTAPI:
     register_admin_routes(app)
     register_chat_routes(app)
     register_ws_routes(app)
+
+    # ── Metrics & Error tracking endpoints ──────────────────────
+    from fastapi import Request as _Req
+    from fastapi.responses import JSONResponse as _JR, PlainTextResponse as _PR
+    from .metrics import metrics
+    from .error_tracker import get_recent_errors, error_stats, capture_exception
+
+    @app.get("/metrics", tags=["monitoring"])
+    async def prometheus_metrics():
+        """Prometheus-compatible metrics endpoint."""
+        return _PR(metrics.to_prometheus(), media_type="text/plain")
+
+    @app.get("/api/v1/metrics/json", tags=["monitoring"])
+    async def json_metrics():
+        """JSON metrics with histograms and percentiles."""
+        return _JR(metrics.to_json())
+
+    @app.get("/api/v1/errors", tags=["monitoring"])
+    async def api_errors(request: _Req):
+        """Recent errors (admin only)."""
+        from .routes.auth import _get_user_session
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Admin only"}, status_code=403)
+        return _JR({"errors": get_recent_errors(50), "stats": error_stats()})
+
+    # Instrument request latency
+    @app.middleware("http")
+    async def _metrics_middleware(request: _Req, call_next):
+        start = time.time()
+        response = await call_next(request)
+        duration = time.time() - start
+        metrics.inc("http_requests_total", labels={"method": request.method, "status": str(response.status_code)})
+        metrics.observe("http_request_duration_seconds", duration, labels={"path": request.url.path[:50]})
+        return response
 
 
 def get_app():

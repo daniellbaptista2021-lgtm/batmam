@@ -681,3 +681,50 @@ function _setupMobileViewport(){
   if(window.visualViewport)applyHeight(window.visualViewport.height);
   else applyHeight(window.innerHeight);
 }
+
+/* ── MOBILE UX ENHANCEMENTS ─────────────────────────── */
+
+// Haptic feedback on send
+(function(){
+  var sb=document.getElementById('sBtn');
+  if(sb&&navigator.vibrate){sb.addEventListener('click',function(){navigator.vibrate(10)})}
+})();
+
+// Smart auto-scroll (skip if user scrolled up)
+(function(){
+  var term=document.getElementById('term');
+  if(!term)return;
+  var userScrolled=false;
+  term.addEventListener('scroll',function(){userScrolled=(term.scrollHeight-term.scrollTop-term.clientHeight)>100});
+  var origScrl=window.scrl;
+  if(typeof origScrl==='function'){window.scrl=function(){if(!userScrolled)origScrl()}}
+})();
+
+// Pull-to-refresh
+(function(){
+  var term=document.getElementById('term');
+  if(!term||!('ontouchstart' in window))return;
+  var startY=0,pulling=false,indicator=null;
+  function mkInd(){if(indicator)return;indicator=document.createElement('div');indicator.className='pull-indicator';indicator.textContent='\u21BB';term.style.position='relative';term.insertBefore(indicator,term.firstChild)}
+  term.addEventListener('touchstart',function(e){if(term.scrollTop<=0){startY=e.touches[0].clientY;pulling=true;mkInd()}},{passive:true});
+  term.addEventListener('touchmove',function(e){if(!pulling||!indicator)return;var dy=e.touches[0].clientY-startY;if(dy>0&&dy<120){indicator.classList.add('show');indicator.style.top=Math.min(dy-40,20)+'px'}},{passive:true});
+  term.addEventListener('touchend',function(){if(!pulling||!indicator)return;if((parseInt(indicator.style.top)||0)>10){indicator.classList.add('refreshing');if(typeof loadConvs==='function')loadConvs();setTimeout(function(){indicator.classList.remove('show','refreshing');indicator.style.top='-50px'},800)}else{indicator.classList.remove('show');indicator.style.top='-50px'}pulling=false},{passive:true});
+})();
+
+// Double-tap to copy message
+(function(){
+  var term=document.getElementById('term');
+  if(!term)return;
+  var lastTap=0;
+  term.addEventListener('touchend',function(e){var now=Date.now();if(now-lastTap<300){var wrap=e.target.closest('.mb-wrap');if(wrap){var body=wrap.querySelector('.mb-body');if(body&&navigator.clipboard){navigator.clipboard.writeText(body.textContent).then(function(){showToast();if(navigator.vibrate)navigator.vibrate(5)})}}}lastTap=now});
+  function showToast(){var t=document.querySelector('.copy-toast');if(!t){t=document.createElement('div');t.className='copy-toast';t.textContent='Copiado!';document.body.appendChild(t)}t.classList.add('show');setTimeout(function(){t.classList.remove('show')},1500)}
+})();
+
+// Swipe to open/close sidebar
+(function(){
+  if(!('ontouchstart' in window))return;
+  var startX=0,startY=0,swiping=false;
+  document.addEventListener('touchstart',function(e){var x=e.touches[0].clientX,y=e.touches[0].clientY;var sb=document.getElementById('sb');if(x<30||(sb&&sb.classList.contains('open'))){swiping=true;startX=x;startY=y}},{passive:true});
+  document.addEventListener('touchmove',function(e){if(!swiping)return;if(Math.abs(e.touches[0].clientY-startY)>Math.abs(e.touches[0].clientX-startX))swiping=false},{passive:true});
+  document.addEventListener('touchend',function(e){if(!swiping)return;var dx=e.changedTouches[0].clientX-startX;var sb=document.getElementById('sb');if(sb){if(dx>60&&!sb.classList.contains('open'))toggleSB();if(dx<-60&&sb.classList.contains('open'))toggleSB()}swiping=false},{passive:true});
+})();
