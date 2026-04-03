@@ -1,0 +1,18 @@
+[Unit]
+Description=Clow Deploy Webhook
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/clow
+ExecStart=/root/clow/.venv/bin/python3 /root/clow/deploy/webhook.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=clow-webhook
+Environment=WEBHOOK_SECRET=clow-deploy-secret
+
+[Install]
+WantedBy=multi-user.target
