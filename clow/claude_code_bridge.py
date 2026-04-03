@@ -16,21 +16,13 @@ from .database import get_db
 logger = logging.getLogger(__name__)
 
 CLAUDE_BIN = "/root/.local/bin/claude"
-WORKSPACE = "/root/clow/static/files"
+WORKSPACE = "/root/clow"
 
 # Session persistence: maps conversation_id -> claude session_id
 _session_map: dict[str, str] = {}
 
-os.makedirs(WORKSPACE, exist_ok=True)
-
-# ── Clow system prompt appended to Claude Code ──────────────────
-
-_CLOW_APPEND_PROMPT = """
-Você é o Clow. EXECUTE todas as tarefas usando ferramentas (Write, Bash, Edit, Read, Glob, Grep, WebSearch, WebFetch, Agent, etc).
-NUNCA apenas descreva o que faria — FAÇA diretamente usando as ferramentas.
-Quando pedirem para criar arquivos (landing pages, sites, apps, planilhas, documentos), crie em /root/clow/static/files/ para acesso web.
-Responda em português brasileiro. Seja direto.
-""".strip()
+# Ensure static/files exists for generated content
+os.makedirs("/root/clow/static/files", exist_ok=True)
 
 
 def _get_claude_env():
@@ -41,7 +33,6 @@ def _get_claude_env():
     env = os.environ.copy()
     env.pop("ANTHROPIC_API_KEY", None)
     env.pop("CLAUDE_CODE_OAUTH_TOKEN", None)
-    env["CLAUDE_CODE_NO_INTERACTIVE"] = "1"
     creds_path = os.path.expanduser("~/.claude/.credentials.json")
     try:
         with open(creds_path) as f:
@@ -55,12 +46,11 @@ def _get_claude_env():
 
 
 def _build_cmd(prompt: str, stream: bool = False, conversation_id: str | None = None) -> list[str]:
-    """Build Claude Code CLI command with all flags."""
+    """Build Claude Code CLI command — identical to running claude directly."""
     cmd = [
         CLAUDE_BIN, "-p", prompt,
         "--model", "claude-opus-4-6",
         "--permission-mode", "dontAsk",
-        "--append-system-prompt", _CLOW_APPEND_PROMPT,
         "--max-turns", "50",
     ]
     if stream:
