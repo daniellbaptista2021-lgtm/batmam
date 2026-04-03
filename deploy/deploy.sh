@@ -27,3 +27,4 @@ else
     journalctl -u clow --no-pager -n 20
     exit 1
 fi
+# Deploy automático ativo
