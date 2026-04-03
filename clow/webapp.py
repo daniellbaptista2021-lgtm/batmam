@@ -909,7 +909,7 @@ async function init(){
   }catch(e){}
   loadConvs();connectWS();
 }
-function initMod(plan,adm){const s=document.getElementById('modSel');const can=adm||plan==='pro'||plan==='unlimited';if(!can){s.value='haiku';selMod='haiku';s.disabled=true;const o=s.querySelector('option[value="sonnet"]');if(o)o.disabled=true}if(adm){const cc=document.createElement('option');cc.value='claude-code';cc.textContent='Opus';s.appendChild(cc)}s.className='mod-pill '+selMod}
+function initMod(plan,adm){const s=document.getElementById('modSel');if(adm){selMod='claude-code';s.style.display='none';const b=document.createElement('span');b.className='mod-pill claude-code';b.style.cssText='pointer-events:none;cursor:default;padding:4px 12px;font-weight:600';b.textContent='Opus';s.parentNode.insertBefore(b,s);return}const can=plan==='pro'||plan==='unlimited';if(!can){s.value='haiku';selMod='haiku';s.disabled=true;const o=s.querySelector('option[value="sonnet"]');if(o)o.disabled=true}s.className='mod-pill '+selMod}
 function onMod(){const s=document.getElementById('modSel');selMod=s.value;s.className='mod-pill '+selMod}
 function toggleSB(){document.getElementById('sb').classList.toggle('open');document.getElementById('sbOv').classList.toggle('show')}
 function togDrop(){document.getElementById('hdrDrop').classList.toggle('show')}
@@ -2468,11 +2468,12 @@ if HAS_FASTAPI:
             return JSONResponse({"error": "Nao autenticado"}, status_code=401)
         plan = sess.get("plan", "free")
         is_admin = sess.get("is_admin", False)
-        models = ["haiku"]
-        if plan in ("pro", "unlimited") or is_admin:
-            models.append("sonnet")
         if is_admin:
-            models.append("claude-code")
+            models = ["claude-code"]
+        else:
+            models = ["haiku"]
+            if plan in ("pro", "unlimited"):
+                models.append("sonnet")
         return JSONResponse({
             "email": sess["email"],
             "user_id": sess["user_id"],
@@ -2646,24 +2647,8 @@ if HAS_FASTAPI:
         user_plan = sess.get("plan", "free")
         is_admin = sess.get("is_admin", False)
 
-        # Valida modelo pelo plano
-        from .generators.base import MODELS as AI_MODELS
-        allowed_models = ["haiku"]
-        if user_plan in ("pro", "unlimited") or is_admin:
-            allowed_models.append("sonnet")
+        # Admin SEMPRE usa Claude Code CLI (conta Max, gratis)
         if is_admin:
-            allowed_models.append("claude-code")
-
-        # Bloqueia claude-code para nao-admin no backend
-        if chosen_model == "claude-code" and not is_admin:
-            return JSONResponse({
-                "session_id": "",
-                "response": "Modelo disponivel apenas para administradores.",
-                "tools": [], "file": None,
-            }, status_code=403)
-
-        # Se claude-code, despacha via CLI bridge
-        if chosen_model == "claude-code" and is_admin:
             from .claude_code_bridge import ask_claude_code, log_claude_code_usage
             track_action("user_message_claude_code", content[:60])
 
@@ -2685,6 +2670,11 @@ if HAS_FASTAPI:
                 "tools": [], "file": None,
             })
 
+        # Nao-admin: valida modelo pelo plano
+        from .generators.base import MODELS as AI_MODELS
+        allowed_models = ["haiku"]
+        if user_plan in ("pro", "unlimited"):
+            allowed_models.append("sonnet")
         if chosen_model not in allowed_models:
             chosen_model = "haiku"
         model_id = AI_MODELS.get(chosen_model, AI_MODELS["haiku"])
@@ -3115,8 +3105,8 @@ if HAS_FASTAPI:
                     # Envia thinking
                     await websocket.send_json({"type": "thinking_start"})
 
-                    # ── Claude Code CLI com streaming (Opus via Max) ──
-                    if ws_model == "claude-code" and ws_is_admin:
+                    # ── Admin SEMPRE usa Claude Code CLI com streaming (Opus via Max) ──
+                    if ws_is_admin:
                         await websocket.send_json({"type": "thinking_end"})
 
                         from .claude_code_bridge import ask_claude_code_stream, log_claude_code_usage
