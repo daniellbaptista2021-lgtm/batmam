@@ -1136,7 +1136,7 @@ function showWelc(){const w=document.createElement('div');w.className='welc';w.i
 function connectWS(){const pr=location.protocol==='https:'?'wss:':'ws:';try{ws=new WebSocket(`${pr}//${location.host}/ws`)}catch(e){http=true;setOn('http');return}const to=setTimeout(()=>{if(!ws||ws.readyState!==1){try{ws.close()}catch(e){}http=true;setOn('http')}},4000);ws.onopen=()=>{clearTimeout(to);http=false;setOn('online');rA=0};ws.onmessage=e=>hMsg(JSON.parse(e.data));ws.onclose=()=>{clearTimeout(to);if(rA>=3){http=true;setOn('http');return}setOn('offline');setTimeout(()=>{rA++;connectWS()},Math.min(1000*rA,5000))};ws.onerror=()=>setOn('offline')}
 function setOn(s){const b=document.getElementById('onBdg'),l=document.getElementById('onLbl');b.style.color=s==='offline'?'var(--r)':'var(--g)';l.textContent=s}
 function hMsg(m){switch(m.type){case'thinking_start':showThink();break;case'thinking_end':hideThink();break;case'text_delta':appendTxt(m.content);break;case'text_done':finishTxt();break;case'tool_call':showTool(m.name,m.args);break;case'tool_result':showToolR(m.name,m.status,m.output);break;case'turn_complete':finishTurn();break;case'error':showErr(m.content);break}}
-function sendMessage(){const t=I.value.trim();if(!t||proc)return;if(http){sendHTTP(t);return}if(!ws||ws.readyState!==1)return;addUser(t);ws.send(JSON.stringify({type:'message',content:t}));I.value='';I.style.height='auto';proc=true;SB.disabled=true;document.getElementById('stopBtn').classList.add('vis')}
+function sendMessage(){const t=I.value.trim();if(!t||proc)return;if(http){sendHTTP(t);return}if(!ws||ws.readyState!==1)return;addUser(t);ws.send(JSON.stringify({type:'message',content:t,model:selMod}));I.value='';I.style.height='auto';proc=true;SB.disabled=true;document.getElementById('stopBtn').classList.add('vis')}
 async function sendHTTP(t){addUser(t);I.value='';I.style.height='auto';proc=true;SB.disabled=true;showThink();const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),60000);try{const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:t,session_id:hSid,conversation_id:cid,model:selMod}),signal:ac.signal});clearTimeout(tm);hideThink();if(!r.ok){const e=await r.json().catch(()=>({error:'Erro'}));showErr(e.error||e.response||'Erro');finishTurn();return}const d=await r.json();hSid=d.session_id||hSid;if(d.tools&&d.tools.length)d.tools.forEach(x=>{showTool(x.name,x.args);showToolR(x.name,x.status,x.output||'')});if(d.response){appendTxt(d.response);finishTxt()}if(d.file)showFile(d.file);if(d.mission)startPoll(d.mission);finishTurn()}catch(e){clearTimeout(tm);hideThink();showErr(e.name==='AbortError'?'Tempo esgotado, tente novamente':'Erro: '+e.message);finishTurn()}}
 function sendCmd(c){I.value=c;sendMessage()}
 function qa(t){const w=document.getElementById('welc');if(w)w.remove();I.value=t;I.focus();if(window.innerWidth<769)toggleSB()}
@@ -1350,7 +1350,7 @@ sendMessage=async function(){
         }catch(e){clearTimeout(tm);hideThink();showErr(e.name==='AbortError'?'Tempo esgotado, tente novamente':'Erro: '+e.message);finishTurn()}
       }else if(ws&&ws.readyState===1){
         hideThink();
-        ws.send(JSON.stringify({type:'message',content:msgText}));
+        ws.send(JSON.stringify({type:'message',content:msgText,model:selMod}));
         proc=true;SB.disabled=true;
       }else{hideThink();finishTurn()}
       return;
@@ -1375,7 +1375,7 @@ sendMessage=async function(){
       }catch(e){clearTimeout(tm);hideThink();showErr(e.name==='AbortError'?'Tempo esgotado, tente novamente':'Erro: '+e.message);finishTurn()}
     }else if(ws&&ws.readyState===1){
       hideThink();
-      ws.send(JSON.stringify({type:'message',content:fallbackText}));
+      ws.send(JSON.stringify({type:'message',content:fallbackText,model:selMod}));
       proc=true;SB.disabled=true;
     }else{hideThink();finishTurn()}
     return;
@@ -1398,7 +1398,7 @@ sendMessage=async function(){
     if(!res||!res.ok){finishTurn();return}
     const fileData={...res};
     if(http){await sendFileHTTP(text,fileData)}
-    else if(ws&&ws.readyState===1){ws.send(JSON.stringify({type:'message',content:text,file_data:fileData}));proc=true;SB.disabled=true}
+    else if(ws&&ws.readyState===1){ws.send(JSON.stringify({type:'message',content:text,file_data:fileData,model:selMod}));proc=true;SB.disabled=true}
     else{finishTurn()}
     return;
   }
@@ -3023,7 +3023,8 @@ if HAS_FASTAPI:
     async def websocket_endpoint(websocket: WebSocket):
         # Verificacao de sessao via cookie para WebSocket
         ws_cookie = websocket.cookies.get("clow_session", "")
-        if not _validate_session(ws_cookie):
+        ws_sess = _validate_session(ws_cookie)
+        if not ws_sess:
             # Fallback: API key via query param
             api_key = websocket.query_params.get("api_key", "")
             keys = _get_api_keys()
@@ -3033,6 +3034,9 @@ if HAS_FASTAPI:
             elif not keys and not ws_cookie:
                 await websocket.close(code=4001, reason="Nao autenticado")
                 return
+
+        ws_is_admin = ws_sess.get("is_admin", False) if ws_sess else False
+        ws_user_id = ws_sess.get("user_id", "") if ws_sess else ""
 
         # Rate limit para WebSocket
         client_ip = websocket.client.host if websocket.client else "unknown"
@@ -3101,6 +3105,7 @@ if HAS_FASTAPI:
                 if data.get("type") == "message":
                     content = data.get("content", "")
                     file_data = data.get("file_data")
+                    ws_model = data.get("model", "haiku")
 
                     if not content and not file_data:
                         continue
@@ -3109,6 +3114,44 @@ if HAS_FASTAPI:
 
                     # Envia thinking
                     await websocket.send_json({"type": "thinking_start"})
+
+                    # ── Claude Code CLI com streaming (Opus via Max) ──
+                    if ws_model == "claude-code" and ws_is_admin:
+                        await websocket.send_json({"type": "thinking_end"})
+
+                        from .claude_code_bridge import ask_claude_code_stream, log_claude_code_usage
+                        track_action("user_message_claude_code", content[:60])
+
+                        def _on_delta(delta: str):
+                            asyncio.run_coroutine_threadsafe(
+                                send_queue.put({"type": "text_delta", "content": delta}),
+                                loop,
+                            )
+
+                        def _on_done(full: str):
+                            asyncio.run_coroutine_threadsafe(
+                                send_queue.put({"type": "text_done"}),
+                                loop,
+                            )
+
+                        def _on_error(err: str):
+                            asyncio.run_coroutine_threadsafe(
+                                send_queue.put({"type": "error", "content": err}),
+                                loop,
+                            )
+
+                        try:
+                            elapsed = await loop.run_in_executor(
+                                None, ask_claude_code_stream, content, _on_delta, _on_done, _on_error
+                            )
+                            log_claude_code_usage(ws_user_id, content, elapsed)
+                            track_action("claude_code_response_stream", f"{elapsed:.1f}s")
+                        except Exception as e:
+                            await websocket.send_json({"type": "error", "content": str(e)})
+                            track_action("claude_code_error", str(e)[:60], "error")
+
+                        await websocket.send_json({"type": "turn_complete"})
+                        continue
 
                     # ── Detecta e processa pedido de imagem ──
                     if _should_generate_image(content) and not file_data:
