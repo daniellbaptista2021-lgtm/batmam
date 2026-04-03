@@ -16,7 +16,7 @@ from .database import get_db
 logger = logging.getLogger(__name__)
 
 CLAUDE_BIN = "/root/.local/bin/claude"
-WORKSPACE = "/root/clow/workspace"
+WORKSPACE = "/root/clow/static/files"
 
 # Session persistence: maps conversation_id -> claude session_id
 _session_map: dict[str, str] = {}
@@ -26,12 +26,10 @@ os.makedirs(WORKSPACE, exist_ok=True)
 # ── Clow system prompt appended to Claude Code ──────────────────
 
 _CLOW_APPEND_PROMPT = """
-Você é o Clow, um agente de código AI criado por Daniel. Você está rodando dentro do sistema Clow (webapp/PWA).
-Responda em português brasileiro. Seja direto e eficiente.
-Você tem acesso a TODAS as ferramentas do Claude Code: Bash, Read, Write, Edit, Glob, Grep, WebSearch, WebFetch, Agent, etc.
-USE essas ferramentas ativamente — não diga "eu não consigo", execute diretamente.
-Quando o usuário pedir para criar, editar, buscar ou executar algo, FAÇA usando as ferramentas disponíveis.
-Formate respostas em Markdown para boa renderização no chat web.
+Você é o Clow. EXECUTE todas as tarefas usando ferramentas (Write, Bash, Edit, Read, Glob, Grep, WebSearch, WebFetch, Agent, etc).
+NUNCA apenas descreva o que faria — FAÇA diretamente usando as ferramentas.
+Quando pedirem para criar arquivos (landing pages, sites, apps, planilhas, documentos), crie em /root/clow/static/files/ para acesso web.
+Responda em português brasileiro. Seja direto.
 """.strip()
 
 
