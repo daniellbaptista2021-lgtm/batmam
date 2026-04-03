@@ -12,6 +12,18 @@ logger = logging.getLogger(__name__)
 
 CLAUDE_BIN = "/root/.local/bin/claude"
 
+def _get_claude_env():
+    """Build environment for Claude Code CLI subprocess.
+    Removes ANTHROPIC_API_KEY so CLI uses OAuth instead of API key.
+    """
+    env = os.environ.copy()
+    env.pop("ANTHROPIC_API_KEY", None)
+    env.pop("CLAUDE_CODE_OAUTH_TOKEN", None)
+    env["CLAUDE_CODE_NO_INTERACTIVE"] = "1"
+    env["CLAUDE_CODE_OAUTH_TOKEN"] = "sk-ant-oat01-iqdFzm-WfqIiq_YBSgEFozl2uwsXrO-CYHg8VXsFPDUPv79v5fJPzdKDiB2xXeVnOuloP5gXmnypB8UigYhBvQ-2AsWlgAA"
+    return env
+
+
 
 def ask_claude_code(prompt: str, work_dir: str = "/root/clow") -> tuple[str, float]:
     """Executa prompt via Claude Code CLI (sem streaming).
@@ -27,7 +39,7 @@ def ask_claude_code(prompt: str, work_dir: str = "/root/clow") -> tuple[str, flo
             text=True,
             timeout=120,
             cwd=work_dir,
-            env={**os.environ, "CLAUDE_CODE_NO_INTERACTIVE": "1"},
+            env=_get_claude_env(),
         )
         elapsed = time.time() - start
         print(f"BRIDGE RETURNCODE: {result.returncode}", flush=True)
@@ -77,7 +89,7 @@ def ask_claude_code_stream(
             text=True,
             bufsize=1,
             cwd=work_dir,
-            env={**os.environ, "CLAUDE_CODE_NO_INTERACTIVE": "1"},
+            env=_get_claude_env(),
         )
 
         for line in proc.stdout:
