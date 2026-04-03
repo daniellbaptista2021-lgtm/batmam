@@ -1,31 +1,21 @@
 [Unit]
 Description=Clow AI Web App
 After=network.target
-Wants=network-online.target
 
 [Service]
-Type=exec
+Type=simple
 User=root
 WorkingDirectory=/root/clow
+EnvironmentFile=/root/.clow/app/.env
 Environment=PATH=/root/clow/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/root/clow/.venv/bin/uvicorn clow.webapp:app --host 0.0.0.0 --port 8001 --workers 2 --log-level info
-ExecReload=/bin/kill -HUP $MAINPID
+ExecStart=/root/clow/.venv/bin/uvicorn clow.webapp:app --host 0.0.0.0 --port 8001 --log-level info
 Restart=always
 RestartSec=5
-StartLimitIntervalSec=60
-StartLimitBurst=5
+StartLimitIntervalSec=300
+StartLimitBurst=10
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=clow
-
-# Security hardening
-NoNewPrivileges=true
-ProtectSystem=strict
-ReadWritePaths=/root/clow /root/.clow /root/.claude /tmp
-PrivateTmp=true
-
-# Health check — restart if unhealthy
-WatchdogSec=120
 
 [Install]
 WantedBy=multi-user.target
