@@ -95,19 +95,37 @@ def build_skill_prompt(prompt: str) -> str:
     return "\n\n---\n\n".join(parts)
 
 
+def _get_builtin_skills() -> list[dict]:
+    """Carrega as 36 built-in skills do _skills_cli."""
+    try:
+        from .._skills_cli import BUILTIN_SKILLS
+        return [{"id": s.name, "name": s.description, "category": s.category} for s in BUILTIN_SKILLS]
+    except (ImportError, Exception):
+        return []
+
+
 def list_all_skills() -> dict[str, list[dict]]:
-    """Lista todas skills por categoria."""
+    """Lista TODAS as skills (built-in + imported) por categoria."""
     registry = _load_registry()
     by_cat: dict[str, list] = {}
+
+    # Built-in skills (36)
+    for s in _get_builtin_skills():
+        cat = s.get("category", "built-in")
+        by_cat.setdefault(cat, []).append({"id": s["id"], "name": s["name"]})
+
+    # Imported skills from registry.json (26+)
     for s in registry:
         cat = s.get("category", "other")
         by_cat.setdefault(cat, []).append({"id": s["id"], "name": s["name"]})
+
     return by_cat
 
 
 def format_skills_list(category: str = "") -> str:
     """Formata lista de skills para exibicao no chat."""
     by_cat = list_all_skills()
+    total = sum(len(v) for v in by_cat.values())
 
     if category:
         skills = by_cat.get(category.lower(), [])
