@@ -124,61 +124,6 @@ def register_ws_routes(app: FastAPI) -> None:
                     # Envia thinking
                     await websocket.send_json({"type": "thinking_start"})
 
-                    # ── Admin SEMPRE usa Claude Code CLI com streaming (Opus via Max) ──
-                    if ws_is_admin:
-                        await websocket.send_json({"type": "thinking_end"})
-
-                        from ..claude_code_bridge import ask_claude_code_stream, log_claude_code_usage
-                        track_action("user_message_claude_code", content[:60])
-
-                        def _on_delta(delta: str):
-                            asyncio.run_coroutine_threadsafe(
-                                send_queue.put({"type": "text_delta", "content": delta}),
-                                loop,
-                            )
-
-                        def _on_done(full: str):
-                            asyncio.run_coroutine_threadsafe(
-                                send_queue.put({"type": "text_done"}),
-                                loop,
-                            )
-
-                        def _on_error(err: str):
-                            asyncio.run_coroutine_threadsafe(
-                                send_queue.put({"type": "error", "content": err}),
-                                loop,
-                            )
-
-                        def _on_tool_call(name: str, args: dict):
-                            asyncio.run_coroutine_threadsafe(
-                                send_queue.put({"type": "tool_call", "name": name, "args": args}),
-                                loop,
-                            )
-
-                        def _on_tool_result(name: str, status: str, output: str):
-                            asyncio.run_coroutine_threadsafe(
-                                send_queue.put({"type": "tool_result", "name": name, "status": status, "output": output}),
-                                loop,
-                            )
-
-                        ws_conv_id = data.get("conversation_id", "")
-                        try:
-                            elapsed = await loop.run_in_executor(
-                                None, lambda: ask_claude_code_stream(
-                                    content, _on_delta, _on_done, _on_error,
-                                    "/root/clow/static/files", _on_tool_call, _on_tool_result,
-                                    ws_conv_id
-                                )
-                            )
-                            log_claude_code_usage(ws_user_id, content, elapsed)
-                            track_action("claude_code_response_stream", f"{elapsed:.1f}s")
-                        except Exception as e:
-                            await websocket.send_json({"type": "error", "content": str(e)})
-                            track_action("claude_code_error", str(e)[:60], "error")
-
-                        await websocket.send_json({"type": "turn_complete"})
-                        continue
-
                     # ── Detecta e processa pedido de imagem ──
                     if _should_generate_image(content) and not file_data:
                         await websocket.send_json({"type": "thinking_end"})

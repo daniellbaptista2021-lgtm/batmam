@@ -187,34 +187,14 @@ def register_chat_routes(app: FastAPI) -> None:
                 "tools": [], "file": None,
             }, status_code=429)
 
-        # Admin SEMPRE usa Claude Code CLI (conta Max, gratis)
-        if is_admin:
-            from ..claude_code_bridge import ask_claude_code, log_claude_code_usage
-            track_action("user_message_claude_code", content[:60])
-
-            if conv_id:
-                save_message(conv_id, "user", content)
-
-            loop = asyncio.get_event_loop()
-            response_text, elapsed = await loop.run_in_executor(None, lambda: ask_claude_code(content, conversation_id=conv_id))
-
-            log_claude_code_usage(user_id, content, elapsed)
-            track_action("claude_code_response", response_text[:60] if response_text else "")
-
-            if conv_id:
-                save_message(conv_id, "assistant", response_text)
-
-            return JSONResponse({
-                "session_id": session_id or str(uuid.uuid4())[:8],
-                "response": response_text,
-                "tools": [], "file": None,
-            })
-
-        # Nao-admin: valida modelo pelo plano
+        # Valida modelo pelo plano
         from ..generators.base import MODELS as AI_MODELS
-        allowed_models = ["haiku"]
-        if user_plan in ("pro", "unlimited"):
-            allowed_models.append("sonnet")
+        if is_admin:
+            allowed_models = ["haiku", "sonnet"]
+        else:
+            allowed_models = ["haiku"]
+            if user_plan in ("pro", "unlimited"):
+                allowed_models.append("sonnet")
         if chosen_model not in allowed_models:
             chosen_model = "haiku"
         model_id = AI_MODELS.get(chosen_model, AI_MODELS["haiku"])
