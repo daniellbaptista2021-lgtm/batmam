@@ -238,7 +238,7 @@ function connectWS(){const pr=location.protocol==='https:'?'wss:':'ws:';try{ws=n
 function setOn(s){const b=document.getElementById('onBdg'),l=document.getElementById('onLbl');b.style.color=s==='offline'?'var(--r)':'var(--g)';l.textContent=s}
 function hMsg(m){switch(m.type){case'thinking_start':showThink();break;case'thinking_end':hideThink();break;case'text_delta':appendTxt(m.content);break;case'text_done':finishTxt();break;case'tool_call':showTool(m.name,m.args);break;case'tool_result':showToolR(m.name,m.status,m.output);break;case'turn_complete':finishTurn();break;case'error':showErr(m.content);break}}
 function sendMessage(){const t=I.value.trim();if(!t||proc)return;if(http){sendHTTP(t);return}if(!ws||ws.readyState!==1)return;addUser(t);ws.send(JSON.stringify({type:'message',content:t,model:selMod,conversation_id:cid}));I.value='';I.style.height='auto';proc=true;SB.disabled=true;document.getElementById('stopBtn').classList.add('vis')}
-async function sendHTTP(t){addUser(t);I.value='';I.style.height='auto';proc=true;SB.disabled=true;showThink();const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),300000);try{const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:t,session_id:hSid,conversation_id:cid,model:selMod}),signal:ac.signal});clearTimeout(tm);hideThink();if(!r.ok){const e=await r.json().catch(()=>({error:'Erro'}));showErr(e.error||e.response||'Erro');finishTurn();return}const d=await r.json();hSid=d.session_id||hSid;if(d.tools&&d.tools.length)d.tools.forEach(x=>{showTool(x.name,x.args);showToolR(x.name,x.status,x.output||'')});if(d.response){appendTxt(d.response);finishTxt()}if(d.file)showFile(d.file);if(d.mission)startPoll(d.mission);finishTurn()}catch(e){clearTimeout(tm);hideThink();showErr(e.name==='AbortError'?'Tempo esgotado, tente novamente':'Erro: '+e.message);finishTurn()}}
+async function sendHTTP(t){addUser(t);I.value='';I.style.height='auto';proc=true;SB.disabled=true;showThink();try{const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:t,session_id:hSid,conversation_id:cid,model:selMod})});hideThink();if(!r.ok){const e=await r.json().catch(()=>({error:'Erro'}));showErr(e.error||e.response||'Erro');finishTurn();return}const d=await r.json();hSid=d.session_id||hSid;if(d.tools&&d.tools.length)d.tools.forEach(x=>{showTool(x.name,x.args);showToolR(x.name,x.status,x.output||'')});if(d.response){appendTxt(d.response);finishTxt()}if(d.file)showFile(d.file);if(d.mission)startPoll(d.mission);finishTurn()}catch(e){hideThink();showErr('Erro: '+e.message);finishTurn()}}
 function sendCmd(c){I.value=c;sendMessage()}
 function qa(t){const w=document.getElementById('welc');if(w)w.remove();I.value=t;I.focus();if(window.innerWidth<769)toggleSB()}
 function now(){return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
@@ -437,18 +437,17 @@ sendMessage=async function(){
       clearAudio();
       showThink();
       if(http){
-        const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),300000);
         try{
           const body={content:msgText,session_id:hSid,conversation_id:cid,model:selMod};
-          const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:ac.signal});
-          clearTimeout(tm);hideThink();
+          const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+          hideThink();
           if(!r.ok){const e=await r.json().catch(()=>({error:'Erro'}));showErr(e.error||'Erro');finishTurn();return}
           const d=await r.json();
           hSid=d.session_id||hSid;
           if(!cid&&d.conversation_id)cid=d.conversation_id;
           if(d.response){appendTxt(d.response);finishTxt()}
           finishTurn();
-        }catch(e){clearTimeout(tm);hideThink();showErr(e.name==='AbortError'?'Tempo esgotado, tente novamente':'Erro: '+e.message);finishTurn()}
+        }catch(e){hideThink();showErr('Erro: '+e.message);finishTurn()}
       }else if(ws&&ws.readyState===1){
         hideThink();
         ws.send(JSON.stringify({type:'message',content:msgText,model:selMod,conversation_id:cid}));
@@ -463,17 +462,16 @@ sendMessage=async function(){
     clearAudio();
     showThink();
     if(http){
-      const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),300000);
       try{
         const body={content:fallbackText,session_id:hSid,conversation_id:cid,model:selMod};
-        const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:ac.signal});
-        clearTimeout(tm);hideThink();
+        const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        hideThink();
         if(!r.ok){const e=await r.json().catch(()=>({error:'Erro'}));showErr(e.error||'Erro');finishTurn();return}
         const d=await r.json();
         hSid=d.session_id||hSid;
         if(d.response){appendTxt(d.response);finishTxt()}
         finishTurn();
-      }catch(e){clearTimeout(tm);hideThink();showErr(e.name==='AbortError'?'Tempo esgotado, tente novamente':'Erro: '+e.message);finishTurn()}
+      }catch(e){hideThink();showErr('Erro: '+e.message);finishTurn()}
     }else if(ws&&ws.readyState===1){
       hideThink();
       ws.send(JSON.stringify({type:'message',content:fallbackText,model:selMod,conversation_id:cid}));
@@ -529,18 +527,17 @@ function addUserWithAttachment(text,type,icon,name,imgUrl,audUrl,transcript){
 
 async function sendFileHTTP(text,fileData){
   showThink();
-  const ac=new AbortController();const tm=setTimeout(()=>ac.abort(),300000);
   try{
     const content=text||'[arquivo enviado]';
     const body={content:content,session_id:hSid,conversation_id:cid,model:selMod,file_data:fileData};
-    const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:ac.signal});
-    clearTimeout(tm);hideThink();
+    const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    hideThink();
     if(!r.ok){const e=await r.json().catch(()=>({error:'Erro'}));showErr(e.error||'Erro');finishTurn();return}
     const d=await r.json();
     hSid=d.session_id||hSid;
     if(d.response){appendTxt(d.response);finishTxt()}
     finishTurn();
-  }catch(e){clearTimeout(tm);hideThink();showErr(e.name==='AbortError'?'Tempo esgotado, tente novamente':'Erro: '+e.message);finishTurn()}
+  }catch(e){hideThink();showErr('Erro: '+e.message);finishTurn()}
 }
 
 // ── Drag & Drop ──
