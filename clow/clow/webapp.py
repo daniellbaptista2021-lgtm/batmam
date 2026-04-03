@@ -520,7 +520,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 .sb-uplan{font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--gp);color:#fff;letter-spacing:.3px;text-transform:uppercase}
 
 /* MAIN */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg-0);position:relative;z-index:2;padding-bottom:70px}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg-0);position:relative;z-index:2}
 .hdr{display:flex;align-items:center;padding:0 16px;padding-top:var(--st);height:calc(48px + var(--st));background:var(--bg-1);border-bottom:1px solid var(--bd);flex-shrink:0;gap:10px}
 .ham{display:none;background:none;border:none;color:var(--t2);font-size:20px;cursor:pointer;padding:4px}
 .hdr-t{flex:1;font-size:14px;font-weight:500;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--sans)}
@@ -542,7 +542,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 .hdr-drop a:hover,.hdr-drop button:hover{background:var(--bg-h);color:var(--t1)}
 
 /* TERMINAL */
-.term{flex:1;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch;background:var(--bg-0);position:relative;z-index:1;background-image:linear-gradient(135deg,rgba(5,5,16,.85) 0%,rgba(15,10,30,.8) 30%,rgba(20,10,40,.75) 50%,rgba(10,15,35,.8) 70%,rgba(5,5,16,.85) 100%),url(/static/brand/bg-texture.jpg);background-size:cover;background-position:center;background-attachment:fixed}
+.term{flex:1;overflow-y:auto;padding:16px;padding-bottom:80px;-webkit-overflow-scrolling:touch;background:var(--bg-0);position:relative;z-index:1;background-image:linear-gradient(135deg,rgba(5,5,16,.85) 0%,rgba(15,10,30,.8) 30%,rgba(20,10,40,.75) 50%,rgba(10,15,35,.8) 70%,rgba(5,5,16,.85) 100%),url(/static/brand/bg-texture.jpg);background-size:cover;background-position:center;background-attachment:fixed}
 
 /* WELCOME */
 .welc{text-align:center;padding:32px 16px;animation:fadeUp .5s ease-out}
@@ -908,7 +908,7 @@ async function init(){
     if(me.is_admin)document.getElementById('admSec').style.display='block';
     initMod(me.plan,me.is_admin);
   }catch(e){}
-  loadConvs();connectWS();var ia=document.querySelector(".input-area");if(window.visualViewport&&ia){function fixInput(){var vv=window.visualViewport;ia.style.bottom=(window.innerHeight-vv.height-vv.offsetTop)+"px";scrl()}window.visualViewport.addEventListener("resize",fixInput);window.visualViewport.addEventListener("scroll",fixInput)}
+  loadConvs();connectWS();var ia=document.querySelector(".input-area");if(window.visualViewport&&ia){function fixInput(){var vv=window.visualViewport;ia.style.bottom=(window.innerHeight-vv.height-vv.offsetTop)+"px"}window.visualViewport.addEventListener("resize",fixInput);window.visualViewport.addEventListener("scroll",fixInput)}
 }
 function initMod(plan,adm){const s=document.getElementById('modSel');if(adm){selMod='claude-code';s.style.display='none';const b=document.createElement('span');b.className='mod-pill claude-code';b.style.cssText='pointer-events:none;cursor:default;padding:4px 12px;font-weight:600';b.textContent='Opus';s.parentNode.insertBefore(b,s);return}const can=plan==='pro'||plan==='unlimited';if(!can){s.value='haiku';selMod='haiku';s.disabled=true;const o=s.querySelector('option[value="sonnet"]');if(o)o.disabled=true}s.className='mod-pill '+selMod}
 function onMod(){const s=document.getElementById('modSel');selMod=s.value;s.className='mod-pill '+selMod}
