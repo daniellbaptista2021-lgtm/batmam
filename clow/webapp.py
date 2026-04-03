@@ -593,9 +593,12 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-ind
 /* THINKING */
 .think{margin-bottom:16px;animation:mIn .2s ease-out}
 .think-in{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg-2);border:1px solid var(--bd);border-radius:12px}
-.dots{display:flex;gap:4px}.dot{width:6px;height:6px;border-radius:50%;background:var(--p);animation:pulse-d 1.4s ease-in-out infinite}
-.dot:nth-child(2){animation-delay:.2s;background:var(--bl)}.dot:nth-child(3){animation-delay:.4s}
-@keyframes pulse-d{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+.think-logo{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#9B59FC,#4A9EFF);display:flex;align-items:center;justify-content:center;animation:thinkPulse 1.5s ease-in-out infinite;flex-shrink:0}
+.think-logo span{color:#fff;font-size:14px;font-weight:700;line-height:1}
+.dots{display:flex;gap:4px}.dot{width:4px;height:4px;border-radius:50%;background:var(--p);animation:pulse-d 1.4s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.2s;background:#7B6FFC}.dot:nth-child(3){animation-delay:.4s;background:var(--bl)}
+@keyframes pulse-d{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.3)}}
+@keyframes thinkPulse{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.1);opacity:1;box-shadow:0 0 20px rgba(155,89,252,.3)}}
 .think-t{font-size:13px;color:var(--t2);font-weight:400}
 .scur{display:inline-block;width:2px;height:15px;background:var(--p);animation:cbk .7s step-end infinite;vertical-align:text-bottom;margin-left:1px;border-radius:1px}
 @keyframes cbk{0%,50%{opacity:1}51%,100%{opacity:0}}
@@ -1152,7 +1155,7 @@ function autoTitle(t){
   document.getElementById('hdrT').textContent=title;
   fetch(`/api/v1/conversations/${cid}/title`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title})}).then(()=>loadConvs());
 }
-function showThink(){hideThink();const d=document.createElement('div');d.className='think';d.id='thinkEl';d.innerHTML='<div class="think-in"><div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span class="think-t">Clow pensando...</span></div>';T.appendChild(d);scrl()}
+function showThink(){hideThink();const d=document.createElement('div');d.className='think';d.id='thinkEl';d.innerHTML='<div class="think-in"><div class="think-logo"><span>\u221E</span></div><span class="think-t">Clow est\u00E1 pensando...</span><div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>';T.appendChild(d);scrl()}
 function hideThink(){const e=document.getElementById('thinkEl');if(e)e.remove()}
 function ensureMsg(){if(!curMsg){hideThink();curMsg=document.createElement('div');curMsg.className='ml assistant';curMsg.innerHTML=`<div class="mh"><div class="mav">${INF}</div><span class="mn">clow</span><span class="mt">${now()}</span></div>`;curBody=document.createElement('div');curBody.className='mb';const wrap=document.createElement('div');wrap.className='mb-wrap';wrap.appendChild(curBody);curMsg.appendChild(wrap);T.appendChild(curMsg);raw=''}}
 function appendTxt(t){ensureMsg();raw+=t;const c=curBody.querySelector('.scur');if(c)c.remove();curBody.insertAdjacentText('beforeend',t);const s=document.createElement('span');s.className='scur';curBody.appendChild(s);scrl()}
