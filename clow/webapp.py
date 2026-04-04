@@ -180,6 +180,10 @@ if HAS_FASTAPI:
     register_chat_routes(app)
     register_ws_routes(app)
 
+    # ── Autopilot, Automations & Spectator Endpoints ──────────
+    from .routes.extensions import register_extension_routes
+    register_extension_routes(app)
+
     # ── Metrics & Error tracking endpoints ──────────────────────
     from fastapi import Request as _Req
     from fastapi.responses import JSONResponse as _JR, PlainTextResponse as _PR

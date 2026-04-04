@@ -83,6 +83,17 @@ CLOW_SWARM_MAX_AGENTS = int(os.getenv("CLOW_SWARM_MAX_AGENTS", "5"))
 # ── Self-Learning ─────────────────────────────────────────
 CLOW_SELF_LEARN = os.getenv("CLOW_SELF_LEARN", "true").lower() in ("true", "1", "yes")
 
+# ── GitHub Issue Autopilot ────────────────────────────────
+CLOW_AUTOPILOT = os.getenv("CLOW_AUTOPILOT", "true").lower() in ("true", "1", "yes")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET", "")
+
+# ── Automations Engine ────────────────────────────────────
+CLOW_AUTOMATIONS = os.getenv("CLOW_AUTOMATIONS", "true").lower() in ("true", "1", "yes")
+
+# ── Live Pair Programming (Spectator) ────────────────────
+CLOW_SPECTATOR = os.getenv("CLOW_SPECTATOR", "true").lower() in ("true", "1", "yes")
+
 DANGEROUS_COMMANDS = [
     "rm -rf", "rm -r /", "mkfs", "dd if=", ":(){:|:&};:",
     "chmod -R 777 /", "shutdown", "reboot", "kill -9",

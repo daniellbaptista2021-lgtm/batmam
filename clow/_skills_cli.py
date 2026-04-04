@@ -564,6 +564,50 @@ def _search_handler(args: str, ctx: dict) -> str:
     )
 
 
+def _autopilot_handler(args: str, ctx: dict) -> str:
+    if args.strip().lower() == "status":
+        return (
+            "Mostre o status do GitHub Autopilot.\n"
+            "Execute: python -c \"from clow.autopilot import list_runs, get_active_runs; "
+            "import json; print('Ativas:', json.dumps(get_active_runs(), indent=2)); "
+            "print('Recentes:', json.dumps(list_runs(5), indent=2))\"\n"
+        )
+    return (
+        "O GitHub Autopilot resolve issues automaticamente.\n"
+        "Para ativar: adicione label 'clow' a uma issue ou comente '@clow <instrucao>'.\n"
+        "Webhook: POST /api/webhooks/github\n"
+        f"Filtro: {args}" if args else
+        "Mostre o status do autopilot. Use /autopilot status para ver execucoes."
+    )
+
+
+def _automations_handler(args: str, ctx: dict) -> str:
+    parts = args.strip().split(maxsplit=1) if args else []
+    action = parts[0].lower() if parts else "list"
+    if action == "list":
+        return "Liste todas as automacoes.\nExecute: python -c \"from clow.automations import get_automations_engine; import json; print(json.dumps(get_automations_engine().dashboard(), indent=2))\""
+    if action == "logs":
+        return "Mostre logs de execucao das automacoes.\nExecute: python -c \"from clow.automations import get_automations_engine; import json; print(json.dumps(get_automations_engine().get_logs(limit=20), indent=2))\""
+    if action in ("enable", "disable"):
+        name = parts[1] if len(parts) > 1 else ""
+        return f"{action.title()} a automacao '{name}'.\nExecute: python -c \"from clow.automations import get_automations_engine; e=get_automations_engine(); print(e.{action}('{name}'))\""
+    return f"Gerencia automacoes. Acoes: list, create, enable, disable, logs. {args}"
+
+
+def _share_handler(args: str, ctx: dict) -> str:
+    return (
+        "Gere URL do Spectator para compartilhar a sessao atual em tempo real.\n\n"
+        "Execute: python -c \"\n"
+        "from clow.spectator import create_spectator\n"
+        "spec = create_spectator('SESSION_ID')\n"
+        "print(f'URL: /spectator/{spec.session_id}')\n"
+        "print(f'Token: {spec.share_token}')\n"
+        "\"\n"
+        "Qualquer pessoa com a URL pode assistir (read-only).\n"
+        "Aprovacoes requerem autenticacao."
+    )
+
+
 BUILTIN_SKILLS = [
     # ── Dev Core (8 originais) ──
     Skill(name="commit", description="Commit inteligente com mensagem automatica", handler=_commit_handler, aliases=["c", "ci"]),
@@ -605,6 +649,11 @@ BUILTIN_SKILLS = [
     Skill(name="history", description="Timeline de checkpoints com timestamp e arquivos", handler=_history_handler, aliases=["timeline", "checkpoints"]),
     Skill(name="swarm", description="Executa task com multiplos agentes paralelos", handler=_swarm_handler),
     Skill(name="learn", description="Self-Learning: analisa logs e extrai padroes. /learn report mostra relatorio", handler=_learn_handler, aliases=["self-learn"]),
+
+    # ── Autopilot + Automations + Spectator ──
+    Skill(name="autopilot", description="GitHub Issue Autopilot: resolve issues automaticamente. /autopilot status", handler=_autopilot_handler, aliases=["ap"]),
+    Skill(name="automations", description="Gerencia automacoes: list, enable, disable, logs", handler=_automations_handler, aliases=["auto"]),
+    Skill(name="share", description="Compartilha sessao em tempo real via Spectator", handler=_share_handler, aliases=["spectator"]),
 
     # ── Dominio (8 originais) ──
     Skill(name="cotacao", description="Gera cotacao de seguro/plano funerario em PDF", handler=_cotacao_handler, aliases=["cot"]),
