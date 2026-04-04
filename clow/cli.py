@@ -1299,6 +1299,23 @@ def _print_banner() -> None:
     model_parts = config.CLOW_MODEL.split("-")
     model_display = "-".join(model_parts[:2]) if len(model_parts) >= 2 else config.CLOW_MODEL
 
+    # Dynamic counts
+    try:
+        from .tools.base import create_default_registry
+        _tool_count = len(create_default_registry()._tools)
+    except Exception:
+        _tool_count = 24
+    try:
+        from .skills.loader import list_all_skills
+        _skill_count = sum(len(v) for v in list_all_skills().values())
+    except Exception:
+        _skill_count = 36
+    try:
+        from .agent_types import AGENT_TYPES
+        _agent_count = len(AGENT_TYPES)
+    except Exception:
+        _agent_count = 8
+
     purple = _PURPLE_B
     gold = f"\033[1m\033[33m"
     dim = _DIM
@@ -1320,7 +1337,7 @@ def _print_banner() -> None:
 {purple}   ╚═══════════════════════════════════════╝{r}
 
   {dim}{os.getcwd()}{r}
-  {dim}24 tools · 36 skills · 8 agent types · /help{r}
+  {dim}{_tool_count} tools · {_skill_count} skills · {_agent_count} agent types · /help{r}
 
 """)
     sys.stdout.flush()
