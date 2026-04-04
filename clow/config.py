@@ -66,6 +66,12 @@ CLOW_THINKING_BUDGET = int(os.getenv("CLOW_THINKING_BUDGET", "10000"))
 CLOW_AUTO_CORRECT = os.getenv("CLOW_AUTO_CORRECT", "true").lower() in ("true", "1", "yes")
 CLOW_AUTO_CORRECT_MAX = int(os.getenv("CLOW_AUTO_CORRECT_MAX", "3"))
 
+# ── Vision Feedback Loop ──────────────────────────────────
+CLOW_VISION_FEEDBACK = os.getenv("CLOW_VISION_FEEDBACK", "true").lower() in ("true", "1", "yes")
+
+# ── Tool Pruning Dinâmico ─────────────────────────────────
+CLOW_TOOL_PRUNING = os.getenv("CLOW_TOOL_PRUNING", "true").lower() in ("true", "1", "yes")
+
 DANGEROUS_COMMANDS = [
     "rm -rf", "rm -r /", "mkfs", "dd if=", ":(){:|:&};:",
     "chmod -R 777 /", "shutdown", "reboot", "kill -9",

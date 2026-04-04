@@ -6,6 +6,7 @@ plan mode, context inteligente e auto-memory.
 """
 
 from __future__ import annotations
+import base64
 import json
 import os
 import sys
@@ -13,6 +14,7 @@ import re
 import time
 import threading
 import uuid
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, Future
 from typing import Any, Callable
 
@@ -153,6 +155,11 @@ class Agent:
         if project_ctx:
             system_parts.append(f"\n# Contexto do Projeto (CLOW.md)\n{project_ctx}")
 
+        # ── Project DNA: INSTRUCTIONS.md com heranca de diretorios pai ──
+        instructions = self._load_project_instructions()
+        if instructions:
+            system_parts.append(f"\n# [Instrucoes do Projeto]\n{instructions}")
+
         # Memoria persistente
         if not self.is_subagent:
             memory_ctx = load_memory_context()
@@ -162,6 +169,50 @@ class Agent:
         self.session.messages = [
             {"role": "system", "content": "\n\n".join(system_parts)}
         ]
+
+    def _load_project_instructions(self) -> str:
+        """Carrega .clow/INSTRUCTIONS.md do cwd e diretorios pai (heranca).
+
+        Busca de baixo pra cima ate a raiz. Combina todos encontrados,
+        com o mais proximo (cwd) tendo maior prioridade (aparece por ultimo).
+        """
+        instructions_parts: list[str] = []
+        current = Path(self.cwd).resolve()
+
+        # Sobe ate a raiz coletando INSTRUCTIONS.md
+        visited: set[str] = set()
+        while True:
+            dir_str = str(current)
+            if dir_str in visited:
+                break
+            visited.add(dir_str)
+
+            instructions_file = current / ".clow" / "INSTRUCTIONS.md"
+            if instructions_file.exists():
+                try:
+                    content = instructions_file.read_text(encoding="utf-8").strip()
+                    if content:
+                        instructions_parts.append(content)
+                except Exception:
+                    pass
+
+            parent = current.parent
+            if parent == current:
+                break  # Chegou na raiz
+            current = parent
+
+        if not instructions_parts:
+            return ""
+
+        # Inverte: raiz primeiro, cwd por ultimo (override natural)
+        instructions_parts.reverse()
+        combined = "\n\n---\n\n".join(instructions_parts)
+        log_action(
+            "project_dna",
+            f"carregado {len(instructions_parts)} INSTRUCTIONS.md",
+            session_id=self.session.id,
+        )
+        return combined
 
     # ── Main Turn Loop ─────────────────────────────────────────
 
@@ -371,8 +422,8 @@ class Agent:
         # Converte tool_results do formato OpenAI para Anthropic
         chat_messages = self._convert_messages_to_anthropic(chat_messages)
 
-        # Tools no formato Anthropic
-        tools = self._get_anthropic_tools()
+        # Tools no formato Anthropic (com pruning dinamico)
+        tools = self._prune_tools(self._get_anthropic_tools())
 
         kwargs: dict[str, Any] = {
             "model": self.model,
@@ -495,7 +546,7 @@ class Agent:
             kwargs["max_tokens"] = config.MAX_TOKENS
             kwargs["stream_options"] = {"include_usage": True}
 
-        tools = self.registry.openai_tools()
+        tools = self._prune_tools(self.registry.openai_tools())
         if tools:
             kwargs["tools"] = tools
             kwargs["tool_choice"] = "auto"
@@ -540,6 +591,92 @@ class Agent:
         text = "".join(collected_text)
         tool_calls = [collected_tool_calls[k] for k in sorted(collected_tool_calls)]
         return text, tool_calls, usage_data
+
+    # ── Tool Pruning Dinâmico ─────────────────────────────────
+
+    TOOL_CATEGORIES = {
+        "core": {"read", "glob", "grep", "write", "edit", "bash", "agent"},
+        "task": {"task_create", "task_update", "task_list", "task_get"},
+        "web": {"web_search", "web_fetch", "scraper"},
+        "integration": {"whatsapp", "n8n_workflow", "supabase_query", "docker_manage",
+                        "http_request", "git_advanced"},
+        "creative": {"image_gen", "pdf_tool", "spreadsheet", "notebook_edit"},
+    }
+
+    PRUNING_KEYWORDS: dict[str, list[str]] = {
+        "task": ["task", "tarefa", "todo", "lista", "progresso", "pendente"],
+        "web": ["busca", "buscar", "pesquisa", "pesquisar", "search", "url", "site",
+                "pagina", "web", "fetch", "scrape", "scraping", "crawler"],
+        "integration": ["whatsapp", "zap", "mensagem", "enviar", "n8n", "workflow",
+                        "supabase", "banco", "database", "docker", "container",
+                        "api", "endpoint", "http", "request", "git", "branch",
+                        "merge", "deploy"],
+        "creative": ["imagem", "image", "foto", "gerar", "pdf", "planilha",
+                     "excel", "xlsx", "spreadsheet", "notebook", "jupyter",
+                     "apresentacao", "pptx", "documento", "docx"],
+    }
+
+    def _prune_tools(self, tools: list) -> list:
+        """Filtra tools baseado na ultima mensagem do usuario.
+
+        Sempre inclui core tools. Inclui categorias adicionais
+        somente se keywords relevantes aparecerem na mensagem.
+        """
+        if not config.CLOW_TOOL_PRUNING:
+            return tools
+
+        # Pega ultima mensagem do usuario
+        last_user_msg = ""
+        for msg in reversed(self.session.messages):
+            if msg.get("role") == "user":
+                content = msg.get("content", "")
+                if isinstance(content, str):
+                    last_user_msg = content.lower()
+                elif isinstance(content, list):
+                    last_user_msg = " ".join(
+                        b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text"
+                    ).lower()
+                break
+
+        if not last_user_msg:
+            return tools
+
+        # Determina categorias ativas
+        active_categories = {"core"}  # Sempre incluido
+        for category, keywords in self.PRUNING_KEYWORDS.items():
+            if any(kw in last_user_msg for kw in keywords):
+                active_categories.add(category)
+
+        # Monta set de tool names permitidos
+        allowed_names: set[str] = set()
+        for cat in active_categories:
+            allowed_names.update(self.TOOL_CATEGORIES.get(cat, set()))
+
+        # Filtra
+        pruned = [t for t in tools if self._tool_name_from(t) in allowed_names]
+
+        total = len(tools)
+        sent = len(pruned)
+        log_action(
+            "tool_pruning",
+            f"enviadas={sent}/{total} categorias={active_categories}",
+            session_id=self.session.id,
+        )
+
+        return pruned if pruned else tools  # Fallback: envia tudo se nenhuma sobrou
+
+    @staticmethod
+    def _tool_name_from(tool_item) -> str:
+        """Extrai nome de um tool dict (Anthropic ou OpenAI format)."""
+        if isinstance(tool_item, dict):
+            # Anthropic format: {"name": ...}
+            if "name" in tool_item:
+                return tool_item["name"]
+            # OpenAI format: {"function": {"name": ...}}
+            func = tool_item.get("function", {})
+            return func.get("name", "")
+        # BaseTool object
+        return getattr(tool_item, "name", "")
 
     # ── Anthropic Helpers ─────────────────────────────────────
 
@@ -802,6 +939,44 @@ class Agent:
 
         log_action("tool_exec", f"{tool_call.name}: {tr.status.value}", tool_name=tool_call.name)
 
+        # ── Vision Feedback Loop: screenshot após write/edit de UI files ──
+        if (
+            config.CLOW_VISION_FEEDBACK
+            and tr.status == ToolResultStatus.SUCCESS
+            and tool_call.name in ("write", "edit")
+        ):
+            filepath = tool_call.arguments.get("file_path", "")
+            if filepath and any(filepath.endswith(ext) for ext in (".html", ".jsx", ".tsx", ".css")):
+                screenshot_b64 = self._vision_check(filepath)
+                if screenshot_b64:
+                    # Injeta screenshot como mensagem no historico para avaliacao visual
+                    vision_msg = {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": "image/png",
+                                    "data": screenshot_b64,
+                                },
+                            },
+                            {
+                                "type": "text",
+                                "text": (
+                                    f"Screenshot do resultado gerado ({os.path.basename(filepath)}). "
+                                    "Avalie se ficou correto e corrija se necessario."
+                                ),
+                            },
+                        ],
+                    }
+                    self.session.messages.append(vision_msg)
+                    log_action(
+                        "vision_feedback",
+                        f"screenshot capturado: {filepath}",
+                        session_id=self.session.id,
+                    )
+
         turn.tool_results.append(tr)
         self.on_tool_result(tool_call.name, tr.status.value, tr.output)
         return tr
@@ -835,6 +1010,71 @@ class Agent:
                 )):
                     return True
         return False
+
+    # ── Vision Feedback Loop ──────────────────────────────────
+
+    VISION_EXTENSIONS = {".html", ".jsx", ".tsx", ".css"}
+
+    def _vision_check(self, filepath: str) -> str | None:
+        """Renderiza arquivo HTML com Playwright headless e retorna screenshot base64.
+
+        Para .jsx/.tsx/.css, gera wrapper HTML temporario.
+        Retorna None se Playwright nao estiver disponivel ou der erro.
+        """
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            log_action("vision_feedback", "playwright nao instalado, pulando", session_id=self.session.id)
+            return None
+
+        try:
+            filepath_obj = Path(filepath)
+            if not filepath_obj.exists():
+                return None
+
+            # Para CSS/JSX/TSX, cria wrapper HTML temporário
+            if filepath_obj.suffix in (".css",):
+                html_content = (
+                    f"<html><head><link rel='stylesheet' href='file:///{filepath_obj.as_posix()}'></head>"
+                    "<body><h1>CSS Preview</h1><div class='container'><p>Sample content</p></div></body></html>"
+                )
+                temp_html = filepath_obj.parent / f"_clow_preview_{filepath_obj.stem}.html"
+                temp_html.write_text(html_content, encoding="utf-8")
+                render_path = temp_html
+            elif filepath_obj.suffix in (".jsx", ".tsx"):
+                # JSX/TSX: renderiza o source code como preview
+                source = filepath_obj.read_text(encoding="utf-8")[:3000]
+                html_content = (
+                    "<html><head><style>body{font-family:monospace;padding:20px;background:#1e1e1e;color:#d4d4d4;}"
+                    "pre{white-space:pre-wrap;}</style></head>"
+                    f"<body><h3 style='color:#7C5CFC;'>{filepath_obj.name}</h3><pre>{source}</pre></body></html>"
+                )
+                temp_html = filepath_obj.parent / f"_clow_preview_{filepath_obj.stem}.html"
+                temp_html.write_text(html_content, encoding="utf-8")
+                render_path = temp_html
+            else:
+                render_path = filepath_obj
+                temp_html = None
+
+            # Captura screenshot com Playwright
+            with sync_playwright() as pw:
+                browser = pw.chromium.launch(headless=True)
+                page = browser.new_page(viewport={"width": 1440, "height": 900})
+                page.goto(f"file:///{render_path.as_posix()}", wait_until="networkidle", timeout=15000)
+                # Espera renderizar
+                page.wait_for_timeout(500)
+                screenshot_bytes = page.screenshot(type="png", full_page=True)
+                browser.close()
+
+            # Limpa arquivo temporário
+            if temp_html and temp_html.exists():
+                temp_html.unlink()
+
+            return base64.b64encode(screenshot_bytes).decode("utf-8")
+
+        except Exception as e:
+            log_action("vision_feedback", f"erro: {e}", level="warning", session_id=self.session.id)
+            return None
 
     # ── Context Management ─────────────────────────────────────
 

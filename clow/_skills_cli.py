@@ -444,6 +444,37 @@ def _undo_handler(args: str, ctx: dict) -> str:
         "Desfaca a ultima acao realizada. Mostre o que sera desfeito antes de agir."
     )
 
+def _init_project_handler(args: str, ctx: dict) -> str:
+    return (
+        "Inicialize o Project DNA para este diretorio. Crie o arquivo .clow/INSTRUCTIONS.md com:\n\n"
+        "1) Detecte a stack do projeto: leia package.json, pyproject.toml, Cargo.toml, go.mod, etc.\n"
+        "2) Liste os arquivos e diretorios mais importantes (src/, lib/, tests/, etc.)\n"
+        "3) Detecte convencoes: estilo de codigo, framework, patterns usados\n"
+        "4) Detecte integracoes: banco de dados, APIs, servicos externos\n"
+        "5) Gere o INSTRUCTIONS.md com o seguinte template:\n\n"
+        "```markdown\n"
+        "# Project DNA\n\n"
+        "## Stack\n"
+        "- Linguagem: ...\n"
+        "- Framework: ...\n"
+        "- Dependencias principais: ...\n\n"
+        "## Convencoes\n"
+        "- Estilo: ...\n"
+        "- Testes: ...\n"
+        "- Commits: ...\n\n"
+        "## Arquivos Importantes\n"
+        "- ...\n\n"
+        "## Integracoes\n"
+        "- ...\n\n"
+        "## Instrucoes Especiais\n"
+        "- ...\n"
+        "```\n\n"
+        "Crie o diretorio .clow/ se nao existir. "
+        f"Detalhes adicionais: {args}" if args else
+        "Inicialize o Project DNA (.clow/INSTRUCTIONS.md) detectando a stack e convencoes do projeto."
+    )
+
+
 def _search_handler(args: str, ctx: dict) -> str:
     query = args or ""
     return (
@@ -492,6 +523,7 @@ BUILTIN_SKILLS = [
     Skill(name="diff", description="Mostra e analisa mudancas pendentes", handler=_diff_handler),
     Skill(name="undo", description="Desfaz a ultima acao com seguranca", handler=_undo_handler),
     Skill(name="search", description="Busca profunda no projeto (codigo, git, arquivos)", handler=_search_handler, aliases=["find"]),
+    Skill(name="init-project", description="Gera .clow/INSTRUCTIONS.md com stack, convencoes e integracoes", handler=_init_project_handler, aliases=["init-proj", "dna"]),
 
     # ── Dominio (8 originais) ──
     Skill(name="cotacao", description="Gera cotacao de seguro/plano funerario em PDF", handler=_cotacao_handler, aliases=["cot"]),
