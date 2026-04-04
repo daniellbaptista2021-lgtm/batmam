@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 INDEXABLE_EXT = {".py", ".js", ".ts", ".jsx", ".tsx", ".html", ".css", ".md", ".json", ".yml", ".yaml", ".toml", ".sh", ".sql"}
 IGNORE_DIRS = {".git", ".venv", "venv", "node_modules", "__pycache__", ".next", "dist", "build", ".claude"}
+IGNORE_PATHS = {"skills/imported", "static/files", "static/pages", "static/apps", "static/brand", "static/uploads", "deploy/monitoring"}
 MAX_FILE = 100_000
 CHUNK_LINES = 40
 
@@ -73,6 +74,10 @@ class CodebaseIndex:
             dn[:] = [d for d in dn if d not in IGNORE_DIRS]
             for f in fn:
                 p = Path(dp) / f
+                # Skip noise paths (skills docs, static assets, generated files)
+                rel = str(p.relative_to(self.root))
+                if any(rel.startswith(ip) or f"/{ip}/" in rel for ip in IGNORE_PATHS):
+                    continue
                 if p.suffix.lower() in INDEXABLE_EXT:
                     yield p
 
