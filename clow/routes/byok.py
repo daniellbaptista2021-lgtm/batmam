@@ -498,8 +498,14 @@ h1{font-size:1.4rem;font-weight:700;text-align:center;margin-bottom:4px}
 
   <div class="step" id="step2">
     <p class="sub">Cole sua API key da Anthropic</p>
-    <div class="fg"><label>API Key</label><input id="apikey" class="mono" placeholder="sk-ant-api03-..." required></div>
-    <p style="font-size:.8rem;color:var(--tm);margin-bottom:16px">Pegue em <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--p)">console.anthropic.com/settings/keys</a>. Sua key fica salva apenas no servidor do Clow.</p>
+    <div class="fg"><label>API Key da Anthropic</label><input id="apikey" class="mono" placeholder="sk-ant-api03-..." required></div>
+    <div style="font-size:.8rem;color:var(--t2);margin-bottom:16px;line-height:1.6">
+      <p style="margin-bottom:8px"><strong style="color:var(--t1)">Como conseguir sua key:</strong></p>
+      <p>1. Acesse <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--p)">console.anthropic.com/settings/keys</a></p>
+      <p>2. Clique em <strong>Create Key</strong> e copie</p>
+      <p>3. Em <a href="https://console.anthropic.com/settings/billing" target="_blank" style="color:var(--p)">Billing</a>, adicione saldo m&iacute;nimo de <strong style="color:var(--g)">$5 USD</strong></p>
+      <p style="margin-top:8px;color:var(--tm);font-size:.75rem">Sua key fica salva apenas no Clow. N&atilde;o &eacute; compartilhada com terceiros.</p>
+    </div>
     <button class="btn btn-primary" onclick="saveKey()" id="btn-key">Validar e Salvar</button>
     <div class="msg" id="msg2"></div>
   </div>

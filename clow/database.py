@@ -243,7 +243,16 @@ def remove_user_api_key(uid: str) -> bool:
 
 
 def validate_anthropic_key(api_key: str) -> dict:
-    """Valida uma API key da Anthropic com chamada real minima."""
+    """Valida uma API key da Anthropic com chamada real ao Claude Sonnet.
+
+    Faz uma requisicao minima (1 token) para garantir que:
+    - A key e valida
+    - A conta tem saldo (minimo $5 recomendado)
+    - O modelo Sonnet esta acessivel
+    """
+    if not api_key or not api_key.startswith("sk-ant-"):
+        return {"valid": False, "error": "API key invalida. Deve comecar com sk-ant-"}
+
     try:
         from anthropic import Anthropic
         client = Anthropic(api_key=api_key)
@@ -254,15 +263,29 @@ def validate_anthropic_key(api_key: str) -> dict:
         )
         return {"valid": True, "model": "claude-sonnet-4-20250514"}
     except Exception as e:
-        err = str(e)
-        if "401" in err or "authentication" in err.lower() or "invalid" in err.lower():
-            return {"valid": False, "error": "API key invalida"}
-        if "credit" in err.lower() or "billing" in err.lower():
-            return {"valid": False, "error": "Sem creditos na conta Anthropic. Adicione saldo em console.anthropic.com"}
-        if "permission" in err.lower():
-            return {"valid": False, "error": "Key sem permissao para Claude Sonnet"}
-        # Se nao eh erro de key, a key eh valida (pode ser rate limit etc)
-        return {"valid": True, "warning": str(e)[:100]}
+        err = str(e).lower()
+        if "401" in err or "authentication" in err or "invalid x-api-key" in err or "invalid api key" in err:
+            return {
+                "valid": False,
+                "error": "API key invalida. Verifique se copiou corretamente em console.anthropic.com/settings/keys",
+            }
+        if "credit" in err or "billing" in err or "balance" in err:
+            return {
+                "valid": False,
+                "error": "Sua conta Anthropic esta sem saldo. Adicione no minimo $5 em console.anthropic.com/settings/billing",
+            }
+        if "permission" in err or "forbidden" in err:
+            return {
+                "valid": False,
+                "error": "Sua key nao tem permissao para o Claude Sonnet. Gere uma nova key com acesso completo.",
+            }
+        if "rate" in err or "429" in str(e):
+            # Rate limit = key valida, so esta sendo usada rapido demais
+            return {"valid": True, "model": "claude-sonnet-4-20250514"}
+        return {
+            "valid": False,
+            "error": f"Erro ao validar: {str(e)[:150]}. Verifique sua key e tente novamente.",
+        }
 
 
 def update_user(uid: str, **kwargs) -> bool:
