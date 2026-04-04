@@ -4,6 +4,7 @@
 .clow-bar{display:flex;align-items:center;gap:6px;padding:6px 10px;background:#111118;border-bottom:1px solid rgba(255,255,255,.06);cursor:move;flex-shrink:0;user-select:none}
 .clow-bar-logo{height:16px;opacity:.6}
 .clow-bar-title{flex:1;font-size:11px;color:#8b8b96;font-weight:500}
+.clow-bar-status{font-size:10px;font-weight:600}
 .clow-bar-ctx{font-size:10px;color:#4ade80;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .clow-bar-pin,.clow-bar-close{background:none;border:none;color:#5a5a66;cursor:pointer;font-size:14px;padding:2px 4px;font-family:inherit}.clow-bar-pin:hover,.clow-bar-close:hover{color:#e4e4e8}
 .clow-bar-pin.pinned{color:#4ade80}

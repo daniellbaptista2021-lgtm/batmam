@@ -9,23 +9,48 @@ h2{font-size:14px;font-weight:600;margin-bottom:12px;color:#a78bfa}
 label{display:block;font-size:11px;color:#8b8b96;margin:8px 0 4px;text-transform:uppercase;letter-spacing:.05em}
 input{width:100%;background:#111118;border:1px solid rgba(255,255,255,.08);border-radius:4px;padding:6px 8px;color:#e4e4e8;font-size:12px;outline:none}
 input:focus{border-color:rgba(255,255,255,.15)}
-.btn{width:100%;padding:8px;background:#a78bfa;color:#0a0a0f;border:none;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;margin-top:12px}
-.btn:hover{background:#8b5cf6}
-.saved{color:#4ade80;font-size:11px;text-align:center;margin-top:8px;display:none}
+.btn{width:100%;padding:8px;border:none;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;margin-top:8px}
+.btn-login{background:#a78bfa;color:#0a0a0f}.btn-login:hover{background:#8b5cf6}
+.btn-save{background:#333;color:#e4e4e8}.btn-save:hover{background:#444}
+.btn-logout{background:#222;color:#f87171;margin-top:12px}.btn-logout:hover{background:#333}
+.status{display:flex;align-items:center;gap:6px;margin:8px 0;font-size:11px}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot.on{background:#4ade80}.dot.off{background:#f87171}
+.msg{font-size:11px;text-align:center;margin-top:6px;min-height:14px}
+.msg.ok{color:#4ade80}.msg.err{color:#f87171}
+.section{display:none}
+.section.active{display:block}
 .info{color:#5a5a66;font-size:10px;margin-top:12px;text-align:center}
+.sep{height:1px;background:rgba(255,255,255,.06);margin:12px 0}
 </style>
 </head>
 <body>
 <h2>Clow Copilot</h2>
-<label>API URL</label>
-<input type="text" id="apiUrl" placeholder="https://clow.pvcorretor01.com.br/api/v1/chat">
-<label>API Key (opcional)</label>
-<input type="password" id="apiKey" placeholder="clow_...">
-<label>Atalho</label>
-<input type="text" id="shortcut" value="Ctrl+Shift+K" disabled>
-<button class="btn" id="saveBtn">Salvar</button>
-<div class="saved" id="savedMsg">Configuracoes salvas</div>
-<div class="info">Ctrl+Shift+K em qualquer pagina</div>
+
+<!-- Login section -->
+<div class="section active" id="secLogin">
+  <label>API URL</label>
+  <input type="text" id="apiUrl" placeholder="https://clow.pvcorretor01.com.br">
+  <label>Email</label>
+  <input type="email" id="email" placeholder="seu@email.com">
+  <label>Senha</label>
+  <input type="password" id="password" placeholder="">
+  <button class="btn btn-login" id="loginBtn">Conectar</button>
+  <div class="msg" id="loginMsg"></div>
+</div>
+
+<!-- Connected section -->
+<div class="section" id="secConnected">
+  <div class="status"><span class="dot on"></span><span id="connEmail">conectado</span></div>
+  <div class="sep"></div>
+  <label>API URL</label>
+  <input type="text" id="apiUrlConn" disabled>
+  <label>Atalho</label>
+  <input type="text" value="Ctrl+Shift+K" disabled>
+  <button class="btn btn-logout" id="logoutBtn">Desconectar</button>
+  <div class="info">Ctrl+Shift+K em qualquer pagina</div>
+</div>
+
 <script src="popup.js"></script>
 </body>
 </html>

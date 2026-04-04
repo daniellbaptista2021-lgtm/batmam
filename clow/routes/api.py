@@ -17,10 +17,11 @@ from fastapi.responses import JSONResponse
 from .. import __version__
 from .auth import (
     _auth_dependency, _rate_limit_dependency, _generate_api_key,
-    _get_user_session,
+    _get_user_session, _create_session, _validate_session,
 )
 from ..webapp import track_action, _get_health_data
 from ..database import (
+    authenticate_user,
     log_usage, get_user_usage_today, check_limit,
     create_conversation, list_conversations, delete_conversation,
     save_message, get_messages, update_conversation_title, PLANS,
@@ -29,6 +30,38 @@ from ..database import (
 
 def register_api_routes(app: FastAPI) -> None:
     """Register health, status, conversations, upload, usage, /me routes."""
+
+    # ── Auth API (JSON, for Chrome Extension) ──────────────────
+    @app.post("/api/v1/auth/login")
+    async def api_auth_login(request: Request):
+        """Login via JSON — returns session token for Chrome Extension."""
+        body = await request.json()
+        email = body.get("email", "").strip().lower()
+        password = body.get("password", "")
+        if not email or not password:
+            return JSONResponse({"error": "Email e senha obrigatorios"}, status_code=400)
+        user = authenticate_user(email, password)
+        if not user:
+            return JSONResponse({"error": "Email ou senha incorretos"}, status_code=401)
+        token = _create_session(user)
+        return JSONResponse({
+            "token": token,
+            "email": user["email"],
+            "plan": user.get("plan", "free"),
+            "is_admin": bool(user.get("is_admin")),
+        })
+
+    @app.get("/api/v1/auth/verify")
+    async def api_auth_verify(request: Request):
+        """Verify if a token is still valid."""
+        auth = request.headers.get("Authorization", "")
+        token = auth.replace("Bearer ", "") if auth.startswith("Bearer ") else ""
+        if not token:
+            return JSONResponse({"valid": False}, status_code=401)
+        sess = _validate_session(token)
+        if not sess:
+            return JSONResponse({"valid": False}, status_code=401)
+        return JSONResponse({"valid": True, "email": sess["email"], "plan": sess.get("plan", "free")})
 
     # Feature #19: Health Check (publico — sem auth)
     @app.get("/health", dependencies=[Depends(_rate_limit_dependency)])

@@ -159,8 +159,12 @@ def _get_session_from_request(request: Request) -> str | None:
 
 
 def _get_user_session(request: Request) -> dict | None:
-    """Returns full session dict."""
+    """Returns full session dict. Checks cookie first, then Bearer token."""
     token = request.cookies.get("clow_session", "")
+    if not token:
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            token = auth[7:]
     return _validate_session(token)
 
 
