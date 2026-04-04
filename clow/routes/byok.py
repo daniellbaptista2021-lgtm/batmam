@@ -496,7 +496,7 @@ h1{font-size:1.4rem;font-weight:700;text-align:center;margin-bottom:4px}
     <div class="fg"><label>Email</label><input id="email" type="email" placeholder="seu@email.com" required></div>
     <div class="fg"><label>Senha</label><input id="password" type="password" placeholder="m&iacute;nimo 6 caracteres" required></div>
     <button class="btn btn-primary" onclick="signup()">Criar Conta</button>
-    <a class="link" href="/login">J&aacute; tenho conta</a>
+    <a class="link" href="/logout">J&aacute; tenho conta</a>
     <div class="msg" id="msg1"></div>
   </div>
 
