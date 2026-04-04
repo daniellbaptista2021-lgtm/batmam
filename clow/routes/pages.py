@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .auth import (
     _create_session, _get_session_from_request, _get_user_session,
-    _web_sessions, _SESSION_TTL,
+    _session_cache, _delete_session_db, _SESSION_TTL,
 )
 from ..database import authenticate_user
 
@@ -91,8 +91,9 @@ def register_page_routes(app: FastAPI) -> None:
     @app.get("/logout")
     async def logout(request: Request):
         token = request.cookies.get("clow_session", "")
-        if token in _web_sessions:
-            del _web_sessions[token]
+        if token in _session_cache:
+            del _session_cache[token]
+        _delete_session_db(token)
         resp = RedirectResponse("/login", status_code=302)
         resp.delete_cookie("clow_session")
         return resp

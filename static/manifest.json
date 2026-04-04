@@ -1,13 +1,13 @@
 {
   "name": "Clow — Inteligência Infinita",
   "short_name": "Clow",
-  "description": "Clow - AI Code Agent | Inteligência Infinita • Possibilidades Premium",
+  "description": "Clow - AI Code Agent | Inteligência Infinita",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#050510",
-  "background_color": "#050510",
+  "background_color": "#0a0a0a",
   "icons": [
     {
       "src": "/static/brand/favicon.png",
@@ -16,23 +16,16 @@
       "purpose": "any"
     },
     {
-      "src": "/static/brand/icon.png",
+      "src": "/static/brand/icon-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "/static/brand/icon-512.png",
+      "src": "/static/brand/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/static/brand/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "purpose": "any maskable"
     }
   ],
   "categories": ["productivity", "developer tools"]
