@@ -151,6 +151,10 @@ if HAS_FASTAPI:
     from .routes.billing import register_billing_routes
     register_billing_routes(app)
 
+    # ── Settings Routes ───────────────────────────────────────
+    from .routes.settings import register_settings_routes
+    register_settings_routes(app)
+
     # ── Autopilot, Automations & Spectator Endpoints ──────────
     from .routes.extensions import register_extension_routes
     register_extension_routes(app)
