@@ -1,0 +1,1022 @@
+{
+  "name": "2. Atendimento Geral",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "91471236-bfa0-415b-a65c-6ce7876194fd",
+              "name": "user.session_id",
+              "value": "={{ $json.session_id }}",
+              "type": "string"
+            },
+            {
+              "id": "1b40a817-6437-4895-b747-02c174a15929",
+              "name": "user.name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "e4de010d-8196-413e-9603-e9b0d3c3be1d",
+              "name": "user.phone",
+              "value": "={{ $json.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "977f166e-cc29-401a-9e5a-367e2a52fefa",
+              "name": "user.email",
+              "value": "={{ $json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "ce305cce-b018-44a1-b351-107c1fd1064e",
+              "name": "user.record_id",
+              "value": "={{ $json.record_id }}",
+              "type": "string"
+            },
+            {
+              "id": "a6a15288-b61b-49d2-93e1-d9e5f29207aa",
+              "name": "user.query",
+              "value": "={{ $json.query }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        1088
+      ],
+      "id": "473845d9-bb3f-406f-b59b-83c901e4725e",
+      "name": "User Fields"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        80,
+        816
+      ],
+      "id": "9aa9561d-bbb4-4e87-b9ae-cc7a878fb181",
+      "name": "When chat message received",
+      "webhookId": "574cfca7-f61c-463f-bba3-0679fb2f9ded",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "91471236-bfa0-415b-a65c-6ce7876194fd",
+              "name": "user.session_id",
+              "value": "=test_{{ $json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "1b40a817-6437-4895-b747-02c174a15929",
+              "name": "user.name",
+              "value": "=Pedro",
+              "type": "string"
+            },
+            {
+              "id": "e4de010d-8196-413e-9603-e9b0d3c3be1d",
+              "name": "user.phone",
+              "value": "=+5531987654321",
+              "type": "string"
+            },
+            {
+              "id": "977f166e-cc29-401a-9e5a-367e2a52fefa",
+              "name": "user.email",
+              "value": "=pedro@email.com",
+              "type": "string"
+            },
+            {
+              "id": "ce305cce-b018-44a1-b351-107c1fd1064e",
+              "name": "user.record_id",
+              "value": "=7777777777",
+              "type": "string"
+            },
+            {
+              "id": "a6a15288-b61b-49d2-93e1-d9e5f29207aa",
+              "name": "user.query",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        816
+      ],
+      "id": "25f4b83e-32c9-4305-b25a-507e3e53efb7",
+      "name": "User Fields Test"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        768,
+        944
+      ],
+      "id": "3487d172-fc3b-4c29-b955-5dffac9776a3",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "content": "## Entrada de Mensagens\n",
+        "height": 600,
+        "width": 1000,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        704
+      ],
+      "id": "75a1d97d-e5f4-412f-8dfa-5b09859bc70f",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "session_id"
+            },
+            {
+              "name": "name"
+            },
+            {
+              "name": "phone"
+            },
+            {
+              "name": "email"
+            },
+            {
+              "name": "record_id"
+            },
+            {
+              "name": "query"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        64,
+        1088
+      ],
+      "id": "65b6a0b3-e7a8-4a9a-be0a-b266c24b2a20",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ac2e07d0-3601-401c-b5b5-1e44f902d108",
+              "name": "response",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1552,
+        768
+      ],
+      "id": "c07d4ea4-bf42-403e-a906-23519376adff",
+      "name": "Response"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1056,
+        992
+      ],
+      "id": "a457b3ae-e005-4237-af15-84f500c4d378",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "01cuuDEW5uPo8hFB",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Merge').item.json.user.session_id }}",
+        "contextWindowLength": 6
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        1184,
+        992
+      ],
+      "id": "dccfd9c8-9a7d-4e50-b02d-2a9caff4d005",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "eZQq55Esn447FiAb",
+          "name": "Postgres account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Assistant:\n\nO nome do usuário é: {{ $json.user.name }}\n\nA pergunta do usuário é: {{ $json.user.query }}",
+        "options": {
+          "systemMessage": "=# AGENTE — ATENDENTE GERAL ECOMMERCE\n## Deploy Lab Ecom\n\n> Este agente é chamado pelo **orquestrador** como ponto de entrada de todas as conversas.\n\n---\n\n## FUNÇÃO PRINCIPAL\n\nServir como **ponto de entrada** de todas as conversas, entendendo a intenção inicial do cliente e fornecendo respostas sobre:\n\n- Informações institucionais da Deploy Lab Ecom (história, missão, valores)\n- Políticas (troca, devolução, entrega, privacidade, garantia)\n- Dúvidas gerais (tamanhos, prazos, formas de pagamento, canais de contato)\n\n> **Nunca** apresenta catálogo de produtos, nem realiza vendas diretas.\n\n---\n\n## RESPONSABILIDADES CENTRAIS\n\n1. **Diagnóstico rápido e empático** da intenção do usuário\n2. **Respostas baseadas nos documentos do banco de dados vetorial** via `busca_documentos`\n3. **Coleta de dados essenciais** quando a solicitação não estiver clara\n\n---\n\n## IDENTIDADE E TONALIDADE\n\n| Campo | Definição |\n|---|---|\n| **Nome** | Vinícius, assistente da Deploy Lab Ecom |\n| **Tom** | Cordial, ágil e especialista em varejo on-line |\n| **Estilo** | Objetivo, mas acolhedor |\n| **Emojis** | Máx. 1 por mensagem |\n| **Identidade** | Nunca menciona ser IA |\n| **Formalidade** | Espelha o nível de formalidade do cliente |\n| **Perguntas** | Usa perguntas fechadas quando precisa de clareza |\n| **Tamanho** | Máx. 150 caracteres por resposta sempre que possível |\n\n---\n\n## PADRÃO DE COMUNICAÇÃO\n\nCada resposta segue o ciclo abaixo e **sempre encerra com uma pergunta**:\n\n| Momento | Objetivo | Exemplo |\n|---|---|---|\n| **Acolhimento** | Captar intenção | \"Quer saber sobre troca ou algo mais?\" |\n| **Resposta + Flow** | Entregar info e manter conversa ativa | \"Você tem 7 dias para trocar. Precisa do passo a passo?\" |\n\n---\n\n## FLUXO DE ATENDIMENTO\n\n### Esclarecimento de Dúvidas Gerais\n\n**Usar quando:** perguntas sobre políticas, prazos, tamanhos, garantia ou história da marca.\n\n**Ação:**\n1. Acionar **`busca_documentos`** com a dúvida do cliente como query\n2. Formular a resposta com base no retorno da ferramenta\n3. Encerrar com uma pergunta para manter o fluxo\n\n---\n\n## EXEMPLOS DE INTERAÇÃO\n\n**Novo usuário:**\n```\nUsuário: Oi!\nTomik:   Olá! 👋 Bem-vindo(a) à Deploy Lab Ecom. Busca informações sobre troca, entrega ou algo diferente?\n```\n\n**Dúvida sobre prazo de entrega:**\n```\nUsuário: Quanto tempo chega em Recife?\nTomik:   Entregamos em 3 a 10 dias úteis após o envio. Quer saber o frete exato para seu CEP?\n```\n\n---\n\n## FERRAMENTA DISPONÍVEL\n\n### `busca_documentos`\n\n**Descrição:** Consulta o banco de dados vetorial (RAG) com todas as informações relevantes sobre a Deploy Lab Ecom. Deve ser acionada **sempre** que o cliente fizer qualquer pergunta sobre a empresa, políticas ou dúvidas gerais.\n\n| Parâmetro | Tipo | Descrição |\n|---|---|---|\n| `query` | string | Dúvida ou termo extraído da mensagem do cliente |\n\n```json\n{\n  \"name\": \"busca_documentos\",\n  \"arguments\": {\n    \"query\": \"qual é a política de troca?\"\n  }\n}\n```\n\n**Notas de uso:**\n\n- Acione **antes de formular qualquer resposta** sobre a empresa\n- Se o retorno for vazio ou insuficiente, informe ao cliente com transparência que vai verificar a informação\n- **Nunca invente dados.** Se não encontrou, diga que está apurando\n- Exemplos de queries: `\"prazo de entrega\"`, `\"política de devolução\"`, `\"formas de pagamento\"`, `\"história da marca\"`, `\"garantia do produto\"`\n\n---\n\n## REGRAS DE OURO\n\n| # | Regra |\n|---|---|\n| 1 | Sempre acionar `busca_documentos` antes de responder sobre a empresa |\n| 2 | Nunca apresentar catálogo de produtos ou fazer vendas diretas |\n| 3 | Nunca mencionar ser IA ou sistema automatizado |\n| 4 | Sempre encerrar a resposta com uma pergunta |\n| 5 | Respostas com no máx. 150 caracteres sempre que possível |\n| 6 | Não inventar dados — se não encontrou, seja transparente |\n| 7 | Espelhar o nível de formalidade do cliente |\n\n---\n\n*Agente subordinado ao orquestrador. Não realiza vendas nem apresenta catálogo.*"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1248,
+        768
+      ],
+      "id": "4df251c1-fac4-4c1f-a37b-5bae6c21927e",
+      "name": "Atendente Generalista"
+    },
+    {
+      "parameters": {
+        "name": "busca_documentos",
+        "description": "Contém todas as informações sobre a empresa e os preços que você pode consultar para responder às perguntas dos usuários.",
+        "topK": null
+      },
+      "id": "ce23203d-863a-4fcb-8f18-3cce387d55ca",
+      "name": "Vector Store Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "position": [
+        1360,
+        992
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "fe8a29d5-201c-4fba-a1f6-a66e74a952cc",
+      "name": "OpenAI Chat Model2",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1568,
+        1104
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "openAiApi": {
+          "id": "01cuuDEW5uPo8hFB",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "db814860-01c1-4edb-8e35-15357c909963",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "position": [
+        1488,
+        1264
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "openAiApi": {
+          "id": "01cuuDEW5uPo8hFB",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "documents",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "id": "4f99e18b-cc60-40dc-88d1-039684745f79",
+      "name": "Supabase Vector Store1",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "position": [
+        1296,
+        1136
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "supabaseApi": {
+          "id": "QgPTEgtPoXjmcQYb",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $item(\"0\").$node[\"Arquivo ID\"].json[\"file_mimeType\"] }}",
+                    "rightValue": "application/pdf"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "PDF"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "fa6fefb1-6163-4e49-bb17-1b112d5fa539",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $item(\"0\").$node[\"Arquivo ID\"].json[\"file_mimeType\"] }}",
+                    "rightValue": "application/vnd.google-apps.document"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Google_Texto"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "afbed9bc-aa81-4dd9-8514-c8ed525a183c",
+      "name": "Switch5",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        720,
+        176
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "1bc6615d-e221-4f95-b0f9-a34aea4dbe3f",
+      "name": "Extrair PDF1",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        928,
+        96
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "id": "69011644-bdf1-42ae-8c39-f72a3b267661",
+      "name": "Extrair Docs1",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        928,
+        256
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-small",
+        "options": {}
+      },
+      "id": "3adb831d-f166-4336-9bd8-259dd22120df",
+      "name": "Embeddings OpenAI2",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "position": [
+        1200,
+        384
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "openAiApi": {
+          "id": "01cuuDEW5uPo8hFB",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.texto }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "file_id",
+                "value": "={{ $item(\"0\").$node[\"Arquivo ID\"].json[\"file_id\"] }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "5aac0071-2bbb-4bfc-95e9-a47028e28f07",
+      "name": "Default Data Loader1",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        1328,
+        384
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## RAG",
+        "height": 698,
+        "width": 1719
+      },
+      "id": "95215ec0-cff3-4495-a182-8c6fddc6066e",
+      "name": "Sticky Note29",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "documents",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "id": "0a7c90e7-7214-49ef-b53d-d9eaf828dead",
+      "name": "Supabase Vector Store 2",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "position": [
+        1296,
+        176
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "supabaseApi": {
+          "id": "QgPTEgtPoXjmcQYb",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "0492ef0d-f8ac-4348-a94e-a51b39ea8d84",
+      "name": "Token Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterTokenSplitter",
+      "position": [
+        1488,
+        528
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7b77c782-7e42-47c3-8b03-1a7bd5739294",
+              "name": "texto",
+              "type": "string",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1362d727-155a-42d2-b484-72cde8cff3bd",
+      "name": "Texto Export",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1152,
+        176
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "mode": "list",
+          "value": "13YXUVoh-WY6izgoRAM231ivwGqoIgtnj",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/13YXUVoh-WY6izgoRAM231ivwGqoIgtnj",
+          "cachedResultName": "Rag"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "id": "1666d3d5-39a7-40e2-9862-aa6e2c6b1e55",
+      "name": "Arquivo Criado",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        32,
+        80
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "WqHzReGbo11enJHM",
+          "name": "Credencial Aula"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "mode": "list",
+          "value": "13YXUVoh-WY6izgoRAM231ivwGqoIgtnj",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/13YXUVoh-WY6izgoRAM231ivwGqoIgtnj",
+          "cachedResultName": "Rag"
+        },
+        "event": "fileUpdated",
+        "options": {}
+      },
+      "id": "67ab8eae-b482-47a9-a93d-07583d94e061",
+      "name": "Arquivo Alterado",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        32,
+        256
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "WqHzReGbo11enJHM",
+          "name": "Credencial Aula"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3f64d55d-f476-443e-a4d9-81452ccd95c9",
+              "name": "file_id",
+              "type": "string",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "id": "5c791e80-d7ec-40bb-81d9-2ed7eec48e95",
+              "name": "file_mimeType",
+              "type": "string",
+              "value": "={{ $json.mimeType }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "56ce672d-7eb2-4ab6-bdc9-aeb9f4d1b30a",
+      "name": "Arquivo ID",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        240,
+        176
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "documents",
+        "filterType": "string",
+        "filterString": "=metadata->>file_id=like.*{{ $item(\"0\").$node[\"Arquivo ID\"].json[\"file_id\"] }}*"
+      },
+      "id": "622a9513-2933-4890-a3f1-b9eda442d96c",
+      "name": "Deletar Arquivo",
+      "type": "n8n-nodes-base.supabase",
+      "position": [
+        400,
+        176
+      ],
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "QgPTEgtPoXjmcQYb",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $item(\"0\").$node[\"Arquivo ID\"].json[\"file_id\"] }}"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "id": "18f217f4-1190-4a5f-b92c-543f50cd8e57",
+      "name": "Download File",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        560,
+        176
+      ],
+      "typeVersion": 3,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "WqHzReGbo11enJHM",
+          "name": "Credencial Aula"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Cérebro\n",
+        "height": 696,
+        "width": 712,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1008,
+        704
+      ],
+      "id": "150382ab-f9d3-4578-8a08-8e12ae134ad7",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "User Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "User Fields Test",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "User Fields Test": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "User Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Atendente Generalista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Atendente Generalista",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Atendente Generalista",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atendente Generalista": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Vector Store Tool",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store1": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store Tool",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Atendente Generalista",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch5": {
+      "main": [
+        [
+          {
+            "node": "Extrair PDF1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extrair Docs1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair PDF1": {
+      "main": [
+        [
+          {
+            "node": "Texto Export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair Docs1": {
+      "main": [
+        [
+          {
+            "node": "Texto Export",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store 2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store 2",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Token Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Texto Export": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Arquivo Criado": {
+      "main": [
+        [
+          {
+            "node": "Arquivo ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Arquivo Alterado": {
+      "main": [
+        [
+          {
+            "node": "Arquivo ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Arquivo ID": {
+      "main": [
+        [
+          {
+            "node": "Deletar Arquivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deletar Arquivo": {
+      "main": [
+        [
+          {
+            "node": "Download File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download File": {
+      "main": [
+        [
+          {
+            "node": "Switch5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "4dc7cf24-4ac6-4739-97d4-4983abcbc4cb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bf46fab3ea561addaed759f7ed07aed19206d4c57f73e215fc1c5a67e3b7fe6d"
+  },
+  "id": "kuhW6u5AUc2mmEKn",
+  "tags": []
+}

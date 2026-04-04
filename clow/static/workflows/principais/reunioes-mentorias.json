@@ -1,0 +1,963 @@
+{
+  "name": "Criação Automática de Reuniões Mentorias - DEPLOYCLUB",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "038b54b7-9559-444e-8653-c5256a5b784e",
+              "name": "currency",
+              "type": "string",
+              "value": "EUR"
+            },
+            {
+              "id": "64d1eeee-cabe-403b-a634-f3238f586f58",
+              "name": "sheet_url",
+              "type": "string",
+              "value": "https://docs.google.com/spreadsheets/d/1ZliqqBNo6X0iM9yXBOiCG1e4Q7L7bQKMFmjvbSgUSnA/edit#gid=0"
+            },
+            {
+              "id": "997fe5a1-f601-458d-899c-673dff4acb04",
+              "name": "teacher_email",
+              "type": "string",
+              "value": "emm.bernard@gmail.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "590b5b92-438d-45e7-b8cc-a39676709a39",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        0,
+        528
+      ],
+      "notesInFlow": true,
+      "typeVersion": 3.3,
+      "notes": "Setup your flow"
+    },
+    {
+      "parameters": {
+        "content": "# Configuração\n### 1/ Adicione suas credenciais\n[Zoom](https://docs.n8n.io/integrations/builtin/credentials/zoom/)\n[Google](https://docs.n8n.io/integrations/builtin/credentials/google/)\n[Stripe](https://docs.n8n.io/integrations/builtin/credentials/stripe/)\n\nObservação: Para o Google, você precisa adicionar o Gmail e o Google Sheets.\n\n### 2/ Crie uma [nova Planilha Google](https://sheets.new/).\n\nMantenha esta planilha em branco por enquanto; ela contém as informações da sua reunião e dos participantes. Coloque-a onde for mais conveniente para sua organização.\n\n### 3/ E preencha o nó de configuração\n# 👇",
+        "height": 468.7602710975664,
+        "width": 275.0159282501158,
+        "color": 6
+      },
+      "id": "5a846cc3-996e-4a82-abd0-ac439496bb93",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "# Criar uma reunião 👉🏻\n\nSua jornada para uma gestão de eventos simplificada começa aqui.\n\nClique neste nó, copie o URL de produção e mantenha-o à mão. É a sua ferramenta administrativa pessoal para criar novas reuniões rapidamente. Simples e eficiente!",
+        "height": 248,
+        "width": 372,
+        "color": 6
+      },
+      "id": "d72d66da-d192-4310-89d8-4c17e2321635",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -704,
+        384
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "# 🖋️ Personalize\n### Sinta-se à vontade para adaptar o conteúdo do e-mail às suas necessidades.",
+        "height": 122,
+        "width": 520,
+        "color": 6
+      },
+      "id": "b1d1711e-6d84-45ef-84d0-8ff6ae77491e",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        544
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "path": "90b5f634-7bd7-4845-9fb9-cb1cfb545ed6",
+        "formTitle": "Criar nova call",
+        "formDescription": "Isso automatiza a criação de uma página de reunião no Zoom e de pagamento no Stripe, simplificando o processo de configuração do seu evento.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "title",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "price",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "date_start",
+              "fieldType": "date",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "hour",
+              "fieldType": "number"
+            },
+            {
+              "fieldLabel": "minute",
+              "fieldType": "number"
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "f1317020-5b3e-441d-ae80-b6668ad292d1",
+      "name": "Forms de início",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        -288,
+        368
+      ],
+      "webhookId": "90b5f634-7bd7-4845-9fb9-cb1cfb545ed6",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "events": [
+          "checkout.session.completed"
+        ]
+      },
+      "id": "eb0bcb6a-5dd2-46b4-adca-073400a6eb50",
+      "name": "Após pagamento",
+      "type": "n8n-nodes-base.stripeTrigger",
+      "position": [
+        -288,
+        672
+      ],
+      "webhookId": "ee7d6932-0583-47a3-b442-8bc161eee5e9",
+      "typeVersion": 1,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "40ddf809-1602-4120-ae7e-8be61437b50d",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $(\"Forms de início\").isExecuted }}",
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "looseTypeValidation": true
+        }
+      },
+      "id": "6b6e907f-27ba-4400-9314-627acfe46c35",
+      "name": "É fluxo de criação?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        208,
+        528
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "topic": "={{ $('Forms de início').item.json.title }}",
+        "additionalFields": {
+          "password": "={{ Math.random().toString(36).slice(-4); }}",
+          "startTime": "={{ new Date(new Date($('Forms de início').item.json.date_start).getTime() + ($('Forms de início').item.json.hour * 3600000) + ($('Forms de início').item.json.minute * 60000)).toISOString() }}"
+        }
+      },
+      "id": "71a1a203-5c1b-459a-9785-afa33b1eee7a",
+      "name": "Criar reunião no Zoom",
+      "type": "n8n-nodes-base.zoom",
+      "position": [
+        400,
+        368
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dabd3bc2-ca92-4d99-a223-b0ad18945121",
+              "name": "email",
+              "type": "string",
+              "value": "={{ $('Após pagamento').item.json.data.object.customer_details.email }}"
+            },
+            {
+              "id": "d40709f6-ffcd-4055-a374-9044a9a5e3b2",
+              "name": "name",
+              "type": "string",
+              "value": "={{ $('Após pagamento').item.json.data.object.customer_details.name }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4a39c197-f129-40ad-a21a-9454648777dd",
+      "name": "Formatar participante",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        400,
+        688
+      ],
+      "typeVersion": 3.3
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.stripe.com/v1/products",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "stripeApi",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "={{ $('Forms de início').item.json.title }}"
+            },
+            {
+              "name": "default_price_data[unit_amount]",
+              "value": "={{ $('Forms de início').item.json.price * 100 }}"
+            },
+            {
+              "name": "default_price_data[currency]",
+              "value": "={{ $('Config').item.json.currency }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f8d4b176-d941-44c8-94eb-0e58025ea5be",
+      "name": "Criar produto na Stripe",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        624,
+        368
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.stripe.com/v1/payment_links",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "stripeApi",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "line_items[0][price]",
+              "value": "={{ $json.default_price }}"
+            },
+            {
+              "name": "line_items[0][quantity]",
+              "value": "1"
+            },
+            {
+              "name": "metadata[event_sheet_id]",
+              "value": "={{ $('Criar produto na Stripe').item.json.created }}"
+            },
+            {
+              "name": "metadata[zoom_link]",
+              "value": "={{ $('Criar reunião no Zoom').item.json.join_url }}"
+            },
+            {
+              "name": "metadata[zoom_password]",
+              "value": "={{ $('Criar reunião no Zoom').item.json.password }}"
+            },
+            {
+              "name": "metadata[zoom_id]",
+              "value": "={{ $('Criar reunião no Zoom').item.json.id }}"
+            },
+            {
+              "name": "metadata[title]",
+              "value": "={{ $('Forms de início').item.json.title }}"
+            },
+            {
+              "name": "metadata[start_time]",
+              "value": "={{ $('Criar reunião no Zoom').item.json.start_time }}"
+            },
+            {
+              "name": "metadata[price]",
+              "value": "={{ $('Forms de início').item.json.price }}"
+            },
+            {
+              "name": "metadata[currency]",
+              "value": "={{ $('Config').item.json.currency }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3abceb9a-e71d-45e1-b07a-d22971d8b6ff",
+      "name": "Criar link de pagamento",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        848,
+        368
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {},
+      "id": "b59bf5c4-67e7-4261-a504-bfb843b74156",
+      "name": "Fim",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1264,
+        688
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Config').item.json.sheet_url }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Após pagamento').item.json.data.object.metadata.event_sheet_id }}"
+        },
+        "columns": {
+          "value": {},
+          "schema": [
+            {
+              "id": "city",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "city",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "email",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "country",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "country",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "postal_code",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "postal_code",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "amount",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "amount",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "currency",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "currency",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "autoMapInputData",
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "id": "eae04e79-b10a-4a9c-92f2-e61e5b1f65cf",
+      "name": "Add participante na lista",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        624,
+        688
+      ],
+      "typeVersion": 4.3,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "11GKK5dhrQn47cQI",
+          "name": "oleossogai@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Após pagamento').item.json.data.object.customer_details.email }}",
+        "subject": "Than you for your subscription 🙏",
+        "message": "=Dear {{ $('Após pagamento').item.json.data.object.customer_details.name }},<br/><br/>\n\nWe are very happy to announce that your subscription to our event <b>{{ $json.title }}</b> starting on <b>{{ $json.start }}</b> is now confirmed.<br/><br/>\n\nHere are the infos you will need to participate:<br/> \nZoom link:  {{ $('Após pagamento').item.json.data.object.metadata.zoom_link }}<br/>\nZoom password:{{ $('Após pagamento').item.json.data.object.metadata.zoom_password }}<br/>\nZoom ID: {{ $('Após pagamento').item.json.data.object.metadata.zoom_id }}<br/><br/> \n\nLooking forward to see you there!<br/>\nKind regards<br/>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "0e05f5db-b90f-4ed7-b728-9ba1106c91bd",
+      "name": "Mandar email de confirmação",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        848,
+        688
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "9e338edb-ebf3-4c12-8fed-4aad953b4b58"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Config').item.json.teacher_email }}",
+        "subject": "New participant registred ☝️",
+        "message": "=<b>A new participant registred for the event {{ $('Retrieve event infos').item.json.title }} ({{ $('Retrieve event infos').item.json.start }})!</b><br/><br/>\n\n<b>Name: {{ $('Após pagamento').item.json.data.object.customer_details.name }}</b><br/>\n<b>Email: {{ $('Após pagamento').item.json.data.object.customer_details.email }}</b><br/><br/>\n\n<b>Participant list:</b><br/>\n{{ $('Config').item.json.sheet_url }}#gid={{ $('Após pagamento').item.json.data.object.metadata.event_sheet_id }} ",
+        "options": {}
+      },
+      "id": "d99bac5d-f4d1-4fba-8ecc-b9ac42c937ce",
+      "name": "Notificar professor",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1072,
+        688
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "4bd15991-74ee-4b1a-96c9-d8c71bb6e478"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a29943ba-b516-41a8-8f85-5bcee5eda0d1",
+              "name": "title",
+              "type": "string",
+              "value": "={{ $('Forms de início').item.json.title }}"
+            },
+            {
+              "id": "bf642fde-c4c2-42b4-beed-ef65efdab55b",
+              "name": "start",
+              "type": "string",
+              "value": "={{ $('Forms de início').item.json.date_start }}"
+            },
+            {
+              "id": "33f7a58e-624d-4ccc-bbea-ed3365cede20",
+              "name": "price",
+              "type": "number",
+              "value": "={{ $('Forms de início').item.json.price }}"
+            },
+            {
+              "id": "c948f71e-3b12-4c6a-a1f9-ee9a511fe262",
+              "name": "currency",
+              "type": "string",
+              "value": "={{ $('Config').item.json.currency }}"
+            },
+            {
+              "id": "887461ca-db0d-442e-8008-5fe6a6fbdd8f",
+              "name": "zoom_link",
+              "type": "string",
+              "value": "={{ $('Criar reunião no Zoom').item.json.join_url }}"
+            },
+            {
+              "id": "4b2bd5e2-3bd5-443a-94a3-9ababfd9d881",
+              "name": "zoom_id",
+              "type": "string",
+              "value": "={{ $('Criar reunião no Zoom').item.json.id }}"
+            },
+            {
+              "id": "a1cea8e2-9954-4143-b71f-5ea194a873dd",
+              "name": "zoom_password",
+              "type": "string",
+              "value": "={{ $('Criar reunião no Zoom').item.json.password }}"
+            },
+            {
+              "id": "faa52bc6-dfbe-49e2-bc95-dae198a61293",
+              "name": "payment_link",
+              "type": "string",
+              "value": "={{ $json.url }}"
+            },
+            {
+              "id": "d7f5f0f5-cc7b-436a-9ad1-0b8f410c62c6",
+              "name": "payment_id",
+              "type": "string",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "id": "020b22d0-f525-4120-9f8b-2fa33e88c2e1",
+              "name": "event_sheet_id",
+              "type": "string",
+              "value": "={{ $json.metadata.event_sheet_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1a54d4d3-a70b-4b50-9de4-10c6610c3a28",
+      "name": "Formatar evento",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1072,
+        176
+      ],
+      "typeVersion": 3.3
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Config').item.json.sheet_url }}"
+        },
+        "title": "={{ $('Forms de início').item.json.date_start }} - {{ $('Forms de início').item.json.title }} - {{ $('Criar produto na Stripe').item.json.created }}",
+        "options": {
+          "sheetId": "={{ $('Criar produto na Stripe').item.json.created }}",
+          "index": 0
+        }
+      },
+      "id": "a1a6f560-6e3d-4acb-85e7-7c6bdf53e5ef",
+      "name": "Criar lista de participante",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1072,
+        368
+      ],
+      "typeVersion": 4.3,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "11GKK5dhrQn47cQI",
+          "name": "oleossogai@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Config').item.json.sheet_url }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "id",
+          "value": "0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "e57e3bb7-25b2-49f5-976b-0cb03489f710",
+      "name": "Evento",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1264,
+        176
+      ],
+      "typeVersion": 4.3,
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "11GKK5dhrQn47cQI",
+          "name": "oleossogai@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Config').item.json.teacher_email }}",
+        "subject": "=🎉 {{ $('Forms de início').item.json.title }} has been created!",
+        "message": "=<b>Congratulations, your event has been succesfully created 🎉</b><br/><br/>\n\nTitle: {{ $('Forms de início').item.json.title }}<br/>\nPrice:  {{ $('Forms de início').item.json.price }} {{ $('Config').item.json.currency }}<br/>\nStart date: {{ $('Forms de início').item.json.date_start }}<br/><br/>\n\n<b>Payment link:</b><br/>\n {{ $('Criar link de pagamento').item.json.url }}<br/>\n<i>Start sharing this link to get subscriptions</i><br/><br/>\n<b>Participant list:</b><br/>\n{{ $('Config').item.json.sheet_url }}#gid={{ $('Criar produto na Stripe').item.json.created }}\n<br/><br/>\n<b>Zoom infos:</b><br/>\nLink: {{ $('Criar reunião no Zoom').item.json.join_url }}<br/>\nSession ID: {{ $('Criar reunião no Zoom').item.json.id }}<br/>\nPassword: {{ $('Criar reunião no Zoom').item.json.password }}<br/> ",
+        "options": {}
+      },
+      "id": "7f7928b1-f819-419e-9ff5-f35df9bee874",
+      "name": "Enviar email pro professor",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        1264,
+        368
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "93623029-918e-4913-9a48-b6f40e92eb8c"
+    }
+  ],
+  "pinData": {
+    "Após pagamento": [
+      {
+        "json": {
+          "id": "evt_1Ou0e4BH8XCwzsfXEKVN0GkI",
+          "data": {
+            "object": {
+              "id": "cs_test_a1G73c0pSu8hnD8y4we2ZVGy3MdmDuam1jLT07DqcBgYkuH1vOpWSkclBr",
+              "url": null,
+              "mode": "payment",
+              "locale": "auto",
+              "object": "checkout.session",
+              "status": "complete",
+              "consent": null,
+              "created": 1710370285,
+              "invoice": null,
+              "ui_mode": "hosted",
+              "currency": "eur",
+              "customer": null,
+              "livemode": false,
+              "metadata": {
+                "zoom_id": "86579738722",
+                "zoom_link": "https://us06web.zoom.us/j/86579738722?pwd=i8QeOxKGO8GODInTP3gsYUjvrCYarA.1",
+                "zoom_password": "260j",
+                "event_sheet_id": "1710369993"
+              },
+              "shipping": null,
+              "cancel_url": "https://stripe.com",
+              "expires_at": 1710456685,
+              "custom_text": {
+                "submit": null,
+                "after_submit": null,
+                "shipping_address": null,
+                "terms_of_service_acceptance": null
+              },
+              "submit_type": "auto",
+              "success_url": "https://stripe.com",
+              "amount_total": 2000,
+              "payment_link": "plink_1Ou0ZCBH8XCwzsfXUongWL67",
+              "setup_intent": null,
+              "subscription": null,
+              "automatic_tax": {
+                "status": null,
+                "enabled": false,
+                "liability": null
+              },
+              "client_secret": null,
+              "custom_fields": [],
+              "shipping_rate": null,
+              "total_details": {
+                "amount_tax": 0,
+                "amount_discount": 0,
+                "amount_shipping": 0
+              },
+              "customer_email": null,
+              "payment_intent": "pi_3Ou0e2BH8XCwzsfX14Vi1Pak",
+              "payment_status": "paid",
+              "recovered_from": null,
+              "amount_subtotal": 2000,
+              "after_expiration": null,
+              "customer_details": {
+                "name": "Emmanuel Bern",
+                "email": "emm.bernard@gmail.com",
+                "phone": null,
+                "address": {
+                  "city": "Lausanne",
+                  "line1": "Avenue Charles Dickens 10",
+                  "line2": null,
+                  "state": null,
+                  "country": "CH",
+                  "postal_code": "1006"
+                },
+                "tax_ids": [],
+                "tax_exempt": "none"
+              },
+              "invoice_creation": {
+                "enabled": false,
+                "invoice_data": {
+                  "footer": null,
+                  "issuer": null,
+                  "metadata": {},
+                  "description": null,
+                  "custom_fields": null,
+                  "account_tax_ids": null,
+                  "rendering_options": null
+                }
+              },
+              "shipping_options": [],
+              "customer_creation": "if_required",
+              "consent_collection": null,
+              "client_reference_id": null,
+              "currency_conversion": null,
+              "payment_method_types": [
+                "card",
+                "bancontact",
+                "eps",
+                "giropay",
+                "ideal",
+                "link",
+                "klarna"
+              ],
+              "allow_promotion_codes": false,
+              "payment_method_options": {
+                "card": {
+                  "request_three_d_secure": "automatic"
+                }
+              },
+              "phone_number_collection": {
+                "enabled": false
+              },
+              "payment_method_collection": "always",
+              "billing_address_collection": "auto",
+              "shipping_address_collection": null,
+              "payment_method_configuration_details": {
+                "id": "pmc_1Om7TPBH8XCwzsfXBB30jrJh",
+                "parent": null
+              }
+            }
+          },
+          "type": "checkout.session.completed",
+          "object": "event",
+          "created": 1710370296,
+          "request": {
+            "id": null,
+            "idempotency_key": null
+          },
+          "livemode": false,
+          "api_version": "2020-08-27",
+          "pending_webhooks": 4
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "É fluxo de criação?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forms de início": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Após pagamento": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É fluxo de criação?": {
+      "main": [
+        [
+          {
+            "node": "Criar reunião no Zoom",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatar participante",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar reunião no Zoom": {
+      "main": [
+        [
+          {
+            "node": "Criar produto na Stripe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar participante": {
+      "main": [
+        [
+          {
+            "node": "Add participante na lista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar produto na Stripe": {
+      "main": [
+        [
+          {
+            "node": "Criar link de pagamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar link de pagamento": {
+      "main": [
+        [
+          {
+            "node": "Criar lista de participante",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Formatar evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add participante na lista": {
+      "main": [
+        [
+          {
+            "node": "Mandar email de confirmação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandar email de confirmação": {
+      "main": [
+        [
+          {
+            "node": "Notificar professor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notificar professor": {
+      "main": [
+        [
+          {
+            "node": "Fim",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar evento": {
+      "main": [
+        [
+          {
+            "node": "Evento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar lista de participante": {
+      "main": [
+        [
+          {
+            "node": "Enviar email pro professor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "0faf52c2-303b-4a02-98bf-2ff9a01ac5f6",
+  "meta": {
+    "instanceId": "3fc3c2352e7b8d76535e3fd99358e372b2c28669b68053a948c39482a3b679ca"
+  },
+  "id": "tpHvZlzCyOpwAc02CVdR4",
+  "tags": [
+    {
+      "updatedAt": "2026-02-24T19:54:28.614Z",
+      "createdAt": "2026-02-24T19:54:28.614Z",
+      "id": "1rOgUSdRHEMZBifI",
+      "name": "Deploy Club"
+    },
+    {
+      "updatedAt": "2026-02-24T19:54:35.631Z",
+      "createdAt": "2026-02-24T19:54:35.631Z",
+      "id": "zm8lBqapNmnFzaRh",
+      "name": "@viniciusguimaraes.ia"
+    }
+  ]
+}

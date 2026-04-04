@@ -245,15 +245,19 @@ def register_settings_routes(app) -> None:
         flows_count = plan.get("n8n_flows", 0)
 
         base_flows = [
-            {"id": "sdr", "name": "SDR Inteligente", "desc": "Qualificacao automatica via WhatsApp", "category": "vendas"},
-            {"id": "atendimento", "name": "Atendimento 24/7", "desc": "Chatbot com RAG e handoff humano", "category": "suporte"},
-            {"id": "rag", "name": "RAG Corporativo", "desc": "Busca inteligente em documentos", "category": "dados"},
-            {"id": "conteudo", "name": "Criacao de Conteudo", "desc": "Posts, copies, artigos automaticos", "category": "marketing"},
-            {"id": "postagem", "name": "Postagem Automatica", "desc": "Facebook, Instagram agendado", "category": "marketing"},
-            {"id": "followup", "name": "Follow-up Automatico", "desc": "Sequencias de mensagens", "category": "vendas"},
-            {"id": "leads", "name": "Qualificacao de Leads", "desc": "Formulario > WhatsApp > CRM", "category": "vendas"},
-            {"id": "onboarding", "name": "Onboarding de Clientes", "desc": "Boas-vindas + documentacao", "category": "suporte"},
+            {"id": "agente-orquestrador", "name": "Agente Orquestrador", "desc": "Orquestra multiplos agentes para tarefas complexas", "category": "automacao", "file": "agente-orquestrador.json"},
+            {"id": "atendimento-geral", "name": "Atendimento Geral", "desc": "Chatbot completo com RAG e handoff humano", "category": "suporte", "file": "atendimento-geral.json"},
+            {"id": "atendimento-instagram", "name": "Atendimento Instagram", "desc": "Agente de atendimento via DM do Instagram", "category": "suporte", "file": "atendimento-instagram.json"},
+            {"id": "sdr-rag-followup", "name": "SDR + RAG + Follow Up", "desc": "Qualificacao, agendamento e follow-up automatico", "category": "vendas", "file": "sdr-rag-followup.json"},
+            {"id": "reunioes-mentorias", "name": "Reunioes e Mentorias", "desc": "Criacao automatica de reunioes e mentorias", "category": "produtividade", "file": "reunioes-mentorias.json"},
+            {"id": "conteudo-redes-sociais", "name": "Conteudo + Redes Sociais", "desc": "Criacao e publicacao automatica em todas as redes", "category": "marketing", "file": "conteudo-redes-sociais.json"},
+            {"id": "super-rag", "name": "Super RAG", "desc": "Busca inteligente em documentos com IA avancada", "category": "dados", "file": "super-rag.json"},
+            {"id": "disparo-massa", "name": "Disparo em Massa", "desc": "Workflow de disparo em massa via WhatsApp", "category": "vendas", "file": "disparo-massa.json"},
         ]
+
+        # Adiciona URL de download
+        for f in base_flows:
+            f["download_url"] = f"/static/workflows/principais/{f['file']}"
 
         return _JR({
             "plan_id": plan_id,
@@ -261,4 +265,5 @@ def register_settings_routes(app) -> None:
             "base_flows": base_flows if flows_count >= 8 else [],
             "has_library": flows_count >= 2000,
             "library_count": flows_count,
+            "library_url": "https://drive.google.com/drive/folders/1w2_aZ3UONCyQ10LXG8T6PRvjz4AlDutH" if flows_count >= 2000 else "",
         })

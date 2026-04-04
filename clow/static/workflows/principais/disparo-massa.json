@@ -1,0 +1,510 @@
+{
+  "name": "Workflow de Disparo em Massa - DEPLOYCLUB",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        336
+      ],
+      "id": "f468d63a-3bdc-4ae1-befe-0ca05c8f1b02",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1408,
+        176
+      ],
+      "id": "d1770059-a88a-4665-896e-84f844010bc2",
+      "name": "Wait",
+      "webhookId": "ec067ad9-dfca-4e2e-84e7-f55f5084e4ad"
+    },
+    {
+      "parameters": {
+        "content": "## ENVIO DE IMAGEM",
+        "height": 456,
+        "width": 1588,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "605f681c-1194-4fc9-ac15-5d3179c0996d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "operation": "send-image",
+        "instanceName": "SUA-INSTANCIA",
+        "remoteJid": "={{ $('Editar Campos').item.json.whatsapp }}",
+        "media": "={{ $json.data }}",
+        "caption": "=NOVA PROMOÇÃO",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        176
+      ],
+      "id": "ed921215-61ba-4b26-bafa-7bbf25e04ffa",
+      "name": "Enviar imagem"
+    },
+    {
+      "parameters": {
+        "functionCode": "return items.map(item => {\n  const keys = Object.keys(item.json);\n\n  const telefoneKey = keys.find(k =>\n    k.toLowerCase().includes('telefone') ||\n    k.toLowerCase().includes('numero') ||\n    k.toLowerCase().includes('número') ||\n    k.toLowerCase().includes('phone')\n  );\n\n  const nomeKey = keys.find(k =>\n    k.toLowerCase().includes('nome') ||\n    k.toLowerCase().includes('cliente') ||\n    k.toLowerCase().includes('name')\n  );\n\n  const nome = nomeKey ? item.json[nomeKey] : null;\n  const telefone = telefoneKey ? String(item.json[telefoneKey]).trim() : null;\n\n  return {\n    json: {\n      nome,\n      telefone,\n      texto: 'Olá, tudo bem com você?'\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        560,
+        576
+      ],
+      "name": "Preparar mensagens",
+      "id": "f7d03bd2-0831-4c2f-9d75-d9d38b135efe"
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [
+        800,
+        576
+      ],
+      "name": "Loop",
+      "id": "a42a008c-ab3c-4715-8561-f3c3469170b9"
+    },
+    {
+      "parameters": {
+        "amount": 60
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1248,
+        576
+      ],
+      "id": "55acf6c9-9d10-48db-ac21-18a9fe06e4e8",
+      "name": "Aguardar",
+      "webhookId": "4880d932-3feb-49c4-b04e-3c140a1ab475"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://SUA-URL/message/sendText/SUA-INSTANCIA",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "SUA CHAVE API"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.telefone }}\",\n  \"text\": \"{{ $json.texto }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        1040,
+        576
+      ],
+      "name": "Enviar Mensagem Evolution",
+      "id": "8adaf2c5-8c8a-4206-ab82-5c168ae7d694",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyWeek",
+              "hour": 8,
+              "minute": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        48,
+        576
+      ],
+      "name": "Agendar Disparo",
+      "id": "1c78aa23-91e6-437d-9947-f88be0d66bca"
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyWeek",
+              "hour": 8,
+              "minute": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        48,
+        160
+      ],
+      "name": "Agendar Disparo Imagem",
+      "id": "fe187ee8-8d23-489e-b7a8-523b43b694f3"
+    },
+    {
+      "parameters": {
+        "content": "## ENVIO DE TEXTO\n",
+        "height": 440,
+        "width": 1588,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        464
+      ],
+      "typeVersion": 1,
+      "id": "ffcea8c6-16e9-4820-908f-c18ed4df6c03",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4c873fcc-dc25-4e43-8319-90b2a6fa04b2",
+              "name": "nome",
+              "value": "={{ $json.CLIENTES }}",
+              "type": "string"
+            },
+            {
+              "id": "701e704e-6edb-409e-8c48-98c6251f6b44",
+              "name": "whatsapp",
+              "value": "={{ $json.NUMERO }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        688,
+        176
+      ],
+      "id": "ed4e0ef4-4a68-45a1-83b3-a8894817c007",
+      "name": "Editar Campos"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "ID DA SUA PLANILHA",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "ID DA ABA DA PLANILHA",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        272,
+        160
+      ],
+      "id": "a6d04e47-08fd-451a-9c3e-ed38457e5af2",
+      "name": "Pegar Lista"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "ID DA SUA PLANILHA",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "ID DA ABA DA PLANILHA",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        320,
+        576
+      ],
+      "name": "Pegar Lista 2",
+      "id": "aff32c18-62c6-4335-b812-44055995f2fe"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "URL-DA-IMAGEM-DRIVE",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        880,
+        176
+      ],
+      "id": "2d17de1d-52d7-401c-8f5a-a0456912a028",
+      "name": "Baixar Imagem"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        448,
+        160
+      ],
+      "id": "16195b38-d003-4a9f-8934-11dcfed43c0f",
+      "name": "Loop Imagem"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1072,
+        176
+      ],
+      "id": "db56e0a1-a7ac-47b1-96a6-3a6ce7b5fe67",
+      "name": "Extract from File"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Pegar Lista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar imagem": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar mensagens": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop": {
+      "main": [
+        [
+          {
+            "node": "Enviar Mensagem Evolution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aguardar": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Mensagem Evolution": {
+      "main": [
+        [
+          {
+            "node": "Aguardar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendar Disparo": {
+      "main": [
+        [
+          {
+            "node": "Pegar Lista 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendar Disparo Imagem": {
+      "main": [
+        [
+          {
+            "node": "Pegar Lista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Editar Campos": {
+      "main": [
+        [
+          {
+            "node": "Baixar Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pegar Lista": {
+      "main": [
+        [
+          {
+            "node": "Loop Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pegar Lista 2": {
+      "main": [
+        [
+          {
+            "node": "Preparar mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baixar Imagem": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Imagem": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Editar Campos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Enviar imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "0aac94d5-a497-49f8-8413-b0dc8b5116e3",
+  "meta": {
+    "instanceId": "3fc3c2352e7b8d76535e3fd99358e372b2c28669b68053a948c39482a3b679ca"
+  },
+  "id": "RNWh0hOrPMe74IptCCPM9",
+  "tags": [
+    {
+      "updatedAt": "2026-02-24T19:54:28.614Z",
+      "createdAt": "2026-02-24T19:54:28.614Z",
+      "id": "1rOgUSdRHEMZBifI",
+      "name": "Deploy Club"
+    },
+    {
+      "updatedAt": "2026-02-24T19:54:35.631Z",
+      "createdAt": "2026-02-24T19:54:35.631Z",
+      "id": "zm8lBqapNmnFzaRh",
+      "name": "@viniciusguimaraes.ia"
+    }
+  ]
+}

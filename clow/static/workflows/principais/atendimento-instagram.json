@@ -1,0 +1,301 @@
+{
+  "name": "Agente de Atendimento Instagram Básico - DEPLOYCLUB",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "4d2b8dfb-e8cb-4e90-9f40-68f10e88ab63",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -320,
+        0
+      ],
+      "id": "c6a4318f-3de4-4d55-a1d7-c77907e615d8",
+      "name": "Webhook",
+      "webhookId": "4d2b8dfb-e8cb-4e90-9f40-68f10e88ab63"
+    },
+    {
+      "parameters": {
+        "jsCode": "URL da Política de Privacidade: https://policies.google.com/privacy?hl=pt-BR\n\nURL dos Termos de Serviço: https://policies.google.com/terms?hl=pt-BR\n\nCódigo do Webhook: {{ $json.query[\"hub.challenge\"] }}\n\nConfiguração da resposta automática\n\nMétodo: Post\n\nhttps://graph.instagram.com/v22.0/[id do instagram]/messages\n\nHeader:\n\nAuthorization: Bearer token\n\nBody = Json\n\n[recipient.id](http://recipient.id) = id do insta\n\nmessage.text = texto a ser enviado"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        -224
+      ],
+      "id": "35d0a7ad-d07d-4001-8b72-f40b2bb12dfe",
+      "name": "Ajuda"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7c567f45-cd4a-4bc9-8b25-c4c298cfb64b",
+              "name": "mensagem",
+              "value": "={{ $json.body.entry[0].messaging[0].message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "ba0de5bb-2885-4084-9166-4dfd87f918b4",
+              "name": "instagram.IDusuario",
+              "value": "={{ $json.body.entry[0].messaging[0].sender.id }}",
+              "type": "string"
+            },
+            {
+              "id": "6e0679ab-f676-47ba-8651-1a694524c26c",
+              "name": "=instagram.MeuID",
+              "value": "SEU ID",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -112,
+        0
+      ],
+      "id": "5849b290-0d41-4491-9279-5b34603457cc",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Webhook').item.json.body.entry[0].messaging[0].sender.id }}",
+                    "rightValue": "={{ $json.instagram.MeuID }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "d2cb6f4c-c9c0-4b62-83f5-741546444b70"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Minha mensagem"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "cf2bbe6d-45da-422e-87d1-1e1d5daf79a3",
+                    "leftValue": "={{ $('Webhook').item.json.body.entry[0].messaging[0].sender.id }}",
+                    "rightValue": "={{ $json.instagram.IDusuario }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Mensagem Usuário"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        80,
+        0
+      ],
+      "id": "a8348dcc-24a8-4233-9a2d-3b23fdb9edd9",
+      "name": "Switch"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        336,
+        -176
+      ],
+      "id": "ea27771a-a017-4d51-938a-8c950e02f978",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Edit Fields').item.json.mensagem }}",
+        "options": {
+          "systemMessage": "=PROMPT DO SEU NEGÓCIO"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        288,
+        16
+      ],
+      "id": "cc8232fa-024c-4a15-9fab-3337093db9ad",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        208
+      ],
+      "id": "4b941691-1661-4283-982e-297703159074",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "01cuuDEW5uPo8hFB",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.instagram.com/v22.0/{{ $('Edit Fields').item.json.instagram.MeuID }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "=recipient.id",
+              "value": "={{ $('Edit Fields').item.json.instagram.IDusuario }}"
+            },
+            {
+              "name": "=message.text",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        640,
+        16
+      ],
+      "id": "32e86f82-be36-483a-b822-b4f929e3d0a3",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "gPsZhRbWDmqV1ksd",
+          "name": "INSTAGRAM"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "758b8789-dca4-44f1-a458-22053bd3b093",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bf46fab3ea561addaed759f7ed07aed19206d4c57f73e215fc1c5a67e3b7fe6d"
+  },
+  "id": "GFhSbXWdlA0BhNZL",
+  "tags": []
+}
