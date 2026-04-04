@@ -288,6 +288,14 @@ a{color:var(--p);text-decoration:none}
 .btn-secondary{background:transparent;color:var(--p);border:1px solid var(--bd)}
 .btn-secondary:hover{border-color:var(--p);background:rgba(155,89,252,.05)}
 
+/* Highlights */
+.highlights{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.hl{display:flex;gap:16px;align-items:flex-start;background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:24px;transition:all .3s;transform:perspective(600px) rotateY(0)}
+.hl:hover{border-color:rgba(155,89,252,.35);transform:perspective(600px) rotateY(-1.5deg) translateY(-3px);box-shadow:0 16px 40px rgba(0,0,0,.3),0 0 20px rgba(155,89,252,.06)}
+.hl-icon{font-size:1.8rem;flex-shrink:0;width:48px;height:48px;display:flex;align-items:center;justify-content:center;background:rgba(155,89,252,.08);border-radius:12px}
+.hl-title{font-size:1rem;font-weight:700;margin-bottom:4px}
+.hl-desc{font-size:.88rem;color:var(--t2);line-height:1.6}
+
 /* Sections */
 .section{padding:80px 20px;max-width:1100px;margin:0 auto;position:relative;z-index:1}
 .section h2{font-size:2rem;font-weight:700;text-align:center;margin-bottom:56px}
@@ -339,6 +347,18 @@ a{color:var(--p);text-decoration:none}
   <div class="cta-group">
     <a href="/onboarding" class="btn btn-primary">Come&ccedil;ar Gr&aacute;tis</a>
     <a href="#como-funciona" class="btn btn-secondary">Como funciona</a>
+  </div>
+</section>
+
+<!-- Highlights -->
+<section style="padding:0 20px 40px;position:relative;z-index:1">
+  <div class="highlights">
+    <div class="hl"><div class="hl-icon">&#9889;</div><div><div class="hl-title">Funciona em qualquer lugar</div><div class="hl-desc">Terminal, VS Code, navegador, celular. Comece no PC, continue no celular. Teleport transfere sua sess&atilde;o entre dispositivos.</div></div></div>
+    <div class="hl"><div class="hl-icon">&#129504;</div><div><div class="hl-title">Intelig&ecirc;ncia de ponta</div><div class="hl-desc">Claude Sonnet 4 com Extended Thinking. O mesmo modelo que alimenta Claude Code, Cursor Pro e Windsurf. Pensa antes de agir.</div></div></div>
+    <div class="hl"><div class="hl-icon">&#128640;</div><div><div class="hl-title">Dev completo no bolso</div><div class="hl-desc">Crie apps, landing pages, APIs, planilhas, PDFs, apresenta&ccedil;&otilde;es. Tudo pelo celular via PWA. Instala como app nativo em 10 segundos.</div></div></div>
+    <div class="hl"><div class="hl-icon">&#9881;&#65039;</div><div><div class="hl-title">Automa&ccedil;&otilde;es em portugu&ecirc;s</div><div class="hl-desc">&ldquo;Todo dia &agrave;s 8h verifica minhas issues&rdquo; &mdash; diga o que quer e o Clow cria a automa&ccedil;&atilde;o. Sem c&oacute;digo, sem config, s&oacute; linguagem natural.</div></div></div>
+    <div class="hl"><div class="hl-icon">&#129302;</div><div><div class="hl-title">5 agentes trabalhando juntos</div><div class="hl-desc">Architect planeja, Developer implementa, Tester valida, Reviewer revisa. Ou use Swarm para tarefas brutais em paralelo com git worktrees.</div></div></div>
+    <div class="hl"><div class="hl-icon">&#128176;</div><div><div class="hl-title">R$ 0 &mdash; voc&ecirc; s&oacute; paga a API</div><div class="hl-desc">Sem assinatura, sem mensalidade, sem surpresas. Voc&ecirc; paga direto pra Anthropic o que consumir. M&eacute;dia: R$ 0,05 a R$ 0,25 por mensagem.</div></div></div>
   </div>
 </section>
 
