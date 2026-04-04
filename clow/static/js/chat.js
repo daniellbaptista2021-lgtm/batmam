@@ -1,6 +1,6 @@
 const INF='<svg viewBox="0 0 32 32" style="width:16px;height:16px"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)" fill="none" stroke="var(--p)" stroke-width="3" stroke-linecap="round"/></svg>';
 const T=document.getElementById('term'),I=document.getElementById('inp'),SB=document.getElementById('sBtn');
-let ws=null,proc=false,curMsg=null,curBody=null,curTool=null,tStart=0,tTimer=null,rA=0,http=false,hSid='',raw='',me=null,cid='',selMod='haiku';
+let ws=null,proc=false,curMsg=null,curBody=null,curTool=null,tStart=0,tTimer=null,rA=0,http=false,hSid='',raw='',me=null,cid='',selMod='sonnet';
 async function init(){
   try{const r=await fetch('/api/v1/me');me=await r.json();
     document.getElementById('sbAv').textContent=me.email[0].toUpperCase();
@@ -11,8 +11,8 @@ async function init(){
   }catch(e){}
   loadConvs();connectWS();_setupMobileViewport();
 }
-function initMod(plan,adm){const s=document.getElementById('modSel');if(adm){selMod='haiku';s.value='haiku';s.disabled=false;s.className='mod-pill haiku';return}const can=plan==='pro'||plan==='unlimited';if(!can){s.value='haiku';selMod='haiku';s.disabled=true;const o=s.querySelector('option[value="sonnet"]');if(o)o.disabled=true}s.className='mod-pill '+selMod}
-function onMod(){const s=document.getElementById('modSel');selMod=s.value;s.className='mod-pill '+selMod}
+function initMod(plan,adm){const s=document.getElementById('modSel');selMod='sonnet';if(s)s.style.display='none'}
+function onMod(){}
 function toggleSB(){document.getElementById('sb').classList.toggle('open');document.getElementById('sbOv').classList.toggle('show')}
 function togDrop(){document.getElementById('hdrDrop').classList.toggle('show')}
 function clsDrop(){document.getElementById('hdrDrop').classList.remove('show')}
