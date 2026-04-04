@@ -44,9 +44,9 @@ except Exception as e:
 app = FastAPI(
     title="Clow",
     version=__version__,
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json",
+    docs_url=None,      # Desabilita Swagger UI
+    redoc_url=None,     # Desabilita ReDoc
+    openapi_url=None,   # Esconde schema OpenAPI
 ) if HAS_FASTAPI else None
 
 
@@ -98,43 +98,6 @@ def _get_health_data() -> dict:
     return {
         "status": "healthy",
         "version": __version__,
-        "uptime_info": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
-        "components": {
-            "memory": {
-                "status": "ok",
-                "total": len(memories),
-                "by_type": mem_by_type,
-            },
-            "cron": {
-                "status": "ok",
-                "total_jobs": len(cron_jobs),
-                "active_jobs": len(active_crons),
-                "jobs": [
-                    {
-                        "id": j.id,
-                        "prompt": j.prompt[:50],
-                        "interval": cron.format_interval(j.interval_seconds),
-                        "active": j.active,
-                        "run_count": j.run_count,
-                        "last_run": j.last_run,
-                        "next_run": j.last_run + j.interval_seconds if j.last_run else j.created_at + j.interval_seconds,
-                    }
-                    for j in cron_jobs
-                ],
-            },
-            "triggers": {
-                "status": "ok" if trigger.running else "stopped",
-                "running": trigger.running,
-                "port": trigger.port,
-                "results_count": len(trigger.list_results()),
-            },
-            "tasks": {
-                "status": "ok",
-                "total": len(all_tasks),
-                "by_status": tasks_by_status,
-            },
-        },
-        "recent_actions": _recent_actions[-10:],
     }
 
 
@@ -194,9 +157,13 @@ if HAS_FASTAPI:
     from .metrics import metrics
     from .error_tracker import get_recent_errors, error_stats, capture_exception
 
-    @app.get("/metrics", tags=["monitoring"])
-    async def prometheus_metrics():
-        """Prometheus-compatible metrics endpoint."""
+    @app.get("/metrics", tags=["monitoring"], include_in_schema=False)
+    async def prometheus_metrics(request: _Req):
+        """Prometheus metrics (admin only)."""
+        from .routes.auth import _get_user_session
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Forbidden"}, status_code=403)
         return _PR(metrics.to_prometheus(), media_type="text/plain")
 
     @app.get("/api/v1/metrics/json", tags=["monitoring"])

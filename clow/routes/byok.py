@@ -165,9 +165,21 @@ def register_byok_routes(app) -> None:
 
     # ── Signup (criar conta sem precisar de admin) ────────────
 
+    # Rate limit para signup: max 5 por IP por hora
+    _signup_attempts: dict[str, list[float]] = {}
+
     @app.post("/api/v1/auth/signup", tags=["byok"])
     async def signup(request: Request):
         """Cria conta nova (BYOK flow). Seta cookie de sessao na response."""
+        # Rate limit por IP
+        client_ip = request.client.host if request.client else "unknown"
+        now = time.time()
+        attempts = _signup_attempts.setdefault(client_ip, [])
+        attempts[:] = [t for t in attempts if now - t < 3600]  # Janela 1h
+        if len(attempts) >= 5:
+            return JSONResponse({"error": "Muitas tentativas. Tente novamente em 1 hora."}, status_code=429)
+        attempts.append(now)
+
         body = await request.json()
         email = body.get("email", "").strip().lower()
         password = body.get("password", "").strip()

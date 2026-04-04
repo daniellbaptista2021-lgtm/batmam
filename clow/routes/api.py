@@ -90,24 +90,34 @@ def register_api_routes(app: FastAPI) -> None:
         from ..logging import metrics
         return JSONResponse(metrics.snapshot())
 
-    @app.get("/api/v1/sessions", dependencies=[Depends(_auth_dependency), Depends(_rate_limit_dependency)])
-    async def api_sessions():
-        """Lista sessoes salvas."""
+    @app.get("/api/v1/sessions", dependencies=[Depends(_auth_dependency), Depends(_rate_limit_dependency)], include_in_schema=False)
+    async def api_sessions(request: Request):
+        """Lista sessoes salvas (admin only)."""
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return JSONResponse({"error": "Admin only"}, status_code=403)
         from ..session import list_sessions
         return JSONResponse({"sessions": list_sessions()})
 
-    @app.get("/api/v1/memory", dependencies=[Depends(_auth_dependency), Depends(_rate_limit_dependency)])
-    async def api_memory():
-        """Lista memorias persistidas."""
+    @app.get("/api/v1/memory", dependencies=[Depends(_auth_dependency), Depends(_rate_limit_dependency)], include_in_schema=False)
+    async def api_memory(request: Request):
+        """Lista memorias persistidas (admin only)."""
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return JSONResponse({"error": "Admin only"}, status_code=403)
         from ..memory import list_memories
         return JSONResponse({"memories": list_memories()})
 
-    @app.get("/api/v1/tools", dependencies=[Depends(_auth_dependency)])
-    async def api_tools():
-        """Lista todas as ferramentas disponiveis."""
+    @app.get("/api/v1/tools", dependencies=[Depends(_auth_dependency)], include_in_schema=False)
+    async def api_tools(request: Request):
+        """Lista ferramentas disponiveis (nomes apenas)."""
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
         from ..tools.base import create_default_registry
         registry = create_default_registry()
-        tools = [{"name": t.name, "description": t.description} for t in registry.all_tools()]
+        # Retorna apenas nomes, sem schemas/descricoes detalhadas
+        tools = [t.name for t in registry.all_tools()]
         return JSONResponse({"tools": tools, "count": len(tools)})
 
     # ── API: Conversations ──────────────────────────────────────────
@@ -133,6 +143,10 @@ def register_api_routes(app: FastAPI) -> None:
         sess = _get_user_session(request)
         if not sess:
             return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        # Valida ownership: conversa pertence ao usuario
+        user_convs = list_conversations(sess["user_id"])
+        if not any(c["id"] == conv_id for c in user_convs):
+            return JSONResponse({"error": "Conversa nao encontrada"}, status_code=404)
         msgs = get_messages(conv_id)
         return JSONResponse({"messages": msgs})
 
@@ -149,6 +163,10 @@ def register_api_routes(app: FastAPI) -> None:
         sess = _get_user_session(request)
         if not sess:
             return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        # Valida ownership
+        user_convs = list_conversations(sess["user_id"])
+        if not any(c["id"] == conv_id for c in user_convs):
+            return JSONResponse({"error": "Conversa nao encontrada"}, status_code=404)
         body = await request.json()
         title = body.get("title", "")[:50]
         if title:
