@@ -625,7 +625,9 @@ async function signup(){
       }
       return showMsg('msg1',d.error,'error');
     }
-    token=d.token;userEmail=email;showStep(2);
+    token=d.token;userEmail=email;
+    // Plano pago nao precisa de API key — pula pro step 3
+    if(['lite','starter','pro','business'].includes(d.plan)){showStep(3)}else{showStep(2)}
   }catch(e){showMsg('msg1','Erro de rede. Tente novamente.','error')}
 }
 

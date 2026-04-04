@@ -12,6 +12,21 @@ def register_settings_routes(app) -> None:
 
     from .auth import _get_user_session
 
+    # ── Analytics ──────────────────────────────────────────────
+
+    @app.post("/api/v1/analytics/pageview", tags=["analytics"], include_in_schema=False)
+    async def track_pageview(request: _Req):
+        try:
+            body = await request.json()
+            from ..logging import log_action
+            page = body.get("page", "/")
+            ref = body.get("ref", "")
+            ip = request.client.host if request.client else ""
+            log_action("pageview", f"page={page} ref={ref[:50]} ip={ip}")
+        except Exception:
+            pass
+        return _JR({"ok": True})
+
     # ── Legal Pages ────────────────────────────────────────────
 
     @app.get("/termos", tags=["legal"])

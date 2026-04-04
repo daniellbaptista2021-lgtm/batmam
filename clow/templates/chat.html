@@ -110,8 +110,13 @@
       <div class="sb-ct">
         <a class="sb-btn" href="/app/settings" style="text-decoration:none;color:inherit">Configuracoes</a>
         <a class="sb-btn" href="/usage" style="text-decoration:none;color:inherit">Uso e Franquia</a>
-        <a class="sb-btn" href="/landing#planos" style="text-decoration:none;color:inherit">Meu Plano</a>
       </div>
+    </div>
+    <!-- Badge de plano + franquia -->
+    <div id="planBadge" style="margin:8px 12px;padding:10px 14px;background:rgba(155,89,252,.08);border:1px solid rgba(155,89,252,.15);border-radius:10px;font-size:.78rem;display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span id="planName" style="font-weight:600;color:#9B59FC">—</span><span id="planModel" style="color:#585878;font-size:.7rem">—</span></div>
+      <div style="height:4px;background:rgba(100,100,180,.15);border-radius:2px;overflow:hidden"><div id="planBar" style="height:100%;background:linear-gradient(90deg,#9B59FC,#4A9EFF);border-radius:2px;width:0%;transition:width .5s"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;color:#585878;font-size:.68rem"><span id="planUsage">—</span><span id="planLimit">—</span></div>
     </div>
     <div class="sb-sec" id="admSec" style="display:none">
       <div class="sb-lbl" onclick="this.classList.toggle('open')">Admin <span class="ar">&#9654;</span></div>

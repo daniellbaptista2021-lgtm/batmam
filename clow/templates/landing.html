@@ -15,6 +15,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
+<!-- Analytics simples (pageview no servidor) -->
+<script>fetch('/api/v1/analytics/pageview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({page:location.pathname,ref:document.referrer}),credentials:'same-origin'}).catch(()=>{})</script>
+
 <!-- Meta Pixel placeholder — trocar PIXEL_ID_AQUI pelo ID real -->
 <!--
 <script>
@@ -274,7 +277,7 @@ a{color:var(--p);text-decoration:none}
       <div class="price" style="font-size:2.2rem">R$ 89<span style="font-size:.9rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
       <div class="price-sub" style="font-size:.85rem">IA inclusa, sem API key</div>
       <ul class="price-list" style="font-size:.85rem"><li>Haiku 4.5 incluso</li><li>200K + 50K tokens/dia</li><li>1M + 250K tokens/semana</li><li>Ideal pra conhecer o Clow</li></ul>
-      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('lite')">Assinar Lite</button>
+      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('lite')">Testar 7 dias gr&aacute;tis</button>
       <p style="font-size:.7rem;color:var(--tm);margin-top:8px;text-align:center">Quer mais? Upgrade pro Sonnet</p>
     </div></div>
 
@@ -284,7 +287,7 @@ a{color:var(--p);text-decoration:none}
       <div class="price" style="font-size:2.2rem">R$ 115<span style="font-size:.9rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
       <div class="price-sub" style="font-size:.85rem">Sonnet + 8 fluxos n8n</div>
       <ul class="price-list" style="font-size:.85rem"><li>Claude Sonnet 4 incluso</li><li>500K + 100K tokens/dia</li><li>8 fluxos de automa&#231;&#227;o</li><li>Suporte WhatsApp</li></ul>
-      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('starter')">Assinar Starter</button>
+      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('starter')">Testar 7 dias gr&aacute;tis</button>
     </div></div>
 
     <!-- Pro -->
@@ -294,7 +297,7 @@ a{color:var(--p);text-decoration:none}
       <div class="price" style="font-size:2.2rem">R$ 189<span style="font-size:.9rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
       <div class="price-sub" style="font-size:.85rem">Tudo + 2.000 fluxos</div>
       <ul class="price-list" style="font-size:.85rem"><li>Tudo do Starter</li><li>1M + 200K tokens/dia</li><li>2.000 fluxos profissionais</li><li>Prioridade no suporte</li></ul>
-      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('pro')">Assinar Pro</button>
+      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('pro')">Testar 7 dias gr&aacute;tis</button>
     </div></div>
 
     <!-- Business -->
@@ -303,7 +306,7 @@ a{color:var(--p);text-decoration:none}
       <div class="price" style="font-size:2.2rem">R$ 229<span style="font-size:.9rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
       <div class="price-sub" style="font-size:.85rem">M&#225;ximo + consultoria</div>
       <ul class="price-list" style="font-size:.85rem"><li>Tudo do Pro</li><li>2M + 400K tokens/dia</li><li>3.000 fluxos profissionais</li><li>Suporte + consultoria</li></ul>
-      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('business')">Assinar Business</button>
+      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('business')">Testar 7 dias gr&aacute;tis</button>
     </div></div>
   </div>
 </section>
@@ -340,7 +343,7 @@ a{color:var(--p);text-decoration:none}
 <footer class="footer">
   <img src="/static/brand/logo-sidebar.png" alt="Clow">
   <p>Clow AI &#8212; Intelig&#234;ncia Infinita &#8226; Possibilidades Premium</p>
-  <p style="margin-top:8px"><a href="/termos" style="color:var(--tm)">Termos de Uso</a> &#8226; <a href="/privacidade" style="color:var(--tm)">Pol&#237;tica de Privacidade</a></p>
+  <p style="margin-top:8px"><a href="/termos" style="color:var(--tm)">Termos de Uso</a> &#8226; <a href="/privacidade" style="color:var(--tm)">Pol&#237;tica de Privacidade</a> &#8226; <a href="https://clow.pvcorretor01.com.br/health" style="color:var(--tm)">Status</a></p>
 </footer>
 
 <!-- Sticky CTA mobile -->

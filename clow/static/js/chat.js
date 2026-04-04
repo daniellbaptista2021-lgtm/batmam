@@ -8,8 +8,34 @@ async function init(){
     document.getElementById('sbPl').textContent=me.plan;
     if(me.is_admin)document.getElementById('admSec').style.display='block';
     initMod(me.plan,me.is_admin);
+    _loadPlanBadge();
   }catch(e){}
   loadConvs();connectWS();_setupMobileViewport();
+}
+async function _loadPlanBadge(){
+  try{
+    const r=await fetch('/api/v1/user/usage');const u=await r.json();
+    const b=document.getElementById('planBadge');if(!b)return;
+    b.style.display='block';
+    const names={'byok_free':'BYOK Gratuito','lite':'Lite','starter':'Starter','pro':'Pro','business':'Business','free':'Gratuito','unlimited':'Admin'};
+    document.getElementById('planName').textContent=names[u.plan_id]||u.plan_name||u.plan_id;
+    document.getElementById('planModel').textContent=u.model&&u.model.includes('haiku')?'Haiku 4.5':'Sonnet 4';
+    if(u.limits.daily_input>0){
+      const used=u.today.input+u.today.output;
+      const limit=u.limits.daily_input+u.limits.daily_output;
+      const pct=Math.min(100,Math.round(used/limit*100));
+      document.getElementById('planBar').style.width=pct+'%';
+      if(pct>=90)document.getElementById('planBar').style.background='#F87171';
+      else if(pct>=70)document.getElementById('planBar').style.background='#FBBF24';
+      const fmt=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?Math.round(n/1e3)+'K':n;
+      document.getElementById('planUsage').textContent=fmt(used)+' usados';
+      document.getElementById('planLimit').textContent=fmt(limit)+' diario';
+    }else{
+      document.getElementById('planBar').style.width='100%';
+      document.getElementById('planUsage').textContent='Uso livre';
+      document.getElementById('planLimit').textContent='Sem limite';
+    }
+  }catch(e){}
 }
 function initMod(plan,adm){const s=document.getElementById('modSel');selMod='sonnet';if(s)s.style.display='none'}
 function onMod(){}
