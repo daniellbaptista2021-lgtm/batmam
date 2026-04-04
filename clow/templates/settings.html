@@ -219,6 +219,25 @@ function fmt(n){return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'
 function pct(used,limit){return limit<=0?0:Math.min(100,Math.round(used/limit*100))}
 function barClass(p){return p>=95?'danger':p>=80?'warn':'ok'}
 
+// Payment status from URL
+const urlParams=new URLSearchParams(window.location.search);
+const paymentStatus=urlParams.get('payment');
+if(paymentStatus==='success'){
+  const banner=document.createElement('div');
+  banner.style.cssText='position:fixed;top:0;left:0;right:0;padding:14px;background:linear-gradient(135deg,#34D399,#059669);color:#fff;text-align:center;font-weight:600;z-index:9999;font-size:.95rem';
+  banner.textContent='Pagamento confirmado! Bem-vindo ao seu novo plano.';
+  document.body.prepend(banner);
+  setTimeout(()=>banner.remove(),6000);
+  history.replaceState(null,'','/app/settings');
+}else if(paymentStatus==='cancelled'){
+  const banner=document.createElement('div');
+  banner.style.cssText='position:fixed;top:0;left:0;right:0;padding:14px;background:rgba(248,113,113,.9);color:#fff;text-align:center;font-weight:600;z-index:9999;font-size:.95rem';
+  banner.textContent='Pagamento cancelado. Voce continua no plano atual.';
+  document.body.prepend(banner);
+  setTimeout(()=>banner.remove(),5000);
+  history.replaceState(null,'','/app/settings');
+}
+
 // Load profile on start
 async function init(){
   const p=await api('/api/v1/user/profile');

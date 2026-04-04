@@ -192,11 +192,14 @@ def create_checkout_session(user_id: str, email: str, plan_id: str, success_url:
     try:
         session = stripe.checkout.Session.create(
             mode="subscription",
+            payment_method_types=config.STRIPE_PAYMENT_METHODS,
             line_items=[{"price": plan["stripe_price_id"], "quantity": 1}],
             customer_email=email,
-            success_url=success_url or "https://clow.pvcorretor01.com.br/?checkout=success",
-            cancel_url=cancel_url or "https://clow.pvcorretor01.com.br/landing",
+            success_url=success_url or "https://clow.pvcorretor01.com.br/app/settings?payment=success",
+            cancel_url=cancel_url or "https://clow.pvcorretor01.com.br/app/settings?payment=cancelled",
             metadata={"user_id": user_id, "plan_id": plan_id},
+            locale="pt-BR",
+            allow_promotion_codes=True,
         )
         log_action("billing_checkout", f"plan={plan_id} user={user_id}")
         return {"url": session.url, "session_id": session.id}
@@ -236,6 +239,13 @@ def handle_webhook(payload: bytes, sig_header: str) -> dict[str, Any]:
 
     if event_type == "checkout.session.completed":
         return _handle_checkout_completed(data)
+    elif event_type == "checkout.session.async_payment_succeeded":
+        # PIX confirmado (pode levar ate 30min)
+        return _handle_checkout_completed(data)
+    elif event_type == "checkout.session.async_payment_failed":
+        # PIX expirado/falhou
+        log_action("billing_pix_failed", f"session={data.get('id','')}", level="warning")
+        return {"status": "pix_failed"}
     elif event_type == "customer.subscription.updated":
         return _handle_subscription_updated(data)
     elif event_type == "customer.subscription.deleted":
