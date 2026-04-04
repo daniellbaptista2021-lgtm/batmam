@@ -112,4 +112,19 @@ def create_default_registry() -> ToolRegistry:
     registry.register(ImageGenTool())
     registry.register(PdfTool())
     registry.register(SpreadsheetTool())
+    # WhatsApp Agent tools (9)
+    from .whatsapp_agent_tools import (
+        WhatsAppListInstancesTool, WhatsAppCreateInstanceTool, WhatsAppConnectTestTool,
+        WhatsAppSavePromptTool, WhatsAppSaveRagTextTool, WhatsAppSetupWebhookTool,
+        WhatsAppTestWebhookTool, WhatsAppFullTestTool, WhatsAppSendTestMessageTool,
+    )
+    registry.register(WhatsAppListInstancesTool())
+    registry.register(WhatsAppCreateInstanceTool())
+    registry.register(WhatsAppConnectTestTool())
+    registry.register(WhatsAppSavePromptTool())
+    registry.register(WhatsAppSaveRagTextTool())
+    registry.register(WhatsAppSetupWebhookTool())
+    registry.register(WhatsAppTestWebhookTool())
+    registry.register(WhatsAppFullTestTool())
+    registry.register(WhatsAppSendTestMessageTool())
     return registry

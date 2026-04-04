@@ -663,6 +663,60 @@ def _automate_handler(args: str, ctx: dict) -> str:
     )
 
 
+def _whatsapp_handler(args: str, ctx: dict) -> str:
+    parts = args.strip().split(maxsplit=1) if args else []
+    cmd = parts[0].lower() if parts else ""
+
+    if cmd == "connect":
+        return (
+            "Vamos conectar seu WhatsApp ao Clow! Vou te guiar passo a passo.\n\n"
+            "Preciso de 3 informacoes da sua conta Z-API (app.z-api.io):\n"
+            "1. **Instance ID** — encontre em Painel > Instancia > ID\n"
+            "2. **Token** — encontre em Painel > Instancia > Token\n"
+            "3. **Nome** para identificar esta instancia (ex: 'Atendimento Loja')\n\n"
+            "Use a tool whatsapp_connect_test para testar as credenciais.\n"
+            "Depois use whatsapp_create_instance para criar a instancia.\n"
+            "Apos criar, use whatsapp_setup_webhook para pegar a URL do webhook.\n"
+            "Configure o prompt com whatsapp_save_prompt.\n"
+            "Adicione conhecimento com whatsapp_save_rag_text.\n"
+            "Teste tudo com whatsapp_full_test.\n\n"
+            "Me passe o Instance ID e Token da Z-API para comecarmos."
+        )
+
+    if cmd == "status":
+        return "Use a tool whatsapp_list_instances para ver todas as instancias WhatsApp configuradas."
+
+    if cmd == "stop":
+        n = parts[1].strip() if len(parts) > 1 else ""
+        return f"Para pausar a instancia, use a tool whatsapp_list_instances para ver os IDs, depois faca PUT na instancia com active=false. Instancia: {n}" if n else "Use /whatsapp stop <numero_da_instancia>"
+
+    if cmd == "start":
+        n = parts[1].strip() if len(parts) > 1 else ""
+        return f"Para reativar, faca PUT na instancia com active=true. Instancia: {n}" if n else "Use /whatsapp start <numero_da_instancia>"
+
+    if cmd == "remove":
+        return "Para remover uma instancia, use whatsapp_list_instances para ver os IDs. Depois DELETE a instancia. ATENCAO: todas as conversas serao perdidas. Confirme com o usuario antes."
+
+    if cmd == "test":
+        n = parts[1].strip() if len(parts) > 1 else ""
+        return f"Use a tool whatsapp_full_test com o instance_id para testar conexao, prompt e webhook. {n}"
+
+    # Default: menu
+    return (
+        "## WhatsApp Trigger\n\n"
+        "Conecte seu WhatsApp e o Clow atende seus clientes com IA.\n\n"
+        "**Comandos:**\n"
+        "- `/whatsapp connect` — conectar novo WhatsApp (passo a passo)\n"
+        "- `/whatsapp status` — ver instancias ativas\n"
+        "- `/whatsapp stop N` — pausar instancia N\n"
+        "- `/whatsapp start N` — reativar instancia N\n"
+        "- `/whatsapp test N` — testar instancia N\n"
+        "- `/whatsapp remove N` — remover instancia N\n\n"
+        "Ou acesse pelo navegador: /app/whatsapp\n\n"
+        "Use whatsapp_list_instances para ver suas instancias atuais."
+    )
+
+
 BUILTIN_SKILLS = [
     # ── Dev Core (8 originais) ──
     Skill(name="commit", description="Commit inteligente com mensagem automatica", handler=_commit_handler, aliases=["c", "ci"]),
@@ -714,6 +768,7 @@ BUILTIN_SKILLS = [
     Skill(name="teleport", description="Transfere sessao entre interfaces (CLI/webapp/PWA). Gera codigo de 6 digitos", handler=_teleport_handler, aliases=["tp"]),
     Skill(name="team", description="Agent Teams: time de agentes com roles (architect/dev/tester/reviewer). /team status", handler=_team_handler, aliases=["teams"]),
     Skill(name="automate", description="Cria automacao via linguagem natural. Ex: /automate todo dia as 8h verifica issues", handler=_automate_handler, aliases=["nl-auto"]),
+    Skill(name="whatsapp", description="WhatsApp Trigger: conectar, configurar, testar e monitorar instancias", handler=_whatsapp_handler, aliases=["wpp", "zap", "wa"]),
 
     # ── Dominio (8 originais) ──
     Skill(name="cotacao", description="Gera cotacao de seguro/plano funerario em PDF", handler=_cotacao_handler, aliases=["cot"]),
