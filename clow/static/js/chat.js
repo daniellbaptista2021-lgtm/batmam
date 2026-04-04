@@ -491,11 +491,10 @@ function addUserWithAttachment(text,type,icon,name,imgUrl,audUrl,transcript){
   if(type==='image'&&imgUrl){
     attachHtml='<img class="chat-img" src="'+imgUrl+'" onclick="openLightbox(this.src)" alt="imagem">';
   }else if(type==='audio'){
-    const audioId='aud_'+Date.now();
-    attachHtml='<div class="chat-audio" id="'+audioId+'"><button class="ca-play" onclick="playChatAudio(this)">&#x25B6;</button><div class="ca-bar"><div class="ca-fill"></div></div><span class="ca-dur">0:00</span></div>';
+    attachHtml='<audio controls style="width:100%;max-width:300px;height:36px;border-radius:8px;margin:4px 0"';
+    if(audUrl)attachHtml+=' src="'+audUrl+'"';
+    attachHtml+='></audio>';
     if(transcript)attachHtml+='<div class="chat-transcription">&#x1F3A4; '+esc(transcript)+'</div>';
-    // Store blob URL on element after DOM insert
-    setTimeout(()=>{const el=document.getElementById(audioId);if(el)el.dataset.src=audUrl||''},0);
   }else{
     const sz=pendingFile?(pendingFile.size>1024*1024?(pendingFile.size/1024/1024).toFixed(1)+' MB':(pendingFile.size/1024).toFixed(1)+' KB'):'';
     attachHtml='<div class="chat-file-card"><span class="cfc-icon">'+icon+'</span><div class="cfc-info"><div class="cfc-name">'+esc(name)+'</div><div class="cfc-meta">'+sz+'</div></div></div>';
