@@ -155,6 +155,10 @@ if HAS_FASTAPI:
     from .routes.settings import register_settings_routes
     register_settings_routes(app)
 
+    # ── WhatsApp Agent Routes ─────────────────────────────────
+    from .routes.whatsapp_agent import register_whatsapp_agent_routes
+    register_whatsapp_agent_routes(app)
+
     # ── Autopilot, Automations & Spectator Endpoints ──────────
     from .routes.extensions import register_extension_routes
     register_extension_routes(app)

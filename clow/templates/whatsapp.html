@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Clow — WhatsApp Trigger</title>
+<link rel="icon" href="/static/brand/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050510;--bg2:#0F0F24;--bg3:#14142E;--bd:rgba(100,100,180,.12);--p:#9B59FC;--bl:#4A9EFF;--gp:linear-gradient(135deg,#9B59FC,#4A9EFF);--g:#34D399;--r:#F87171;--wa:#25D366;--t1:#E8E8F0;--t2:#9898B8;--tm:#585878;--sans:'DM Sans',sans-serif;--mono:'JetBrains Mono',monospace}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased}
+a{color:var(--p);text-decoration:none}
+
+.header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--bd);background:var(--bg2)}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-left img{height:28px;opacity:.7}
+.header h1{font-size:1.2rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.header h1 svg{width:24px;height:24px}
+
+.container{max-width:900px;margin:0 auto;padding:24px}
+
+/* Empty state */
+.empty{text-align:center;padding:60px 20px}
+.empty p{color:var(--t2);margin-bottom:24px}
+
+/* Instance cards */
+.instances{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;margin-bottom:24px}
+.inst-card{background:var(--bg2);border:1px solid var(--bd);border-radius:16px;padding:24px;transition:border-color .3s}
+.inst-card:hover{border-color:rgba(155,89,252,.3)}
+.inst-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.inst-name{font-size:1.05rem;font-weight:700}
+.inst-badge{font-size:.7rem;padding:4px 10px;border-radius:20px;font-weight:600}
+.inst-badge.on{background:rgba(37,211,102,.15);color:var(--wa)}
+.inst-badge.off{background:rgba(100,100,180,.1);color:var(--tm)}
+.inst-stats{font-size:.82rem;color:var(--t2);margin-bottom:14px}
+.inst-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:8px 18px;border:none;border-radius:8px;font-weight:600;font-size:.85rem;cursor:pointer;transition:all .2s;font-family:var(--sans)}
+.btn-primary{background:var(--gp);color:#fff}.btn-primary:hover{filter:brightness(1.1)}
+.btn-wa{background:var(--wa);color:#fff}.btn-wa:hover{filter:brightness(1.1)}
+.btn-secondary{background:var(--bg3);color:var(--t2);border:1px solid var(--bd)}.btn-secondary:hover{border-color:var(--p)}
+.btn-danger{background:rgba(248,113,113,.1);color:var(--r);border:1px solid rgba(248,113,113,.2)}
+.btn-sm{padding:6px 14px;font-size:.8rem}
+
+/* Config panel (modal-like) */
+.config-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;justify-content:center;align-items:flex-start;padding:40px 20px;overflow-y:auto}
+.config-overlay.show{display:flex}
+.config-panel{width:100%;max-width:700px;background:var(--bg2);border:1px solid var(--bd);border-radius:16px;overflow:hidden}
+.config-header{padding:20px 24px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:center}
+.config-header h2{font-size:1.1rem;font-weight:700}
+.close-btn{background:none;border:none;color:var(--t2);font-size:1.4rem;cursor:pointer}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid var(--bd);overflow-x:auto}
+.tab{padding:12px 18px;font-size:.85rem;font-weight:500;color:var(--tm);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
+.tab:hover{color:var(--t1)}
+.tab.active{color:var(--t1);border-bottom-color:var(--p)}
+.tab-content{display:none;padding:24px}.tab-content.active{display:block}
+
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:.78rem;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.fg input,.fg textarea,.fg select{width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;color:var(--t1);font-family:var(--sans);font-size:.9rem;outline:none;transition:border .2s}
+.fg input:focus,.fg textarea:focus{border-color:rgba(155,89,252,.5)}
+.fg textarea{min-height:120px;resize:vertical;font-family:var(--mono);font-size:.85rem}
+.fg .hint{font-size:.75rem;color:var(--tm);margin-top:4px}
+
+.webhook-box{background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;font-family:var(--mono);font-size:.8rem;color:var(--p);word-break:break-all;margin:8px 0}
+
+.msg{padding:10px;border-radius:8px;font-size:.85rem;margin-top:10px;display:none}
+.msg.ok{display:block;background:rgba(52,211,153,.1);color:var(--g)}
+.msg.err{display:block;background:rgba(248,113,113,.1);color:var(--r)}
+
+/* Chat bubbles */
+.chat-view{max-height:400px;overflow-y:auto;padding:16px}
+.bubble{max-width:75%;padding:10px 14px;border-radius:12px;margin-bottom:8px;font-size:.88rem;line-height:1.5}
+.bubble.user{background:var(--bg3);margin-right:auto;border-bottom-left-radius:4px}
+.bubble.bot{background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.15);margin-left:auto;border-bottom-right-radius:4px}
+.bubble-time{font-size:.65rem;color:var(--tm);margin-top:4px}
+
+.toggle{display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer}
+.toggle input{display:none}
+.toggle-track{width:40px;height:22px;background:var(--bg3);border-radius:11px;position:relative;transition:background .2s;border:1px solid var(--bd)}
+.toggle input:checked+.toggle-track{background:var(--wa);border-color:var(--wa)}
+.toggle-track::after{content:'';width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:transform .2s}
+.toggle input:checked+.toggle-track::after{transform:translateX(18px)}
+.toggle span{font-size:.9rem}
+
+/* Conv list */
+.conv-item{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--bd);cursor:pointer;transition:background .2s}
+.conv-item:hover{background:rgba(155,89,252,.05)}
+.conv-phone{font-family:var(--mono);font-size:.88rem}
+.conv-preview{font-size:.8rem;color:var(--tm);margin-top:2px}
+
+@media(max-width:768px){.instances{grid-template-columns:1fr}.config-panel{margin-top:20px}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <a href="/"><img src="/static/brand/logo-sidebar.png" alt="Clow"></a>
+    <h1><svg viewBox="0 0 24 24" fill="#25D366"><path d="M12 2a10 10 0 00-8.68 14.95L2 22l5.23-1.37A10 10 0 1012 2z"/></svg>WhatsApp Trigger</h1>
+  </div>
+  <a href="/" class="btn btn-secondary btn-sm">Voltar ao Clow</a>
+</div>
+
+<div class="container">
+  <p style="color:var(--t2);margin-bottom:24px">Conecte seu WhatsApp e deixe o Clow atender seus clientes com IA.</p>
+
+  <div id="instances-list"></div>
+  <button class="btn btn-wa" onclick="addInstance()" id="btn-add" style="margin-top:8px">+ Adicionar WhatsApp</button>
+</div>
+
+<!-- Config panel overlay -->
+<div class="config-overlay" id="config-overlay">
+  <div class="config-panel">
+    <div class="config-header">
+      <h2 id="config-title">Configurar Instancia</h2>
+      <button class="close-btn" onclick="closeConfig()">&times;</button>
+    </div>
+    <div class="tabs">
+      <div class="tab active" onclick="showTab(0)">Conexao</div>
+      <div class="tab" onclick="showTab(1)">Agente IA</div>
+      <div class="tab" onclick="showTab(2)">Conhecimento</div>
+      <div class="tab" onclick="showTab(3)">Conversas</div>
+      <div class="tab" onclick="showTab(4)">Estatisticas</div>
+    </div>
+
+    <!-- Tab 0: Conexao -->
+    <div class="tab-content active" id="tab-0">
+      <div class="fg"><label>Nome da instancia</label><input id="c-name" placeholder="Ex: Atendimento Pizzaria"></div>
+      <div class="fg"><label>Instance ID (Z-API)</label><input id="c-zapi-id" class="mono" placeholder="3EF2493A894..."></div>
+      <div class="fg"><label>Token (Z-API)</label><input id="c-zapi-token" type="password" class="mono" placeholder="Token da Z-API"></div>
+      <button class="btn btn-secondary btn-sm" onclick="testConn()">Testar conexao</button>
+      <div class="msg" id="msg-conn"></div>
+      <div style="margin-top:16px"><label style="font-size:.78rem;color:var(--tm);text-transform:uppercase;letter-spacing:.5px">URL do Webhook (cole na Z-API)</label><div class="webhook-box" id="webhook-url">—</div><button class="btn btn-secondary btn-sm" onclick="copyWebhook()">Copiar URL</button></div>
+    </div>
+
+    <!-- Tab 1: Agente IA -->
+    <div class="tab-content" id="tab-1">
+      <div class="fg"><label>Prompt do agente</label><textarea id="c-prompt" placeholder="Voce e a atendente virtual da Pizzaria do Joao. Seja simpatica e objetiva..."></textarea><div class="hint">Defina a persona, regras e comportamento do agente para esta instancia.</div></div>
+      <label class="toggle"><input type="checkbox" id="c-handoff"><div class="toggle-track"></div><span>Handoff humano (pausa o bot quando atendente digita a palavra-chave)</span></label>
+      <div class="fg" id="handoff-kw" style="display:none"><label>Palavra-chave para parar o bot</label><input id="c-handoff-kw" value="humano"></div>
+      <div class="fg"><label>Contexto de conversa</label><select id="c-context"><option value="10">10 mensagens</option><option value="20" selected>20 mensagens</option><option value="30">30 mensagens</option><option value="50">50 mensagens</option></select><div class="hint">Quantas mensagens anteriores o agente lembra.</div></div>
+    </div>
+
+    <!-- Tab 2: Conhecimento -->
+    <div class="tab-content" id="tab-2">
+      <div class="fg"><label>Conhecimento em texto</label><textarea id="c-rag" style="min-height:180px" placeholder="Cole aqui informacoes que o agente deve saber: tabela de precos, FAQ, regras do negocio, horarios, enderecos..."></textarea><div class="hint">Este texto sera usado pelo agente para responder perguntas dos seus clientes.</div></div>
+      <button class="btn btn-primary" onclick="saveRag()">Salvar conhecimento</button>
+      <div class="msg" id="msg-rag"></div>
+    </div>
+
+    <!-- Tab 3: Conversas -->
+    <div class="tab-content" id="tab-3">
+      <div id="convs-list"><p style="color:var(--tm)">Carregando...</p></div>
+      <div id="chat-detail" style="display:none">
+        <button class="btn btn-secondary btn-sm" onclick="backToConvs()" style="margin-bottom:12px">&larr; Voltar</button>
+        <h3 id="chat-phone" style="font-size:.95rem;margin-bottom:12px"></h3>
+        <div class="chat-view" id="chat-messages"></div>
+        <button class="btn btn-danger btn-sm" onclick="clearConv()" style="margin-top:8px">Limpar conversa</button>
+      </div>
+    </div>
+
+    <!-- Tab 4: Stats -->
+    <div class="tab-content" id="tab-4">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="background:var(--bg3);border-radius:10px;padding:16px"><div style="font-size:.72rem;color:var(--tm);text-transform:uppercase">Msgs hoje</div><div style="font-size:1.6rem;font-weight:700;color:var(--wa)" id="stat-today">0</div></div>
+        <div style="background:var(--bg3);border-radius:10px;padding:16px"><div style="font-size:.72rem;color:var(--tm);text-transform:uppercase">Total</div><div style="font-size:1.6rem;font-weight:700" id="stat-total">0</div></div>
+      </div>
+    </div>
+
+    <div style="padding:16px 24px;border-top:1px solid var(--bd);display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="saveConfig()">Salvar</button>
+      <button class="btn btn-secondary" onclick="closeConfig()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentInstanceId=null;
+const $=id=>document.getElementById(id);
+async function api(url,opts){const r=await fetch(url,{credentials:'same-origin',...opts});return r.json()}
+
+async function loadInstances(){
+  const d=await api('/api/v1/whatsapp/instances');
+  if(!d.instances||!d.instances.length){
+    $('instances-list').innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="#25D366" width="48" height="48"><path d="M12 2a10 10 0 00-8.68 14.95L2 22l5.23-1.37A10 10 0 1012 2z"/></svg><p>Nenhuma instancia configurada. Conecte seu primeiro WhatsApp!</p></div>';
+    return;
+  }
+  $('instances-list').innerHTML='<div class="instances">'+d.instances.map(i=>`<div class="inst-card"><div class="inst-top"><div class="inst-name">${i.name}</div><span class="inst-badge ${i.active?'on':'off'}">${i.active?'Ativo':'Inativo'}</span></div><div class="inst-stats">${i.stats.messages_total||0} mensagens total${i.stats.last_message_at?(' · Ultima: '+new Date(i.stats.last_message_at*1000).toLocaleString('pt-BR')):''}</div><div class="inst-actions"><button class="btn btn-secondary btn-sm" onclick="openConfig('${i.id}')">Configurar</button><button class="btn btn-sm ${i.active?'btn-secondary':'btn-wa'}" onclick="toggleActive('${i.id}',${!i.active})">${i.active?'Desativar':'Ativar'}</button><button class="btn btn-danger btn-sm" onclick="removeInst('${i.id}')">Remover</button></div></div>`).join('')+'</div>';
+  if(d.extra_cost_brl>0){$('instances-list').innerHTML+='<p style="font-size:.82rem;color:var(--tm);margin-top:8px">Custo extra: +R$'+d.extra_cost_brl+'/mes ('+d.count+' instancias, '+d.included+' inclusas)</p>'}
+}
+loadInstances();
+
+async function addInstance(){
+  const d=await api('/api/v1/whatsapp/instances');
+  const count=d.count||0;
+  if(count>=2){if(!confirm('Voce esta usando suas 2 instancias incluidas. Adicionar mais custa +R$50/mes por cada 2 extras. Continuar?'))return}
+  const r=await api('/api/v1/whatsapp/instances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'Novo WhatsApp'})});
+  if(r.success){loadInstances();openConfig(r.instance.id)}else alert(r.error||'Erro')
+}
+
+async function openConfig(id){
+  currentInstanceId=id;
+  const d=await api('/api/v1/whatsapp/instances/'+id);
+  $('config-title').textContent='Configurar: '+d.name;
+  $('c-name').value=d.name;
+  $('c-zapi-id').value=d.zapi_instance_id||'';
+  $('c-zapi-token').value=d.zapi_token_full||'';
+  $('c-prompt').value=d.system_prompt_full||'';
+  $('c-rag').value=d.rag_text_full||'';
+  $('c-handoff').checked=d.handoff_enabled;
+  $('c-handoff-kw').value=d.handoff_keyword||'humano';
+  $('c-context').value=d.context_size||20;
+  $('webhook-url').textContent=d.webhook_url;
+  $('stat-today').textContent=d.stats.messages_today||0;
+  $('stat-total').textContent=d.stats.messages_total||0;
+  $('handoff-kw').style.display=d.handoff_enabled?'block':'none';
+  showTab(0);
+  $('config-overlay').classList.add('show');
+  loadConvs();
+}
+
+function closeConfig(){$('config-overlay').classList.remove('show');currentInstanceId=null}
+
+function showTab(n){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n));
+  document.querySelectorAll('.tab-content').forEach((t,i)=>t.classList.toggle('active',i===n));
+}
+
+$('c-handoff').addEventListener('change',()=>{$('handoff-kw').style.display=$('c-handoff').checked?'block':'none'});
+
+async function saveConfig(){
+  const body={name:$('c-name').value,zapi_instance_id:$('c-zapi-id').value,zapi_token:$('c-zapi-token').value,system_prompt:$('c-prompt').value,context_size:parseInt($('c-context').value),handoff_enabled:$('c-handoff').checked,handoff_keyword:$('c-handoff-kw').value};
+  await api('/api/v1/whatsapp/instances/'+currentInstanceId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  closeConfig();loadInstances();
+}
+
+async function saveRag(){
+  const r=await api('/api/v1/whatsapp/instances/'+currentInstanceId+'/rag/text',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:$('c-rag').value})});
+  const m=$('msg-rag');m.className=r.success?'msg ok':'msg err';m.textContent=r.success?'Conhecimento salvo!':'Erro';
+}
+
+async function testConn(){
+  const m=$('msg-conn');m.className='msg ok';m.textContent='Testando...';m.style.display='block';
+  // Save first then test
+  await api('/api/v1/whatsapp/instances/'+currentInstanceId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({zapi_instance_id:$('c-zapi-id').value,zapi_token:$('c-zapi-token').value})});
+  const r=await api('/api/v1/whatsapp/instances/'+currentInstanceId+'/test',{method:'POST'});
+  m.className=r.connected?'msg ok':'msg err';m.textContent=r.connected?'Conexao OK!':'Erro: '+(r.error||'Falha na conexao');
+}
+
+function copyWebhook(){navigator.clipboard.writeText($('webhook-url').textContent);$('webhook-url').style.borderColor='var(--g)';setTimeout(()=>$('webhook-url').style.borderColor='',2000)}
+
+async function toggleActive(id,active){
+  await api('/api/v1/whatsapp/instances/'+id+'/'+(active?'activate':'deactivate'),{method:'POST'});loadInstances();
+}
+
+async function removeInst(id){
+  if(!confirm('Remover esta instancia? Todas as conversas serao perdidas.'))return;
+  await api('/api/v1/whatsapp/instances/'+id,{method:'DELETE'});loadInstances();
+}
+
+// Conversations
+async function loadConvs(){
+  if(!currentInstanceId)return;
+  const d=await api('/api/v1/whatsapp/instances/'+currentInstanceId+'/conversations');
+  $('chat-detail').style.display='none';
+  if(!d.conversations||!d.conversations.length){$('convs-list').innerHTML='<p style="color:var(--tm)">Nenhuma conversa ainda.</p>';return}
+  $('convs-list').innerHTML=d.conversations.map(c=>`<div class="conv-item" onclick="openChat('${c.phone}')"><div><div class="conv-phone">${c.phone}</div><div class="conv-preview">${c.last_message}</div></div><div style="font-size:.72rem;color:var(--tm)">${c.total_messages} msgs</div></div>`).join('');
+}
+
+let currentPhone='';
+async function openChat(phone){
+  currentPhone=phone;
+  $('convs-list').style.display='none';
+  $('chat-detail').style.display='block';
+  $('chat-phone').textContent=phone;
+  const d=await api('/api/v1/whatsapp/instances/'+currentInstanceId+'/conversations/'+phone);
+  $('chat-messages').innerHTML=(d.messages||[]).map(m=>`<div class="bubble ${m.role==='user'?'user':'bot'}">${m.content}<div class="bubble-time">${new Date(m.timestamp*1000).toLocaleTimeString('pt-BR')}</div></div>`).join('');
+  $('chat-messages').scrollTop=$('chat-messages').scrollHeight;
+}
+
+function backToConvs(){$('chat-detail').style.display='none';$('convs-list').style.display='block';loadConvs()}
+
+async function clearConv(){
+  if(!confirm('Limpar historico com '+currentPhone+'?'))return;
+  await api('/api/v1/whatsapp/instances/'+currentInstanceId+'/conversations/'+currentPhone,{method:'DELETE'});
+  backToConvs();
+}
+</script>
+</body>
+</html>
