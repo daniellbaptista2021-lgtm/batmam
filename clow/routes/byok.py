@@ -4,84 +4,85 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from fastapi import Request as _Req
+from fastapi.responses import JSONResponse as _JR, HTMLResponse as _HR
+
 
 def register_byok_routes(app) -> None:
     """Registra endpoints BYOK."""
 
-    from fastapi import Request
-    from fastapi.responses import JSONResponse, HTMLResponse
     from .auth import _get_user_session
 
     # ── API Key Management ────────────────────────────────────
 
     @app.post("/api/v1/onboarding/validate-key", tags=["byok"])
-    async def validate_api_key(request: Request):
+    async def validate_api_key(request: _Req):
         """Valida API key da Anthropic."""
         body = await request.json()
         api_key = body.get("api_key", "").strip()
 
         if not api_key:
-            return JSONResponse({"valid": False, "error": "API key vazia"}, status_code=400)
+            return _JR({"valid": False, "error": "API key vazia"}, status_code=400)
 
         if not api_key.startswith("sk-ant-"):
-            return JSONResponse({"valid": False, "error": "Formato invalido. A key deve comecar com sk-ant-"}, status_code=400)
+            return _JR({"valid": False, "error": "Formato invalido. A key deve comecar com sk-ant-"}, status_code=400)
 
         from ..database import validate_anthropic_key
         result = validate_anthropic_key(api_key)
-        return JSONResponse(result)
+        return _JR(result)
 
     @app.post("/api/v1/me/api-key", tags=["byok"])
-    async def set_api_key(request: Request):
+    async def set_api_key(request: _Req):
         """Salva API key do usuario (BYOK)."""
         sess = _get_user_session(request)
         if not sess:
-            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+            return _JR({"error": "Nao autenticado"}, status_code=401)
 
         body = await request.json()
         api_key = body.get("api_key", "").strip()
 
         if not api_key:
-            return JSONResponse({"error": "API key vazia"}, status_code=400)
+            return _JR({"error": "API key vazia"}, status_code=400)
 
         if not api_key.startswith("sk-ant-"):
-            return JSONResponse({"error": "Formato invalido"}, status_code=400)
+            return _JR({"error": "Formato invalido"}, status_code=400)
 
         # Valida antes de salvar
         from ..database import validate_anthropic_key, set_user_api_key
         validation = validate_anthropic_key(api_key)
         if not validation.get("valid"):
-            return JSONResponse({"error": validation.get("error", "Key invalida")}, status_code=400)
+            return _JR({"error": validation.get("error", "Key invalida")}, status_code=400)
 
         set_user_api_key(sess["user_id"], api_key)
-        return JSONResponse({
+        return _JR({
             "success": True,
             "message": "API key configurada. Voce agora usa Claude Sonnet com sua propria key.",
             "model": "claude-sonnet-4-20250514",
         })
 
     @app.delete("/api/v1/me/api-key", tags=["byok"])
-    async def remove_api_key(request: Request):
+    async def remove_api_key(request: _Req):
         """Remove API key do usuario."""
         sess = _get_user_session(request)
         if not sess:
-            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+            return _JR({"error": "Nao autenticado"}, status_code=401)
 
         from ..database import remove_user_api_key
         remove_user_api_key(sess["user_id"])
-        return JSONResponse({"success": True, "message": "API key removida."})
+        return _JR({"success": True, "message": "API key removida."})
 
     @app.get("/api/v1/me/api-key/status", tags=["byok"])
-    async def api_key_status(request: Request):
+    async def api_key_status(request: _Req):
         """Verifica se usuario tem API key configurada."""
         sess = _get_user_session(request)
         if not sess:
-            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+            return _JR({"error": "Nao autenticado"}, status_code=401)
 
         from ..database import get_user_api_key, get_user_by_id
         user = get_user_by_id(sess["user_id"])
         has_key = bool(get_user_api_key(sess["user_id"]))
 
-        return JSONResponse({
+        return _JR({
             "has_api_key": has_key,
             "byok_enabled": bool(user.get("byok_enabled")) if user else False,
             "model": "claude-sonnet-4-20250514" if has_key else "claude-haiku-4-5-20251001",
@@ -91,11 +92,11 @@ def register_byok_routes(app) -> None:
     # ── Usage Dashboard ───────────────────────────────────────
 
     @app.get("/api/v1/usage/detailed", tags=["byok"])
-    async def usage_detailed(request: Request):
+    async def usage_detailed(request: _Req):
         """Retorna uso detalhado por sessao/dia."""
         sess = _get_user_session(request)
         if not sess:
-            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+            return _JR({"error": "Nao autenticado"}, status_code=401)
 
         from ..database import get_db
         user_id = sess["user_id"]
@@ -130,7 +131,7 @@ def register_byok_routes(app) -> None:
         today_inp = today["inp"] or 0
         today_out = today["out"] or 0
 
-        return JSONResponse({
+        return _JR({
             "total": {
                 "input_tokens": total_inp,
                 "output_tokens": total_out,
@@ -169,7 +170,7 @@ def register_byok_routes(app) -> None:
     _signup_attempts: dict[str, list[float]] = {}
 
     @app.post("/api/v1/auth/signup", tags=["byok"])
-    async def signup(request: Request):
+    async def signup(request: _Req):
         """Cria conta nova (BYOK flow). Seta cookie de sessao na response."""
         # Rate limit por IP
         client_ip = request.client.host if request.client else "unknown"
@@ -177,7 +178,7 @@ def register_byok_routes(app) -> None:
         attempts = _signup_attempts.setdefault(client_ip, [])
         attempts[:] = [t for t in attempts if now - t < 3600]  # Janela 1h
         if len(attempts) >= 5:
-            return JSONResponse({"error": "Muitas tentativas. Tente novamente em 1 hora."}, status_code=429)
+            return _JR({"error": "Muitas tentativas. Tente novamente em 1 hora."}, status_code=429)
         attempts.append(now)
 
         body = await request.json()
@@ -186,28 +187,28 @@ def register_byok_routes(app) -> None:
         name = body.get("name", "").strip()
 
         if not name:
-            return JSONResponse({"error": "Nome completo obrigatorio"}, status_code=400)
+            return _JR({"error": "Nome completo obrigatorio"}, status_code=400)
         if len(name.split()) < 2:
-            return JSONResponse({"error": "Informe nome e sobrenome"}, status_code=400)
+            return _JR({"error": "Informe nome e sobrenome"}, status_code=400)
         if not email or not password:
-            return JSONResponse({"error": "Email e senha obrigatorios"}, status_code=400)
+            return _JR({"error": "Email e senha obrigatorios"}, status_code=400)
         if "@" not in email or "." not in email.split("@")[-1]:
-            return JSONResponse({"error": "Email invalido"}, status_code=400)
+            return _JR({"error": "Email invalido"}, status_code=400)
         if len(password) < 6:
-            return JSONResponse({"error": "Senha deve ter pelo menos 6 caracteres"}, status_code=400)
+            return _JR({"error": "Senha deve ter pelo menos 6 caracteres"}, status_code=400)
 
         # Verifica duplicidade antes de criar
         from ..database import get_user_by_email, create_user
         existing = get_user_by_email(email)
         if existing:
-            return JSONResponse({
+            return _JR({
                 "error": "Este email ja possui uma conta. Faca login em vez de criar outra.",
                 "action": "login",
             }, status_code=409)
 
         user = create_user(email, password, name)
         if not user:
-            return JSONResponse({
+            return _JR({
                 "error": "Este email ja possui uma conta. Faca login em vez de criar outra.",
                 "action": "login",
             }, status_code=409)
@@ -236,21 +237,21 @@ def register_byok_routes(app) -> None:
     @app.get("/landing", tags=["byok"])
     async def landing_page():
         """Landing page BYOK do Clow."""
-        return HTMLResponse(_landing_html())
+        return _HR(_landing_html())
 
     # ── Onboarding Page ───────────────────────────────────────
 
     @app.get("/onboarding", tags=["byok"])
     async def onboarding_page():
         """Pagina de onboarding BYOK."""
-        return HTMLResponse(_onboarding_html())
+        return _HR(_onboarding_html())
 
     # ── Usage Page ────────────────────────────────────────────
 
     @app.get("/usage", tags=["byok"])
     async def usage_page():
         """Pagina de uso detalhado."""
-        return HTMLResponse(_usage_html())
+        return _HR(_usage_html())
 
 
 def _landing_html() -> str:
