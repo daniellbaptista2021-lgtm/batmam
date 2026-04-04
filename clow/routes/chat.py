@@ -84,14 +84,19 @@ def _build_multimodal_message(text: str, file_data: dict) -> Any:
 
 
 def _should_generate_image(content: str) -> bool:
-    """Detecta se o pedido e para gerar imagem."""
+    """Detecta se o pedido e ESPECIFICAMENTE para gerar imagem."""
     keywords = [
-        "gera imagem", "cria imagem", "faz uma imagem", "gerar imagem",
-        "criar imagem", "desenha", "ilustracao", "arte", "visual",
-        "criativo visual", "banner", "thumbnail", "foto", "picture", "image",
-        "criativo pra", "criativo de", "criativo para"
+        "gera imagem", "cria imagem", "gerar imagem", "criar imagem",
+        "faz uma imagem", "gere uma imagem", "crie uma imagem",
+        "gera uma foto", "cria uma foto",
+        "gera uma ilustracao", "cria uma ilustracao",
     ]
     content_lower = content.lower()
+    # Rejeita se contem palavras que indicam outro tipo de criacao
+    reject = ["landing", "page", "site", "app", "planilha", "documento",
+              "contrato", "proposta", "codigo", "sistema", "dashboard"]
+    if any(r in content_lower for r in reject):
+        return False
     return any(kw in content_lower for kw in keywords)
 
 
