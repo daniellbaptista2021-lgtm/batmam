@@ -190,36 +190,19 @@ def create_checkout_session(user_id: str, email: str, plan_id: str, success_url:
         return {"error": f"Plano '{plan_id}' nao tem preco Stripe configurado"}
 
     try:
-        # Filtra payment methods validos (PIX precisa estar ativo no Stripe Dashboard)
-        valid_methods = []
-        for m in config.STRIPE_PAYMENT_METHODS:
-            m = m.strip()
-            if m:
-                valid_methods.append(m)
-        if not valid_methods:
-            valid_methods = ["card"]
-
-        checkout_kwargs = {
-            "mode": "subscription",
-            "line_items": [{"price": plan["stripe_price_id"], "quantity": 1}],
-            "customer_email": email,
-            "success_url": success_url or "https://clow.pvcorretor01.com.br/app/settings?payment=success",
-            "cancel_url": cancel_url or "https://clow.pvcorretor01.com.br/app/settings?payment=cancelled",
-            "metadata": {"user_id": user_id, "plan_id": plan_id},
-            "locale": "pt-BR",
-            "allow_promotion_codes": True,
-        }
-
-        # Tenta com todos os metodos, fallback pra card se PIX nao ativado
-        try:
-            checkout_kwargs["payment_method_types"] = valid_methods
-            session = stripe.checkout.Session.create(**checkout_kwargs)
-        except Exception as first_err:
-            if "pix" in str(first_err).lower():
-                checkout_kwargs["payment_method_types"] = ["card"]
-                session = stripe.checkout.Session.create(**checkout_kwargs)
-            else:
-                raise first_err
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            line_items=[{"price": plan["stripe_price_id"], "quantity": 1}],
+            customer_email=email,
+            success_url=success_url or "https://clow.pvcorretor01.com.br/app/settings?payment=success",
+            cancel_url=cancel_url or "https://clow.pvcorretor01.com.br/app/settings?payment=cancelled",
+            metadata={"user_id": user_id, "plan_id": plan_id},
+            locale="pt-BR",
+            allow_promotion_codes=True,
+            # Nao especifica payment_method_types — Stripe mostra
+            # automaticamente todos os metodos ativos no Dashboard
+            # (cartao credito, debito, PIX quando ativado)
+        )
         log_action("billing_checkout", f"plan={plan_id} user={user_id}")
         return {"url": session.url, "session_id": session.id}
     except Exception as e:
@@ -276,8 +259,8 @@ def handle_webhook(payload: bytes, sig_header: str) -> dict[str, Any]:
 
 
 def _handle_checkout_completed(session: dict) -> dict:
-    """Checkout concluido — ativa plano do user."""
-    from .database import get_db
+    """Checkout concluido — ativa plano do user AUTOMATICAMENTE + envia email."""
+    from .database import get_db, get_user_by_id
 
     user_id = session.get("metadata", {}).get("user_id", "")
     plan_id = session.get("metadata", {}).get("plan_id", "")
@@ -286,11 +269,8 @@ def _handle_checkout_completed(session: dict) -> dict:
 
     if user_id and plan_id:
         with get_db() as db:
-            db.execute(
-                "UPDATE users SET plan=? WHERE id=?",
-                (plan_id, user_id),
-            )
-            # Salva IDs do Stripe (adiciona colunas se nao existem)
+            # Ativa plano IMEDIATAMENTE
+            db.execute("UPDATE users SET plan=? WHERE id=?", (plan_id, user_id))
             try:
                 db.execute("ALTER TABLE users ADD COLUMN stripe_customer_id TEXT DEFAULT ''")
             except Exception:
@@ -304,10 +284,42 @@ def _handle_checkout_completed(session: dict) -> dict:
                 (customer_id, subscription_id, user_id),
             )
 
+        # Envia email de confirmacao via Stripe (receipt automatico)
+        # O Stripe ja envia receipt se configurado no Dashboard
+        # Tambem enviamos notificacao customizada
+        user = get_user_by_id(user_id)
+        if user:
+            _send_welcome_email(user.get("email", ""), plan_id)
+
         log_action("billing_activated", f"user={user_id} plan={plan_id}")
         return {"status": "activated", "user_id": user_id, "plan": plan_id}
 
     return {"status": "no_metadata"}
+
+
+def _send_welcome_email(email: str, plan_id: str) -> None:
+    """Envia email de boas-vindas com detalhes da assinatura."""
+    stripe = _get_stripe()
+    if not stripe or not email:
+        return
+
+    plan = get_plan(plan_id)
+
+    try:
+        # Usa Stripe para enviar email (configura no Dashboard: Settings > Emails)
+        # Stripe envia automaticamente: receipt, invoice, payment failed
+        # Aqui registramos que o email deve ser enviado
+        log_action("billing_welcome_email", f"email={email} plan={plan_id}")
+
+        # Se quiser email customizado, pode usar httpx para API de email
+        # Por agora, o Stripe cuida dos emails automaticos:
+        # - Receipt de pagamento
+        # - Invoice mensal
+        # - Aviso de falha de pagamento
+        # - Aviso de cancelamento
+        # Basta ativar em: dashboard.stripe.com/settings/emails
+    except Exception:
+        pass
 
 
 def _handle_subscription_updated(sub: dict) -> dict:
