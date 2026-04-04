@@ -206,10 +206,16 @@ def register_chat_routes(app: FastAPI) -> None:
         elif effective_plan in ("free", "basic") and not user_api_key:
             effective_plan = "byok_free"
         elif effective_plan == "unlimited":
-            effective_plan = "byok_free"  # Admin usa BYOK
+            effective_plan = "business" if is_admin else "byok_free"
 
-        # Checa franquia antes de processar (planos pagos)
-        if plan_uses_server_key(effective_plan):
+        # Admin: sempre Sonnet, sem limite de franquia, usa key do servidor
+        if is_admin:
+            model_id = "claude-sonnet-4-20250514"
+            # Admin usa key do servidor se nao tem BYOK
+            if not user_api_key:
+                user_api_key = None  # Usa config.ANTHROPIC_API_KEY
+        elif plan_uses_server_key(effective_plan):
+            # Plano pago: checa franquia
             quota_check = check_quota(user_id, effective_plan)
             if not quota_check["allowed"]:
                 return JSONResponse({
@@ -217,13 +223,9 @@ def register_chat_routes(app: FastAPI) -> None:
                     "response": quota_check.get("reason", "Franquia atingida. Tente novamente mais tarde."),
                     "tools": [], "file": None,
                 })
-            # Plano pago: usa key do servidor + model do plano
-            user_api_key = None  # Usa config.ANTHROPIC_API_KEY (default do Agent)
+            user_api_key = None
             model_id = get_model_for_plan(effective_plan)
         elif user_api_key:
-            # BYOK: usa key do user + Sonnet
-            model_id = "claude-sonnet-4-20250514"
-        elif is_admin:
             model_id = "claude-sonnet-4-20250514"
         else:
             model_id = "claude-haiku-4-5-20251001"

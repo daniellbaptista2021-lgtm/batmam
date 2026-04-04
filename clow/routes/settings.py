@@ -84,8 +84,11 @@ def register_settings_routes(app) -> None:
 
         user = get_user_by_id(sess["user_id"])
         plan_id = user.get("plan", "byok_free") if user else "byok_free"
-        if plan_id in ("free", "basic", "unlimited"):
+        is_admin = bool(user.get("is_admin")) if user else False
+        if plan_id in ("free", "basic"):
             plan_id = "byok_free"
+        elif plan_id == "unlimited":
+            plan_id = "business" if is_admin else "byok_free"
         plan = get_plan(plan_id)
         uid = sess["user_id"]
         now = time.time()

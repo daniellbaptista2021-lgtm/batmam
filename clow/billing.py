@@ -338,11 +338,12 @@ def get_billing_status(user_id: str) -> dict[str, Any]:
         return {"error": "User nao encontrado"}
 
     plan_id = user.get("plan", "byok_free")
+    is_admin = bool(user.get("is_admin"))
     # Mapeia planos antigos
     if plan_id in ("free", "basic"):
         plan_id = "byok_free"
     elif plan_id == "unlimited":
-        plan_id = "byok_free"  # Admin usa BYOK
+        plan_id = "business" if is_admin else "byok_free"
 
     plan = get_plan(plan_id)
     quota = check_quota(user_id, plan_id)
