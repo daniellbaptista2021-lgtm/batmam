@@ -491,20 +491,8 @@ function addUserWithAttachment(text,type,icon,name,imgUrl,audUrl,transcript){
   if(type==='image'&&imgUrl){
     attachHtml='<img class="chat-img" src="'+imgUrl+'" onclick="openLightbox(this.src)" alt="imagem">';
   }else if(type==='audio'){
-    const aud_id='aud_'+Date.now();
-    attachHtml='<audio controls id="'+aud_id+'" style="width:100%;max-width:300px;height:36px;border-radius:8px;margin:4px 0"></audio>';
+    attachHtml='<div class="chat-audio"><button class="ca-play" onclick="playChatAudio(this,\''+esc(audUrl||'')+'\')">&#x25B6;</button><div class="ca-bar"><div class="ca-fill"></div></div><span class="ca-dur">0:00</span></div>';
     if(transcript)attachHtml+='<div class="chat-transcription">&#x1F3A4; '+esc(transcript)+'</div>';
-    // Convert blob URL to persistent data URL after DOM insert
-    if(audUrl){
-      const _audUrl=audUrl;
-      setTimeout(()=>{
-        fetch(_audUrl).then(r=>r.blob()).then(b=>{
-          const reader=new FileReader();
-          reader.onloadend=()=>{const el=document.getElementById(aud_id);if(el)el.src=reader.result};
-          reader.readAsDataURL(b);
-        }).catch(()=>{const el=document.getElementById(aud_id);if(el)el.src=_audUrl});
-      },50);
-    }
   }else{
     const sz=pendingFile?(pendingFile.size>1024*1024?(pendingFile.size/1024/1024).toFixed(1)+' MB':(pendingFile.size/1024).toFixed(1)+' KB'):'';
     attachHtml='<div class="chat-file-card"><span class="cfc-icon">'+icon+'</span><div class="cfc-info"><div class="cfc-name">'+esc(name)+'</div><div class="cfc-meta">'+sz+'</div></div></div>';
@@ -557,18 +545,15 @@ function closeLightbox(){document.getElementById('lightbox').classList.remove('s
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox()});
 
 // ── Chat audio player ──
-function playChatAudio(btn){
+function playChatAudio(btn,url){
   const wrap=btn.closest('.chat-audio');
   const fill=wrap.querySelector('.ca-fill');
   const durEl=wrap.querySelector('.ca-dur');
-  const url=wrap.dataset.src||'';
   if(btn._audio){btn._audio.pause();btn._audio=null;btn.innerHTML='&#x25B6;';fill.style.width='0%';return}
-  if(!url){durEl.textContent='erro';return}
   const a=new Audio(url);btn._audio=a;btn.innerHTML='&#x23F8;';
-  a.onerror=()=>{btn.innerHTML='&#x25B6;';durEl.textContent='erro';btn._audio=null};
   a.ontimeupdate=()=>{const p=(a.currentTime/a.duration*100)||0;fill.style.width=p+'%';const s=Math.floor(a.currentTime);durEl.textContent=Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60)};
   a.onended=()=>{btn.innerHTML='&#x25B6;';fill.style.width='0%';btn._audio=null;durEl.textContent='0:00'};
-  a.play().catch(()=>{btn.innerHTML='&#x25B6;';durEl.textContent='erro'});
+  a.play();
 }
 
 // ── Toast ──
