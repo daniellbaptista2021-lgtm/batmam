@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Carrega .env — busca em vários locais possíveis
+# Carrega .env �� busca em vários locais possíveis
 _env_candidates = [
     Path(__file__).resolve().parent.parent / ".env",   # ./clow/../.env (dev)
     Path.home() / ".clow" / "app" / ".env",          # ~/.clow/app/.env (instalado)
@@ -23,7 +23,7 @@ for _env_path in _env_candidates:
 if not _loaded_env:
     load_dotenv()
 
-# ── Diretórios ──────────────────────────────────────────────
+# ── Diretórios ───────────────────────────��──────────────────
 CLOW_HOME = Path.home() / ".clow"
 SESSIONS_DIR = CLOW_HOME / "sessions"
 MEMORY_DIR = CLOW_HOME / "memory"
@@ -33,7 +33,7 @@ CLOW_HOME.mkdir(parents=True, exist_ok=True)
 SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 MEMORY_DIR.mkdir(parents=True, exist_ok=True)
 
-# ── API ─────────────────────────────────────────────────────
+# ── API ──────────────────────────────���──────────────────────
 # Provider: "anthropic", "openai" ou "ollama"
 CLOW_PROVIDER = os.getenv("CLOW_PROVIDER", "anthropic").lower()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
@@ -57,6 +57,15 @@ MAX_TOOL_RESULT_CHARS = 5000
 AUTO_APPROVE_READ = True       # Leitura sempre liberada
 AUTO_APPROVE_WRITE = False     # Escrita pede confirmação
 AUTO_APPROVE_BASH = False      # Bash pede confirmação
+
+# ── Extended Thinking ────────��─────────────────────────────
+CLOW_EXTENDED_THINKING = os.getenv("CLOW_EXTENDED_THINKING", "true").lower() in ("true", "1", "yes")
+CLOW_THINKING_BUDGET = int(os.getenv("CLOW_THINKING_BUDGET", "10000"))
+
+# ── Auto-Correction ───────────────────────────────────────
+CLOW_AUTO_CORRECT = os.getenv("CLOW_AUTO_CORRECT", "true").lower() in ("true", "1", "yes")
+CLOW_AUTO_CORRECT_MAX = int(os.getenv("CLOW_AUTO_CORRECT_MAX", "3"))
+
 DANGEROUS_COMMANDS = [
     "rm -rf", "rm -r /", "mkfs", "dd if=", ":(){:|:&};:",
     "chmod -R 777 /", "shutdown", "reboot", "kill -9",

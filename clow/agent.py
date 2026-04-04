@@ -200,6 +200,7 @@ class Agent:
         full_response_text = []
         max_iterations = 30
         iteration = 0
+        auto_correct_attempts = 0
 
         try:
             while iteration < max_iterations:
@@ -229,6 +230,26 @@ class Agent:
                 # Adiciona resultados ao historico
                 for tr in tool_results:
                     self.session.messages.append(tr.to_message())
+
+                # ── Auto-correction: detecta erros e injeta correcao ──
+                if config.CLOW_AUTO_CORRECT and auto_correct_attempts < config.CLOW_AUTO_CORRECT_MAX:
+                    has_error = self._detect_tool_errors(tool_results)
+                    if has_error:
+                        auto_correct_attempts += 1
+                        auto_msg = (
+                            "O comando anterior falhou. Analise o erro e "
+                            "corrija automaticamente."
+                        )
+                        self.session.messages.append({
+                            "role": "user",
+                            "content": auto_msg,
+                        })
+                        log_action(
+                            "auto_correct",
+                            f"tentativa {auto_correct_attempts}/{config.CLOW_AUTO_CORRECT_MAX}",
+                            session_id=self.session.id,
+                        )
+                        continue  # Volta pro while sem esperar input
 
         except Exception as e:
             # Hook on_error
@@ -358,14 +379,41 @@ class Agent:
             "messages": chat_messages,
             "max_tokens": config.MAX_TOKENS,
         }
+
+        # ── Prompt Caching: system prompt como content blocks com cache_control ──
         if system_prompt.strip():
-            kwargs["system"] = system_prompt.strip()
+            kwargs["system"] = [{
+                "type": "text",
+                "text": system_prompt.strip(),
+                "cache_control": {"type": "ephemeral"},
+            }]
+
         if tools:
             kwargs["tools"] = tools
 
+        # ── Extended Thinking: ativa para Sonnet/Opus ──
+        thinking_enabled = False
+        if config.CLOW_EXTENDED_THINKING:
+            model_lower = self.model.lower()
+            if "sonnet" in model_lower or "opus" in model_lower:
+                thinking_enabled = True
+                kwargs["thinking"] = {
+                    "type": "enabled",
+                    "budget_tokens": config.CLOW_THINKING_BUDGET,
+                }
+                # Anthropic exige max_tokens >= budget_tokens quando thinking ativo
+                # e nao permite max_tokens sozinho — usa budget_tokens no thinking
+                kwargs["max_tokens"] = config.MAX_TOKENS + config.CLOW_THINKING_BUDGET
+
         collected_text = []
+        collected_thinking = []
         collected_tool_calls: dict[int, dict] = {}
-        usage_data = {"prompt_tokens": 0, "completion_tokens": 0}
+        usage_data = {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "cache_creation_input_tokens": 0,
+            "cache_read_input_tokens": 0,
+        }
         current_tool_idx = -1
 
         with self._anthropic.messages.stream(**kwargs) as stream:
@@ -374,7 +422,13 @@ class Agent:
 
                 if event_type == "message_start":
                     if hasattr(event, "message") and hasattr(event.message, "usage"):
-                        usage_data["prompt_tokens"] = event.message.usage.input_tokens or 0
+                        u = event.message.usage
+                        usage_data["prompt_tokens"] = u.input_tokens or 0
+                        # ── Prompt Caching: captura metricas de cache ──
+                        if hasattr(u, "cache_creation_input_tokens"):
+                            usage_data["cache_creation_input_tokens"] = u.cache_creation_input_tokens or 0
+                        if hasattr(u, "cache_read_input_tokens"):
+                            usage_data["cache_read_input_tokens"] = u.cache_read_input_tokens or 0
 
                 elif event_type == "message_delta":
                     if hasattr(event, "usage") and event.usage:
@@ -389,6 +443,8 @@ class Agent:
                             "name": block.name,
                             "arguments": "",
                         }
+                    elif block.type == "thinking":
+                        pass  # Thinking block iniciado, processa nos deltas
 
                 elif event_type == "content_block_delta":
                     delta = event.delta
@@ -398,6 +454,28 @@ class Agent:
                     elif delta.type == "input_json_delta":
                         if current_tool_idx in collected_tool_calls:
                             collected_tool_calls[current_tool_idx]["arguments"] += delta.partial_json
+                    elif delta.type == "thinking_delta":
+                        # Extended Thinking: processa internamente, nao envia pro usuario
+                        collected_thinking.append(delta.thinking)
+
+        # ── Prompt Caching: loga metricas de cache ──
+        cache_created = usage_data.get("cache_creation_input_tokens", 0)
+        cache_read = usage_data.get("cache_read_input_tokens", 0)
+        if cache_created or cache_read:
+            log_action(
+                "prompt_cache",
+                f"cache_created={cache_created} cache_read={cache_read}",
+                session_id=self.session.id,
+            )
+
+        # Extended Thinking: loga internamente se houve pensamento
+        if collected_thinking:
+            thinking_chars = sum(len(t) for t in collected_thinking)
+            log_action(
+                "extended_thinking",
+                f"thinking_chars={thinking_chars}",
+                session_id=self.session.id,
+            )
 
         text = "".join(collected_text)
         tool_calls = [collected_tool_calls[k] for k in sorted(collected_tool_calls)]
@@ -727,6 +805,36 @@ class Agent:
         turn.tool_results.append(tr)
         self.on_tool_result(tool_call.name, tr.status.value, tr.output)
         return tr
+
+    # ── Auto-Correction Error Detection ─────────────────────────
+
+    ERROR_PATTERNS = re.compile(
+        r"(?:error|traceback|failed|SyntaxError|TypeError|NameError|"
+        r"ImportError|FileNotFoundError|KeyError|ValueError|"
+        r"IndentationError|AttributeError|ModuleNotFoundError)",
+        re.IGNORECASE,
+    )
+
+    def _detect_tool_errors(self, tool_results: list[ToolResult]) -> bool:
+        """Detecta se algum tool result contém erro que merece auto-correção."""
+        for tr in tool_results:
+            # Status explícito de erro
+            if tr.status == ToolResultStatus.ERROR:
+                return True
+            # Padrões de erro no output de bash/comandos
+            if tr.output and self.ERROR_PATTERNS.search(tr.output):
+                # Ignora falsos positivos: menções em texto informativo
+                # Só considera se o output começa com indicadores de falha
+                output_lower = tr.output.lower()
+                # Evita falso positivo quando "error" aparece em contexto informativo
+                if any(indicator in output_lower for indicator in (
+                    "traceback", "syntaxerror", "nameerror", "typeerror",
+                    "importerror", "filenotfounderror", "indentationerror",
+                    "exit code", "command failed", "errno",
+                    "failed to", "error:",
+                )):
+                    return True
+        return False
 
     # ── Context Management ─────────────────────────────────────
 
