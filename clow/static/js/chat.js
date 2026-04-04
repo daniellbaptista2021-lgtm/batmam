@@ -350,10 +350,12 @@ async function startRec(){
   if(!hasSpeechRec){showToast('Seu navegador não suporta transcrição de áudio. Digite sua mensagem.','error');return}
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    mediaRec=new MediaRecorder(stream,{mimeType:'audio/webm'});
+    const mimeTypes=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'];
+    const mime=mimeTypes.find(m=>MediaRecorder.isTypeSupported(m))||'';
+    mediaRec=new MediaRecorder(stream,mime?{mimeType:mime}:{});
     audioChunks=[];audioTranscript='';
     mediaRec.ondataavailable=e=>{if(e.data.size>0)audioChunks.push(e.data)};
-    mediaRec.onstop=()=>{stream.getTracks().forEach(t=>t.stop());audioBlob=new Blob(audioChunks,{type:'audio/webm'});audioUrl=URL.createObjectURL(audioBlob);showAudioPreview()};
+    mediaRec.onstop=()=>{stream.getTracks().forEach(t=>t.stop());audioBlob=new Blob(audioChunks,{type:mediaRec.mimeType||'audio/webm'});audioUrl=URL.createObjectURL(audioBlob);showAudioPreview()};
     mediaRec.start();
     // Web Speech API — transcricao em tempo real
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -429,52 +431,28 @@ sendMessage=async function(){
     const text=I.value.trim();
     const localAudioUrl=audioUrl;
     const trans=audioTranscript;
-    // Abordagem 1: Web Speech API transcreveu — envia como texto normal
-    if(trans){
-      const msgText=text||trans;
-      addUserWithAttachment(msgText,'audio','&#x1F3A4;','Audio',null,localAudioUrl,trans);
-      I.value='';I.style.height='auto';proc=true;SB.disabled=true;
-      clearAudio();
-      showThink();
-      if(http){
-        try{
-          const body={content:msgText,session_id:hSid,conversation_id:cid,model:selMod};
-          const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-          hideThink();
-          if(!r.ok){const e=await r.json().catch(()=>({error:'Erro'}));showErr(e.error||'Erro');finishTurn();return}
-          const d=await r.json();
-          hSid=d.session_id||hSid;
-          if(!cid&&d.conversation_id)cid=d.conversation_id;
-          if(d.response){appendTxt(d.response);finishTxt()}
-          finishTurn();
-        }catch(e){hideThink();showErr('Erro: '+e.message);finishTurn()}
-      }else if(ws&&ws.readyState===1){
-        hideThink();
-        ws.send(JSON.stringify({type:'message',content:msgText,model:selMod,conversation_id:cid}));
-        proc=true;SB.disabled=true;
-      }else{hideThink();finishTurn()}
-      return;
-    }
-    // Fallback: sem transcricao — envia como "[Audio enviado]" com player visual
-    const fallbackText=text||'[Audio enviado]';
-    addUserWithAttachment(fallbackText,'audio','&#x1F3A4;','Audio',null,localAudioUrl);
+    const msgText=text||(trans?trans:'[Audio enviado]');
+    addUserWithAttachment(msgText,'audio','&#x1F3A4;','Audio',null,localAudioUrl,trans);
     I.value='';I.style.height='auto';proc=true;SB.disabled=true;
     clearAudio();
+    // Envia como file_data com transcricao para o agente processar
+    const audioFileData={type:'audio',file_name:'audio.webm',transcription:trans||''};
     showThink();
     if(http){
       try{
-        const body={content:fallbackText,session_id:hSid,conversation_id:cid,model:selMod};
+        const body={content:msgText,session_id:hSid,conversation_id:cid,model:selMod,file_data:audioFileData};
         const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
         hideThink();
         if(!r.ok){const e=await r.json().catch(()=>({error:'Erro'}));showErr(e.error||'Erro');finishTurn();return}
         const d=await r.json();
         hSid=d.session_id||hSid;
+        if(!cid&&d.conversation_id)cid=d.conversation_id;
         if(d.response){appendTxt(d.response);finishTxt()}
         finishTurn();
       }catch(e){hideThink();showErr('Erro: '+e.message);finishTurn()}
     }else if(ws&&ws.readyState===1){
       hideThink();
-      ws.send(JSON.stringify({type:'message',content:fallbackText,model:selMod,conversation_id:cid}));
+      ws.send(JSON.stringify({type:'message',content:msgText,model:selMod,conversation_id:cid,file_data:audioFileData}));
       proc=true;SB.disabled=true;
     }else{hideThink();finishTurn()}
     return;
@@ -494,7 +472,7 @@ sendMessage=async function(){
     showThink();
     const res=await uploadFile(theFile);
     hideThink();
-    if(!res||!res.ok){finishTurn();return}
+    if(!res||!res.type){showErr('Erro no upload');finishTurn();return}
     const fileData={...res};
     if(http){await sendFileHTTP(text,fileData)}
     else if(ws&&ws.readyState===1){ws.send(JSON.stringify({type:'message',content:text,file_data:fileData,model:selMod,conversation_id:cid}));proc=true;SB.disabled=true}
