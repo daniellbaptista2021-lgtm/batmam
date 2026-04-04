@@ -167,7 +167,7 @@ def register_byok_routes(app) -> None:
 
     @app.post("/api/v1/auth/signup", tags=["byok"])
     async def signup(request: Request):
-        """Cria conta nova (BYOK flow)."""
+        """Cria conta nova (BYOK flow). Seta cookie de sessao na response."""
         body = await request.json()
         email = body.get("email", "").strip().lower()
         password = body.get("password", "").strip()
@@ -185,10 +185,11 @@ def register_byok_routes(app) -> None:
         if not user:
             return JSONResponse({"error": "Email ja cadastrado"}, status_code=409)
 
-        from .auth import _create_session
+        from .auth import _create_session, _SESSION_TTL
         token = _create_session(user)
 
-        return JSONResponse({
+        # Seta cookie via response header (mesmo modo que o login form)
+        resp = JSONResponse({
             "success": True,
             "token": token,
             "email": user["email"],
@@ -196,6 +197,12 @@ def register_byok_routes(app) -> None:
             "plan": user["plan"],
             "next_step": "configure_api_key",
         })
+        resp.set_cookie(
+            "clow_session", token,
+            max_age=_SESSION_TTL, httponly=True,
+            samesite="lax", secure=False, path="/",
+        )
+        return resp
 
     # ── Landing Page ──────────────────────────────────────────
 
@@ -441,6 +448,7 @@ h1{font-size:1.4rem;font-weight:700;text-align:center;margin-bottom:4px}
   <h1>Configurar Clow</h1>
   <div class="progress"><div class="dot active" id="d1"></div><div class="dot" id="d2"></div><div class="dot" id="d3"></div></div>
 
+
   <div class="step active" id="step1">
     <p class="sub">Crie sua conta em 30 segundos</p>
     <div class="fg"><label>Nome</label><input id="name" placeholder="Seu nome"></div>
@@ -460,9 +468,39 @@ h1{font-size:1.4rem;font-weight:700;text-align:center;margin-bottom:4px}
   </div>
 
   <div class="step" id="step3">
-    <p class="sub" style="font-size:1.1rem;color:var(--g)">Tudo pronto!</p>
-    <div class="msg success" style="display:block;text-align:center">Sua conta est&aacute; configurada.<br>Voc&ecirc; paga apenas o que usar, direto na Anthropic.</div>
-    <button class="btn btn-primary" onclick="window.location='/';" style="margin-top:24px">Abrir o Clow</button>
+    <p class="sub" style="font-size:1.1rem;color:var(--g)">API key configurada!</p>
+    <div class="msg success" style="display:block;text-align:center;margin-bottom:20px">Agora escolha como usar o Clow:</div>
+
+    <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:12px">
+      <h3 style="font-size:.95rem;margin-bottom:8px;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Web (mais r&aacute;pido)</h3>
+      <p style="font-size:.85rem;color:var(--t2);margin-bottom:10px">Use direto no navegador, sem instalar nada.</p>
+      <button class="btn btn-primary" onclick="window.location='/';" style="padding:10px;font-size:.9rem">Abrir o Clow Web</button>
+    </div>
+
+    <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:12px">
+      <h3 style="font-size:.95rem;margin-bottom:8px;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Terminal (recomendado para devs)</h3>
+      <p style="font-size:.85rem;color:var(--t2);margin-bottom:8px">Instale e use em qualquer projeto:</p>
+      <pre style="background:var(--bg);padding:10px;border-radius:6px;font-family:var(--mono);font-size:.8rem;color:var(--p);overflow-x:auto;white-space:pre-wrap">pip install clow
+clow</pre>
+      <p style="font-size:.78rem;color:var(--tm);margin-top:6px">Na primeira execu&ccedil;&atilde;o, cole sua API key quando pedido.</p>
+    </div>
+
+    <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:12px">
+      <h3 style="font-size:.95rem;margin-bottom:8px;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent">VS Code (mais indicado)</h3>
+      <p style="font-size:.85rem;color:var(--t2);margin-bottom:8px">Use o Clow dentro do seu editor:</p>
+      <pre style="background:var(--bg);padding:10px;border-radius:6px;font-family:var(--mono);font-size:.8rem;color:var(--p);overflow-x:auto;white-space:pre-wrap">1. Abra o VS Code
+2. Ctrl+Shift+X &rarr; busque &quot;Clow&quot;
+3. Instale a extens&atilde;o
+4. Ctrl+Shift+P &rarr; &quot;Clow: Set API Key&quot;</pre>
+    </div>
+
+    <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:12px">
+      <h3 style="font-size:.95rem;margin-bottom:8px;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Celular (PWA)</h3>
+      <p style="font-size:.85rem;color:var(--t2);margin-bottom:8px">Instale como app no Android ou iPhone:</p>
+      <pre style="background:var(--bg);padding:10px;border-radius:6px;font-family:var(--mono);font-size:.78rem;color:var(--p);overflow-x:auto;white-space:pre-wrap"><b>Android:</b> Chrome &rarr; menu &#8942; &rarr; &quot;Instalar aplicativo&quot;
+<b>iPhone:</b> Safari &rarr; Compartilhar &#9757; &rarr; &quot;Tela de In&iacute;cio&quot;</pre>
+    </div>
+
     <a class="link" href="/usage">Ver dashboard de uso</a>
   </div>
 </div>
@@ -478,7 +516,7 @@ async function signup(){
   const name=$('name').value.trim(),email=$('email').value.trim(),password=$('password').value;
   if(!email||!password)return showMsg('msg1','Preencha email e senha','error');
   if(password.length<6)return showMsg('msg1','Senha deve ter pelo menos 6 caracteres','error');
-  try{const r=await fetch('/api/v1/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password})});const d=await r.json();if(d.error)return showMsg('msg1',d.error,'error');token=d.token;document.cookie='clow_session='+token+';path=/;max-age=2592000';showStep(2)}catch(e){showMsg('msg1','Erro de rede','error')}
+  try{const r=await fetch('/api/v1/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({name,email,password})});const d=await r.json();if(d.error)return showMsg('msg1',d.error,'error');token=d.token;showStep(2)}catch(e){showMsg('msg1','Erro de rede','error')}
 }
 
 async function saveKey(){
@@ -486,7 +524,7 @@ async function saveKey(){
   if(!key)return showMsg('msg2','Cole sua API key','error');
   if(!key.startsWith('sk-ant-'))return showMsg('msg2','Key deve comecar com sk-ant-','error');
   $('btn-key').disabled=true;$('btn-key').innerHTML='<span class="spinner"></span> Validando...';showMsg('msg2','Validando key com a Anthropic...','info');
-  try{const r=await fetch('/api/v1/me/api-key',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:key})});const d=await r.json();if(d.error){showMsg('msg2',d.error,'error');$('btn-key').disabled=false;$('btn-key').textContent='Validar e Salvar';return}showStep(3)}catch(e){showMsg('msg2','Erro de rede','error');$('btn-key').disabled=false;$('btn-key').textContent='Validar e Salvar'}
+  try{const r=await fetch('/api/v1/me/api-key',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({api_key:key})});const d=await r.json();if(d.error){showMsg('msg2',d.error,'error');$('btn-key').disabled=false;$('btn-key').textContent='Validar e Salvar';return}showStep(3)}catch(e){showMsg('msg2','Erro de rede','error');$('btn-key').disabled=false;$('btn-key').textContent='Validar e Salvar'}
 }
 </script>
 </body>
