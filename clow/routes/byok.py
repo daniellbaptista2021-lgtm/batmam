@@ -335,7 +335,7 @@ a{color:var(--p);text-decoration:none}
   <div class="lens-flare"></div>
   <p class="tagline">INTELIG&Ecirc;NCIA INFINITA &bull; POSSIBILIDADES PREMIUM</p>
   <h1>O agente de c&oacute;digo AI<br>mais <span>completo</span> do Brasil</h1>
-  <p class="sub">24 ferramentas, 40+ skills, multi-agent, automa&ccedil;&otilde;es, GitHub autopilot.<br><strong>Traga sua API key</strong> e use sem limites. Voc&ecirc; s&oacute; paga o que usar.</p>
+  <p class="sub">24 tools &bull; 108 skills &bull; 5 agentes &bull; 16 integra&ccedil;&otilde;es &bull; 10 geradores &bull; 6 interfaces.<br><strong>Traga sua API key</strong> e use sem limites. Voc&ecirc; s&oacute; paga o que usar.</p>
   <div class="cta-group">
     <a href="/onboarding" class="btn btn-primary">Come&ccedil;ar Gr&aacute;tis</a>
     <a href="#como-funciona" class="btn btn-secondary">Como funciona</a>
@@ -352,17 +352,22 @@ a{color:var(--p);text-decoration:none}
 </section>
 
 <section class="section">
-  <h2>O que voc&ecirc; <span>ganha</span></h2>
+  <h2>Uma plataforma <span>completa</span></h2>
+  <p style="text-align:center;color:var(--t2);margin:-40px auto 48px;max-width:600px;font-size:1.05rem">24 ferramentas, 108 skills, 5 tipos de agente, 16 integra&ccedil;&otilde;es, 10 geradores de conte&uacute;do. Tudo em 6 interfaces diferentes.</p>
+
   <div class="features" id="features-grid">
-    <div class="feature"><h4>24 Ferramentas</h4><p>Bash, Read, Write, Edit, Glob, Grep, Web Search, Image Gen, PDF, Spreadsheet, WhatsApp, Supabase, Docker e mais.</p></div>
-    <div class="feature"><h4>40+ Skills</h4><p>/commit, /review, /test, /deploy, /debug, /plan, /automate &mdash; cada skill &eacute; um workflow completo.</p></div>
-    <div class="feature"><h4>Agent Teams</h4><p>4 agentes (Architect, Developer, Tester, Reviewer) colaboram em tasks complexas com task board compartilhado.</p></div>
-    <div class="feature"><h4>GitHub Autopilot</h4><p>Adicione label &ldquo;clow&rdquo; em qualquer issue e o agente cria branch, resolve, e abre PR automaticamente.</p></div>
-    <div class="feature"><h4>Time Travel</h4><p>Checkpoints autom&aacute;ticos antes de cada mudan&ccedil;a. /undo reverte qualquer passo.</p></div>
-    <div class="feature"><h4>NL Automations</h4><p>Diga em portugu&ecirc;s: &ldquo;todo dia &agrave;s 8h verifica issues abertas&rdquo; &mdash; o Clow cria a automa&ccedil;&atilde;o.</p></div>
-    <div class="feature"><h4>Extended Thinking</h4><p>O modelo &ldquo;pensa&rdquo; antes de responder em tarefas complexas de arquitetura e debug.</p></div>
-    <div class="feature"><h4>Spectator Mode</h4><p>Compartilhe uma URL e qualquer pessoa pode assistir o agente trabalhando em tempo real.</p></div>
-    <div class="feature"><h4>Self-Learning</h4><p>O Clow aprende suas prefer&ecirc;ncias e evita erros que j&aacute; cometeu. Fica melhor a cada sess&atilde;o.</p></div>
+    <div class="feature"><h4>24 Ferramentas Nativas</h4><p>Bash, Read, Write, Edit, Glob, Grep, Web Search, Web Fetch, Scraper, Image Gen, PDF, Spreadsheet, Notebook, WhatsApp, HTTP Request, Supabase, n8n, Docker, Git Advanced e mais. Cada tool com permiss&otilde;es granulares.</p></div>
+    <div class="feature"><h4>108 Skills Prontos</h4><p>46 skills nativos + 62 importados cobrindo: /commit, /review, /test, /deploy, /debug, /plan, /security, /perf, /docs, /migrate, /pr, /changelog, /scaffold, /cotacao, /proposta, /relatorio, /ads, /leads, /monitor, /backup e dezenas mais.</p></div>
+    <div class="feature"><h4>5 Tipos de Agente</h4><p><strong>Agent</strong> (principal), <strong>Swarm</strong> (paralelo com worktrees git), <strong>Teams</strong> (Architect + Developer + Tester + Reviewer com task board), <strong>Mission Engine</strong> (aut&ocirc;nomo multi-step), <strong>Background</strong> (assync).</p></div>
+    <div class="feature"><h4>16 Integra&ccedil;&otilde;es</h4><p>GitHub, Meta Ads, Supabase, PostgreSQL, Redis, n8n, Docker, Vercel, Stripe, Mercado Pago, WhatsApp (Z-API), Chatwoot, Browser (Playwright), Voice, Multi-Agent Coordination e Messaging Bridge.</p></div>
+    <div class="feature"><h4>10 Geradores de Conte&uacute;do</h4><p>Landing pages completas, apps web, planilhas Excel, apresenta&ccedil;&otilde;es PowerPoint, documentos Word, PDFs profissionais, imagens AI, copies de marketing, ideias de conte&uacute;do e dispatchers inteligentes.</p></div>
+    <div class="feature"><h4>GitHub Autopilot</h4><p>Adicione label &ldquo;clow&rdquo; em qualquer issue e o agente cria branch, implementa a solu&ccedil;&atilde;o, roda testes, e abre PR automaticamente com &ldquo;closes #N&rdquo;. Se falhar, comenta diagn&oacute;stico na issue.</p></div>
+    <div class="feature"><h4>Automa&ccedil;&otilde;es em Portugu&ecirc;s</h4><p>Diga &ldquo;todo dia &agrave;s 8h verifica issues abertas e me manda resumo no WhatsApp&rdquo; e o Clow cria a automa&ccedil;&atilde;o completa. Suporta cron, webhooks, eventos GitHub e monitoramento de arquivos.</p></div>
+    <div class="feature"><h4>Time Travel &amp; Checkpoints</h4><p>Checkpoints autom&aacute;ticos antes de cada modifica&ccedil;&atilde;o. /undo reverte qualquer passo. /history mostra timeline completa. Diff visual antes de restaurar. At&eacute; 50 checkpoints por sess&atilde;o.</p></div>
+    <div class="feature"><h4>Extended Thinking</h4><p>Em tarefas complexas de arquitetura, debug e refatora&ccedil;&atilde;o, o modelo &ldquo;pensa&rdquo; internamente com budget de 10.000 tokens antes de responder. Mesma tecnologia do Claude Pro.</p></div>
+    <div class="feature"><h4>Self-Learning</h4><p>Analisa seus padr&otilde;es: corre&ccedil;&otilde;es, sequ&ecirc;ncias de tools, erros recorrentes. Gera regras preventivas autom&aacute;ticas. Fica mais inteligente a cada sess&atilde;o, sem voc&ecirc; precisar configurar nada.</p></div>
+    <div class="feature"><h4>6 Interfaces</h4><p><strong>Terminal</strong> (pip install clow), <strong>Web</strong> (navegador), <strong>VS Code</strong> (extens&atilde;o), <strong>PWA</strong> (Android/iPhone), <strong>Chrome Extension</strong> (em qualquer p&aacute;gina), <strong>WebSocket</strong> (tempo real). Teleport transfere sess&atilde;o entre elas.</p></div>
+    <div class="feature"><h4>Spectator Mode</h4><p>Compartilhe uma URL e qualquer pessoa pode assistir o agente trabalhando ao vivo: tool calls, respostas, diffs de arquivos em tempo real. Split-screen terminal + c&oacute;digo. Controle remoto com bot&atilde;o de aprova&ccedil;&atilde;o.</p></div>
   </div>
 </section>
 
