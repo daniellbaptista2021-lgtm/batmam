@@ -62,32 +62,93 @@ async def _auth_dependency(request: Request) -> None:
     raise HTTPException(status_code=401, detail="API key invalida ou ausente")
 
 
-# ── Login / Session (in-memory, token-based) ────────────────────
+# ── Login / Session (SQLite-persisted + memory cache) ────────────
 
-_web_sessions: dict[str, dict] = {}  # token -> {"email", "user_id", "is_admin", "created"}
-_SESSION_TTL = 86400 * 7  # 7 dias
+_session_cache: dict[str, dict] = {}
+_SESSION_TTL = 86400 * 30  # 30 dias
+
+
+def _init_sessions_table():
+    """Create sessions table if not exists."""
+    from ..database import get_db
+    with get_db() as db:
+        db.execute("""CREATE TABLE IF NOT EXISTS web_sessions (
+            token TEXT PRIMARY KEY,
+            email TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            is_admin INTEGER DEFAULT 0,
+            plan TEXT DEFAULT 'free',
+            created REAL NOT NULL
+        )""")
 
 
 def _create_session(user: dict) -> str:
     token = secrets.token_urlsafe(48)
-    _web_sessions[token] = {
+    sess = {
         "email": user["email"],
         "user_id": user["id"],
         "is_admin": bool(user.get("is_admin")),
         "plan": user.get("plan", "free"),
         "created": time.time(),
     }
+    _session_cache[token] = sess
+    try:
+        from ..database import get_db
+        _init_sessions_table()
+        with get_db() as db:
+            db.execute(
+                "INSERT OR REPLACE INTO web_sessions (token, email, user_id, is_admin, plan, created) VALUES (?,?,?,?,?,?)",
+                (token, sess["email"], sess["user_id"], int(sess["is_admin"]), sess["plan"], sess["created"]),
+            )
+    except Exception:
+        pass  # Memory fallback
     return token
 
 
 def _validate_session(token: str) -> dict | None:
-    sess = _web_sessions.get(token)
-    if not sess:
+    if not token:
         return None
-    if time.time() - sess["created"] > _SESSION_TTL:
-        del _web_sessions[token]
-        return None
-    return sess
+
+    # Check memory cache first
+    sess = _session_cache.get(token)
+    if sess:
+        if time.time() - sess["created"] > _SESSION_TTL:
+            _session_cache.pop(token, None)
+            _delete_session_db(token)
+            return None
+        return sess
+
+    # Check SQLite
+    try:
+        from ..database import get_db
+        _init_sessions_table()
+        with get_db() as db:
+            row = db.execute("SELECT * FROM web_sessions WHERE token=?", (token,)).fetchone()
+            if row:
+                sess = {
+                    "email": row["email"],
+                    "user_id": row["user_id"],
+                    "is_admin": bool(row["is_admin"]),
+                    "plan": row["plan"],
+                    "created": row["created"],
+                }
+                if time.time() - sess["created"] > _SESSION_TTL:
+                    _delete_session_db(token)
+                    return None
+                _session_cache[token] = sess
+                return sess
+    except Exception:
+        pass
+    return None
+
+
+def _delete_session_db(token: str):
+    try:
+        from ..database import get_db
+        with get_db() as db:
+            db.execute("DELETE FROM web_sessions WHERE token=?", (token,))
+    except Exception:
+        pass
 
 
 def _get_session_from_request(request: Request) -> str | None:
