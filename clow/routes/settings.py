@@ -12,7 +12,19 @@ def register_settings_routes(app) -> None:
 
     from .auth import _get_user_session
 
-    # ── Page ──────────────────────────────────────────────────
+    # ── Legal Pages ────────────────────────────────────────────
+
+    @app.get("/termos", tags=["legal"])
+    async def termos_page():
+        tpl = Path(__file__).parent.parent / "templates" / "termos.html"
+        return _HR(tpl.read_text(encoding="utf-8")) if tpl.exists() else _HR("<h1>Termos</h1>")
+
+    @app.get("/privacidade", tags=["legal"])
+    async def privacidade_page():
+        tpl = Path(__file__).parent.parent / "templates" / "privacidade.html"
+        return _HR(tpl.read_text(encoding="utf-8")) if tpl.exists() else _HR("<h1>Privacidade</h1>")
+
+    # ── Settings Page ─────────────────────────────────────────
 
     @app.get("/app/settings", tags=["settings"])
     async def settings_page(request: _Req):
@@ -43,6 +55,7 @@ def register_settings_routes(app) -> None:
             "created_at": user.get("created_at", 0),
             "is_admin": bool(user.get("is_admin")),
             "byok_enabled": bool(user.get("byok_enabled")),
+            "accepted_terms_at": user.get("accepted_terms_at", 0),
         })
 
     @app.put("/api/v1/user/profile", tags=["settings"])

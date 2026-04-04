@@ -131,6 +131,7 @@ th{color:var(--tm);font-weight:500;text-transform:uppercase;font-size:.72rem;let
   <div class="fg"><label>Nome completo</label><input id="f-name" placeholder="Nome e Sobrenome"></div>
   <div class="fg"><label>Email</label><input id="f-email" disabled></div>
   <div class="fg"><label>Membro desde</label><input id="f-since" disabled></div>
+  <div class="fg"><label>Termos aceitos em</label><input id="f-terms" disabled></div>
   <button class="btn btn-primary" onclick="saveProfile()">Salvar alteracoes</button>
   <div class="msg" id="msg-profile"></div>
 </div>
@@ -245,6 +246,7 @@ async function init(){
   $('f-name').value=p.name||'';
   $('f-email').value=p.email;
   $('f-since').value=new Date(p.created_at*1000).toLocaleDateString('pt-BR');
+  $('f-terms').value=p.accepted_terms_at?new Date(p.accepted_terms_at*1000).toLocaleString('pt-BR'):'Nao registrado';
   // Show API key tab if BYOK
   if(p.plan==='byok_free'||p.plan==='free'||p.plan==='basic'||p.plan==='unlimited'||p.byok_enabled)
     $('sb-apikey').style.display='flex';

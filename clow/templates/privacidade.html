@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Clow — Politica de Privacidade</title>
+<link rel="icon" href="/static/brand/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:#050510;color:#E8E8F0;padding:40px 20px;-webkit-font-smoothing:antialiased}
+.container{max-width:720px;margin:0 auto}
+.logo{text-align:center;margin-bottom:32px}
+.logo img{height:48px;opacity:.7}
+h1{font-size:1.8rem;font-weight:700;margin-bottom:8px}
+h2{font-size:1.2rem;font-weight:600;margin:28px 0 10px;color:#9B59FC}
+h3{font-size:1rem;font-weight:600;margin:16px 0 6px;color:#E8E8F0}
+p,li{font-size:.92rem;color:#9898B8;line-height:1.7;margin-bottom:10px}
+ul{margin-left:20px;margin-bottom:12px}
+a{color:#9B59FC}
+.back{display:inline-block;margin-top:32px;font-size:.9rem}
+.date{font-size:.8rem;color:#585878;margin-bottom:24px}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="logo"><a href="/landing"><img src="/static/brand/logo-sidebar.png" alt="Clow"></a></div>
+
+<h1>Politica de Privacidade</h1>
+<p class="date">Ultima atualizacao: 04 de abril de 2026 — Conforme LGPD (Lei 13.709/2018)</p>
+
+<h2>1. Controlador dos dados</h2>
+<p>Daniel Baptista, Rio de Janeiro, RJ, Brasil.<br>Contato para questoes de dados: <strong>daniellbaptista2021@gmail.com</strong></p>
+
+<h2>2. Dados coletados</h2>
+
+<h3>Cadastro</h3>
+<p>Nome completo, email e senha. A senha e armazenada em formato hash (PBKDF2-SHA256) — nunca em texto puro.</p>
+
+<h3>Pagamento</h3>
+<p>Os dados de cartao de credito e PIX sao processados diretamente pelo Stripe. Nao armazenamos dados de pagamento nos nossos servidores.</p>
+
+<h3>API key (plano BYOK)</h3>
+<p>Se voce usa o plano gratuito, sua API key da Anthropic e armazenada no servidor do Clow para possibilitar as chamadas ao modelo.</p>
+
+<h3>Uso do servico</h3>
+<p>Historico de conversas com o agente, tokens consumidos, preferencias de uso, e configuracoes.</p>
+
+<h3>Dados tecnicos</h3>
+<p>Endereco IP, user agent do navegador e logs de acesso para seguranca e prevencao de abusos.</p>
+
+<h2>3. Finalidade do tratamento</h2>
+<ul>
+<li><strong>Prestacao do servico:</strong> processar suas mensagens e retornar respostas do agente (base legal: execucao de contrato)</li>
+<li><strong>Billing:</strong> gerenciar assinaturas e faturamento (base legal: execucao de contrato)</li>
+<li><strong>Melhoria do servico:</strong> metricas agregadas e anonimizadas de uso (base legal: legitimo interesse)</li>
+<li><strong>Comunicacoes:</strong> notificacoes sobre o servico, franquia e atualizacoes (base legal: execucao de contrato)</li>
+</ul>
+
+<h2>4. Compartilhamento de dados</h2>
+<ul>
+<li><strong>Anthropic:</strong> suas mensagens (prompts) sao enviadas para a API da Anthropic para processamento pelo modelo de IA. Sujeito aos <a href="https://www.anthropic.com/privacy" target="_blank">termos da Anthropic</a>.</li>
+<li><strong>Stripe:</strong> dados de pagamento processados pelo Stripe para cobranca. Sujeito aos <a href="https://stripe.com/br/privacy" target="_blank">termos do Stripe</a>.</li>
+<li>Nao vendemos, alugamos ou compartilhamos seus dados com terceiros para fins de marketing.</li>
+</ul>
+
+<h2>5. Armazenamento</h2>
+<p>Seus dados ficam em servidores no Brasil (VPS Hostinger, Sao Paulo). Servicos auxiliares como Supabase podem processar dados nos EUA, em conformidade com clausulas contratuais padrao.</p>
+
+<h2>6. Retencao</h2>
+<p>Seus dados sao mantidos enquanto sua conta estiver ativa. Apos a exclusao da conta, os dados sao removidos em ate 30 dias, exceto quando ha obrigacao legal de retencao (fiscal, por exemplo).</p>
+
+<h2>7. Seus direitos (LGPD Art. 18)</h2>
+<p>Voce tem direito a:</p>
+<ul>
+<li>Confirmar se tratamos seus dados</li>
+<li>Acessar seus dados pessoais</li>
+<li>Corrigir dados incompletos ou incorretos</li>
+<li>Solicitar anonimizacao ou eliminacao de dados desnecessarios</li>
+<li>Portabilidade dos dados para outro servico</li>
+<li>Saber com quem compartilhamos seus dados</li>
+<li>Revogar seu consentimento a qualquer momento</li>
+</ul>
+<p>Para exercer qualquer direito, envie email para <strong>daniellbaptista2021@gmail.com</strong> com o assunto "LGPD — [seu pedido]".</p>
+
+<h2>8. Cookies</h2>
+<p>Utilizamos apenas cookies de sessao para autenticacao (cookie "clow_session"). Nao usamos cookies de rastreamento ou de terceiros para publicidade.</p>
+
+<h2>9. Seguranca</h2>
+<ul>
+<li>Conexao HTTPS em todas as paginas</li>
+<li>Senhas com hash PBKDF2-SHA256</li>
+<li>Acesso restrito ao banco de dados</li>
+<li>Logs de acesso monitorados</li>
+</ul>
+
+<h2>10. Encarregado de dados (DPO)</h2>
+<p>Daniel Baptista — daniellbaptista2021@gmail.com</p>
+
+<h2>11. Alteracoes</h2>
+<p>Podemos atualizar esta politica. Notificaremos por email sobre mudancas relevantes. A versao atualizada sempre estara disponivel nesta pagina.</p>
+
+<a href="/landing" class="back">&#8592; Voltar</a>
+</div>
+</body>
+</html>

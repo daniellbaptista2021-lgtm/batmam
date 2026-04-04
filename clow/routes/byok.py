@@ -186,6 +186,10 @@ def register_byok_routes(app) -> None:
         password = body.get("password", "").strip()
         name = body.get("name", "").strip()
 
+        accepted_terms = body.get("accepted_terms", False)
+        if not accepted_terms:
+            return _JR({"error": "Aceite os Termos de Uso e Politica de Privacidade"}, status_code=400)
+
         if not name:
             return _JR({"error": "Nome completo obrigatorio"}, status_code=400)
         if len(name.split()) < 2:
@@ -212,6 +216,15 @@ def register_byok_routes(app) -> None:
                 "error": "Este email ja possui uma conta. Faca login em vez de criar outra.",
                 "action": "login",
             }, status_code=409)
+
+        # Salva aceite dos termos
+        from ..database import get_db
+        with get_db() as db:
+            try:
+                db.execute("ALTER TABLE users ADD COLUMN accepted_terms_at REAL DEFAULT 0")
+            except Exception:
+                pass
+            db.execute("UPDATE users SET accepted_terms_at=? WHERE id=?", (time.time(), user["id"]))
 
         from .auth import _create_session, _SESSION_TTL
         token = _create_session(user)
@@ -495,6 +508,7 @@ h1{font-size:1.4rem;font-weight:700;text-align:center;margin-bottom:4px}
     <div class="fg"><label>Nome completo</label><input id="name" placeholder="Nome e Sobrenome" required></div>
     <div class="fg"><label>Email</label><input id="email" type="email" placeholder="seu@email.com" required></div>
     <div class="fg"><label>Senha</label><input id="password" type="password" placeholder="m&iacute;nimo 6 caracteres" required></div>
+    <label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:14px;cursor:pointer;font-size:.82rem;color:var(--t2);line-height:1.5"><input type="checkbox" id="terms" style="margin-top:3px;accent-color:var(--p);width:16px;height:16px;flex-shrink:0"><span>Li e aceito os <a href="/termos" target="_blank" style="color:var(--p)">Termos de Uso</a> e a <a href="/privacidade" target="_blank" style="color:var(--p)">Pol&iacute;tica de Privacidade</a></span></label>
     <button class="btn btn-primary" onclick="signup()">Criar Conta</button>
     <a class="link" href="/logout">J&aacute; tenho conta</a>
     <div class="msg" id="msg1"></div>
@@ -593,6 +607,7 @@ function showMsg(id,text,type){const el=$(id);el.className='msg '+type;el.textCo
 let userEmail='';
 async function signup(){
   const name=$('name').value.trim(),email=$('email').value.trim(),password=$('password').value;
+  if(!$('terms').checked)return showMsg('msg1','Aceite os Termos de Uso e Politica de Privacidade','error');
   if(!name)return showMsg('msg1','Informe seu nome completo','error');
   if(name.split(/\s+/).length<2)return showMsg('msg1','Informe nome e sobrenome','error');
   if(!email)return showMsg('msg1','Informe seu email','error');
@@ -600,7 +615,7 @@ async function signup(){
   if(!password)return showMsg('msg1','Crie uma senha','error');
   if(password.length<6)return showMsg('msg1','Senha deve ter pelo menos 6 caracteres','error');
   try{
-    const r=await fetch('/api/v1/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({name,email,password})});
+    const r=await fetch('/api/v1/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({name,email,password,accepted_terms:true})});
     const d=await r.json();
     if(d.error){
       if(d.action==='login'){
