@@ -49,7 +49,7 @@ def _build_cmd(prompt: str, stream: bool = False, conversation_id: str | None = 
     """Build Claude Code CLI command — identical to running claude directly."""
     cmd = [
         CLAUDE_BIN, "-p", prompt,
-        "--model", "claude-opus-4-6",
+        "--model", "claude-sonnet-4-6",
         "--permission-mode", "dontAsk",
         "--max-turns", "50",
     ]

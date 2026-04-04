@@ -98,7 +98,6 @@ def _format_model_name(model: str) -> str:
     """Formata nome do modelo para exibicao elegante.
 
     'claude-sonnet-4-20250514'  -> 'Claude Sonnet'
-    'claude-opus-4-20250514'    -> 'Claude Opus'
     'claude-haiku-4-5-20251001' -> 'Claude Haiku'
     'gpt-4.1'                   -> 'GPT-4.1'
     'gpt-4.1-mini'              -> 'GPT-4.1 Mini'
@@ -107,9 +106,7 @@ def _format_model_name(model: str) -> str:
 
     # Claude models
     if "claude" in m:
-        if "opus" in m:
-            return "Claude Opus"
-        elif "sonnet" in m:
+        if "sonnet" in m:
             return "Claude Sonnet"
         elif "haiku" in m:
             return "Claude Haiku"
@@ -774,7 +771,7 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
         else:
             console.print(f"  [info]Model: {agent.model}  ·  Provider: {config.CLOW_PROVIDER}[/]")
             if config.CLOW_PROVIDER == "anthropic":
-                console.print("  [muted]claude-sonnet-4-20250514, claude-opus-4-20250514, claude-haiku-4-5-20251001[/]")
+                console.print("  [muted]claude-sonnet-4-20250514, claude-haiku-4-5-20251001[/]")
             else:
                 console.print("  [muted]gpt-4.1, gpt-4.1-mini, o3, o4-mini[/]")
         return True
