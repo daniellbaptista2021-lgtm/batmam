@@ -185,17 +185,32 @@ def register_byok_routes(app) -> None:
         password = body.get("password", "").strip()
         name = body.get("name", "").strip()
 
+        if not name:
+            return JSONResponse({"error": "Nome completo obrigatorio"}, status_code=400)
+        if len(name.split()) < 2:
+            return JSONResponse({"error": "Informe nome e sobrenome"}, status_code=400)
         if not email or not password:
             return JSONResponse({"error": "Email e senha obrigatorios"}, status_code=400)
+        if "@" not in email or "." not in email.split("@")[-1]:
+            return JSONResponse({"error": "Email invalido"}, status_code=400)
         if len(password) < 6:
             return JSONResponse({"error": "Senha deve ter pelo menos 6 caracteres"}, status_code=400)
-        if "@" not in email:
-            return JSONResponse({"error": "Email invalido"}, status_code=400)
 
-        from ..database import create_user
+        # Verifica duplicidade antes de criar
+        from ..database import get_user_by_email, create_user
+        existing = get_user_by_email(email)
+        if existing:
+            return JSONResponse({
+                "error": "Este email ja possui uma conta. Faca login em vez de criar outra.",
+                "action": "login",
+            }, status_code=409)
+
         user = create_user(email, password, name)
         if not user:
-            return JSONResponse({"error": "Email ja cadastrado"}, status_code=409)
+            return JSONResponse({
+                "error": "Este email ja possui uma conta. Faca login em vez de criar outra.",
+                "action": "login",
+            }, status_code=409)
 
         from .auth import _create_session, _SESSION_TTL
         token = _create_session(user)
@@ -472,7 +487,7 @@ h1{font-size:1.4rem;font-weight:700;text-align:center;margin-bottom:4px}
 
   <div class="step active" id="step1">
     <p class="sub">Crie sua conta em 30 segundos</p>
-    <div class="fg"><label>Nome</label><input id="name" placeholder="Seu nome"></div>
+    <div class="fg"><label>Nome completo</label><input id="name" placeholder="Nome e Sobrenome" required></div>
     <div class="fg"><label>Email</label><input id="email" type="email" placeholder="seu@email.com" required></div>
     <div class="fg"><label>Senha</label><input id="password" type="password" placeholder="m&iacute;nimo 6 caracteres" required></div>
     <button class="btn btn-primary" onclick="signup()">Criar Conta</button>
@@ -567,9 +582,25 @@ function showMsg(id,text,type){const el=$(id);el.className='msg '+type;el.textCo
 let userEmail='';
 async function signup(){
   const name=$('name').value.trim(),email=$('email').value.trim(),password=$('password').value;
-  if(!email||!password)return showMsg('msg1','Preencha email e senha','error');
+  if(!name)return showMsg('msg1','Informe seu nome completo','error');
+  if(name.split(/\s+/).length<2)return showMsg('msg1','Informe nome e sobrenome','error');
+  if(!email)return showMsg('msg1','Informe seu email','error');
+  if(!email.includes('@')||!email.split('@')[1].includes('.'))return showMsg('msg1','Email invalido','error');
+  if(!password)return showMsg('msg1','Crie uma senha','error');
   if(password.length<6)return showMsg('msg1','Senha deve ter pelo menos 6 caracteres','error');
-  try{const r=await fetch('/api/v1/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({name,email,password})});const d=await r.json();if(d.error)return showMsg('msg1',d.error,'error');token=d.token;userEmail=email;showStep(2)}catch(e){showMsg('msg1','Erro de rede','error')}
+  try{
+    const r=await fetch('/api/v1/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({name,email,password})});
+    const d=await r.json();
+    if(d.error){
+      if(d.action==='login'){
+        $('msg1').className='msg error';
+        $('msg1').innerHTML=d.error+' <a href="/login" style="color:var(--p);text-decoration:underline">Ir para o login</a>';
+        return;
+      }
+      return showMsg('msg1',d.error,'error');
+    }
+    token=d.token;userEmail=email;showStep(2);
+  }catch(e){showMsg('msg1','Erro de rede. Tente novamente.','error')}
 }
 
 async function saveKey(){
