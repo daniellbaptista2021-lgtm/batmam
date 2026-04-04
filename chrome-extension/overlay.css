@@ -1,33 +1,72 @@
-#clow-overlay{position:fixed;bottom:16px;right:16px;width:400px;height:500px;min-width:300px;min-height:300px;background:#0a0a0f;border:1px solid rgba(255,255,255,.08);border-radius:8px;z-index:2147483647;display:none;flex-direction:column;font-family:'JetBrains Mono','Menlo','Monaco','Consolas',monospace;font-size:13px;color:#e4e4e8;box-shadow:0 8px 32px rgba(0,0,0,.6);resize:both;overflow:hidden}
-#clow-overlay.open{display:flex}
-#clow-overlay *{box-sizing:border-box;margin:0;padding:0}
-.clow-bar{display:flex;align-items:center;gap:6px;padding:6px 10px;background:#111118;border-bottom:1px solid rgba(255,255,255,.06);cursor:move;flex-shrink:0;user-select:none}
-.clow-bar-logo{height:16px;opacity:.6}
-.clow-bar-title{flex:1;font-size:11px;color:#8b8b96;font-weight:500}
-.clow-bar-status{font-size:10px;font-weight:600}
-.clow-bar-ctx{font-size:10px;color:#4ade80;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.clow-bar-pin,.clow-bar-close{background:none;border:none;color:#5a5a66;cursor:pointer;font-size:14px;padding:2px 4px;font-family:inherit}.clow-bar-pin:hover,.clow-bar-close:hover{color:#e4e4e8}
-.clow-bar-pin.pinned{color:#4ade80}
-.clow-out{flex:1;overflow-y:auto;padding:10px;font-size:13px;line-height:1.6}
-.clow-out::-webkit-scrollbar{width:3px}.clow-out::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
-.clow-msg-user{color:#e4e4e8;margin:8px 0 2px}.clow-msg-user::before{content:'> ';color:#4ade80;font-weight:700}
-.clow-msg-asst{color:#e4e4e8;margin:2px 0 8px}
-.clow-msg-asst code{background:rgba(255,255,255,.06);padding:1px 4px;border-radius:2px;font-size:12px}
-.clow-msg-asst pre{background:#111118;border:1px solid rgba(255,255,255,.06);border-radius:4px;padding:8px;margin:4px 0;overflow-x:auto;font-size:12px}
-.clow-msg-asst a{color:#60a5fa}
-.clow-msg-asst strong{color:#e4e4e8;font-weight:600}
-.clow-tool{display:flex;align-items:center;gap:4px;font-size:11px;color:#8b8b96;padding:2px 0;cursor:pointer}
-.clow-tool-dot{width:5px;height:5px;border-radius:50%;background:#4ade80;flex-shrink:0}
-.clow-tool-dot.running{background:#fbbf24;animation:clow-blink 1s infinite}
-.clow-tool-dot.error{background:#f87171}
-@keyframes clow-blink{0%,100%{opacity:1}50%{opacity:.3}}
-.clow-tool-name{color:#4ade80;font-weight:600}
-.clow-tool-out{display:none;padding:2px 0 2px 9px;color:#5a5a66;font-size:11px;border-left:1px solid rgba(255,255,255,.06);margin-left:2px;max-height:80px;overflow:auto}
-.clow-tool.open .clow-tool-out{display:block}
-.clow-thinking{color:#5a5a66;font-size:12px;padding:4px 0;display:flex;align-items:center;gap:4px}
-.clow-thinking-dot{width:5px;height:5px;border-radius:50%;background:#fbbf24;animation:clow-blink 1s infinite}
-.clow-prompt{display:flex;align-items:flex-end;gap:4px;padding:8px 10px;background:#111118;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
-.clow-prompt-char{color:#4ade80;font-weight:700;font-size:13px;flex-shrink:0;line-height:1.6}
-.clow-prompt textarea{flex:1;background:transparent;border:none;color:#e4e4e8;font-family:inherit;font-size:13px;line-height:1.6;resize:none;outline:none;max-height:80px;min-height:18px}
-.clow-prompt textarea::placeholder{color:#3a3a44}
-.clow-prompt-send{background:none;border:none;color:#5a5a66;cursor:pointer;font-size:13px;font-family:inherit;padding:0 2px}.clow-prompt-send:hover{color:#e4e4e8}
+/* Clow Copilot — Side Panel */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+#clow-panel{position:fixed;top:0;right:0;width:420px;height:100vh;background:#0d1117;z-index:2147483647;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:none;font-family:'Inter',-apple-system,sans-serif;font-size:14px;color:#e6edf3;line-height:1.5}
+#clow-panel.open{transform:translateX(0);box-shadow:-8px 0 30px rgba(0,0,0,.4)}
+#clow-panel *{box-sizing:border-box;margin:0;padding:0}
+
+/* Header */
+.cp-hdr{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#161b22;border-bottom:1px solid #30363d;flex-shrink:0}
+.cp-logo{height:20px;opacity:.8}
+.cp-title{font-size:13px;font-weight:600;color:#e6edf3;flex:1}
+.cp-model{font-size:11px;color:#8b949e;background:#21262d;border:1px solid #30363d;border-radius:4px;padding:2px 8px;font-family:'Inter',sans-serif;cursor:default}
+.cp-status{display:flex;align-items:center;gap:4px;font-size:11px;color:#8b949e}
+.cp-dot{width:6px;height:6px;border-radius:50%}
+.cp-dot.on{background:#3fb950}.cp-dot.off{background:#f85149}
+.cp-close{background:none;border:none;color:#8b949e;font-size:18px;cursor:pointer;padding:2px 4px;border-radius:4px}.cp-close:hover{color:#e6edf3;background:#21262d}
+
+/* Context bar */
+.cp-ctx{padding:6px 16px;background:#161b22;border-bottom:1px solid #30363d;font-size:11px;color:#8b949e;display:none;align-items:center;gap:6px;flex-shrink:0}
+.cp-ctx.show{display:flex}
+.cp-ctx-icon{color:#3fb950;font-weight:600}
+
+/* Chat area */
+.cp-chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.cp-chat::-webkit-scrollbar{width:4px}.cp-chat::-webkit-scrollbar-thumb{background:#30363d;border-radius:2px}
+
+/* Messages */
+.cp-msg{max-width:92%}
+.cp-msg-user{align-self:flex-end;background:#1f2937;border:1px solid #30363d;border-radius:12px 12px 4px 12px;padding:8px 12px;font-size:13px;color:#e6edf3}
+.cp-msg-asst{align-self:flex-start;font-size:13px;color:#c9d1d9;line-height:1.6}
+.cp-msg-asst code{background:#161b22;border:1px solid #30363d;border-radius:3px;padding:1px 4px;font-family:'JetBrains Mono',monospace;font-size:12px}
+.cp-msg-asst pre{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:10px;margin:6px 0;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.5}
+.cp-msg-asst strong{color:#e6edf3;font-weight:600}
+.cp-msg-asst a{color:#58a6ff;text-decoration:none}.cp-msg-asst a:hover{text-decoration:underline}
+.cp-msg-asst ul,.cp-msg-asst ol{padding-left:16px;margin:4px 0}
+.cp-msg-asst h1,.cp-msg-asst h2,.cp-msg-asst h3{color:#e6edf3;margin:8px 0 4px}
+.cp-msg-asst h1{font-size:16px}.cp-msg-asst h2{font-size:15px}.cp-msg-asst h3{font-size:14px}
+.cp-msg-asst hr{border:none;height:1px;background:#30363d;margin:8px 0}
+
+/* Tool calls */
+.cp-tool{display:flex;align-items:center;gap:5px;font-size:12px;color:#8b949e;padding:3px 0;cursor:pointer;font-family:'JetBrains Mono',monospace}
+.cp-tool-dot{width:5px;height:5px;border-radius:50%;background:#3fb950;flex-shrink:0}
+.cp-tool-dot.run{background:#d29922;animation:cpBlink 1s infinite}
+.cp-tool-dot.err{background:#f85149}
+@keyframes cpBlink{0%,100%{opacity:1}50%{opacity:.3}}
+.cp-tool-name{color:#3fb950;font-weight:600}
+.cp-tool-out{display:none;padding:4px 0 4px 10px;color:#8b949e;font-size:11px;border-left:1px solid #30363d;margin-left:2px;max-height:100px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+.cp-tool.open .cp-tool-out{display:block}
+
+/* Thinking */
+.cp-think{display:flex;align-items:center;gap:6px;font-size:12px;color:#8b949e}
+.cp-think-dot{width:5px;height:5px;border-radius:50%;background:#d29922;animation:cpBlink 1s infinite}
+
+/* Error */
+.cp-err{color:#f85149;font-size:12px}
+
+/* Input */
+.cp-input{padding:12px 16px;background:#161b22;border-top:1px solid #30363d;flex-shrink:0}
+.cp-input-box{display:flex;align-items:flex-end;gap:6px;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:8px 12px;transition:border-color .2s}
+.cp-input-box:focus-within{border-color:#58a6ff}
+.cp-input-box textarea{flex:1;background:transparent;border:none;color:#e6edf3;font-family:'Inter',sans-serif;font-size:13px;line-height:1.5;resize:none;outline:none;max-height:120px;min-height:18px}
+.cp-input-box textarea::placeholder{color:#484f58}
+.cp-send{background:none;border:none;color:#484f58;cursor:pointer;font-size:16px;padding:2px;font-family:'Inter',sans-serif;transition:color .15s}.cp-send:hover{color:#e6edf3}
+
+/* Overlay backdrop */
+#clow-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:2147483646;display:none}
+#clow-backdrop.show{display:block}
+
+/* Responsive */
+@media(max-width:768px){
+  #clow-panel{width:100vw}
+}

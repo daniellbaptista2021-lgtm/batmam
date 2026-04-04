@@ -1,14 +1,12 @@
-// Clow Copilot — content script with auth
+// Clow Copilot — Side Panel with auth
 (function() {
-  if (document.getElementById("clow-overlay")) return;
+  if (document.getElementById("clow-panel")) return;
 
   let apiUrl = "https://clow.pvcorretor01.com.br";
   let token = "";
   let email = "";
-  let pinned = false;
   let sessionId = "";
 
-  // Load auth
   chrome.storage.local.get(["clow_token", "clow_email", "clow_api_url"], (r) => {
     token = r.clow_token || "";
     email = r.clow_email || "";
@@ -16,246 +14,228 @@
     updateStatus();
   });
 
-  // Listen for auth changes
-  chrome.storage.onChanged.addListener((changes) => {
-    if (changes.clow_token) token = changes.clow_token.newValue || "";
-    if (changes.clow_email) email = changes.clow_email.newValue || "";
-    if (changes.clow_api_url) apiUrl = changes.clow_api_url.newValue || apiUrl;
+  chrome.storage.onChanged.addListener((c) => {
+    if (c.clow_token) token = c.clow_token.newValue || "";
+    if (c.clow_email) email = c.clow_email.newValue || "";
+    if (c.clow_api_url) apiUrl = c.clow_api_url.newValue || apiUrl;
     updateStatus();
   });
 
-  // Create overlay
-  const ov = document.createElement("div");
-  ov.id = "clow-overlay";
-  ov.innerHTML = `
-    <div class="clow-bar" id="clowBar">
-      <span class="clow-bar-title">clow</span>
-      <span class="clow-bar-ctx" id="clowCtx"></span>
-      <span class="clow-bar-status" id="clowStatus"></span>
-      <button class="clow-bar-pin" id="clowPin" title="pin">&#x1F4CC;</button>
-      <button class="clow-bar-close" id="clowClose">&times;</button>
+  // Backdrop
+  const bd = document.createElement("div");
+  bd.id = "clow-backdrop";
+  bd.onclick = () => close();
+  document.body.appendChild(bd);
+
+  // Panel
+  const panel = document.createElement("div");
+  panel.id = "clow-panel";
+  panel.innerHTML = `
+    <div class="cp-hdr">
+      <span class="cp-title">Clow Copilot</span>
+      <span class="cp-model">sonnet</span>
+      <span class="cp-status"><span class="cp-dot off" id="cpDot"></span><span id="cpStatusTxt">off</span></span>
+      <button class="cp-close" id="cpClose">&times;</button>
     </div>
-    <div class="clow-out" id="clowOut"></div>
-    <div class="clow-prompt">
-      <span class="clow-prompt-char">&#x276F;</span>
-      <textarea id="clowInp" rows="1" placeholder=""></textarea>
-      <button class="clow-prompt-send" id="clowSend">&#x21B5;</button>
+    <div class="cp-ctx" id="cpCtx"><span class="cp-ctx-icon"></span><span id="cpCtxTxt"></span></div>
+    <div class="cp-chat" id="cpChat"></div>
+    <div class="cp-input">
+      <div class="cp-input-box">
+        <textarea id="cpInp" rows="1" placeholder="Mensagem para o Clow..."></textarea>
+        <button class="cp-send" id="cpSend">&#x2191;</button>
+      </div>
     </div>
   `;
-  document.body.appendChild(ov);
+  document.body.appendChild(panel);
 
-  const out = document.getElementById("clowOut");
-  const inp = document.getElementById("clowInp");
-  const ctxEl = document.getElementById("clowCtx");
-  const statusEl = document.getElementById("clowStatus");
+  const chat = document.getElementById("cpChat");
+  const inp = document.getElementById("cpInp");
+  const ctxBar = document.getElementById("cpCtx");
+  const ctxTxt = document.getElementById("cpCtxTxt");
+  const dot = document.getElementById("cpDot");
+  const statusTxt = document.getElementById("cpStatusTxt");
 
   function updateStatus() {
     if (token) {
-      statusEl.textContent = "on";
-      statusEl.style.color = "#4ade80";
-      statusEl.title = email;
+      dot.className = "cp-dot on";
+      statusTxt.textContent = "on";
     } else {
-      statusEl.textContent = "off";
-      statusEl.style.color = "#f87171";
-      statusEl.title = "nao autenticado — configure no popup da extensao";
+      dot.className = "cp-dot off";
+      statusTxt.textContent = "off";
     }
   }
 
-  // Toggle
+  function open() {
+    if (!token) return;
+    panel.classList.add("open");
+    bd.classList.add("show");
+    inp.focus();
+    updateCtx();
+  }
+
+  function close() {
+    panel.classList.remove("open");
+    bd.classList.remove("show");
+  }
+
   function toggle() {
     if (!token) {
-      // Not authenticated — don't open overlay, flash status
-      statusEl.style.color = "#fbbf24";
-      setTimeout(() => updateStatus(), 1000);
+      // Flash to indicate not authenticated
+      dot.className = "cp-dot off";
+      statusTxt.textContent = "login";
+      setTimeout(updateStatus, 1500);
       return;
     }
-    ov.classList.toggle("open");
-    if (ov.classList.contains("open")) {
-      inp.focus();
-      updateCtx();
-    }
+    panel.classList.contains("open") ? close() : open();
   }
 
-  document.getElementById("clowClose").onclick = () => ov.classList.remove("open");
-  document.getElementById("clowPin").onclick = (e) => {
-    pinned = !pinned;
-    e.target.classList.toggle("pinned", pinned);
-  };
+  document.getElementById("cpClose").onclick = close;
 
-  // Listen for toggle command
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.action === "toggle") toggle();
   });
 
-  // Context
+  // Context detection
   function updateCtx() {
     const ctx = ClowContext.detect();
     if (ctx.platform) {
-      ctxEl.textContent = ctx.platform;
-      ctxEl.title = ClowContext.format(ctx);
+      ctxBar.classList.add("show");
+      const d = ctx.details;
+      let label = ctx.platform;
+      if (ctx.platform === "github" && d.owner) label = `GitHub: ${d.owner}/${d.repo}` + (d.branch ? `/${d.branch}` : "");
+      else if (ctx.platform === "n8n" && d.workflow) label = `n8n: ${d.workflow}`;
+      else if (ctx.platform === "vercel" && d.project) label = `Vercel: ${d.project}`;
+      else if (ctx.platform === "supabase" && d.project_id) label = `Supabase: ${d.project_id}`;
+      else if (ctx.platform === "chatwoot" && d.contact) label = `Chatwoot: ${d.contact}`;
+      ctxTxt.textContent = label;
+      ctxBar.querySelector(".cp-ctx-icon").textContent = ctx.platform === "github" ? "GH" : ctx.platform.substring(0, 2).toUpperCase();
     } else {
-      ctxEl.textContent = "";
+      ctxBar.classList.remove("show");
     }
   }
 
   // Auto-resize
   inp.addEventListener("input", () => {
     inp.style.height = "auto";
-    inp.style.height = Math.min(inp.scrollHeight, 80) + "px";
+    inp.style.height = Math.min(inp.scrollHeight, 120) + "px";
   });
 
   // Send
   async function send() {
     const text = inp.value.trim();
-    if (!text) return;
-    if (!token) {
-      showError("nao autenticado — configure no popup da extensao");
-      return;
-    }
+    if (!text || !token) return;
 
-    // User message
-    const userDiv = document.createElement("div");
-    userDiv.className = "clow-msg-user";
-    userDiv.textContent = text;
-    out.appendChild(userDiv);
+    // User msg
+    const uDiv = document.createElement("div");
+    uDiv.className = "cp-msg cp-msg-user";
+    uDiv.textContent = text;
+    chat.appendChild(uDiv);
+
     inp.value = "";
     inp.style.height = "auto";
 
-    // Context
+    // Context injection
     const ctx = ClowContext.detect();
     const ctxStr = ClowContext.format(ctx);
-    const fullPrompt = ctxStr ? ctxStr + "\n\n" + text : text;
+    const prompt = ctxStr ? ctxStr + "\n\n" + text : text;
 
     // Thinking
-    const thinkDiv = document.createElement("div");
-    thinkDiv.className = "clow-thinking";
-    thinkDiv.innerHTML = '<span class="clow-thinking-dot"></span> pensando...';
-    out.appendChild(thinkDiv);
-    out.scrollTop = out.scrollHeight;
+    const think = document.createElement("div");
+    think.className = "cp-think";
+    think.innerHTML = '<span class="cp-think-dot"></span> pensando...';
+    chat.appendChild(think);
+    chat.scrollTop = chat.scrollHeight;
 
     try {
       const res = await fetch(apiUrl + "/api/v1/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + token
-        },
-        body: JSON.stringify({content: fullPrompt, session_id: sessionId, model: "sonnet"})
+        headers: {"Content-Type": "application/json", "Authorization": "Bearer " + token},
+        body: JSON.stringify({content: prompt, session_id: sessionId, model: "sonnet"})
       });
 
-      thinkDiv.remove();
+      think.remove();
 
-      // Token expired
       if (res.status === 401) {
         token = "";
         chrome.storage.local.remove(["clow_token"]);
         updateStatus();
-        showError("sessao expirada — reconecte no popup da extensao");
+        addErr("sessao expirada — reconecte no popup");
         return;
       }
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({error: "Erro " + res.status}));
-        showError(err.error || "Erro na API");
+        const e = await res.json().catch(() => ({}));
+        addErr(e.error || "Erro " + res.status);
         return;
       }
 
       const data = await res.json();
       sessionId = data.session_id || sessionId;
 
+      // Tools
       if (data.tools && data.tools.length) {
-        data.tools.forEach(t => showTool(t.name, t.status, t.output));
+        data.tools.forEach(t => addTool(t.name, t.status, t.output));
       }
 
+      // Response
       if (data.response) {
-        const asstDiv = document.createElement("div");
-        asstDiv.className = "clow-msg-asst";
-        let html = data.response
-          .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-          .replace(/`([^`]+)`/g, '<code>$1</code>')
-          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
-          .replace(/\n/g, '<br>');
-        asstDiv.innerHTML = html;
-        out.appendChild(asstDiv);
-      }
-
-      if (data.file) {
-        const fDiv = document.createElement("div");
-        fDiv.className = "clow-msg-asst";
-        fDiv.innerHTML = '<a href="' + esc(data.file.url) + '" target="_blank">' + esc(data.file.name) + '</a>';
-        out.appendChild(fDiv);
+        const aDiv = document.createElement("div");
+        aDiv.className = "cp-msg cp-msg-asst";
+        aDiv.innerHTML = renderMd(data.response);
+        chat.appendChild(aDiv);
       }
     } catch (e) {
-      thinkDiv.remove();
-      showError("erro de conexao: " + e.message);
+      think.remove();
+      addErr("erro: " + e.message);
     }
 
-    out.scrollTop = out.scrollHeight;
+    chat.scrollTop = chat.scrollHeight;
   }
 
-  function showTool(name, status, output) {
+  function addTool(name, status, output) {
     const div = document.createElement("div");
-    div.className = "clow-tool";
-    const dc = status === "error" ? "error" : status === "running" ? "running" : "";
-    div.innerHTML = '<span class="clow-tool-dot ' + dc + '"></span><span class="clow-tool-name">' + esc(name) + '</span>';
+    div.className = "cp-tool";
+    const dc = status === "error" ? "err" : status === "running" ? "run" : "";
+    div.innerHTML = `<span class="cp-tool-dot ${dc}"></span><span class="cp-tool-name">${esc(name)}</span>`;
     if (output) {
-      div.innerHTML += '<div class="clow-tool-out">' + esc(output).substring(0, 300) + '</div>';
+      div.innerHTML += `<div class="cp-tool-out">${esc(output).substring(0, 500)}</div>`;
       div.onclick = () => div.classList.toggle("open");
     }
-    out.appendChild(div);
+    chat.appendChild(div);
   }
 
-  function showError(msg) {
+  function addErr(msg) {
     const div = document.createElement("div");
-    div.className = "clow-msg-asst";
-    div.style.color = "#f87171";
+    div.className = "cp-err";
     div.textContent = msg;
-    out.appendChild(div);
+    chat.appendChild(div);
   }
 
-  function esc(t) {
-    const d = document.createElement("div");
-    d.textContent = t;
-    return d.innerHTML;
+  function renderMd(text) {
+    return text
+      .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      .replace(/^\- (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+      .replace(/^---$/gm, '<hr>')
+      .replace(/\n/g, '<br>');
   }
 
-  // Enter to send
+  function esc(t) { const d = document.createElement("div"); d.textContent = t; return d.innerHTML; }
+
+  // Keys
   inp.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   });
-  document.getElementById("clowSend").onclick = send;
+  document.getElementById("cpSend").onclick = send;
 
-  // Draggable
-  let isDragging = false, dragX = 0, dragY = 0;
-  document.getElementById("clowBar").addEventListener("mousedown", (e) => {
-    if (e.target.tagName === "BUTTON" || e.target.tagName === "SPAN") return;
-    isDragging = true;
-    dragX = e.clientX - ov.offsetLeft;
-    dragY = e.clientY - ov.offsetTop;
-    const onMove = (e) => {
-      if (!isDragging) return;
-      ov.style.left = (e.clientX - dragX) + "px";
-      ov.style.top = (e.clientY - dragY) + "px";
-      ov.style.right = "auto";
-      ov.style.bottom = "auto";
-    };
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", () => {
-      isDragging = false;
-      document.removeEventListener("mousemove", onMove);
-    }, {once: true});
-  });
-
-  // Close on click outside
-  document.addEventListener("click", (e) => {
-    if (ov.classList.contains("open") && !pinned && !ov.contains(e.target)) {
-      ov.classList.remove("open");
-    }
-  });
-
-  // Keyboard shortcut
   document.addEventListener("keydown", (e) => {
     if (e.ctrlKey && e.shiftKey && e.key === "K") { e.preventDefault(); toggle(); }
+    if (e.key === "Escape" && panel.classList.contains("open")) close();
   });
 })();

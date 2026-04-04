@@ -148,14 +148,15 @@ def _setup_middleware():
     settings = config.load_settings()
     webapp_cfg = settings.get("webapp", {})
 
-    # CORS
+    # CORS — permite webapp, localhost e Chrome Extension
     allowed_origins = webapp_cfg.get("cors_origins", ["http://localhost:*", "http://127.0.0.1:*"])
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=allowed_origins,
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],
+        expose_headers=["*"],
     )
 
     # Security headers (CSP, X-Frame-Options, HSTS, etc.)
