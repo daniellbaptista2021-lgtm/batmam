@@ -2,6 +2,8 @@
 from __future__ import annotations
 import sqlite3
 import hashlib
+import hmac
+import os
 import time
 import uuid
 import json
@@ -18,7 +20,8 @@ PLANS = {
     "unlimited": {"label": "Unlimited", "daily_tokens": 0},  # 0 = sem limite
 }
 
-ADMIN_EMAIL = "daniellbaptista2021@gmail.com"
+# Admin email via env var (not hardcoded)
+ADMIN_EMAIL = os.getenv("CLOW_ADMIN_EMAIL", "")
 
 
 @contextmanager
@@ -123,8 +126,23 @@ def init_db():
 
 # ── Users ────────────────────────────────────────────────────────
 
-def _hash_pw(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
+def _hash_pw(password: str, salt: str = "") -> str:
+    """Hash password with PBKDF2-SHA256 + random salt."""
+    if not salt:
+        salt = os.urandom(16).hex()
+    dk = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 100_000)
+    return f"{salt}${dk.hex()}"
+
+
+def _verify_pw(password: str, stored_hash: str) -> bool:
+    """Verify password against stored PBKDF2 hash. Supports legacy SHA-256."""
+    if "$" in stored_hash:
+        # New format: salt$hash
+        salt, _ = stored_hash.split("$", 1)
+        return hmac.compare_digest(_hash_pw(password, salt), stored_hash)
+    else:
+        # Legacy SHA-256 (no salt) — migrate on next login
+        return hmac.compare_digest(hashlib.sha256(password.encode()).hexdigest(), stored_hash)
 
 
 def create_user(email: str, password: str, name: str = "") -> dict | None:
@@ -145,12 +163,16 @@ def create_user(email: str, password: str, name: str = "") -> dict | None:
 
 def authenticate_user(email: str, password: str) -> dict | None:
     with get_db() as db:
-        row = db.execute("SELECT * FROM users WHERE email=? AND password_hash=?",
-            (email.lower(), _hash_pw(password))).fetchone()
+        row = db.execute("SELECT * FROM users WHERE email=?", (email.lower(),)).fetchone()
         if not row:
+            return None
+        if not _verify_pw(password, row["password_hash"]):
             return None
         if not row["active"]:
             return None
+        # Migrate legacy SHA-256 hash to PBKDF2 on successful login
+        if "$" not in row["password_hash"]:
+            db.execute("UPDATE users SET password_hash=? WHERE id=?", (_hash_pw(password), row["id"]))
         db.execute("UPDATE users SET last_login=? WHERE id=?", (time.time(), row["id"]))
         return dict(row)
 
@@ -371,6 +393,9 @@ def list_missions(user_id: str, limit: int = 20) -> list[dict]:
 # Init on import
 init_db()
 
-# Ensure admin user exists
-if not get_user_by_email(ADMIN_EMAIL):
-    create_user(ADMIN_EMAIL, "Dan24851388.@", "Daniel")
+# Create admin from env vars on first run (no hardcoded credentials)
+_admin_email = os.getenv("CLOW_ADMIN_EMAIL", "")
+_admin_pass = os.getenv("CLOW_ADMIN_PASSWORD", "")
+if _admin_email and _admin_pass and not get_user_by_email(_admin_email):
+    create_user(_admin_email, _admin_pass, "Admin")
+del _admin_email, _admin_pass

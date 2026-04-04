@@ -8,6 +8,7 @@ Suporta session resume para conversas contínuas.
 import subprocess
 import os
 import time
+from pathlib import Path
 import json
 import logging
 from typing import Callable
@@ -16,13 +17,14 @@ from .database import get_db
 logger = logging.getLogger(__name__)
 
 CLAUDE_BIN = "/root/.local/bin/claude"
-WORKSPACE = "/root/clow/static/files"
+WORKSPACE = str(Path(__file__).parent.parent)
 
 # Session persistence: maps conversation_id -> claude session_id
 _session_map: dict[str, str] = {}
 
 # Ensure static/files exists for generated content
-os.makedirs("/root/clow/static/files", exist_ok=True)
+_static_files = Path(__file__).parent.parent / "static" / "files"
+_static_files.mkdir(parents=True, exist_ok=True)
 
 
 def _get_claude_env():

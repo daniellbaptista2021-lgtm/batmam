@@ -34,7 +34,7 @@ def generate_image(prompt: str, width: int = 1024, height: int = 1024, timeout: 
         
         if response.status_code == 200:
             # Cria diretório se não existir
-            file_dir = "/root/clow/static/files"
+            file_dir = str(Path(__file__).parent.parent.parent / "static" / "files")
             os.makedirs(file_dir, exist_ok=True)
             
             # Salva arquivo com timestamp

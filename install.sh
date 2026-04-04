@@ -6,9 +6,9 @@
 
 set -e
 
-CLOW_VERSION="0.1.0"
+CLOW_VERSION="0.2.0"
 CLOW_HOME="$HOME/.clow"
-CLOW_REPO="https://github.com/daniel/clow.git"
+CLOW_REPO="https://github.com/daniellbaptista2021-lgtm/batmam.git"
 
 # Cores
 RED='\033[0;31m'
@@ -238,7 +238,7 @@ WRAPPER_EOF
 setup_api_key() {
     ENV_FILE="$CLOW_HOME/app/.env"
 
-    if [ -f "$ENV_FILE" ] && grep -q "OPENAI_API_KEY" "$ENV_FILE"; then
+    if [ -f "$ENV_FILE" ] && grep -q "ANTHROPIC_API_KEY\|OPENAI_API_KEY" "$ENV_FILE"; then
         log_ok "API key já configurada"
         return
     fi
@@ -246,25 +246,46 @@ setup_api_key() {
     echo ""
     echo -e "  ${BOLD}Configuração da API Key${NC}"
     echo ""
-    echo -e "  O Clow precisa de uma API key da OpenAI."
-    echo -e "  Obtenha em: ${CYAN}https://platform.openai.com/api-keys${NC}"
+    echo -e "  Escolha seu provider:"
+    echo -e "  ${CYAN}1${NC}) Anthropic (recomendado) — https://console.anthropic.com/settings/keys"
+    echo -e "  ${CYAN}2${NC}) OpenAI — https://platform.openai.com/api-keys"
     echo ""
-    read -rp "  Cole sua OpenAI API key (ou Enter para pular): " API_KEY
+    read -rp "  Provider [1/2]: " PROVIDER_CHOICE
 
-    if [ -n "$API_KEY" ]; then
-        cat > "$ENV_FILE" << EOF
+    if [ "$PROVIDER_CHOICE" = "2" ]; then
+        read -rp "  Cole sua OpenAI API key (ou Enter para pular): " API_KEY
+        if [ -n "$API_KEY" ]; then
+            cat > "$ENV_FILE" << EOF
+CLOW_PROVIDER=openai
 OPENAI_API_KEY=${API_KEY}
 CLOW_MODEL=gpt-4.1
 EOF
-        chmod 600 "$ENV_FILE"
-        log_ok "API key salva em $ENV_FILE"
-    else
-        log_warn "API key não configurada. Defina OPENAI_API_KEY depois."
-        cat > "$ENV_FILE" << EOF
+        else
+            cat > "$ENV_FILE" << EOF
+CLOW_PROVIDER=openai
 OPENAI_API_KEY=
 CLOW_MODEL=gpt-4.1
 EOF
+        fi
+    else
+        read -rp "  Cole sua Anthropic API key (ou Enter para pular): " API_KEY
+        if [ -n "$API_KEY" ]; then
+            cat > "$ENV_FILE" << EOF
+CLOW_PROVIDER=anthropic
+ANTHROPIC_API_KEY=${API_KEY}
+CLOW_MODEL=claude-haiku-4-5-20251001
+CLOW_MODEL_HEAVY=claude-sonnet-4-20250514
+EOF
+        else
+            cat > "$ENV_FILE" << EOF
+CLOW_PROVIDER=anthropic
+ANTHROPIC_API_KEY=
+CLOW_MODEL=claude-haiku-4-5-20251001
+EOF
+        fi
     fi
+    chmod 600 "$ENV_FILE"
+    [ -n "$API_KEY" ] && log_ok "API key salva em $ENV_FILE" || log_warn "API key não configurada. Edite $ENV_FILE depois."
 }
 
 # ── Verifica instalação ────────────────────────────────

@@ -240,9 +240,11 @@ def start_with_tls(host: str = "0.0.0.0", port: int = 8080, certfile: str = "", 
 # ── Mount de arquivos estaticos ──────────────────────────────────
 if app and HAS_FASTAPI:
     try:
-        # Garante que diretorio existe
-        os.makedirs("/root/clow/static/files", exist_ok=True)
-        # Mount da pasta /static
-        app.mount("/static", StaticFiles(directory="/root/clow/static"), name="static")
+        # Usa caminho relativo ao projeto (portavel)
+        _project_root = Path(__file__).parent.parent
+        _static_dir = _project_root / "static"
+        _static_dir.mkdir(parents=True, exist_ok=True)
+        (_static_dir / "files").mkdir(exist_ok=True)
+        app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
     except Exception as e:
         logging.error(f"Erro ao montar /static: {e}")
