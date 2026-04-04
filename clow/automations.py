@@ -325,6 +325,123 @@ class AutomationsEngine:
         return {"matched": len(results), "results": results}
 
 
+# ── Natural Language Automations ──────────────────────────────
+
+def parse_natural_language(text: str) -> dict[str, Any]:
+    """Usa Claude para interpretar frase em portugues e gerar configuracao de automacao.
+
+    Retorna dict com configuracao completa da automacao.
+    """
+    if not config.CLOW_NL_AUTOMATIONS:
+        return {"error": "NL Automations desabilitado"}
+
+    system_prompt = """Voce converte frases em portugues para configuracoes de automacao JSON.
+
+Triggers disponiveis:
+- cron: {"type": "cron", "schedule": "5m|1h|24h", "cron_expr": "0 9 * * 1"} (schedule simples ou cron_expr para horarios especificos)
+- webhook: {"type": "webhook"}
+- github_event: {"type": "github_event", "event": "issues.opened|push|pull_request.opened|check_run.completed"}
+- file_change: {"type": "file_change", "path": "src/"}
+
+Actions disponiveis para o prompt_template:
+- run_agent: executa um agente AI com prompt
+- send_whatsapp: envia mensagem via WhatsApp (use whatsapp_send tool)
+- send_notification: notificacao generica
+- run_bash: executa comando bash
+- create_github_issue: cria issue no GitHub
+- n8n_trigger: aciona workflow n8n
+
+Retorne SOMENTE um JSON valido:
+{
+  "name": "nome-da-automacao",
+  "trigger": {"type": "...", ...},
+  "prompt_template": "prompt completo para o agente executar",
+  "max_runs_per_day": 10,
+  "description": "descricao curta do que faz"
+}
+
+Exemplos:
+- "todo dia as 8h manda bom dia no whatsapp" -> cron 24h com prompt de envio whatsapp
+- "quando CI falhar, analisa e tenta corrigir" -> github_event check_run.completed + debug prompt
+- "a cada 1h verifica se o site esta no ar" -> cron 1h + health check prompt"""
+
+    try:
+        if config.CLOW_PROVIDER == "anthropic":
+            from anthropic import Anthropic
+            client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
+            response = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                system=system_prompt,
+                messages=[{"role": "user", "content": text}],
+                max_tokens=1000,
+            )
+            raw = response.content[0].text.strip()
+        else:
+            from openai import OpenAI
+            client = OpenAI(api_key=config.OPENAI_API_KEY)
+            response = client.chat.completions.create(
+                model="gpt-4.1-mini",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": text},
+                ],
+                max_tokens=1000,
+            )
+            raw = response.choices[0].message.content.strip()
+
+        # Parse JSON
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        parsed = json.loads(raw)
+
+        # Valida campos obrigatorios
+        if not isinstance(parsed, dict) or "trigger" not in parsed or "prompt_template" not in parsed:
+            return {"error": "LLM retornou formato invalido"}
+
+        # Adiciona campo original
+        parsed["original_text"] = text
+        parsed.setdefault("name", text[:30].lower().replace(" ", "-"))
+        parsed.setdefault("max_runs_per_day", 10)
+
+        log_action("nl_automation_parse", f"input='{text[:50]}' name={parsed['name']}")
+        return parsed
+
+    except json.JSONDecodeError as e:
+        return {"error": f"LLM retornou JSON invalido: {e}"}
+    except Exception as e:
+        return {"error": f"Erro ao interpretar: {e}"}
+
+
+def create_from_natural_language(text: str) -> dict[str, Any]:
+    """Interpreta frase, cria e retorna a automacao (sem ativar — precisa confirmacao)."""
+    parsed = parse_natural_language(text)
+    if "error" in parsed:
+        return parsed
+
+    engine = get_automations_engine()
+    trigger = parsed.get("trigger", {})
+
+    automation = engine.create(
+        name=parsed.get("name", "nl-auto"),
+        trigger_type=trigger.get("type", "webhook"),
+        trigger_config={k: v for k, v in trigger.items() if k != "type"},
+        prompt_template=parsed.get("prompt_template", ""),
+        max_runs_per_day=parsed.get("max_runs_per_day", 10),
+    )
+
+    # Desabilita por default (precisa confirmacao do usuario)
+    engine.disable(automation.name)
+
+    return {
+        "success": True,
+        "automation": automation.to_dict(),
+        "parsed": parsed,
+        "message": f"Automacao '{automation.name}' criada (desabilitada). Use /automations enable {automation.name} para ativar.",
+    }
+
+
 # Instancia global
 _engine = AutomationsEngine()
 

@@ -83,6 +83,67 @@ def register_extension_routes(app) -> None:
         engine = get_automations_engine()
         return JSONResponse({"logs": engine.get_logs(name, limit)})
 
+    # ── Teleport ──────────────────────────────────────────────
+
+    @app.post("/api/teleport/export/{session_id}", tags=["teleport"])
+    async def teleport_export(session_id: str):
+        from ..teleport import export_session
+        data = export_session(session_id)
+        return JSONResponse(data)
+
+    @app.post("/api/teleport/import", tags=["teleport"])
+    async def teleport_import(request: Request):
+        from ..teleport import import_session
+        body = await request.json()
+        result = import_session(body)
+        return JSONResponse(result)
+
+    @app.post("/api/teleport/code/generate", tags=["teleport"])
+    async def teleport_generate_code(request: Request):
+        from ..teleport import generate_teleport_code
+        body = await request.json()
+        session_id = body.get("session_id", "")
+        result = generate_teleport_code(session_id)
+        return JSONResponse(result)
+
+    @app.post("/api/teleport/code/redeem", tags=["teleport"])
+    async def teleport_redeem_code(request: Request):
+        from ..teleport import redeem_teleport_code
+        body = await request.json()
+        code = body.get("code", "")
+        result = redeem_teleport_code(code)
+        return JSONResponse(result)
+
+    @app.get("/api/teleport/codes", tags=["teleport"])
+    async def teleport_list_codes():
+        from ..teleport import list_active_codes
+        return JSONResponse({"codes": list_active_codes()})
+
+    # ── Teams ─────────────────────────────────────────────────
+
+    @app.get("/api/teams/roles", tags=["teams"])
+    async def teams_default_roles():
+        from ..teams import DEFAULT_ROLES
+        return JSONResponse({"roles": DEFAULT_ROLES})
+
+    # ── NL Automations ────────────────────────────────────────
+
+    @app.post("/api/automations/parse-nl", tags=["automations"])
+    async def parse_nl_automation(request: Request):
+        from ..automations import parse_natural_language
+        body = await request.json()
+        text = body.get("text", "")
+        result = parse_natural_language(text)
+        return JSONResponse(result)
+
+    @app.post("/api/automations/create-nl", tags=["automations"])
+    async def create_nl_automation(request: Request):
+        from ..automations import create_from_natural_language
+        body = await request.json()
+        text = body.get("text", "")
+        result = create_from_natural_language(text)
+        return JSONResponse(result)
+
     # ── Spectator (Live Pair Programming) ─────────────────────
 
     @app.get("/api/spectator/{session_id}", tags=["spectator"])

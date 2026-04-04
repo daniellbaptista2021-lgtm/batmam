@@ -608,6 +608,61 @@ def _share_handler(args: str, ctx: dict) -> str:
     )
 
 
+def _teleport_handler(args: str, ctx: dict) -> str:
+    if args.strip().lower() == "import":
+        return "Importe uma sessao. Cole o codigo de 6 digitos ou o JSON exportado."
+    return (
+        "Gere um codigo de teleport para transferir esta sessao.\n\n"
+        "Execute: python -c \"\n"
+        "from clow.teleport import generate_teleport_code\n"
+        "result = generate_teleport_code('SESSION_ID')\n"
+        "print(f'Codigo: {result[\"code\"]}')\n"
+        "print(f'Expira em: {result[\"expires_in\"]}s')\n"
+        "\"\n"
+        "O codigo pode ser usado em qualquer interface (webapp, PWA, Chrome Extension)."
+    )
+
+
+def _team_handler(args: str, ctx: dict) -> str:
+    parts = args.strip().split(maxsplit=1) if args else []
+    action = parts[0].lower() if parts else ""
+    if action == "status":
+        return "Mostre o status do team atual. Use python -c \"from clow.teams import TeamCoordinator; tc=TeamCoordinator(); print(tc.status_summary())\""
+    if action == "chat":
+        msg = parts[1] if len(parts) > 1 else ""
+        return f"Envie mensagem para um agent do time: {msg}"
+    if not args:
+        return "Descreva a task para o Agent Team executar. Ex: /team crie API REST com testes"
+    return (
+        f"Execute a seguinte task com Agent Teams:\n\n"
+        f"Task: {args}\n\n"
+        "O time tem 4 roles: Architect, Developer, Tester, Reviewer.\n"
+        "1) O Architect decompoe a task em subtasks\n"
+        "2) Cada agent executa suas tasks no board\n"
+        "3) Agents se comunicam via message bus\n"
+        "4) Use /team status para acompanhar o progresso"
+    )
+
+
+def _automate_handler(args: str, ctx: dict) -> str:
+    if not args:
+        return (
+            "Descreva em portugues o que deseja automatizar.\n"
+            "Ex: /automate todo dia as 8h me manda bom dia no whatsapp\n"
+            "Ex: /automate quando CI falhar no GitHub, analisa o log e tenta corrigir\n"
+            "Ex: /automate a cada 1h verifica se o site esta no ar"
+        )
+    return (
+        f"Interprete a seguinte frase e crie uma automacao:\n\n"
+        f"\"{args}\"\n\n"
+        "1) Use python -c \"from clow.automations import parse_natural_language; "
+        f"import json; print(json.dumps(parse_natural_language('{args[:200]}'), indent=2, ensure_ascii=False))\"\n"
+        "2) Mostre a automacao interpretada pro usuario\n"
+        "3) Peca confirmacao antes de ativar\n"
+        "4) Se confirmado, use create_from_natural_language e depois enable"
+    )
+
+
 BUILTIN_SKILLS = [
     # ── Dev Core (8 originais) ──
     Skill(name="commit", description="Commit inteligente com mensagem automatica", handler=_commit_handler, aliases=["c", "ci"]),
@@ -654,6 +709,11 @@ BUILTIN_SKILLS = [
     Skill(name="autopilot", description="GitHub Issue Autopilot: resolve issues automaticamente. /autopilot status", handler=_autopilot_handler, aliases=["ap"]),
     Skill(name="automations", description="Gerencia automacoes: list, enable, disable, logs", handler=_automations_handler, aliases=["auto"]),
     Skill(name="share", description="Compartilha sessao em tempo real via Spectator", handler=_share_handler, aliases=["spectator"]),
+
+    # ── Teleport + Teams + NL Automate ──
+    Skill(name="teleport", description="Transfere sessao entre interfaces (CLI/webapp/PWA). Gera codigo de 6 digitos", handler=_teleport_handler, aliases=["tp"]),
+    Skill(name="team", description="Agent Teams: time de agentes com roles (architect/dev/tester/reviewer). /team status", handler=_team_handler, aliases=["teams"]),
+    Skill(name="automate", description="Cria automacao via linguagem natural. Ex: /automate todo dia as 8h verifica issues", handler=_automate_handler, aliases=["nl-auto"]),
 
     # ── Dominio (8 originais) ──
     Skill(name="cotacao", description="Gera cotacao de seguro/plano funerario em PDF", handler=_cotacao_handler, aliases=["cot"]),

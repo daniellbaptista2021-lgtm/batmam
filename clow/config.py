@@ -94,6 +94,16 @@ CLOW_AUTOMATIONS = os.getenv("CLOW_AUTOMATIONS", "true").lower() in ("true", "1"
 # ── Live Pair Programming (Spectator) ────────────────────
 CLOW_SPECTATOR = os.getenv("CLOW_SPECTATOR", "true").lower() in ("true", "1", "yes")
 
+# ── Teleport ──────────────────────────────────────────────
+CLOW_TELEPORT = os.getenv("CLOW_TELEPORT", "true").lower() in ("true", "1", "yes")
+
+# ── Agent Teams ───────────────────────────────────────────
+CLOW_TEAMS = os.getenv("CLOW_TEAMS", "true").lower() in ("true", "1", "yes")
+CLOW_TEAM_MAX_AGENTS = int(os.getenv("CLOW_TEAM_MAX_AGENTS", "4"))
+
+# ── Natural Language Automations ──────────────────────────
+CLOW_NL_AUTOMATIONS = os.getenv("CLOW_NL_AUTOMATIONS", "true").lower() in ("true", "1", "yes")
+
 DANGEROUS_COMMANDS = [
     "rm -rf", "rm -r /", "mkfs", "dd if=", ":(){:|:&};:",
     "chmod -R 777 /", "shutdown", "reboot", "kill -9",
