@@ -222,10 +222,10 @@ class TestRoutes(unittest.TestCase):
         from clow.routes.byok import _landing_html
         html = _landing_html()
         self.assertIn("Clow", html)
-        self.assertIn("Traga Sua Key", html)
         self.assertIn("API key", html)
         self.assertIn("onboarding", html)
         self.assertIn("console.anthropic.com", html)
+        self.assertIn("logo.png", html)  # Logo presente
         print("[OK] Routes: landing page gerada com conteudo correto")
 
     def test_onboarding_html_generated(self):
