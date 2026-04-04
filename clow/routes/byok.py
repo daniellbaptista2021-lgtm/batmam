@@ -217,7 +217,7 @@ def register_byok_routes(app) -> None:
         token = _create_session(user)
 
         # Seta cookie via response header (mesmo modo que o login form)
-        resp = JSONResponse({
+        resp = _JR({
             "success": True,
             "token": token,
             "email": user["email"],
