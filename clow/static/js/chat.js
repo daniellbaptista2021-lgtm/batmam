@@ -408,7 +408,7 @@ function playPreviewAudio(){
   previewAudio.play();
 }
 
-function clearAudio(){audioBlob=null;audioTranscript='';speechRec=null;FP.innerHTML='';if(previewAudio){previewAudio.pause();previewAudio=null}toggleInputBtns()}
+function clearAudio(){audioBlob=null;audioUrl=null;audioTranscript='';speechRec=null;FP.innerHTML='';if(previewAudio){previewAudio.pause();previewAudio=null}toggleInputBtns()}
 
 // ── Upload & Send ──
 async function uploadFile(f){
@@ -491,10 +491,20 @@ function addUserWithAttachment(text,type,icon,name,imgUrl,audUrl,transcript){
   if(type==='image'&&imgUrl){
     attachHtml='<img class="chat-img" src="'+imgUrl+'" onclick="openLightbox(this.src)" alt="imagem">';
   }else if(type==='audio'){
-    attachHtml='<audio controls style="width:100%;max-width:300px;height:36px;border-radius:8px;margin:4px 0"';
-    if(audUrl)attachHtml+=' src="'+audUrl+'"';
-    attachHtml+='></audio>';
+    const aud_id='aud_'+Date.now();
+    attachHtml='<audio controls id="'+aud_id+'" style="width:100%;max-width:300px;height:36px;border-radius:8px;margin:4px 0"></audio>';
     if(transcript)attachHtml+='<div class="chat-transcription">&#x1F3A4; '+esc(transcript)+'</div>';
+    // Convert blob URL to persistent data URL after DOM insert
+    if(audUrl){
+      const _audUrl=audUrl;
+      setTimeout(()=>{
+        fetch(_audUrl).then(r=>r.blob()).then(b=>{
+          const reader=new FileReader();
+          reader.onloadend=()=>{const el=document.getElementById(aud_id);if(el)el.src=reader.result};
+          reader.readAsDataURL(b);
+        }).catch(()=>{const el=document.getElementById(aud_id);if(el)el.src=_audUrl});
+      },50);
+    }
   }else{
     const sz=pendingFile?(pendingFile.size>1024*1024?(pendingFile.size/1024/1024).toFixed(1)+' MB':(pendingFile.size/1024).toFixed(1)+' KB'):'';
     attachHtml='<div class="chat-file-card"><span class="cfc-icon">'+icon+'</span><div class="cfc-info"><div class="cfc-name">'+esc(name)+'</div><div class="cfc-meta">'+sz+'</div></div></div>';
