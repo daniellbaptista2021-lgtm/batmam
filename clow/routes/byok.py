@@ -255,7 +255,11 @@ def register_byok_routes(app) -> None:
 
 
 def _landing_html() -> str:
-    return """<!DOCTYPE html>
+    from pathlib import Path
+    tpl = Path(__file__).parent.parent / "templates" / "landing.html"
+    if tpl.exists():
+        return tpl.read_text(encoding="utf-8")
+    return '''<!doctype html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -474,7 +478,7 @@ document.querySelectorAll('.feature,.step').forEach(el=>{
 });
 </script>
 </body>
-</html>"""
+</html>'''
 
 
 def _onboarding_html() -> str:
