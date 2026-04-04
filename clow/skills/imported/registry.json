@@ -568,19 +568,6 @@
       "path": "imported/skill-creator/SKILL.md"
     },
     {
-      "id": "slack-gif-creator",
-      "name": "Slack GIF Creator",
-      "category": "design",
-      "trigger_words": [
-        "gif",
-        "animacao gif",
-        "slack emoji",
-        "animated",
-        "sticker"
-      ],
-      "path": "imported/slack-gif-creator/SKILL.md"
-    },
-    {
       "id": "theme-factory",
       "name": "Theme Factory",
       "category": "design",

@@ -3027,3 +3027,322 @@ Please move or remove them before you merge.
 Aborting
 
 Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..dba7532
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   8490500..dba7532  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/routes/chat.py
+	clow/routes/ws.py
+Please commit your changes or stash them before you merge.
+Aborting
+
+Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..0431ccc
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   dba7532..0431ccc  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/routes/chat.py
+	clow/routes/ws.py
+Please commit your changes or stash them before you merge.
+Aborting
+
+Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..ff8c80f
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   0431ccc..ff8c80f  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/marketplace.py
+	clow/routes/chat.py
+	clow/routes/ws.py
+Please commit your changes or stash them before you merge.
+Aborting
+
+Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..6c94cc8
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   ff8c80f..6c94cc8  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/marketplace.py
+	clow/prompts.py
+	clow/routes/chat.py
+	clow/routes/ws.py
+Please commit your changes or stash them before you merge.
+Aborting
+
+Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..c6546ca
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   6c94cc8..c6546ca  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/marketplace.py
+	clow/prompts.py
+	clow/routes/chat.py
+	clow/routes/ws.py
+Please commit your changes or stash them before you merge.
+Aborting
+
+Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..e394095
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   c6546ca..e394095  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/marketplace.py
+	clow/prompts.py
+	clow/routes/chat.py
+	clow/routes/ws.py
+Please commit your changes or stash them before you merge.
+Aborting
+
+Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..0f1d045
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   e394095..0f1d045  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/config.py
+	clow/marketplace.py
+	clow/prompts.py
+	clow/routes/chat.py
+	clow/routes/ws.py
+Please commit your changes or stash them before you merge.
+Aborting
+
+Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..50a58c1
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   0f1d045..50a58c1  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/config.py
+	clow/marketplace.py
+	clow/prompts.py
+	clow/routes/chat.py
+	clow/routes/ws.py
+	clow/static/css/chat.css
+	clow/static/js/chat.js
+	clow/templates/chat.html
+Please commit your changes or stash them before you merge.
+Aborting
+
+Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..d874710
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   50a58c1..d874710  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/config.py
+	clow/marketplace.py
+	clow/prompts.py
+	clow/routes/chat.py
+	clow/routes/ws.py
+	clow/static/js/chat.js
+Please commit your changes or stash them before you merge.
+Aborting
+
+Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..cb273a9
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   d874710..cb273a9  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/config.py
+	clow/marketplace.py
+	clow/prompts.py
+	clow/routes/chat.py
+	clow/routes/ws.py
+	clow/static/js/chat.js
+	clow/templates/chat.html
+Please commit your changes or stash them before you merge.
+Aborting
+
+Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..ac25e54
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   cb273a9..ac25e54  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/config.py
+	clow/marketplace.py
+	clow/prompts.py
+	clow/routes/chat.py
+	clow/routes/ws.py
+	clow/static/js/chat.js
+	clow/templates/chat.html
+Please commit your changes or stash them before you merge.
+Aborting
+
+Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..199579b
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   ac25e54..199579b  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/config.py
+	clow/marketplace.py
+	clow/prompts.py
+	clow/routes/api.py
+	clow/routes/chat.py
+	clow/routes/ws.py
+	clow/static/js/chat.js
+	clow/templates/chat.html
+Please commit your changes or stash them before you merge.
+Aborting
+
+Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..804d2ec
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   199579b..804d2ec  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/config.py
+	clow/marketplace.py
+	clow/prompts.py
+	clow/routes/api.py
+	clow/routes/auth.py
+	clow/routes/chat.py
+	clow/routes/ws.py
+	clow/static/js/chat.js
+	clow/templates/chat.html
+	clow/webapp.py
+Please commit your changes or stash them before you merge.
+Aborting
+
+Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..f3b1a43
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   804d2ec..f3b1a43  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/config.py
+	clow/marketplace.py
+	clow/prompts.py
+	clow/routes/api.py
+	clow/routes/auth.py
+	clow/routes/chat.py
+	clow/routes/ws.py
+	clow/static/js/chat.js
+	clow/templates/chat.html
+	clow/webapp.py
+Please commit your changes or stash them before you merge.
+Aborting
+
+Exit code: 1
+
+============================================================
+STDOUT:
+=== Clow Deploy ===
+Updating 8490500..dd69be4
+
+STDERR:
+From https://github.com/daniellbaptista2021-lgtm/batmam
+ * branch            main       -> FETCH_HEAD
+   f3b1a43..dd69be4  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	clow/config.py
+	clow/marketplace.py
+	clow/prompts.py
+	clow/routes/api.py
+	clow/routes/auth.py
+	clow/routes/chat.py
+	clow/routes/ws.py
+	clow/static/js/chat.js
+	clow/templates/chat.html
+	clow/webapp.py
+Please commit your changes or stash them before you merge.
+error: The following untracked working tree files would be overwritten by merge:
+	clow/skills/clone.py
+	clow/tools/browser.py
+Please move or remove them before you merge.
+Aborting
+
+Exit code: 1
