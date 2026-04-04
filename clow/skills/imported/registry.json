@@ -425,6 +425,425 @@
         "breakeven"
       ],
       "path": "imported/financial-models/SKILL.md"
+    },
+    {
+      "id": "algorithmic-art",
+      "name": "Algorithmic Art (p5.js)",
+      "category": "design",
+      "trigger_words": [
+        "arte generativa",
+        "algorithmic art",
+        "p5js",
+        "generative",
+        "animacao",
+        "canvas art"
+      ],
+      "path": "imported/algorithmic-art/SKILL.md"
+    },
+    {
+      "id": "claude-api",
+      "name": "Claude API Builder",
+      "category": "engineering",
+      "trigger_words": [
+        "claude api",
+        "anthropic sdk",
+        "api claude",
+        "agent sdk",
+        "tool use",
+        "streaming api"
+      ],
+      "path": "imported/claude-api/SKILL.md"
+    },
+    {
+      "id": "doc-coauthoring",
+      "name": "Document Co-authoring",
+      "category": "business",
+      "trigger_words": [
+        "co-author",
+        "spec",
+        "proposal",
+        "decision doc",
+        "rfc",
+        "design doc",
+        "documento colaborativo"
+      ],
+      "path": "imported/doc-coauthoring/SKILL.md"
+    },
+    {
+      "id": "docx",
+      "name": "Word Document Creator",
+      "category": "office",
+      "trigger_words": [
+        "docx",
+        "word",
+        "documento word",
+        "criar documento",
+        "relatorio",
+        "report"
+      ],
+      "path": "imported/docx/SKILL.md"
+    },
+    {
+      "id": "frontend-design",
+      "name": "Frontend Design Premium",
+      "category": "design",
+      "trigger_words": [
+        "frontend",
+        "ui design",
+        "interface",
+        "react",
+        "html css",
+        "component",
+        "design system"
+      ],
+      "path": "imported/frontend-design/SKILL.md"
+    },
+    {
+      "id": "internal-comms",
+      "name": "Internal Communications",
+      "category": "business",
+      "trigger_words": [
+        "comunicacao interna",
+        "newsletter",
+        "status report",
+        "incident report",
+        "faq",
+        "update"
+      ],
+      "path": "imported/internal-comms/SKILL.md"
+    },
+    {
+      "id": "mcp-builder",
+      "name": "MCP Server Builder",
+      "category": "engineering",
+      "trigger_words": [
+        "mcp",
+        "model context protocol",
+        "mcp server",
+        "integration",
+        "external api"
+      ],
+      "path": "imported/mcp-builder/SKILL.md"
+    },
+    {
+      "id": "pdf-creator",
+      "name": "PDF Tools",
+      "category": "office",
+      "trigger_words": [
+        "pdf",
+        "extrair pdf",
+        "merge pdf",
+        "split pdf",
+        "watermark",
+        "ocr",
+        "encrypt pdf"
+      ],
+      "path": "imported/pdf/SKILL.md"
+    },
+    {
+      "id": "pptx",
+      "name": "PowerPoint Creator",
+      "category": "office",
+      "trigger_words": [
+        "pptx",
+        "powerpoint",
+        "apresentacao",
+        "slides",
+        "presentation",
+        "slide deck"
+      ],
+      "path": "imported/pptx/SKILL.md"
+    },
+    {
+      "id": "skill-creator",
+      "name": "Skill Creator",
+      "category": "engineering",
+      "trigger_words": [
+        "criar skill",
+        "new skill",
+        "custom skill",
+        "skill template",
+        "benchmark"
+      ],
+      "path": "imported/skill-creator/SKILL.md"
+    },
+    {
+      "id": "slack-gif-creator",
+      "name": "Slack GIF Creator",
+      "category": "design",
+      "trigger_words": [
+        "gif",
+        "animacao gif",
+        "slack emoji",
+        "animated",
+        "sticker"
+      ],
+      "path": "imported/slack-gif-creator/SKILL.md"
+    },
+    {
+      "id": "theme-factory",
+      "name": "Theme Factory",
+      "category": "design",
+      "trigger_words": [
+        "tema",
+        "theme",
+        "dark theme",
+        "light theme",
+        "color scheme",
+        "styling",
+        "paleta"
+      ],
+      "path": "imported/theme-factory/SKILL.md"
+    },
+    {
+      "id": "webapp-testing",
+      "name": "Web App Testing (Playwright)",
+      "category": "engineering",
+      "trigger_words": [
+        "teste web",
+        "playwright",
+        "e2e test",
+        "browser test",
+        "screenshot test",
+        "qa"
+      ],
+      "path": "imported/webapp-testing/SKILL.md"
+    },
+    {
+      "id": "web-artifacts",
+      "name": "Web Artifacts Builder",
+      "category": "engineering",
+      "trigger_words": [
+        "artifact",
+        "react app",
+        "vite",
+        "tailwind",
+        "shadcn",
+        "web component"
+      ],
+      "path": "imported/web-artifacts-builder/SKILL.md"
+    },
+    {
+      "id": "xlsx",
+      "name": "Excel/Spreadsheet Creator",
+      "category": "office",
+      "trigger_words": [
+        "xlsx",
+        "excel",
+        "planilha excel",
+        "spreadsheet",
+        "csv",
+        "financial model",
+        "formula"
+      ],
+      "path": "imported/xlsx/SKILL.md"
+    },
+    {
+      "id": "kw-bio-research",
+      "name": "Bio Research",
+      "category": "science",
+      "trigger_words": [
+        "biologia",
+        "research",
+        "scrna",
+        "drug discovery",
+        "genomics",
+        "pipeline",
+        "nf-core"
+      ],
+      "path": "imported/kw-bio-research/SKILL.md"
+    },
+    {
+      "id": "kw-customer-support",
+      "name": "Customer Support",
+      "category": "business",
+      "trigger_words": [
+        "suporte",
+        "ticket",
+        "atendimento",
+        "helpdesk",
+        "customer support",
+        "triage",
+        "escalation"
+      ],
+      "path": "imported/kw-customer-support/SKILL.md"
+    },
+    {
+      "id": "kw-data",
+      "name": "Data Analytics",
+      "category": "analytics",
+      "trigger_words": [
+        "dados",
+        "data analysis",
+        "sql",
+        "dashboard",
+        "visualization",
+        "metrica",
+        "kpi",
+        "bi"
+      ],
+      "path": "imported/kw-data/SKILL.md"
+    },
+    {
+      "id": "kw-design",
+      "name": "Design & UX",
+      "category": "design",
+      "trigger_words": [
+        "ux",
+        "user experience",
+        "design critique",
+        "accessibility",
+        "handoff",
+        "wireframe",
+        "prototype"
+      ],
+      "path": "imported/kw-design/SKILL.md"
+    },
+    {
+      "id": "kw-engineering",
+      "name": "Engineering Ops",
+      "category": "engineering",
+      "trigger_words": [
+        "code review",
+        "incident",
+        "postmortem",
+        "system design",
+        "tech debt",
+        "devops",
+        "ci cd"
+      ],
+      "path": "imported/kw-engineering/SKILL.md"
+    },
+    {
+      "id": "kw-enterprise-search",
+      "name": "Enterprise Search",
+      "category": "business",
+      "trigger_words": [
+        "busca",
+        "search",
+        "enterprise search",
+        "knowledge base",
+        "wiki",
+        "confluence"
+      ],
+      "path": "imported/kw-enterprise-search/SKILL.md"
+    },
+    {
+      "id": "kw-finance",
+      "name": "Finance & Accounting",
+      "category": "finance",
+      "trigger_words": [
+        "contabilidade",
+        "accounting",
+        "journal entry",
+        "reconciliation",
+        "financial close",
+        "sox",
+        "auditoria"
+      ],
+      "path": "imported/kw-finance/SKILL.md"
+    },
+    {
+      "id": "kw-hr",
+      "name": "Human Resources",
+      "category": "business",
+      "trigger_words": [
+        "rh",
+        "recursos humanos",
+        "recruiting",
+        "onboarding",
+        "performance review",
+        "compensation",
+        "headcount"
+      ],
+      "path": "imported/kw-human-resources/SKILL.md"
+    },
+    {
+      "id": "kw-legal",
+      "name": "Legal & Compliance",
+      "category": "legal",
+      "trigger_words": [
+        "contrato",
+        "juridico",
+        "legal",
+        "compliance",
+        "nda",
+        "contract review",
+        "litigation"
+      ],
+      "path": "imported/kw-legal/SKILL.md"
+    },
+    {
+      "id": "kw-marketing",
+      "name": "Marketing Suite",
+      "category": "marketing",
+      "trigger_words": [
+        "marketing suite",
+        "brand voice",
+        "campaign planning",
+        "content calendar",
+        "competitive brief"
+      ],
+      "path": "imported/kw-marketing/SKILL.md"
+    },
+    {
+      "id": "kw-operations",
+      "name": "Operations Management",
+      "category": "business",
+      "trigger_words": [
+        "operacoes",
+        "vendor",
+        "process documentation",
+        "change management",
+        "capacity planning",
+        "runbook"
+      ],
+      "path": "imported/kw-operations/SKILL.md"
+    },
+    {
+      "id": "kw-product",
+      "name": "Product Management",
+      "category": "business",
+      "trigger_words": [
+        "prd",
+        "product spec",
+        "roadmap",
+        "feature spec",
+        "stakeholder update",
+        "user research",
+        "product management"
+      ],
+      "path": "imported/kw-product-management/SKILL.md"
+    },
+    {
+      "id": "kw-productivity",
+      "name": "Productivity System",
+      "category": "productivity",
+      "trigger_words": [
+        "task management",
+        "productivity",
+        "workspace",
+        "task triage",
+        "daily standup",
+        "weekly review"
+      ],
+      "path": "imported/kw-productivity/SKILL.md"
+    },
+    {
+      "id": "kw-sales",
+      "name": "Sales & Pipeline",
+      "category": "sales",
+      "trigger_words": [
+        "vendas",
+        "prospecting",
+        "outreach",
+        "pipeline",
+        "deal strategy",
+        "forecast",
+        "sales call",
+        "crm"
+      ],
+      "path": "imported/kw-sales/SKILL.md"
     }
   ]
 }
