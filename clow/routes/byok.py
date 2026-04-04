@@ -237,6 +237,10 @@ def register_byok_routes(app) -> None:
     @app.get("/landing", tags=["byok"])
     async def landing_page():
         """Landing page BYOK do Clow."""
+        from pathlib import Path
+        tpl = Path(__file__).parent.parent / "templates" / "landing.html"
+        if tpl.exists():
+            return _HR(tpl.read_text(encoding="utf-8"))
         return _HR(_landing_html())
 
     # ── Onboarding Page ───────────────────────────────────────
