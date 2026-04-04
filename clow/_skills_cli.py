@@ -475,6 +475,81 @@ def _init_project_handler(args: str, ctx: dict) -> str:
     )
 
 
+def _undo_handler_v2(args: str, ctx: dict) -> str:
+    n = args.strip() if args.strip() else "1"
+    return (
+        f"Restaure o(s) ultimo(s) {n} checkpoint(s) usando o sistema Time Travel.\n\n"
+        "1) Use a tool bash para rodar: python -c \"\n"
+        "from clow.checkpoints import list_checkpoints, diff_checkpoint, restore_checkpoint\n"
+        "import json\n"
+        f"# Liste checkpoints da sessao atual\n"
+        "# Mostre o diff do que sera revertido\n"
+        "# Peca confirmacao antes de restaurar\n"
+        "\"\n"
+        "2) Mostre o diff do que vai mudar (arquivos e linhas)\n"
+        "3) Peca confirmacao ao usuario antes de restaurar\n"
+        f"4) Restaure {n} checkpoint(s) atras\n"
+        "5) Confirme que os arquivos foram revertidos"
+    )
+
+
+def _history_handler(args: str, ctx: dict) -> str:
+    return (
+        "Mostre a timeline de checkpoints (Time Travel) da sessao atual.\n\n"
+        "1) Use a tool bash para listar checkpoints:\n"
+        "   python -c \"from clow.checkpoints import list_checkpoints; import json; "
+        "print(json.dumps(list_checkpoints('SESSION_ID'), indent=2))\"\n"
+        "2) Para cada checkpoint mostre:\n"
+        "   - Numero do turno\n"
+        "   - Timestamp\n"
+        "   - Arquivos que foram salvos\n"
+        "   - Resumo do que foi feito\n"
+        "3) Formate como timeline bonita\n"
+        f"Filtro: {args}" if args else
+        "Mostre a timeline completa de checkpoints da sessao atual."
+    )
+
+
+def _swarm_handler(args: str, ctx: dict) -> str:
+    if not args:
+        return "Diga a task que deseja executar com Agent Swarm. Ex: /swarm 'crie API REST + frontend'"
+    return (
+        f"Execute a seguinte task usando Agent Swarm (agentes paralelos):\n\n"
+        f"Task: {args}\n\n"
+        "1) Use a tool bash para executar o SwarmCoordinator:\n"
+        "   python -c \"from clow.swarm import SwarmCoordinator; "
+        f"sc = SwarmCoordinator(cwd='{{cwd}}'); result = sc.run('{args[:200]}'); "
+        "import json; print(json.dumps(result, indent=2, default=str))\"\n"
+        "2) Mostre o progresso: quais agentes estao rodando\n"
+        "3) Mostre resultado consolidado de cada agente\n"
+        "4) Reporte merge status e conflitos se houver"
+    )
+
+
+def _learn_handler(args: str, ctx: dict) -> str:
+    if args.strip().lower() == "report":
+        return (
+            "Gere relatorio do Self-Learning.\n\n"
+            "Execute: python -c \"from clow.learner import generate_report; print(generate_report())\"\n"
+            "Mostre o resultado formatado."
+        )
+    return (
+        "Execute o Self-Learning: analise os logs e extraia padroes.\n\n"
+        "1) Execute: python -c \"\n"
+        "from clow.learner import analyze_logs, generate_learned_md\n"
+        "analysis = analyze_logs()\n"
+        "content = generate_learned_md(analysis)\n"
+        "print(content)\n"
+        "\"\n"
+        "2) Mostre o que foi aprendido:\n"
+        "   - Correcoes do usuario detectadas\n"
+        "   - Sequencias de tools frequentes\n"
+        "   - Erros recorrentes e regras preventivas\n"
+        "   - Skills mais usados\n"
+        "3) Confirme que learned.md foi salvo em ~/.clow/memory/"
+    )
+
+
 def _search_handler(args: str, ctx: dict) -> str:
     query = args or ""
     return (
@@ -524,6 +599,12 @@ BUILTIN_SKILLS = [
     Skill(name="undo", description="Desfaz a ultima acao com seguranca", handler=_undo_handler),
     Skill(name="search", description="Busca profunda no projeto (codigo, git, arquivos)", handler=_search_handler, aliases=["find"]),
     Skill(name="init-project", description="Gera .clow/INSTRUCTIONS.md com stack, convencoes e integracoes", handler=_init_project_handler, aliases=["init-proj", "dna"]),
+
+    # ── Time Travel + Swarm + Learn ──
+    Skill(name="undo", description="Restaura ultimo checkpoint (Time Travel). /undo N volta N checkpoints", handler=_undo_handler_v2, aliases=["revert", "rollback"]),
+    Skill(name="history", description="Timeline de checkpoints com timestamp e arquivos", handler=_history_handler, aliases=["timeline", "checkpoints"]),
+    Skill(name="swarm", description="Executa task com multiplos agentes paralelos", handler=_swarm_handler),
+    Skill(name="learn", description="Self-Learning: analisa logs e extrai padroes. /learn report mostra relatorio", handler=_learn_handler, aliases=["self-learn"]),
 
     # ── Dominio (8 originais) ──
     Skill(name="cotacao", description="Gera cotacao de seguro/plano funerario em PDF", handler=_cotacao_handler, aliases=["cot"]),

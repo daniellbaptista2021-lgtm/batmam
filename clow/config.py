@@ -72,6 +72,17 @@ CLOW_VISION_FEEDBACK = os.getenv("CLOW_VISION_FEEDBACK", "true").lower() in ("tr
 # ── Tool Pruning Dinâmico ─────────────────────────────────
 CLOW_TOOL_PRUNING = os.getenv("CLOW_TOOL_PRUNING", "true").lower() in ("true", "1", "yes")
 
+# ── Time Travel (Checkpoints) ─────────────────────────────
+CLOW_CHECKPOINTS = os.getenv("CLOW_CHECKPOINTS", "true").lower() in ("true", "1", "yes")
+CLOW_MAX_CHECKPOINTS = int(os.getenv("CLOW_MAX_CHECKPOINTS", "50"))
+
+# ── Agent Swarm ───────────────────────────────────────────
+CLOW_SWARM = os.getenv("CLOW_SWARM", "true").lower() in ("true", "1", "yes")
+CLOW_SWARM_MAX_AGENTS = int(os.getenv("CLOW_SWARM_MAX_AGENTS", "5"))
+
+# ── Self-Learning ─────────────────────────────────────────
+CLOW_SELF_LEARN = os.getenv("CLOW_SELF_LEARN", "true").lower() in ("true", "1", "yes")
+
 DANGEROUS_COMMANDS = [
     "rm -rf", "rm -r /", "mkfs", "dd if=", ":(){:|:&};:",
     "chmod -R 777 /", "shutdown", "reboot", "kill -9",

@@ -29,6 +29,8 @@ from .hooks import HookRunner
 from .mcp import MCPManager
 from .plugins import PluginManager
 from .logging import log_action
+from .checkpoints import save_checkpoint, extract_target_files, is_write_tool_call
+from .learner import load_learned_context
 from . import config
 
 # Tools que sao read-only e podem rodar em paralelo
@@ -160,6 +162,12 @@ class Agent:
         if instructions:
             system_parts.append(f"\n# [Instrucoes do Projeto]\n{instructions}")
 
+        # ── Self-Learning: injeta learned.md ──
+        if not self.is_subagent and config.CLOW_SELF_LEARN:
+            learned_ctx = load_learned_context()
+            if learned_ctx:
+                system_parts.append(f"\n# [Aprendizado Automatico]\n{learned_ctx}")
+
         # Memoria persistente
         if not self.is_subagent:
             memory_ctx = load_memory_context()
@@ -274,6 +282,23 @@ class Agent:
                 # Se nao tem tool calls, acabou
                 if not tool_calls_data:
                     break
+
+                # ── Time Travel: checkpoint antes de tools de escrita ──
+                if config.CLOW_CHECKPOINTS and not self.is_subagent:
+                    has_write = any(
+                        is_write_tool_call(
+                            tc["name"],
+                            json.loads(tc["arguments"]) if isinstance(tc["arguments"], str) else tc["arguments"],
+                        )
+                        for tc in tool_calls_data
+                    )
+                    if has_write:
+                        target_files = extract_target_files(tool_calls_data)
+                        if target_files:
+                            save_checkpoint(
+                                self.session.id, iteration, target_files,
+                                summary=msg_text[:80] if isinstance(user_message, str) else "",
+                            )
 
                 # Executa tool calls (com paralelismo para read-only)
                 tool_results = self._execute_tool_calls(tool_calls_data, turn)
