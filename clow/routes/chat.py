@@ -193,25 +193,40 @@ def register_chat_routes(app: FastAPI) -> None:
                 "tools": [], "file": None,
             }, status_code=429)
 
-        # ── BYOK: busca API key do usuario ──
+        # ── Billing: seleciona model e API key pelo plano ──
+        from ..billing import get_model_for_plan, plan_uses_server_key, check_quota
         from ..database import get_user_api_key
+
         user_api_key = get_user_api_key(user_id)
 
-        # Valida modelo pelo plano (BYOK = Sonnet liberado)
-        from ..generators.base import MODELS as AI_MODELS
-        if is_admin:
-            allowed_models = ["haiku", "sonnet"]
+        # Determina plano efetivo
+        effective_plan = user_plan
+        if effective_plan in ("free", "basic") and user_api_key:
+            effective_plan = "byok_free"
+        elif effective_plan in ("free", "basic") and not user_api_key:
+            effective_plan = "byok_free"
+        elif effective_plan == "unlimited":
+            effective_plan = "byok_free"  # Admin usa BYOK
+
+        # Checa franquia antes de processar (planos pagos)
+        if plan_uses_server_key(effective_plan):
+            quota_check = check_quota(user_id, effective_plan)
+            if not quota_check["allowed"]:
+                return JSONResponse({
+                    "session_id": "",
+                    "response": quota_check.get("reason", "Franquia atingida. Tente novamente mais tarde."),
+                    "tools": [], "file": None,
+                })
+            # Plano pago: usa key do servidor + model do plano
+            user_api_key = None  # Usa config.ANTHROPIC_API_KEY (default do Agent)
+            model_id = get_model_for_plan(effective_plan)
         elif user_api_key:
-            # BYOK: Sonnet liberado (usuario paga sua propria API)
-            allowed_models = ["sonnet"]
-            chosen_model = "sonnet"  # Lock no Sonnet
+            # BYOK: usa key do user + Sonnet
+            model_id = "claude-sonnet-4-20250514"
+        elif is_admin:
+            model_id = "claude-sonnet-4-20250514"
         else:
-            allowed_models = ["haiku"]
-            if user_plan in ("pro", "unlimited"):
-                allowed_models.append("sonnet")
-        if chosen_model not in allowed_models:
-            chosen_model = allowed_models[0]
-        model_id = AI_MODELS.get(chosen_model, AI_MODELS["haiku"])
+            model_id = "claude-haiku-4-5-20251001"
         track_action("user_message_http", content[:60])
 
         # Salva mensagem do usuario no historico

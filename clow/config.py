@@ -104,6 +104,21 @@ CLOW_TEAM_MAX_AGENTS = int(os.getenv("CLOW_TEAM_MAX_AGENTS", "4"))
 # ── Natural Language Automations ──────────────────────────
 CLOW_NL_AUTOMATIONS = os.getenv("CLOW_NL_AUTOMATIONS", "true").lower() in ("true", "1", "yes")
 
+# ── Stripe Billing ────────────────────────────────────────
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+STRIPE_LITE_PRICE_ID = os.getenv("STRIPE_LITE_PRICE_ID", "")
+STRIPE_STARTER_PRICE_ID = os.getenv("STRIPE_STARTER_PRICE_ID", "")
+STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID", "")
+STRIPE_BUSINESS_PRICE_ID = os.getenv("STRIPE_BUSINESS_PRICE_ID", "")
+
+# Precos de referencia por 1M tokens (USD)
+HAIKU_INPUT_PRICE_PER_MTOK = 1.0
+HAIKU_OUTPUT_PRICE_PER_MTOK = 5.0
+SONNET_INPUT_PRICE_PER_MTOK = 3.0
+SONNET_OUTPUT_PRICE_PER_MTOK = 15.0
+
 DANGEROUS_COMMANDS = [
     "rm -rf", "rm -r /", "mkfs", "dd if=", ":(){:|:&};:",
     "chmod -R 777 /", "shutdown", "reboot", "kill -9",

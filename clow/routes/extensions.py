@@ -59,6 +59,17 @@ def register_extension_routes(app) -> None:
 
         return _FJSON(handle_webhook(event_type, payload))
 
+    # ── Admin Metrics ──────────────────────────────────────────
+
+    @app.get("/api/v1/admin/metrics", tags=["admin"], include_in_schema=False)
+    async def admin_metrics(request: _FRequest):
+        if not _require_admin(request):
+            return _forbidden()
+        from ..metrics_collector import get_admin_metrics
+        return _FJSON(get_admin_metrics())
+
+    # ── GitHub Autopilot ──────────────────────────────────────
+
     @app.get("/api/autopilot/status", tags=["autopilot"], include_in_schema=False)
     async def autopilot_status(request: _FRequest):
         if not _require_admin(request):

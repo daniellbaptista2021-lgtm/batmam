@@ -147,6 +147,10 @@ if HAS_FASTAPI:
     from .routes.byok import register_byok_routes
     register_byok_routes(app)
 
+    # ── Billing Routes ────────────────────────────────────────
+    from .routes.billing import register_billing_routes
+    register_billing_routes(app)
+
     # ── Autopilot, Automations & Spectator Endpoints ──────────
     from .routes.extensions import register_extension_routes
     register_extension_routes(app)

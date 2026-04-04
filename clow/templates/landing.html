@@ -254,24 +254,86 @@ a{color:var(--p);text-decoration:none}
 </section>
 
 <!-- ════ PRICING ════ -->
+<section class="section" id="planos">
+  <h2>Escolha seu <span>plano</span></h2>
+  <p class="sub">Use gr&#225;tis com sua key ou assine com IA inclusa.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;max-width:1100px">
+
+    <!-- BYOK Free -->
+    <div class="price-wrap"><div class="price-inner" style="padding:28px">
+      <div style="font-size:.75rem;color:var(--tm);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Traga sua Key</div>
+      <div class="price" style="font-size:2.2rem">R$ 0</div>
+      <div class="price-sub" style="font-size:.85rem">Voc&#234; paga s&#243; a API</div>
+      <ul class="price-list" style="font-size:.85rem"><li>Sonnet 4 com sua key</li><li>Sem limite nosso</li><li>24 tools + 108 skills</li><li>Dashboard de uso</li></ul>
+      <a href="/onboarding" class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px">Come&#231;ar Gr&#225;tis</a>
+    </div></div>
+
+    <!-- Lite -->
+    <div class="price-wrap"><div class="price-inner" style="padding:28px">
+      <div style="font-size:.75rem;color:var(--tm);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Lite <span style="background:rgba(74,158,255,.15);color:var(--bl);padding:2px 8px;border-radius:8px;font-size:.65rem">Haiku 4.5</span></div>
+      <div class="price" style="font-size:2.2rem">R$ 89<span style="font-size:.9rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
+      <div class="price-sub" style="font-size:.85rem">IA inclusa, sem API key</div>
+      <ul class="price-list" style="font-size:.85rem"><li>Haiku 4.5 incluso</li><li>200K + 50K tokens/dia</li><li>1M + 250K tokens/semana</li><li>Ideal pra conhecer o Clow</li></ul>
+      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('lite')">Assinar Lite</button>
+      <p style="font-size:.7rem;color:var(--tm);margin-top:8px;text-align:center">Quer mais? Upgrade pro Sonnet</p>
+    </div></div>
+
+    <!-- Starter -->
+    <div class="price-wrap"><div class="price-inner" style="padding:28px">
+      <div style="font-size:.75rem;color:var(--tm);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Starter <span style="background:rgba(155,89,252,.15);color:var(--p);padding:2px 8px;border-radius:8px;font-size:.65rem">Sonnet 4</span></div>
+      <div class="price" style="font-size:2.2rem">R$ 115<span style="font-size:.9rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
+      <div class="price-sub" style="font-size:.85rem">Sonnet + 8 fluxos n8n</div>
+      <ul class="price-list" style="font-size:.85rem"><li>Claude Sonnet 4 incluso</li><li>500K + 100K tokens/dia</li><li>8 fluxos de automa&#231;&#227;o</li><li>Suporte WhatsApp</li></ul>
+      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('starter')">Assinar Starter</button>
+    </div></div>
+
+    <!-- Pro -->
+    <div class="price-wrap" style="border-color:rgba(155,89,252,.6);box-shadow:0 0 30px rgba(155,89,252,.1)"><div class="price-inner" style="padding:28px;position:relative">
+      <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--gp);color:#fff;font-size:.7rem;font-weight:700;padding:4px 16px;border-radius:0 0 8px 8px;letter-spacing:1px">MAIS POPULAR</div>
+      <div style="font-size:.75rem;color:var(--tm);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;margin-top:16px">Pro <span style="background:rgba(155,89,252,.15);color:var(--p);padding:2px 8px;border-radius:8px;font-size:.65rem">Sonnet 4</span></div>
+      <div class="price" style="font-size:2.2rem">R$ 189<span style="font-size:.9rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
+      <div class="price-sub" style="font-size:.85rem">Tudo + 2.000 fluxos</div>
+      <ul class="price-list" style="font-size:.85rem"><li>Tudo do Starter</li><li>1M + 200K tokens/dia</li><li>2.000 fluxos profissionais</li><li>Prioridade no suporte</li></ul>
+      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('pro')">Assinar Pro</button>
+    </div></div>
+
+    <!-- Business -->
+    <div class="price-wrap"><div class="price-inner" style="padding:28px">
+      <div style="font-size:.75rem;color:var(--tm);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Business <span style="background:rgba(155,89,252,.15);color:var(--p);padding:2px 8px;border-radius:8px;font-size:.65rem">Sonnet 4</span></div>
+      <div class="price" style="font-size:2.2rem">R$ 229<span style="font-size:.9rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
+      <div class="price-sub" style="font-size:.85rem">M&#225;ximo + consultoria</div>
+      <ul class="price-list" style="font-size:.85rem"><li>Tudo do Pro</li><li>2M + 400K tokens/dia</li><li>3.000 fluxos profissionais</li><li>Suporte + consultoria</li></ul>
+      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('business')">Assinar Business</button>
+    </div></div>
+  </div>
+</section>
+
+<!-- ════ FLUXOS N8N ════ -->
 <section class="section">
-  <h2>Quanto <span>custa</span></h2>
-  <p class="sub">Spoiler: nada. Voc&#234; s&#243; paga o que consumir da API.</p>
-  <div class="price-wrap">
-    <div class="price-inner">
-      <div class="price">R$ 0</div>
-      <div class="price-sub">O Clow &#233; 100% gr&#225;tis. Voc&#234; s&#243; paga a API da Anthropic.</div>
-      <ul class="price-list">
-        <li>Acesso completo a todas as features</li>
-        <li>Sem limite de mensagens</li>
-        <li>Sem limite de sess&#245;es</li>
-        <li>Dashboard de uso com custo estimado</li>
-        <li>M&#233;dia: ~$0.01 a $0.05 por mensagem</li>
-        <li>Controle total no console.anthropic.com</li>
-      </ul>
-      <a href="/onboarding" class="cta" style="margin-top:24px;width:100%" onclick="typeof fbq!=='undefined'&&fbq('track','InitiateCheckout')">Criar Minha Conta Gr&#225;tis</a>
-      <p class="cta-below">Sem cart&#227;o de cr&#233;dito &#8226; Setup em 30 segundos</p>
-    </div>
+  <h2>Fluxos de <span>automa&#231;&#227;o</span> inclusos</h2>
+  <p class="sub">8 fluxos profissionais nos planos Starter+. Pro tem +2.000, Business +3.000.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
+    <div class="step" style="padding:20px"><h3 style="font-size:.95rem">SDR Inteligente</h3><p style="font-size:.85rem">Qualifica&#231;&#227;o autom&#225;tica via WhatsApp</p></div>
+    <div class="step" style="padding:20px"><h3 style="font-size:.95rem">Atendimento 24/7</h3><p style="font-size:.85rem">Chatbot com RAG e handoff humano</p></div>
+    <div class="step" style="padding:20px"><h3 style="font-size:.95rem">RAG Corporativo</h3><p style="font-size:.85rem">Busca inteligente em documentos</p></div>
+    <div class="step" style="padding:20px"><h3 style="font-size:.95rem">Cria&#231;&#227;o de Conte&#250;do</h3><p style="font-size:.85rem">Posts, copies, artigos autom&#225;ticos</p></div>
+    <div class="step" style="padding:20px"><h3 style="font-size:.95rem">Postagem Autom&#225;tica</h3><p style="font-size:.85rem">Facebook, Instagram agendado</p></div>
+    <div class="step" style="padding:20px"><h3 style="font-size:.95rem">Follow-up Autom&#225;tico</h3><p style="font-size:.85rem">Sequ&#234;ncias de mensagens</p></div>
+    <div class="step" style="padding:20px"><h3 style="font-size:.95rem">Qualifica&#231;&#227;o de Leads</h3><p style="font-size:.85rem">Formul&#225;rio &#8594; WhatsApp &#8594; CRM</p></div>
+    <div class="step" style="padding:20px"><h3 style="font-size:.95rem">Onboarding de Clientes</h3><p style="font-size:.85rem">Boas-vindas + documenta&#231;&#227;o</p></div>
+  </div>
+</section>
+
+<!-- ════ FAQ ════ -->
+<section class="section">
+  <h2>Perguntas <span>frequentes</span></h2>
+  <div style="max-width:700px;margin:0 auto">
+    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">Preciso de API key nos planos pagos?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">N&#227;o. Nos planos Lite, Starter, Pro e Business, a IA j&#225; est&#225; inclusa. Voc&#234; n&#227;o precisa configurar nenhuma API key.</p></details>
+    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">Qual a diferen&#231;a entre Haiku e Sonnet?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">O Haiku &#233; r&#225;pido e econ&#244;mico, &#243;timo pra tarefas do dia a dia. O Sonnet &#233; mais inteligente e preciso, ideal pra c&#243;digo complexo, arquitetura e racioc&#237;nio avan&#231;ado. O plano Lite usa Haiku, os demais usam Sonnet.</p></details>
+    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">Como funciona a franquia?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">Cada plano tem um limite di&#225;rio e semanal de tokens. Renova automaticamente a cada dia/semana. Voc&#234; acompanha o uso no dashboard.</p></details>
+    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">Posso trocar de plano?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">Sim. Upgrade ou downgrade a qualquer momento pelo portal de assinatura. A mudan&#231;a &#233; imediata.</p></details>
+    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">O que s&#227;o os fluxos de n8n?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">S&#227;o automa&#231;&#245;es prontas pra usar no seu neg&#243;cio: SDR, atendimento, cria&#231;&#227;o de conte&#250;do, follow-up, qualifica&#231;&#227;o de leads e mais. Basta ativar.</p></details>
+    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">Posso usar minha pr&#243;pria key?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">Sim! O plano gr&#225;tis funciona assim: voc&#234; traz sua API key da Anthropic e usa sem limite nosso. Paga direto pra Anthropic.</p></details>
   </div>
 </section>
 
@@ -290,6 +352,16 @@ document.querySelectorAll('.feature').forEach(c=>{c.addEventListener('mousemove'
 // Scroll-in animation
 const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)'}})},{threshold:.1});
 document.querySelectorAll('.feature,.step,.testi,.hl').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(30px)';el.style.transition='all .6s cubic-bezier(.25,.8,.25,1)';obs.observe(el)});
+
+// Checkout Stripe
+async function checkout(planId){
+  try{
+    const r=await fetch('/api/v1/billing/checkout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({plan_id:planId})});
+    const d=await r.json();
+    if(d.url)window.location=d.url;
+    else if(d.error){if(d.error.includes('autenticado'))window.location='/onboarding';else alert(d.error)}
+  }catch(e){window.location='/onboarding'}
+}
 
 // Sticky CTA mobile
 const sticky=document.getElementById('stickyCta');
