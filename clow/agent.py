@@ -64,6 +64,7 @@ class Agent:
         cwd: str | None = None,
         session: Session | None = None,
         model: str | None = None,
+        api_key: str | None = None,
         on_text_delta: Callable[[str], None] | None = None,
         on_text_done: Callable[[str], None] | None = None,
         on_tool_call: Callable[[str, dict], None] | None = None,
@@ -92,12 +93,14 @@ class Agent:
         self.is_subagent = is_subagent
 
         # Client — suporta Anthropic, OpenAI e Ollama
+        # BYOK: api_key per-user tem prioridade sobre config global
         self._provider = config.CLOW_PROVIDER
+        effective_key = api_key or config.ANTHROPIC_API_KEY
         if self._provider == "anthropic":
-            if not config.ANTHROPIC_API_KEY:
+            if not effective_key:
                 raise RuntimeError("ANTHROPIC_API_KEY nao configurada.")
             from anthropic import Anthropic
-            self._anthropic = Anthropic(api_key=config.ANTHROPIC_API_KEY)
+            self._anthropic = Anthropic(api_key=effective_key)
             self._client = None
         elif self._provider == "ollama":
             from openai import OpenAI

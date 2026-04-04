@@ -193,16 +193,24 @@ def register_chat_routes(app: FastAPI) -> None:
                 "tools": [], "file": None,
             }, status_code=429)
 
-        # Valida modelo pelo plano
+        # ── BYOK: busca API key do usuario ──
+        from ..database import get_user_api_key
+        user_api_key = get_user_api_key(user_id)
+
+        # Valida modelo pelo plano (BYOK = Sonnet liberado)
         from ..generators.base import MODELS as AI_MODELS
         if is_admin:
             allowed_models = ["haiku", "sonnet"]
+        elif user_api_key:
+            # BYOK: Sonnet liberado (usuario paga sua propria API)
+            allowed_models = ["sonnet"]
+            chosen_model = "sonnet"  # Lock no Sonnet
         else:
             allowed_models = ["haiku"]
             if user_plan in ("pro", "unlimited"):
                 allowed_models.append("sonnet")
         if chosen_model not in allowed_models:
-            chosen_model = "haiku"
+            chosen_model = allowed_models[0]
         model_id = AI_MODELS.get(chosen_model, AI_MODELS["haiku"])
         track_action("user_message_http", content[:60])
 
@@ -424,7 +432,7 @@ def register_chat_routes(app: FastAPI) -> None:
         else:
             session_id = str(uuid.uuid4())[:8]
             session_key = f"{session_id}_{chosen_model}"
-            agent = Agent(cwd=os.getcwd(), model=model_id, auto_approve=True)
+            agent = Agent(cwd=os.getcwd(), model=model_id, api_key=user_api_key or None, auto_approve=True)
             _http_sessions[session_key] = {"agent": agent, "last_used": time.time()}
 
         _http_sessions[session_key]["last_used"] = time.time()

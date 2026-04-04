@@ -180,6 +180,10 @@ if HAS_FASTAPI:
     register_chat_routes(app)
     register_ws_routes(app)
 
+    # ── BYOK Routes ──────────────────────────────────────────
+    from .routes.byok import register_byok_routes
+    register_byok_routes(app)
+
     # ── Autopilot, Automations & Spectator Endpoints ──────────
     from .routes.extensions import register_extension_routes
     register_extension_routes(app)

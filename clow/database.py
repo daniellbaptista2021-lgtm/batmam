@@ -195,6 +195,76 @@ def list_users() -> list[dict]:
         return [dict(r) for r in rows]
 
 
+def _migrate_byok_columns():
+    """Adiciona colunas BYOK se nao existem."""
+    try:
+        with get_db() as db:
+            # Verifica se coluna ja existe
+            cols = [r[1] for r in db.execute("PRAGMA table_info(users)").fetchall()]
+            if "anthropic_api_key" not in cols:
+                db.execute("ALTER TABLE users ADD COLUMN anthropic_api_key TEXT DEFAULT ''")
+            if "byok_enabled" not in cols:
+                db.execute("ALTER TABLE users ADD COLUMN byok_enabled INTEGER DEFAULT 0")
+            if "api_key_set_at" not in cols:
+                db.execute("ALTER TABLE users ADD COLUMN api_key_set_at REAL DEFAULT 0")
+    except Exception:
+        pass
+
+
+# Roda migration na importacao
+_migrate_byok_columns()
+
+
+def set_user_api_key(uid: str, api_key: str) -> bool:
+    """Salva API key do usuario (BYOK)."""
+    with get_db() as db:
+        db.execute(
+            "UPDATE users SET anthropic_api_key=?, byok_enabled=1, api_key_set_at=? WHERE id=?",
+            (api_key, time.time(), uid),
+        )
+        return db.total_changes > 0
+
+
+def get_user_api_key(uid: str) -> str:
+    """Retorna API key do usuario ou string vazia."""
+    with get_db() as db:
+        row = db.execute("SELECT anthropic_api_key FROM users WHERE id=?", (uid,)).fetchone()
+        return row["anthropic_api_key"] if row and row["anthropic_api_key"] else ""
+
+
+def remove_user_api_key(uid: str) -> bool:
+    """Remove API key do usuario."""
+    with get_db() as db:
+        db.execute(
+            "UPDATE users SET anthropic_api_key='', byok_enabled=0 WHERE id=?",
+            (uid,),
+        )
+        return db.total_changes > 0
+
+
+def validate_anthropic_key(api_key: str) -> dict:
+    """Valida uma API key da Anthropic com chamada real minima."""
+    try:
+        from anthropic import Anthropic
+        client = Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            messages=[{"role": "user", "content": "hi"}],
+            max_tokens=1,
+        )
+        return {"valid": True, "model": "claude-sonnet-4-20250514"}
+    except Exception as e:
+        err = str(e)
+        if "401" in err or "authentication" in err.lower() or "invalid" in err.lower():
+            return {"valid": False, "error": "API key invalida"}
+        if "credit" in err.lower() or "billing" in err.lower():
+            return {"valid": False, "error": "Sem creditos na conta Anthropic. Adicione saldo em console.anthropic.com"}
+        if "permission" in err.lower():
+            return {"valid": False, "error": "Key sem permissao para Claude Sonnet"}
+        # Se nao eh erro de key, a key eh valida (pode ser rate limit etc)
+        return {"valid": True, "warning": str(e)[:100]}
+
+
 def update_user(uid: str, **kwargs) -> bool:
     allowed = {"name", "plan", "active", "is_admin"}
     fields = {k: v for k, v in kwargs.items() if k in allowed}
