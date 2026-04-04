@@ -3,20 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#050510">
-<meta name="description" content="Clow - AI Code Agent | Inteligência Infinita • Possibilidades Premium. Crie landing pages, planilhas, documentos, apps e muito mais com inteligência artificial.">
-<meta name="keywords" content="AI, inteligência artificial, code agent, landing page, automação, marketing digital">
-<meta name="author" content="Clow AI">
-<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#080b14">
+<meta name="description" content="Clow - AI Code Agent | Inteligência Infinita • Possibilidades Premium.">
 <meta property="og:title" content="Clow — Inteligência Infinita">
-<meta property="og:description" content="AI Code Agent premium. Crie landing pages, planilhas, apps e muito mais.">
 <meta property="og:image" content="/static/brand/logo.png">
-<meta property="og:url" content="https://clow.pvcorretor01.com.br">
-<meta property="og:type" content="website">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Clow — Inteligência Infinita">
-<meta name="twitter:description" content="AI Code Agent premium.">
-<meta name="twitter:image" content="/static/brand/logo.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/static/manifest.json">
@@ -25,108 +15,122 @@
 <title>Clow — Inteligência Infinita</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/chat.css">
 </head>
 <body>
-<svg style="position:absolute;width:0;height:0"><defs>
-<linearGradient id="sbGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#9B59FC"/><stop offset="100%" stop-color="#4A9EFF"/></linearGradient>
-<linearGradient id="wGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#9B59FC"/><stop offset="100%" stop-color="#4A9EFF"/></linearGradient>
-<linearGradient id="wmGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#9B59FC"/><stop offset="100%" stop-color="#4A9EFF"/></linearGradient>
-</defs></svg>
 <div class="sb-ov" id="sbOv" onclick="toggleSB()"></div>
-<aside class="sb" id="sb" role="navigation" aria-label="Menu lateral">
+<aside class="sb" id="sb" role="navigation">
   <div class="sb-head">
-    <a href="/"><img src="/static/brand/logo-sidebar.png" alt="Clow - Inteligência Infinita" class="sb-logo-img"></a>
+    <a href="/"><img src="/static/brand/logo-sidebar.png" alt="CLOW" class="sb-logo-img"></a>
   </div>
   <div class="sb-body">
-    <div class="sb-sec"><button class="sb-new" onclick="newConv()" aria-label="Iniciar nova conversa">+ Nova Conversa</button></div>
+    <div class="sb-sec"><button class="sb-new" onclick="newConv()">+ Nova Conversa</button></div>
+
     <div class="sb-sec" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
       <div class="sb-lbl open" onclick="this.classList.toggle('open')">Conversas <span class="ar">&#9654;</span></div>
       <div class="sb-ct" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
         <div class="sb-conv-search" id="convSearchWrap" style="display:none">
           <label for="convSearchInp" class="sr-only">Buscar conversas</label>
-          <span class="search-icon" style="font-size:12px;color:var(--tm)">&#x25CB;</span>
+          <span class="search-icon">&#x1F50D;</span>
           <input type="text" id="convSearchInp" placeholder="Buscar conversas..." oninput="filterConvs(this.value)" onkeydown="if(event.key==='Escape'){closeConvSearch()}">
         </div>
         <div class="sb-convs" id="convList"></div>
       </div>
     </div>
+
     <div class="sb-sep"></div>
+
     <div class="sb-sec">
       <div class="sb-lbl open" onclick="this.classList.toggle('open')">Criar <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="qa('Cria uma landing page de ')">Landing Page</button>
-        <button class="sb-btn" onclick="qa('Gera uma planilha de ')">Planilha</button>
-        <button class="sb-btn" onclick="qa('Cria uma apresentação sobre ')">Apresentação</button>
-        <button class="sb-btn" onclick="qa('Faz um documento de ')">Documento</button>
-        <button class="sb-btn" onclick="qa('Me faz um app de ')">Web App</button>
+        <button class="sb-btn criar" onclick="qa('Cria uma landing page de ')"><span class="sb-orb">&#x1F310;</span> Landing Page</button>
+        <button class="sb-btn criar" onclick="qa('Gera uma planilha de ')"><span class="sb-orb blue">&#x1F4CA;</span> Planilha</button>
+        <button class="sb-btn criar" onclick="qa('Cria uma apresentação sobre ')"><span class="sb-orb violet">&#x1F3AC;</span> Apresentação</button>
+        <button class="sb-btn criar" onclick="qa('Faz um documento de ')"><span class="sb-orb cyan">&#x1F4C4;</span> Documentação</button>
+        <button class="sb-btn criar" onclick="qa('Me faz um app de ')"><span class="sb-orb pink">&#x1F30D;</span> Web App</button>
       </div>
     </div>
+
     <div class="sb-sec">
-      <div class="sb-lbl" onclick="this.classList.toggle('open')">Marketing <span class="ar">&#9654;</span></div>
+      <div class="sb-lbl lbl-cyan" onclick="this.classList.toggle('open')">Marketing <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="qa('Analise minha campanha de tráfego pago ')">Tráfego Pago</button>
-        <button class="sb-btn" onclick="qa('Gera copy para anúncio de ')">Copy</button>
-        <button class="sb-btn" onclick="qa('Cria conteúdo para instagram sobre ')">Redes Sociais</button>
-        <button class="sb-btn" onclick="qa('Cria sequência de emails para ')">Email Marketing</button>
-        <button class="sb-btn" onclick="qa('Faz auditoria SEO de ')">SEO</button>
-        <button class="sb-btn" onclick="qa('Define estratégia de precificação para ')">Pricing</button>
+        <button class="sb-btn" onclick="qa('Analise minha campanha de tráfego pago ')"><span class="ic">&#x1F4B0;</span> Tráfego Pago</button>
+        <button class="sb-btn" onclick="qa('Gera copy para anúncio de ')"><span class="ic">&#x270D;</span> Copy</button>
+        <button class="sb-btn" onclick="qa('Cria conteúdo para instagram sobre ')"><span class="ic">&#x1F4F1;</span> Redes Sociais</button>
+        <button class="sb-btn" onclick="qa('Cria sequência de emails para ')"><span class="ic">&#x2709;</span> Email Marketing</button>
+        <button class="sb-btn" onclick="qa('Faz auditoria SEO de ')"><span class="ic">&#x1F50D;</span> SEO</button>
+        <button class="sb-btn" onclick="qa('Define estratégia de precificação para ')"><span class="ic">&#x1F4B2;</span> Pricing</button>
       </div>
     </div>
+
     <div class="sb-sec">
-      <div class="sb-lbl" onclick="this.classList.toggle('open')">Negócios <span class="ar">&#9654;</span></div>
+      <div class="sb-lbl lbl-cyan" onclick="this.classList.toggle('open')">Negócios <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="qa('Cria proposta comercial para ')">Proposta</button>
-        <button class="sb-btn" onclick="qa('Analise métricas SaaS: ')">Métricas SaaS</button>
-        <button class="sb-btn" onclick="qa('Cria contrato de ')">Contrato</button>
+        <button class="sb-btn" onclick="qa('Cria proposta comercial para ')"><span class="ic">&#x1F4DD;</span> Proposta</button>
+        <button class="sb-btn" onclick="qa('Analise métricas SaaS: ')"><span class="ic">&#x1F4C8;</span> Métricas SaaS</button>
+        <button class="sb-btn" onclick="qa('Cria contrato de ')"><span class="ic">&#x1F4DC;</span> Contrato</button>
       </div>
     </div>
+
     <div class="sb-sec">
-      <div class="sb-lbl" onclick="this.classList.toggle('open')">Missões <span class="ar">&#9654;</span></div>
+      <div class="sb-lbl lbl-cyan" onclick="this.classList.toggle('open')">Missões <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="qa('/mission Cria um site completo para ')">Site Completo</button>
-        <button class="sb-btn" onclick="qa('/mission Campanha de tráfego para ')">Campanha</button>
-        <button class="sb-btn" onclick="qa('/mission Setup digital completo para ')">Setup Digital</button>
+        <button class="sb-btn" onclick="qa('/mission Cria um site completo para ')"><span class="ic">&#x1F680;</span> Site Completo</button>
+        <button class="sb-btn" onclick="qa('/mission Campanha de tráfego para ')"><span class="ic">&#x1F4E3;</span> Campanha</button>
+        <button class="sb-btn" onclick="qa('/mission Setup digital completo para ')"><span class="ic">&#x26A1;</span> Setup Digital</button>
       </div>
     </div>
+
     <div class="sb-sep"></div>
+
     <div class="sb-sec">
-      <div class="sb-lbl" onclick="this.classList.toggle('open')">Conexões <span class="ar">&#9654;</span></div>
+      <div class="sb-lbl lbl-green" onclick="this.classList.toggle('open')">Conexões <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="sendCmd('/connections')">Ver conexões</button>
-        <button class="sb-btn" onclick="sendCmd('/connect')">Conectar</button>
+        <button class="sb-btn" onclick="sendCmd('/connections')"><span class="ic">&#x1F517;</span> Ver conexões</button>
+        <button class="sb-btn" onclick="sendCmd('/connect')"><span class="ic">&#x1F50C;</span> Conectar</button>
       </div>
     </div>
+
     <div class="sb-sec" id="admSec" style="display:none">
-      <div class="sb-lbl" onclick="this.classList.toggle('open')">Admin <span class="ar">&#9654;</span></div>
+      <div class="sb-lbl lbl-amber" onclick="this.classList.toggle('open')">Admin <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="showAdmUsers()">Usuários</button>
-        <button class="sb-btn" onclick="showAdmStats()">Consumo</button>
-        <button class="sb-btn" onclick="showCreateUsr()">Cadastrar</button>
+        <button class="sb-btn" onclick="showAdmUsers()"><span class="ic">&#x1F465;</span> Usuários</button>
+        <button class="sb-btn" onclick="showAdmStats()"><span class="ic">&#x1F4CA;</span> Consumo</button>
+        <button class="sb-btn" onclick="showCreateUsr()"><span class="ic">&#x2795;</span> Cadastrar</button>
       </div>
     </div>
   </div>
-  <div class="sb-foot"><div class="sb-user" id="sbUsr"><div class="sb-av" id="sbAv">?</div><span class="sb-uname" id="sbEm">...</span><span class="sb-uplan" id="sbPl">...</span></div></div>
+
+  <div class="sb-foot">
+    <div class="sb-av" id="sbAv">?</div>
+    <span class="sb-em" id="sbEm">...</span>
+    <span class="sb-pl" id="sbPl">...</span>
+  </div>
 </aside>
+
 <div class="main" role="main">
   <div class="hdr">
-    <button class="ham" onclick="toggleSB()" aria-label="Abrir menu lateral">&#9776;</button>
-    <div class="hdr-t" id="hdrT">Nova conversa</div>
-    <label for="modSel" class="sr-only">Modelo AI</label>
-    <select class="mod-pill haiku" id="modSel" onchange="onMod()" title="Modelo AI" aria-label="Selecionar modelo AI"><option value="haiku">Haiku</option><option value="sonnet">Sonnet</option></select>
-    <div class="on-badge" id="onBdg" aria-live="polite"><span class="on-dot"></span><span id="onLbl">online</span></div>
-    <div class="hdr-menu">
-      <button class="hdr-mbtn" onclick="togDrop()" aria-label="Menu de opções">&#x22EE;</button>
-      <div class="hdr-drop" id="hdrDrop" role="menu">
-        <button onclick="sendCmd('/usage');clsDrop()">&#x1F4CA; Meu consumo</button>
-        <button onclick="sendCmd('/plan');clsDrop()">&#x1F4E6; Meu plano</button>
-        <button onclick="sendCmd('/memories');clsDrop()">Memórias</button>
-        <button onclick="sendCmd('/help');clsDrop()">Ajuda</button>
-        <a href="/logout">Sair</a>
+    <button class="ham" onclick="toggleSB()">&#9776;</button>
+    <h2 id="hdrT">Nova conversa</h2>
+    <div class="hdr-right">
+      <label for="modSel" class="sr-only">Modelo AI</label>
+      <select class="mod-pill haiku" id="modSel" onchange="onMod()"><option value="haiku">Haiku</option><option value="sonnet">Sonnet</option></select>
+      <div class="on-badge"><span class="on-dot" id="onBdg" style="color:#22c55e">&#x25CF;</span><span id="onLbl">online</span></div>
+      <div class="hdr-menu">
+        <button class="hdr-dots" onclick="togDrop()">&#x22EE;</button>
+        <div class="hdr-drop" id="hdrDrop">
+          <button onclick="sendCmd('/usage');clsDrop()">&#x1F4CA; Meu consumo</button>
+          <button onclick="sendCmd('/plan');clsDrop()">&#x1F4E6; Meu plano</button>
+          <button onclick="sendCmd('/memories');clsDrop()">&#x1F4BE; Memórias</button>
+          <button onclick="sendCmd('/help');clsDrop()">&#x2753; Ajuda</button>
+          <div class="sep"></div>
+          <a href="/logout">&#x1F6AA; Sair</a>
+        </div>
       </div>
     </div>
   </div>
+
   <div class="term" id="term">
     <div class="welc" id="welc">
       <img src="/static/brand/logo.png" alt="CLOW" class="welc-logo">
@@ -134,29 +138,31 @@
       <h1 class="welc-h">Como posso <em>ajudar</em>?</h1>
     </div>
   </div>
+
   <div class="drag-overlay" id="dragOv"><div class="do-icon">&#x1F4CE;</div><div class="do-text">Solte o arquivo aqui</div></div>
+
   <div class="input-area">
     <div id="filePreview"></div>
     <div class="ibox">
-      <button class="attach-btn" id="attachBtn" onclick="toggleAttachMenu()" title="Anexar arquivo" aria-label="Anexar arquivo">&#x1F4CE;</button>
-      <div class="attach-menu" id="attachMenu" style="display:none" role="menu" aria-label="Tipo de arquivo">
+      <button class="ibtn" id="attachBtn" onclick="toggleAttachMenu()" title="Anexar">&#x1F4CE;</button>
+      <div class="attach-menu" id="attachMenu" style="display:none">
         <button class="am-item" onclick="pickFile('image/*','.jpg,.jpeg,.png,.gif,.webp')">Foto / Imagem</button>
         <button class="am-item" onclick="pickFile('','.pdf,.docx,.doc,.txt,.md')">Documento</button>
         <button class="am-item" onclick="pickFile('','.xlsx,.xls,.csv')">Planilha</button>
         <button class="am-item" onclick="pickFile('','*')">Qualquer arquivo</button>
       </div>
-      <label for="inp" class="sr-only">Digite sua mensagem</label>
-      <textarea id="inp" rows="1" placeholder="O que você precisa?" autofocus aria-label="Digite sua mensagem"></textarea>
+      <label for="inp" class="sr-only">Mensagem</label>
+      <textarea id="inp" rows="1" placeholder="O que voc&#xEA; precisa?" autofocus></textarea>
       <div class="ibox-right">
-        <button class="mic-btn vis" id="micBtn" onclick="toggleRec()" title="Gravar áudio" aria-label="Gravar áudio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-        <button class="sbtn" id="sBtn" onclick="sendMessage()" aria-label="Enviar mensagem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
-        <button class="stop-btn" id="stopBtn" onclick="stopGeneration()" aria-label="Parar geração"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
+        <button class="ibtn vis" id="micBtn" onclick="toggleRec()" title="Gravar"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+        <button class="ibtn send-btn" id="sBtn" onclick="sendMessage()"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        <button class="stop-btn" id="stopBtn" onclick="stopGeneration()"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
       </div>
     </div>
   </div>
   <div class="lightbox" id="lightbox" onclick="closeLightbox()"><button class="lb-close" onclick="closeLightbox()">&times;</button><img id="lbImg" src=""></div>
 </div>
-<div class="modal-bg" id="modalBg" onclick="if(event.target===this)clsModal()" role="dialog" aria-modal="true"><div class="modal" id="modalC"></div></div>
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)clsModal()"><div class="modal" id="modalC"></div></div>
 <script src="/static/js/chat.js"></script>
 </body>
 </html>
