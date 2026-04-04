@@ -15,6 +15,7 @@ from .auth import _get_user_session, _rate_limit_dependency
 from .admin import _mission_progress
 from ..webapp import track_action
 from ..rate_limit import limiter as user_limiter
+from ..rag import get_context_for_prompt as _rag_context
 from ..database import (
     check_limit, save_message, get_user_usage_today, PLANS,
 )
@@ -461,7 +462,13 @@ def register_chat_routes(app: FastAPI) -> None:
         if file_data:
             user_msg = _build_multimodal_message(content, file_data)
         else:
-            user_msg = content
+            # Enrich with RAG context (codebase search)
+            rag_ctx = ""
+            try:
+                rag_ctx = _rag_context(content, root=os.getcwd(), max_chars=8000)
+            except Exception:
+                pass
+            user_msg = f"{rag_ctx}\n\n---\n\n{content}" if rag_ctx else content
 
         try:
             result = await loop.run_in_executor(None, agent.run_turn, user_msg)

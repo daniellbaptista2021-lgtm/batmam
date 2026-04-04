@@ -15,6 +15,7 @@ from .auth import (
 from .chat import _build_multimodal_message, _should_generate_image, _process_image_request
 from ..webapp import track_action
 from ..rate_limit import limiter as user_limiter
+from ..rag import get_context_for_prompt as _rag_context
 
 
 def register_ws_routes(app: FastAPI) -> None:
@@ -146,7 +147,13 @@ def register_ws_routes(app: FastAPI) -> None:
                     if file_data:
                         user_msg = _build_multimodal_message(content, file_data)
                     else:
-                        user_msg = content
+                        # Enrich with RAG context
+                        rag_ctx = ""
+                        try:
+                            rag_ctx = _rag_context(content, root=os.getcwd(), max_chars=8000)
+                        except Exception:
+                            pass
+                        user_msg = f"{rag_ctx}\n\n---\n\n{content}" if rag_ctx else content
 
                     # Executa agente em thread separada (chat normal)
                     try:
