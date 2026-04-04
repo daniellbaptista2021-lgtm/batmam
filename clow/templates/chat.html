@@ -3,128 +3,160 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#0a0a0f">
-<meta name="description" content="Clow - AI Code Agent">
+<meta name="theme-color" content="#050510">
+<meta name="description" content="Clow - AI Code Agent | Inteligência Infinita • Possibilidades Premium. Crie landing pages, planilhas, documentos, apps e muito mais com inteligência artificial.">
+<meta name="keywords" content="AI, inteligência artificial, code agent, landing page, automação, marketing digital">
+<meta name="author" content="Clow AI">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="Clow — Inteligência Infinita">
+<meta property="og:description" content="AI Code Agent premium. Crie landing pages, planilhas, apps e muito mais.">
+<meta property="og:image" content="/static/brand/logo.png">
+<meta property="og:url" content="https://clow.pvcorretor01.com.br">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Clow — Inteligência Infinita">
+<meta name="twitter:description" content="AI Code Agent premium.">
+<meta name="twitter:image" content="/static/brand/logo.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="icon" type="image/png" href="/static/brand/favicon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/static/brand/apple-touch-icon.png">
-<title>Clow</title>
+<title>Clow — Inteligência Infinita</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/css/chat.css">
 </head>
 <body>
-<!-- Drawer overlay -->
-<div class="drawer-ov" id="drawerOv" onclick="closeDrawer()"></div>
-
-<!-- Drawer menu -->
-<aside class="drawer" id="drawer">
-  <div class="drawer-head">
-    <img src="/static/brand/logo-sidebar.png" alt="Clow" class="drawer-logo">
-    <button class="drawer-close" onclick="closeDrawer()">&times;</button>
+<svg style="position:absolute;width:0;height:0"><defs>
+<linearGradient id="sbGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#9B59FC"/><stop offset="100%" stop-color="#4A9EFF"/></linearGradient>
+<linearGradient id="wGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#9B59FC"/><stop offset="100%" stop-color="#4A9EFF"/></linearGradient>
+<linearGradient id="wmGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#9B59FC"/><stop offset="100%" stop-color="#4A9EFF"/></linearGradient>
+</defs></svg>
+<div class="sb-ov" id="sbOv" onclick="toggleSB()"></div>
+<aside class="sb" id="sb" role="navigation" aria-label="Menu lateral">
+  <div class="sb-head">
+    <a href="/"><img src="/static/brand/logo-sidebar.png" alt="Clow - Inteligência Infinita" class="sb-logo-img"></a>
   </div>
-  <button class="drawer-btn new" onclick="newConv();closeDrawer()">+ nova conversa</button>
-  <div class="drawer-search">
-    <input type="text" id="convSearchInp" placeholder="buscar conversas..." oninput="filterConvs(this.value)">
+  <div class="sb-body">
+    <div class="sb-sec"><button class="sb-new" onclick="newConv()" aria-label="Iniciar nova conversa">+ Nova Conversa</button></div>
+    <div class="sb-sec" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+      <div class="sb-lbl open" onclick="this.classList.toggle('open')">Conversas <span class="ar">&#9654;</span></div>
+      <div class="sb-ct" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+        <div class="sb-conv-search" id="convSearchWrap" style="display:none">
+          <label for="convSearchInp" class="sr-only">Buscar conversas</label>
+          <span class="search-icon" style="font-size:12px;color:var(--tm)">&#x25CB;</span>
+          <input type="text" id="convSearchInp" placeholder="Buscar conversas..." oninput="filterConvs(this.value)" onkeydown="if(event.key==='Escape'){closeConvSearch()}">
+        </div>
+        <div class="sb-convs" id="convList"></div>
+      </div>
+    </div>
+    <div class="sb-sep"></div>
+    <div class="sb-sec">
+      <div class="sb-lbl open" onclick="this.classList.toggle('open')">Criar <span class="ar">&#9654;</span></div>
+      <div class="sb-ct">
+        <button class="sb-btn" onclick="qa('Cria uma landing page de ')">Landing Page</button>
+        <button class="sb-btn" onclick="qa('Gera uma planilha de ')">Planilha</button>
+        <button class="sb-btn" onclick="qa('Cria uma apresentação sobre ')">Apresentação</button>
+        <button class="sb-btn" onclick="qa('Faz um documento de ')">Documento</button>
+        <button class="sb-btn" onclick="qa('Me faz um app de ')">Web App</button>
+      </div>
+    </div>
+    <div class="sb-sec">
+      <div class="sb-lbl" onclick="this.classList.toggle('open')">Marketing <span class="ar">&#9654;</span></div>
+      <div class="sb-ct">
+        <button class="sb-btn" onclick="qa('Analise minha campanha de tráfego pago ')">Tráfego Pago</button>
+        <button class="sb-btn" onclick="qa('Gera copy para anúncio de ')">Copy</button>
+        <button class="sb-btn" onclick="qa('Cria conteúdo para instagram sobre ')">Redes Sociais</button>
+        <button class="sb-btn" onclick="qa('Cria sequência de emails para ')">Email Marketing</button>
+        <button class="sb-btn" onclick="qa('Faz auditoria SEO de ')">SEO</button>
+        <button class="sb-btn" onclick="qa('Define estratégia de precificação para ')">Pricing</button>
+      </div>
+    </div>
+    <div class="sb-sec">
+      <div class="sb-lbl" onclick="this.classList.toggle('open')">Negócios <span class="ar">&#9654;</span></div>
+      <div class="sb-ct">
+        <button class="sb-btn" onclick="qa('Cria proposta comercial para ')">Proposta</button>
+        <button class="sb-btn" onclick="qa('Analise métricas SaaS: ')">Métricas SaaS</button>
+        <button class="sb-btn" onclick="qa('Cria contrato de ')">Contrato</button>
+      </div>
+    </div>
+    <div class="sb-sec">
+      <div class="sb-lbl" onclick="this.classList.toggle('open')">Missões <span class="ar">&#9654;</span></div>
+      <div class="sb-ct">
+        <button class="sb-btn" onclick="qa('/mission Cria um site completo para ')">Site Completo</button>
+        <button class="sb-btn" onclick="qa('/mission Campanha de tráfego para ')">Campanha</button>
+        <button class="sb-btn" onclick="qa('/mission Setup digital completo para ')">Setup Digital</button>
+      </div>
+    </div>
+    <div class="sb-sep"></div>
+    <div class="sb-sec">
+      <div class="sb-lbl" onclick="this.classList.toggle('open')">Conexões <span class="ar">&#9654;</span></div>
+      <div class="sb-ct">
+        <button class="sb-btn" onclick="sendCmd('/connections')">Ver conexões</button>
+        <button class="sb-btn" onclick="sendCmd('/connect')">Conectar</button>
+      </div>
+    </div>
+    <div class="sb-sec" id="admSec" style="display:none">
+      <div class="sb-lbl" onclick="this.classList.toggle('open')">Admin <span class="ar">&#9654;</span></div>
+      <div class="sb-ct">
+        <button class="sb-btn" onclick="showAdmUsers()">Usuários</button>
+        <button class="sb-btn" onclick="showAdmStats()">Consumo</button>
+        <button class="sb-btn" onclick="showCreateUsr()">Cadastrar</button>
+      </div>
+    </div>
   </div>
-  <div class="drawer-convs" id="convList"></div>
-  <div class="drawer-sep"></div>
-  <div class="drawer-section">
-    <div class="drawer-label">criar</div>
-    <button class="drawer-btn" onclick="qa('Cria uma landing page de ');closeDrawer()">landing page</button>
-    <button class="drawer-btn" onclick="qa('Gera uma planilha de ');closeDrawer()">planilha</button>
-    <button class="drawer-btn" onclick="qa('Cria uma apresentação sobre ');closeDrawer()">apresentacao</button>
-    <button class="drawer-btn" onclick="qa('Faz um documento de ');closeDrawer()">documento</button>
-    <button class="drawer-btn" onclick="qa('Me faz um app de ');closeDrawer()">web app</button>
-  </div>
-  <div class="drawer-sep"></div>
-  <div class="drawer-section">
-    <div class="drawer-label">marketing</div>
-    <button class="drawer-btn" onclick="qa('Analise minha campanha de tráfego pago ');closeDrawer()">trafego pago</button>
-    <button class="drawer-btn" onclick="qa('Gera copy para anúncio de ');closeDrawer()">copy</button>
-    <button class="drawer-btn" onclick="qa('Cria conteúdo para instagram sobre ');closeDrawer()">redes sociais</button>
-    <button class="drawer-btn" onclick="qa('Faz auditoria SEO de ');closeDrawer()">seo</button>
-  </div>
-  <div class="drawer-sep"></div>
-  <div class="drawer-section">
-    <div class="drawer-label">negocios</div>
-    <button class="drawer-btn" onclick="qa('Cria proposta comercial para ');closeDrawer()">proposta</button>
-    <button class="drawer-btn" onclick="qa('Cria contrato de ');closeDrawer()">contrato</button>
-    <button class="drawer-btn" onclick="qa('Analise métricas SaaS: ');closeDrawer()">metricas saas</button>
-  </div>
-  <div class="drawer-sep"></div>
-  <div class="drawer-section" id="admSec" style="display:none">
-    <div class="drawer-label">admin</div>
-    <button class="drawer-btn" onclick="showAdmUsers();closeDrawer()">usuarios</button>
-    <button class="drawer-btn" onclick="showAdmStats();closeDrawer()">consumo</button>
-    <button class="drawer-btn" onclick="showCreateUsr();closeDrawer()">cadastrar</button>
-  </div>
-  <div class="drawer-foot">
-    <span class="drawer-user" id="sbEm">...</span>
-    <span class="drawer-plan" id="sbPl">...</span>
-  </div>
+  <div class="sb-foot"><div class="sb-user" id="sbUsr"><div class="sb-av" id="sbAv">?</div><span class="sb-uname" id="sbEm">...</span><span class="sb-uplan" id="sbPl">...</span></div></div>
 </aside>
-
-<!-- Main terminal -->
-<div class="terminal">
-  <div class="topbar">
-    <button class="ham" onclick="openDrawer()">&#9776;</button>
-    <img src="/static/brand/logo-sidebar.png" alt="Clow" class="topbar-logo">
-    <span class="topbar-title" id="hdrT">clow</span>
-    <div class="topbar-right">
-      <span class="topbar-model">sonnet</span>
-      <span class="topbar-status"><span class="dot" id="onBdg"></span><span id="onLbl">online</span></span>
-      <button class="topbar-menu" onclick="togDrop()">...</button>
-      <div class="topbar-drop" id="hdrDrop">
-        <button onclick="sendCmd('/usage');clsDrop()">consumo</button>
-        <button onclick="sendCmd('/help');clsDrop()">ajuda</button>
-        <button onclick="sendCmd('/memories');clsDrop()">memorias</button>
-        <a href="/logout">sair</a>
+<div class="main" role="main">
+  <div class="hdr">
+    <button class="ham" onclick="toggleSB()" aria-label="Abrir menu lateral">&#9776;</button>
+    <div class="hdr-t" id="hdrT">Nova conversa</div>
+    <label for="modSel" class="sr-only">Modelo AI</label>
+    <select class="mod-pill haiku" id="modSel" onchange="onMod()" title="Modelo AI" aria-label="Selecionar modelo AI"><option value="haiku">Haiku</option><option value="sonnet">Sonnet</option></select>
+    <div class="on-badge" id="onBdg" aria-live="polite"><span class="on-dot"></span><span id="onLbl">online</span></div>
+    <div class="hdr-menu">
+      <button class="hdr-mbtn" onclick="togDrop()" aria-label="Menu de opções">&#x22EE;</button>
+      <div class="hdr-drop" id="hdrDrop" role="menu">
+        <button onclick="sendCmd('/usage');clsDrop()">&#x1F4CA; Meu consumo</button>
+        <button onclick="sendCmd('/plan');clsDrop()">&#x1F4E6; Meu plano</button>
+        <button onclick="sendCmd('/memories');clsDrop()">Memórias</button>
+        <button onclick="sendCmd('/help');clsDrop()">Ajuda</button>
+        <a href="/logout">Sair</a>
       </div>
     </div>
   </div>
-  <!-- Hidden elements for compat -->
-  <div id="sbAv" style="display:none"></div>
-  <select id="modSel" style="display:none"><option value="sonnet">Sonnet</option></select>
-
-  <div class="output" id="term">
+  <div class="term" id="term">
     <div class="welc" id="welc">
-      <div class="welc-ascii">System Clow v0.2.0</div>
-      <div class="welc-sub">sonnet 4.5 · /help</div>
+      <img src="/static/brand/logo.png" alt="Clow - Inteligência Infinita" class="welc-logo">
+      <div class="welc-tagline">INTELIG&Ecirc;NCIA INFINITA <span class="welc-dot">&bull;</span> POSSIBILIDADES PREMIUM</div>
+      <h1>Como posso <span>ajudar</span>?</h1>
     </div>
   </div>
-
-  <div class="drag-overlay" id="dragOv">solte o arquivo aqui</div>
-
-  <div class="prompt-area">
+  <div class="drag-overlay" id="dragOv"><div class="do-icon">&#x1F4CE;</div><div class="do-text">Solte o arquivo aqui</div></div>
+  <div class="input-area">
     <div id="filePreview"></div>
-    <div class="prompt-box">
-      <span class="prompt-char">&#x276F;</span>
-      <button class="prompt-attach" id="attachBtn" onclick="toggleAttachMenu()" title="anexar">+</button>
-      <div class="attach-menu" id="attachMenu" style="display:none">
-        <button class="am-item" onclick="pickFile('image/*','.jpg,.jpeg,.png,.gif,.webp')">imagem</button>
-        <button class="am-item" onclick="pickFile('','.pdf,.docx,.doc,.txt,.md')">documento</button>
-        <button class="am-item" onclick="pickFile('','.xlsx,.xls,.csv')">planilha</button>
-        <button class="am-item" onclick="pickFile('','*')">arquivo</button>
+    <div class="ibox">
+      <button class="attach-btn" id="attachBtn" onclick="toggleAttachMenu()" title="Anexar arquivo" aria-label="Anexar arquivo">&#x1F4CE;</button>
+      <div class="attach-menu" id="attachMenu" style="display:none" role="menu" aria-label="Tipo de arquivo">
+        <button class="am-item" onclick="pickFile('image/*','.jpg,.jpeg,.png,.gif,.webp')">Foto / Imagem</button>
+        <button class="am-item" onclick="pickFile('','.pdf,.docx,.doc,.txt,.md')">Documento</button>
+        <button class="am-item" onclick="pickFile('','.xlsx,.xls,.csv')">Planilha</button>
+        <button class="am-item" onclick="pickFile('','*')">Qualquer arquivo</button>
       </div>
-      <label for="inp" class="sr-only">prompt</label>
-      <textarea id="inp" rows="1" placeholder="" autofocus></textarea>
-      <button class="prompt-mic" id="micBtn" onclick="toggleRec()" title="gravar"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg></button>
-      <button class="prompt-send" id="sBtn" onclick="sendMessage()">&#x21B5;</button>
-      <button class="stop-btn" id="stopBtn" onclick="stopGeneration()">&#x25A0;</button>
+      <label for="inp" class="sr-only">Digite sua mensagem</label>
+      <textarea id="inp" rows="1" placeholder="O que você precisa?" autofocus aria-label="Digite sua mensagem"></textarea>
+      <div class="ibox-right">
+        <button class="mic-btn vis" id="micBtn" onclick="toggleRec()" title="Gravar áudio" aria-label="Gravar áudio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+        <button class="sbtn" id="sBtn" onclick="sendMessage()" aria-label="Enviar mensagem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+        <button class="stop-btn" id="stopBtn" onclick="stopGeneration()" aria-label="Parar geração"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
+      </div>
     </div>
   </div>
   <div class="lightbox" id="lightbox" onclick="closeLightbox()"><button class="lb-close" onclick="closeLightbox()">&times;</button><img id="lbImg" src=""></div>
 </div>
-<div class="modal-bg" id="modalBg" onclick="if(event.target===this)clsModal()"><div class="modal" id="modalC"></div></div>
-<script>
-function openDrawer(){document.getElementById('drawer').classList.add('open');document.getElementById('drawerOv').classList.add('show')}
-function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('drawerOv').classList.remove('show')}
-// Compat aliases
-function toggleSB(){document.getElementById('drawer').classList.contains('open')?closeDrawer():openDrawer()}
-</script>
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)clsModal()" role="dialog" aria-modal="true"><div class="modal" id="modalC"></div></div>
 <script src="/static/js/chat.js"></script>
 </body>
 </html>
