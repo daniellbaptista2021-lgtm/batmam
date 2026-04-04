@@ -726,7 +726,7 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
     elif command in ("/exit", "/quit", "/q"):
         get_cron_manager().stop_all()
         save_session(agent.session)
-        sys.stdout.write(f"\n  {_DIM}Session saved. Goodbye! 🃏{_RESET}\n")
+        sys.stdout.write(f"\n  {_DIM}Session saved. Goodbye! {_RESET}\n")
         sys.exit(0)
 
     elif command in ("/clear", "/reset"):
@@ -1331,7 +1331,7 @@ def _print_banner() -> None:
 {purple}   ║{r}   {gold}███████╗███████╗╚██████╔╝╚███╔███╔╝{r}  {purple}║{r}
 {purple}   ║{r}   {gold}╚══════╝╚══════╝ ╚═════╝  ╚══╝╚══╝{r}   {purple}║{r}
 {purple}   ║{r}                                       {purple}║{r}
-{purple}   ║{r}   {_BOLD}System Clow{r} {dim}v{__version__}{r}  🃏               {purple}║{r}
+{purple}   ║{r}   {_BOLD}System Clow{r} {dim}v{__version__}{r}                 {purple}║{r}
 {purple}   ║{r}   {dim}{provider} · {model_display}{r}               {purple}║{r}
 {purple}   ║{r}                                       {purple}║{r}
 {purple}   ╚═══════════════════════════════════════╝{r}
@@ -1479,7 +1479,7 @@ def run_repl(args: argparse.Namespace) -> None:
             continue
         except EOFError:
             get_cron_manager().stop_all()
-            sys.stdout.write(f"\n  {_DIM}Session saved. Goodbye! 🃏{_RESET}\n")
+            sys.stdout.write(f"\n  {_DIM}Session saved. Goodbye! {_RESET}\n")
             save_session(agent.session)
             break
         except Exception as e:
