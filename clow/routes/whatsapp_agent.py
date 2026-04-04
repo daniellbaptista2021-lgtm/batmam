@@ -160,7 +160,18 @@ def register_whatsapp_agent_routes(app) -> None:
             return _JR({"error": "Nao encontrada"}, status_code=404)
         return _JR({"success": get_wa_manager().clear_conversation(inst, phone)})
 
-    # ── Test Connection ───────────────────────────────────────
+    # ── Test Connection (standalone, no instance needed) ─────
+
+    @app.post("/api/v1/whatsapp/instances/test-connection", tags=["whatsapp"])
+    async def test_connection_standalone(request: _Req):
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        from ..whatsapp_agent import get_wa_manager
+        return _JR(get_wa_manager().test_connection(body.get("zapi_instance_id", ""), body.get("zapi_token", "")))
+
+    # ── Test Connection (existing instance) ───────────────────
 
     @app.post("/api/v1/whatsapp/instances/{instance_id}/test", tags=["whatsapp"])
     async def test_instance(instance_id: str, request: _Req):
