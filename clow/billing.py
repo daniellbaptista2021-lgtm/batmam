@@ -190,17 +190,36 @@ def create_checkout_session(user_id: str, email: str, plan_id: str, success_url:
         return {"error": f"Plano '{plan_id}' nao tem preco Stripe configurado"}
 
     try:
-        session = stripe.checkout.Session.create(
-            mode="subscription",
-            payment_method_types=config.STRIPE_PAYMENT_METHODS,
-            line_items=[{"price": plan["stripe_price_id"], "quantity": 1}],
-            customer_email=email,
-            success_url=success_url or "https://clow.pvcorretor01.com.br/app/settings?payment=success",
-            cancel_url=cancel_url or "https://clow.pvcorretor01.com.br/app/settings?payment=cancelled",
-            metadata={"user_id": user_id, "plan_id": plan_id},
-            locale="pt-BR",
-            allow_promotion_codes=True,
-        )
+        # Filtra payment methods validos (PIX precisa estar ativo no Stripe Dashboard)
+        valid_methods = []
+        for m in config.STRIPE_PAYMENT_METHODS:
+            m = m.strip()
+            if m:
+                valid_methods.append(m)
+        if not valid_methods:
+            valid_methods = ["card"]
+
+        checkout_kwargs = {
+            "mode": "subscription",
+            "line_items": [{"price": plan["stripe_price_id"], "quantity": 1}],
+            "customer_email": email,
+            "success_url": success_url or "https://clow.pvcorretor01.com.br/app/settings?payment=success",
+            "cancel_url": cancel_url or "https://clow.pvcorretor01.com.br/app/settings?payment=cancelled",
+            "metadata": {"user_id": user_id, "plan_id": plan_id},
+            "locale": "pt-BR",
+            "allow_promotion_codes": True,
+        }
+
+        # Tenta com todos os metodos, fallback pra card se PIX nao ativado
+        try:
+            checkout_kwargs["payment_method_types"] = valid_methods
+            session = stripe.checkout.Session.create(**checkout_kwargs)
+        except Exception as first_err:
+            if "pix" in str(first_err).lower():
+                checkout_kwargs["payment_method_types"] = ["card"]
+                session = stripe.checkout.Session.create(**checkout_kwargs)
+            else:
+                raise first_err
         log_action("billing_checkout", f"plan={plan_id} user={user_id}")
         return {"url": session.url, "session_id": session.id}
     except Exception as e:
