@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:280px;background:#0a0a0f;color:#e4e4e8;font-family:'Segoe UI',sans-serif;font-size:13px;padding:16px}
+h2{font-size:14px;font-weight:600;margin-bottom:12px;color:#a78bfa}
+label{display:block;font-size:11px;color:#8b8b96;margin:8px 0 4px;text-transform:uppercase;letter-spacing:.05em}
+input{width:100%;background:#111118;border:1px solid rgba(255,255,255,.08);border-radius:4px;padding:6px 8px;color:#e4e4e8;font-size:12px;outline:none}
+input:focus{border-color:rgba(255,255,255,.15)}
+.btn{width:100%;padding:8px;background:#a78bfa;color:#0a0a0f;border:none;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;margin-top:12px}
+.btn:hover{background:#8b5cf6}
+.saved{color:#4ade80;font-size:11px;text-align:center;margin-top:8px;display:none}
+.info{color:#5a5a66;font-size:10px;margin-top:12px;text-align:center}
+</style>
+</head>
+<body>
+<h2>Clow Copilot</h2>
+<label>API URL</label>
+<input type="text" id="apiUrl" placeholder="https://clow.pvcorretor01.com.br/api/v1/chat">
+<label>API Key (opcional)</label>
+<input type="password" id="apiKey" placeholder="clow_...">
+<label>Atalho</label>
+<input type="text" id="shortcut" value="Ctrl+Shift+K" disabled>
+<button class="btn" id="saveBtn">Salvar</button>
+<div class="saved" id="savedMsg">Configuracoes salvas</div>
+<div class="info">Ctrl+Shift+K em qualquer pagina</div>
+<script src="popup.js"></script>
+</body>
+</html>
