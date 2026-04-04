@@ -450,6 +450,15 @@ h1{font-size:1.4rem;font-weight:700;text-align:center;margin-bottom:4px}
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .link{color:var(--p);cursor:pointer;font-size:.9rem;text-align:center;display:block;margin-top:16px;transition:color .2s}.link:hover{color:var(--bl)}
+.icard{background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:12px;display:flex;gap:14px;transition:border-color .2s}
+.icard:hover{border-color:rgba(155,89,252,.3)}
+.inum{width:28px;height:28px;background:var(--gp);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;margin-top:2px}
+.ititle{font-size:.95rem;font-weight:600;margin-bottom:4px;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.idesc{font-size:.85rem;color:var(--t2);line-height:1.5}
+.icode{background:var(--bg);border-radius:8px;padding:10px 12px;margin-top:8px}
+.icode pre{font-family:var(--mono);font-size:.8rem;color:var(--p);white-space:pre-wrap;margin:0;line-height:1.6}
+.icode-label{font-size:.72rem;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.inote{font-size:.78rem;color:var(--tm);margin-top:6px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -480,40 +489,71 @@ h1{font-size:1.4rem;font-weight:700;text-align:center;margin-bottom:4px}
   </div>
 
   <div class="step" id="step3">
-    <p class="sub" style="font-size:1.1rem;color:var(--g)">API key configurada!</p>
-    <div class="msg success" style="display:block;text-align:center;margin-bottom:20px">Agora escolha como usar o Clow:</div>
+    <p class="sub" style="font-size:1.1rem;color:var(--g)">Tudo pronto, <span id="userName"></span>!</p>
+    <div class="msg success" style="display:block;text-align:center;margin-bottom:20px">Sua conta est&aacute; ativa. Escolha como usar o Clow:</div>
 
-    <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:12px">
-      <h3 style="font-size:.95rem;margin-bottom:8px;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Web (mais r&aacute;pido)</h3>
-      <p style="font-size:.85rem;color:var(--t2);margin-bottom:10px">Use direto no navegador, sem instalar nada.</p>
-      <button class="btn btn-primary" onclick="window.location='/';" style="padding:10px;font-size:.9rem">Abrir o Clow Web</button>
+    <div class="icard">
+      <div class="inum">1</div>
+      <div>
+        <h3 class="ititle">Usar na Web</h3>
+        <p class="idesc">Acesse direto no navegador, sem instalar nada.</p>
+        <button class="btn btn-primary" onclick="goToClow()" style="padding:10px 20px;font-size:.9rem;width:auto;margin-top:8px">Abrir Clow Web</button>
+      </div>
     </div>
 
-    <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:12px">
-      <h3 style="font-size:.95rem;margin-bottom:8px;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Terminal (recomendado para devs)</h3>
-      <p style="font-size:.85rem;color:var(--t2);margin-bottom:8px">Instale e use em qualquer projeto:</p>
-      <pre style="background:var(--bg);padding:10px;border-radius:6px;font-family:var(--mono);font-size:.8rem;color:var(--p);overflow-x:auto;white-space:pre-wrap">pip install clow
-clow</pre>
-      <p style="font-size:.78rem;color:var(--tm);margin-top:6px">Na primeira execu&ccedil;&atilde;o, cole sua API key quando pedido.</p>
+    <div class="icard">
+      <div class="inum">2</div>
+      <div>
+        <h3 class="ititle">Instalar no Terminal</h3>
+        <p class="idesc">Use em qualquer projeto local ou na VPS.</p>
+        <div class="icode">
+          <div class="icode-label">No seu computador ou VPS:</div>
+          <pre>pip install clow</pre>
+        </div>
+        <div class="icode">
+          <div class="icode-label">Depois execute:</div>
+          <pre>clow</pre>
+        </div>
+        <p class="inote">Na primeira vez, cole sua API key quando pedido.<br>Funciona em Windows, Mac e Linux.</p>
+      </div>
     </div>
 
-    <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:12px">
-      <h3 style="font-size:.95rem;margin-bottom:8px;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent">VS Code (mais indicado)</h3>
-      <p style="font-size:.85rem;color:var(--t2);margin-bottom:8px">Use o Clow dentro do seu editor:</p>
-      <pre style="background:var(--bg);padding:10px;border-radius:6px;font-family:var(--mono);font-size:.8rem;color:var(--p);overflow-x:auto;white-space:pre-wrap">1. Abra o VS Code
-2. Ctrl+Shift+X &rarr; busque &quot;Clow&quot;
-3. Instale a extens&atilde;o
-4. Ctrl+Shift+P &rarr; &quot;Clow: Set API Key&quot;</pre>
+    <div class="icard">
+      <div class="inum">3</div>
+      <div>
+        <h3 class="ititle">Usar no VS Code <span style="color:var(--g);font-size:.75rem">(recomendado)</span></h3>
+        <p class="idesc">O Clow dentro do seu editor, como o Copilot.</p>
+        <div class="icode">
+          <div class="icode-label">Abra o terminal do VS Code (Ctrl+`) e rode:</div>
+          <pre>pip install clow &amp;&amp; clow</pre>
+        </div>
+        <p class="inote">O Clow roda direto no terminal integrado do VS Code.<br>Ele l&ecirc; e edita os arquivos do seu projeto.</p>
+      </div>
     </div>
 
-    <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:12px">
-      <h3 style="font-size:.95rem;margin-bottom:8px;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Celular (PWA)</h3>
-      <p style="font-size:.85rem;color:var(--t2);margin-bottom:8px">Instale como app no Android ou iPhone:</p>
-      <pre style="background:var(--bg);padding:10px;border-radius:6px;font-family:var(--mono);font-size:.78rem;color:var(--p);overflow-x:auto;white-space:pre-wrap"><b>Android:</b> Chrome &rarr; menu &#8942; &rarr; &quot;Instalar aplicativo&quot;
-<b>iPhone:</b> Safari &rarr; Compartilhar &#9757; &rarr; &quot;Tela de In&iacute;cio&quot;</pre>
+    <div class="icard">
+      <div class="inum">4</div>
+      <div>
+        <h3 class="ititle">Instalar no Celular (PWA)</h3>
+        <p class="idesc">Use como app nativo no Android ou iPhone.</p>
+        <div class="icode">
+          <div class="icode-label">Android (Chrome):</div>
+          <pre>1. Acesse clow.pvcorretor01.com.br
+2. Toque no menu &#8942; (3 pontinhos)
+3. Toque em &quot;Instalar aplicativo&quot;
+4. Pronto! O Clow aparece na tela inicial</pre>
+        </div>
+        <div class="icode" style="margin-top:8px">
+          <div class="icode-label">iPhone (Safari):</div>
+          <pre>1. Acesse clow.pvcorretor01.com.br no Safari
+2. Toque no bot&atilde;o Compartilhar (quadrado com seta)
+3. Toque em &quot;Adicionar &agrave; Tela de In&iacute;cio&quot;
+4. Toque em &quot;Adicionar&quot;</pre>
+        </div>
+      </div>
     </div>
 
-    <a class="link" href="/usage">Ver dashboard de uso</a>
+    <a class="link" href="/usage">Ver meu dashboard de uso</a>
   </div>
 </div>
 </div>
@@ -524,11 +564,12 @@ function $(id){return document.getElementById(id)}
 function showStep(n){document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));$('step'+n).classList.add('active');for(let i=1;i<=3;i++){$('d'+i).className=i<n?'dot done':i===n?'dot active':'dot'}}
 function showMsg(id,text,type){const el=$(id);el.className='msg '+type;el.textContent=text}
 
+let userEmail='';
 async function signup(){
   const name=$('name').value.trim(),email=$('email').value.trim(),password=$('password').value;
   if(!email||!password)return showMsg('msg1','Preencha email e senha','error');
   if(password.length<6)return showMsg('msg1','Senha deve ter pelo menos 6 caracteres','error');
-  try{const r=await fetch('/api/v1/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({name,email,password})});const d=await r.json();if(d.error)return showMsg('msg1',d.error,'error');token=d.token;showStep(2)}catch(e){showMsg('msg1','Erro de rede','error')}
+  try{const r=await fetch('/api/v1/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({name,email,password})});const d=await r.json();if(d.error)return showMsg('msg1',d.error,'error');token=d.token;userEmail=email;showStep(2)}catch(e){showMsg('msg1','Erro de rede','error')}
 }
 
 async function saveKey(){
@@ -536,7 +577,23 @@ async function saveKey(){
   if(!key)return showMsg('msg2','Cole sua API key','error');
   if(!key.startsWith('sk-ant-'))return showMsg('msg2','Key deve comecar com sk-ant-','error');
   $('btn-key').disabled=true;$('btn-key').innerHTML='<span class="spinner"></span> Validando...';showMsg('msg2','Validando key com a Anthropic...','info');
-  try{const r=await fetch('/api/v1/me/api-key',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({api_key:key})});const d=await r.json();if(d.error){showMsg('msg2',d.error,'error');$('btn-key').disabled=false;$('btn-key').textContent='Validar e Salvar';return}showStep(3)}catch(e){showMsg('msg2','Erro de rede','error');$('btn-key').disabled=false;$('btn-key').textContent='Validar e Salvar'}
+  try{const r=await fetch('/api/v1/me/api-key',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({api_key:key})});const d=await r.json();if(d.error){showMsg('msg2',d.error,'error');$('btn-key').disabled=false;$('btn-key').textContent='Validar e Salvar';return}const un=$('userName');if(un)un.textContent=userEmail.split('@')[0];showStep(3)}catch(e){showMsg('msg2','Erro de rede','error');$('btn-key').disabled=false;$('btn-key').textContent='Validar e Salvar'}
+}
+
+async function goToClow(){
+  // Verifica que a sessao do usuario esta ativa antes de redirecionar
+  try{
+    const r=await fetch('/api/v1/me',{credentials:'same-origin'});
+    const d=await r.json();
+    if(d.error||!d.email){
+      // Sessao invalida — faz login manual
+      window.location='/login';
+      return;
+    }
+    // Sessao valida — redireciona pro chat
+    window.location='/';
+  }catch(e){window.location='/login';}
+  return;
 }
 </script>
 </body>

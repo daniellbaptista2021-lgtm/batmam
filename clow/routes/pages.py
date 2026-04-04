@@ -81,7 +81,7 @@ def register_page_routes(app: FastAPI) -> None:
             resp.set_cookie(
                 "clow_session", token,
                 max_age=_SESSION_TTL, httponly=True,
-                samesite="lax", secure=False,
+                samesite="lax", secure=False, path="/",
             )
             return resp
 
