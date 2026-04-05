@@ -170,14 +170,21 @@ def register_crm_dashboard_routes(app) -> None:
         if isinstance(agents_data, list):
             agents = [{"name": a.get("name"), "email": a.get("email")} for a in agents_data]
 
+        # Conta WhatsApp inboxes
+        wa_count = sum(1 for ib in inboxes if ib.get("channel_type", "") in ("Channel::Whatsapp", "Channel::Api"))
+
         data = {
             "connected": True,
             "url": url,
-            "conversations_open": open_count,
-            "conversations_resolved": resolved_count,
-            "contacts_count": contacts_count,
+            # Nomes que o frontend espera
+            "open_conversations": open_count,
+            "resolved_today": resolved_count,
+            "pending_conversations": 0,
+            "total_contacts": contacts_count,
+            "active_inboxes": len(inboxes),
+            "whatsapp_connected": wa_count,
+            # Dados extras
             "inboxes": inboxes,
-            "inboxes_count": len(inboxes),
             "labels": labels,
             "agents": agents,
             "last_sync": time.time(),
