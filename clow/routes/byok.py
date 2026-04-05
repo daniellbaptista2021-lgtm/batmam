@@ -352,7 +352,7 @@ a{color:var(--p);text-decoration:none}
   <div class="lens-flare"></div>
   <p class="tagline">INTELIG&Ecirc;NCIA INFINITA &bull; POSSIBILIDADES PREMIUM</p>
   <h1>O agente de c&oacute;digo AI<br>mais <span>completo</span> do Brasil</h1>
-  <p class="sub">24 ferramentas, 40+ skills, multi-agent, automa&ccedil;&otilde;es, GitHub autopilot.<br><strong>Traga sua API key</strong> e use sem limites. Voc&ecirc; s&oacute; paga o que usar.</p>
+  <p class="sub">33 ferramentas, 40+ skills, multi-agent, automa&ccedil;&otilde;es, GitHub autopilot.<br><strong>Traga sua API key</strong> e use sem limites. Voc&ecirc; s&oacute; paga o que usar.</p>
   <div class="cta-group">
     <a href="/onboarding" class="btn btn-primary">Come&ccedil;ar Gr&aacute;tis</a>
     <a href="#como-funciona" class="btn btn-secondary">Como funciona</a>
@@ -364,7 +364,7 @@ a{color:var(--p);text-decoration:none}
   <div class="steps">
     <div class="step"><div class="step-num">1</div><h3>Crie sua conta</h3><p>Email e senha. Sem cart&atilde;o de cr&eacute;dito. 30 segundos.</p></div>
     <div class="step"><div class="step-num">2</div><h3>Cole sua API Key</h3><p>Pegue sua key em <strong>console.anthropic.com</strong>. O Clow valida na hora.</p></div>
-    <div class="step"><div class="step-num">3</div><h3>Use sem limites</h3><p>24 tools, auto-correction, extended thinking, agent teams, e muito mais. Voc&ecirc; paga direto pra Anthropic.</p></div>
+    <div class="step"><div class="step-num">3</div><h3>Use sem limites</h3><p>33 tools, auto-correction, extended thinking, agent teams, e muito mais. Voc&ecirc; paga direto pra Anthropic.</p></div>
   </div>
 </section>
 

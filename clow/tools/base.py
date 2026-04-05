@@ -1,6 +1,6 @@
 """Base para todas as ferramentas do Clow v0.2.0.
 
-Registro de 24 tools: 10 core + 4 task + 10 novas
+Registro de 33 tools: 10 core + 4 task + 10 integracoes + 9 WhatsApp
 (whatsapp, http, supabase, n8n, docker, git_advanced, scraper, image_gen, pdf, spreadsheet)
 """
 
@@ -61,7 +61,7 @@ class ToolRegistry:
 
 
 def create_default_registry() -> ToolRegistry:
-    """Cria registro com todas as 24 ferramentas padrão."""
+    """Cria registro com todas as 33 ferramentas."""
     from .bash import BashTool
     from .read import ReadTool
     from .write import WriteTool

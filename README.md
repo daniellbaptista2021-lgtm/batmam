@@ -59,8 +59,8 @@ clow --web --port 8080            # Web app
 | Feature | Descrição |
 |---------|-----------|
 | **24 tools** | bash, read, write, edit, glob, grep, agent, web_search, web_fetch, notebook_edit, task_*, image_gen, pdf_tool, spreadsheet, scraper, docker_manage, git_advanced, http_request, supabase_query, n8n_workflow, whatsapp_send |
-| **62 skills** | 36 built-in (/commit, /review, /test, /fix, /deploy, /ads, /leads...) + 26 imported (landing-page-generator, paid-ads, agent-designer...) |
-| **8 agent types** | explore, plan, general, guide, devops, sales, data, creative |
+| **108 skills** | 47 built-in (/commit, /review, /test, /fix, /deploy, /whatsapp, /automate, /team...) + 61 imported (landing-page-generator, paid-ads, agent-designer...) |
+| **5 tipos de agente** | Agent (principal), Swarm (paralelo), Teams (task board), Mission Engine (autônomo), Background (async) |
 | **4 tipos de memória** | user, feedback, project, reference — com frontmatter e stale detection |
 | **Multi-provider** | Anthropic (Claude Sonnet/Opus/Haiku) ou OpenAI (GPT-4.1/o3/o4-mini) |
 
@@ -245,7 +245,7 @@ clow/
 │   ├── admin.py        # Admin + missions
 │   ├── chat.py         # Chat HTTP endpoint
 │   └── ws.py           # WebSocket real-time
-├── tools/              # 24 tools
+├── tools/              # 33 tools
 │   ├── base.py         # Registry e BaseTool
 │   ├── bash.py, read.py, write.py, edit.py, ...
 │   ├── image_gen.py, pdf_tool.py, spreadsheet.py
