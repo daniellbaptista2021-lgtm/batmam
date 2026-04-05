@@ -281,11 +281,11 @@ async function loadPlan(){
 
 async function checkout(planId){
   const r=await api('/api/v1/billing/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan_id:planId})});
-  if(r.url)window.open(r.url,'_blank');else alert(r.error||'Erro');
+  if(r.url)window.location.href=r.url;else alert(r.error||'Erro');
 }
 async function openPortal(){
   const r=await api('/api/v1/billing/portal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
-  if(r.url)window.open(r.url,'_blank');else alert(r.error||'Erro');
+  if(r.url)window.location.href=r.url;else alert(r.error||'Erro');
 }
 
 // Usage

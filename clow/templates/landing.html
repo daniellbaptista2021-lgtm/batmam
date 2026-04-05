@@ -559,7 +559,7 @@ async function checkout(planId){
   try{
     const r=await fetch('/api/v1/billing/checkout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({plan_id:planId})});
     const d=await r.json();
-    if(d.url){window.open(d.url,'_blank')}
+    if(d.url){window.location.href=d.url}
     else if(d.error){
       // Nao autenticado — vai pro onboarding com plano memorizado
       window.location='/onboarding?plan='+planId;
