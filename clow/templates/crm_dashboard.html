@@ -185,6 +185,14 @@ a:hover{text-decoration:underline}
     </div>
   </div>
 
+  <!-- Metricas por numero/inbox -->
+  <div id="perInboxSection" style="margin-bottom:28px">
+    <h3 style="font-size:15px;margin-bottom:14px;color:var(--t1)">Metricas por numero</h3>
+    <div id="perInboxCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">
+      <div style="color:var(--t2);font-size:13px">Carregando...</div>
+    </div>
+  </div>
+
   <!-- Detail grid -->
   <div class="detail-grid">
 
@@ -343,6 +351,39 @@ a:hover{text-decoration:underline}
     });
   }
 
+  function renderPerInbox(perInbox){
+    const el = $('perInboxCards');
+    if(!perInbox || perInbox.length === 0){
+      el.innerHTML = '<div style="color:var(--t2);font-size:13px">Nenhum numero encontrado</div>';
+      return;
+    }
+    el.innerHTML = perInbox.map(function(ib){
+      const type = (ib.channel_type || '').toLowerCase();
+      let icon = '&#128268;';
+      if(type.includes('whatsapp')) icon = '&#128241;';
+      else if(type.includes('email')) icon = '&#128231;';
+      else if(type.includes('facebook')) icon = '&#128218;';
+      else if(type.includes('telegram')) icon = '&#9992;';
+      const total = ib.open + ib.resolved;
+      const pctResolved = total > 0 ? Math.round(ib.resolved / total * 100) : 0;
+      return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+          '<span style="font-size:20px">' + icon + '</span>' +
+          '<strong style="font-size:14px">' + (ib.name || 'Sem nome') + '</strong>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">' +
+          '<div><div style="font-size:22px;font-weight:700;color:var(--t1)">' + ib.open + '</div><div style="font-size:10px;color:var(--t2);text-transform:uppercase">Abertas</div></div>' +
+          '<div><div style="font-size:22px;font-weight:700;color:#22c55e">' + ib.resolved + '</div><div style="font-size:10px;color:var(--t2);text-transform:uppercase">Resolvidas</div></div>' +
+          '<div><div style="font-size:22px;font-weight:700;color:var(--p)">' + total + '</div><div style="font-size:10px;color:var(--t2);text-transform:uppercase">Total</div></div>' +
+        '</div>' +
+        '<div style="margin-top:10px;background:var(--bg);border-radius:6px;height:6px;overflow:hidden">' +
+          '<div style="height:100%;background:#22c55e;width:' + pctResolved + '%;border-radius:6px;transition:width .5s"></div>' +
+        '</div>' +
+        '<div style="font-size:10px;color:var(--t2);margin-top:4px;text-align:right">' + pctResolved + '% resolvidas</div>' +
+      '</div>';
+    }).join('');
+  }
+
   async function fetchJSON(url, opts){
     const res = await fetch(url, Object.assign({credentials:'same-origin'}, opts || {}));
     if(!res.ok) throw new Error('HTTP ' + res.status);
@@ -388,6 +429,7 @@ a:hover{text-decoration:underline}
       setMetric('mWhatsapp', data.whatsapp_connected ?? 0);
 
       renderInboxes(data.inboxes || []);
+      renderPerInbox(data.per_inbox || []);
       hideError();
       $('syncTime').textContent = 'Ultima sync: ' + formatTime(new Date());
 

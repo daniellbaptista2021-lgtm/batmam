@@ -130,23 +130,8 @@ def register_crm_dashboard_routes(app) -> None:
         if not test or test.get("_error"):
             return _JR({"connected": False, "error": test.get("_error", "Chatwoot inacessivel"), "url": url})
 
-        # Puxa dados
-        convs_open = _chatwoot_get(url, token, "conversations?status=open&page=1")
-        convs_resolved = _chatwoot_get(url, token, "conversations?status=resolved&page=1")
+        # Puxa inboxes primeiro (pra saber os IDs)
         inboxes_data = _chatwoot_get(url, token, "inboxes")
-        contacts_data = _chatwoot_get(url, token, "contacts?page=1")
-        labels_data = _chatwoot_get(url, token, "labels")
-        agents_data = _chatwoot_get(url, token, "agents")
-
-        # Parse conversas
-        open_count = 0
-        resolved_count = 0
-        if isinstance(convs_open, dict) and "data" in convs_open:
-            open_count = convs_open.get("data", {}).get("meta", {}).get("all_count", 0)
-        if isinstance(convs_resolved, dict) and "data" in convs_resolved:
-            resolved_count = convs_resolved.get("data", {}).get("meta", {}).get("all_count", 0)
-
-        # Parse inboxes
         inboxes = []
         if isinstance(inboxes_data, dict):
             for ib in inboxes_data.get("payload", []):
@@ -155,35 +140,67 @@ def register_crm_dashboard_routes(app) -> None:
                     "channel_type": ib.get("channel_type", ""),
                 })
 
-        # Parse contacts
+        # Metricas GERAIS
+        convs_open = _chatwoot_get(url, token, "conversations?status=open&page=1")
+        convs_resolved = _chatwoot_get(url, token, "conversations?status=resolved&page=1")
+        contacts_data = _chatwoot_get(url, token, "contacts?page=1")
+        labels_data = _chatwoot_get(url, token, "labels")
+        agents_data = _chatwoot_get(url, token, "agents")
+
+        open_count = 0
+        resolved_count = 0
+        if isinstance(convs_open, dict) and "data" in convs_open:
+            open_count = convs_open.get("data", {}).get("meta", {}).get("all_count", 0)
+        if isinstance(convs_resolved, dict) and "data" in convs_resolved:
+            resolved_count = convs_resolved.get("data", {}).get("meta", {}).get("all_count", 0)
+
         contacts_count = 0
         if isinstance(contacts_data, dict):
             contacts_count = len(contacts_data.get("payload", []))
 
-        # Parse labels
         labels = []
         if isinstance(labels_data, dict):
             labels = [{"title": l.get("title"), "color": l.get("color")} for l in labels_data.get("payload", [])]
 
-        # Parse agents
         agents = []
         if isinstance(agents_data, list):
             agents = [{"name": a.get("name"), "email": a.get("email")} for a in agents_data]
 
-        # Conta WhatsApp inboxes
         wa_count = sum(1 for ib in inboxes if ib.get("channel_type", "") in ("Channel::Whatsapp", "Channel::Api"))
+
+        # Metricas POR INBOX (cada numero separado)
+        per_inbox = []
+        for ib in inboxes:
+            ib_id = ib["id"]
+            ib_open = _chatwoot_get(url, token, f"conversations?status=open&inbox_id={ib_id}&page=1")
+            ib_resolved = _chatwoot_get(url, token, f"conversations?status=resolved&inbox_id={ib_id}&page=1")
+            ib_open_count = 0
+            ib_resolved_count = 0
+            if isinstance(ib_open, dict) and "data" in ib_open:
+                ib_open_count = ib_open.get("data", {}).get("meta", {}).get("all_count", 0)
+            if isinstance(ib_resolved, dict) and "data" in ib_resolved:
+                ib_resolved_count = ib_resolved.get("data", {}).get("meta", {}).get("all_count", 0)
+            per_inbox.append({
+                "id": ib_id,
+                "name": ib["name"],
+                "channel_type": ib["channel_type"],
+                "open": ib_open_count,
+                "resolved": ib_resolved_count,
+                "total": ib_open_count + ib_resolved_count,
+            })
 
         data = {
             "connected": True,
             "url": url,
-            # Nomes que o frontend espera
+            # Geral
             "open_conversations": open_count,
             "resolved_today": resolved_count,
             "pending_conversations": 0,
             "total_contacts": contacts_count,
             "active_inboxes": len(inboxes),
             "whatsapp_connected": wa_count,
-            # Dados extras
+            # Por inbox
+            "per_inbox": per_inbox,
             "inboxes": inboxes,
             "labels": labels,
             "agents": agents,
