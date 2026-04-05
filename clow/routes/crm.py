@@ -685,6 +685,43 @@ def register_crm_routes(app) -> None:
         return _JR({"success": True, "rules": rules})
 
     # ══════════════════════════════════════════════════════════
+    # RESULTADOS / ROI
+    # ══════════════════════════════════════════════════════════
+
+    @app.get("/api/v1/crm/results", tags=["crm"])
+    async def crm_results(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        instance_id = request.query_params.get("instance_id", "")
+        period = request.query_params.get("period", "30d")
+        days = int(period.replace("d", "")) if period.endswith("d") else 30
+        from ..crm_models import get_results_data
+        return _JR(get_results_data(_tenant(sess), instance_id, days))
+
+    @app.put("/api/v1/crm/leads/{lead_id}/deal", tags=["crm"])
+    async def crm_update_deal(lead_id: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        from ..crm_models import update_lead, add_activity
+        tid = _tenant(sess)
+        updates = {}
+        if "value" in body:
+            updates["deal_value"] = float(body["value"])
+        if "products" in body:
+            updates["deal_products"] = body["products"] if isinstance(body["products"], str) else json.dumps(body["products"])
+        if "notes" in body:
+            updates["deal_notes"] = body["notes"]
+        lead = update_lead(lead_id, tid, **updates)
+        if not lead:
+            return _JR({"error": "Lead nao encontrado"}, status_code=404)
+        if "value" in body:
+            add_activity(lead_id, tid, "note", f"Valor do negocio: R$ {body['value']}")
+        return _JR(lead)
+
+    # ══════════════════════════════════════════════════════════
     # DASHBOARD CRM
     # ══════════════════════════════════════════════════════════
 
@@ -722,6 +759,91 @@ def register_crm_routes(app) -> None:
         action = body.get("action", "")
         result = execute_suggestion(lead_id, _tenant(sess), action)
         return _JR(result)
+
+    # ══════════════════════════════════════════════════════════
+    # NOTIFICACOES
+    # ══════════════════════════════════════════════════════════
+
+    @app.get("/api/v1/notifications", tags=["notifications"])
+    async def notif_list(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..notifications import get_notifications
+        unread = request.query_params.get("unread", "") == "1"
+        return _JR({"notifications": get_notifications(_tenant(sess), unread)})
+
+    @app.get("/api/v1/notifications/unread-count", tags=["notifications"])
+    async def notif_count(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..notifications import get_unread_count
+        return _JR({"count": get_unread_count(_tenant(sess))})
+
+    @app.post("/api/v1/notifications/{nid}/read", tags=["notifications"])
+    async def notif_read(nid: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..notifications import mark_read
+        mark_read(_tenant(sess), nid)
+        return _JR({"success": True})
+
+    @app.post("/api/v1/notifications/read-all", tags=["notifications"])
+    async def notif_read_all(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..notifications import mark_all_read
+        mark_all_read(_tenant(sess))
+        return _JR({"success": True})
+
+    @app.put("/api/v1/notifications/config", tags=["notifications"])
+    async def notif_config(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        from ..notifications import save_config
+        save_config(_tenant(sess), body)
+        return _JR({"success": True})
+
+    # ══════════════════════════════════════════════════════════
+    # A/B TESTING
+    # ══════════════════════════════════════════════════════════
+
+    @app.post("/api/v1/ab-test/create", tags=["ab-test"])
+    async def ab_create(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        from ..prompt_ab_test import create_test
+        result = create_test(_tenant(sess), body.get("instance_id", ""),
+                             body.get("prompt_a", ""), body.get("prompt_b", ""),
+                             int(body.get("sample_size", 100)))
+        return _JR(result)
+
+    @app.get("/api/v1/ab-test/{instance_id}", tags=["ab-test"])
+    async def ab_results(instance_id: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..prompt_ab_test import get_results
+        results = get_results(instance_id)
+        if not results:
+            return _JR({"error": "Nenhum teste encontrado"}, status_code=404)
+        return _JR(results)
+
+    @app.post("/api/v1/ab-test/{test_id}/end", tags=["ab-test"])
+    async def ab_end(test_id: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        from ..prompt_ab_test import end_test
+        return _JR(end_test(test_id, body.get("apply_winner", True)))
 
     # ══════════════════════════════════════════════════════════
     # WEBHOOK PARA FORMULARIOS / LANDING PAGES

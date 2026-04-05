@@ -271,6 +271,19 @@ MIGRATIONS: list[tuple[int, str, str]] = [
         CREATE INDEX IF NOT EXISTS idx_leads_instance ON leads(tenant_id, instance_id);
         """,
     ),
+    # ── v7: deal/ROI fields on leads ──
+    (
+        7,
+        "Add deal value, cost tracking fields to leads",
+        """
+        ALTER TABLE leads ADD COLUMN deal_value REAL DEFAULT 0;
+        ALTER TABLE leads ADD COLUMN deal_closed_at REAL DEFAULT 0;
+        ALTER TABLE leads ADD COLUMN deal_products TEXT DEFAULT '';
+        ALTER TABLE leads ADD COLUMN deal_notes TEXT DEFAULT '';
+        ALTER TABLE leads ADD COLUMN cost_tokens_used INTEGER DEFAULT 0;
+        ALTER TABLE leads ADD COLUMN cost_estimated_brl REAL DEFAULT 0;
+        """,
+    ),
 ]
 
 

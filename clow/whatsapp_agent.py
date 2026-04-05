@@ -209,10 +209,20 @@ class WhatsAppAgentManager:
         # Load conversation history
         history = self.get_conversation_history(inst, sender_phone)
 
-        # Build context
+        # Build context — verifica A/B test
+        active_prompt = inst.system_prompt
+        try:
+            from .prompt_ab_test import get_prompt_for_variant, record_interaction
+            ab_prompt = get_prompt_for_variant(inst.id, sender_phone)
+            if ab_prompt:
+                active_prompt = ab_prompt
+                record_interaction(inst.id, sender_phone)
+        except Exception:
+            pass
+
         system_parts = []
-        if inst.system_prompt:
-            system_parts.append(inst.system_prompt)
+        if active_prompt:
+            system_parts.append(active_prompt)
         if inst.rag_text:
             system_parts.append(f"\n[Base de Conhecimento]\n{inst.rag_text}")
 
@@ -260,6 +270,19 @@ class WhatsAppAgentManager:
             out_tokens = response.usage.output_tokens if response.usage else 0
             from .metrics_collector import record_request
             record_request(inst.tenant_id, plan_id, inp_tokens, out_tokens, source="whatsapp")
+
+            # Registra custo no lead do CRM
+            if crm_lead_id:
+                try:
+                    from .crm_models import update_lead
+                    token_cost = (inp_tokens * config.HAIKU_INPUT_PRICE_PER_MTOK + out_tokens * config.HAIKU_OUTPUT_PRICE_PER_MTOK) / 1_000_000
+                    old_tokens = crm_lead.get("cost_tokens_used", 0) if crm_lead else 0
+                    old_cost = crm_lead.get("cost_estimated_brl", 0) if crm_lead else 0
+                    update_lead(crm_lead_id, inst.tenant_id,
+                                cost_tokens_used=old_tokens + inp_tokens + out_tokens,
+                                cost_estimated_brl=round(old_cost + token_cost, 6))
+                except Exception:
+                    pass
 
         except Exception as e:
             log_action("whatsapp_agent_error", str(e)[:200], level="error")

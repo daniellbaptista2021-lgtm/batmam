@@ -178,6 +178,10 @@ if HAS_FASTAPI:
     from .routes.onboarding import register_onboarding_routes
     register_onboarding_routes(app)
 
+    # ── Public API (autenticada por API key) ──────────────────
+    from .routes.public_api import register_public_api_routes
+    register_public_api_routes(app)
+
     # ── Autopilot, Automations & Spectator Endpoints ──────────
     from .routes.extensions import register_extension_routes
     register_extension_routes(app)

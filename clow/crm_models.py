@@ -195,6 +195,8 @@ def update_lead(lead_id: str, tenant_id: str, **kwargs) -> dict | None:
     allowed = {"name", "email", "phone", "source", "status", "score",
                "assigned_to", "notes", "tags", "custom_fields",
                "instance_id", "source_phone",
+               "deal_value", "deal_closed_at", "deal_products", "deal_notes",
+               "cost_tokens_used", "cost_estimated_brl",
                "last_contact_at", "next_followup_at"}
     updates = {k: v for k, v in kwargs.items() if k in allowed}
     if not updates:
@@ -804,3 +806,97 @@ def get_leads_count_by_instance(tenant_id: str) -> dict:
             (today_start, tenant_id),
         ).fetchall()
     return {r["instance_id"]: {"total": r["total"], "new_today": r["new_today"]} for r in rows}
+
+
+def get_results_data(tenant_id: str, instance_id: str = "", period_days: int = 30) -> dict:
+    """Retorna metricas de conversao e ROI."""
+    now = _now()
+    period_start = now - period_days * 86400
+    prev_start = period_start - period_days * 86400
+
+    conds = ["tenant_id=?"]
+    params: list[Any] = [tenant_id]
+    if instance_id:
+        conds.append("instance_id=?")
+        params.append(instance_id)
+    where = " AND ".join(conds)
+
+    with get_db() as db:
+        # Receita atual
+        rev = db.execute(
+            f"SELECT COALESCE(SUM(deal_value),0) FROM leads WHERE {where} AND status='ganho' AND deal_closed_at>=?",
+            params + [period_start],
+        ).fetchone()[0]
+
+        # Receita periodo anterior
+        rev_prev = db.execute(
+            f"SELECT COALESCE(SUM(deal_value),0) FROM leads WHERE {where} AND status='ganho' AND deal_closed_at>=? AND deal_closed_at<?",
+            params + [prev_start, period_start],
+        ).fetchone()[0]
+
+        # Deals fechados
+        deals = db.execute(
+            f"SELECT COUNT(*) FROM leads WHERE {where} AND status='ganho' AND deal_closed_at>=?",
+            params + [period_start],
+        ).fetchone()[0]
+        deals_prev = db.execute(
+            f"SELECT COUNT(*) FROM leads WHERE {where} AND status='ganho' AND deal_closed_at>=? AND deal_closed_at<?",
+            params + [prev_start, period_start],
+        ).fetchone()[0]
+
+        # Funil
+        funnel_rows = db.execute(
+            f"SELECT status, COUNT(*) as cnt FROM leads WHERE {where} GROUP BY status",
+            params,
+        ).fetchall()
+        funnel = {r["status"]: r["cnt"] for r in funnel_rows}
+        total_leads = sum(funnel.values())
+
+        # Custo tokens
+        cost = db.execute(
+            f"SELECT COALESCE(SUM(cost_estimated_brl),0) FROM leads WHERE {where} AND created_at>=?",
+            params + [period_start],
+        ).fetchone()[0]
+
+        # Receita diaria (ultimos N dias)
+        daily = []
+        for i in range(min(period_days, 30)):
+            day_start = now - (i + 1) * 86400
+            day_end = now - i * 86400
+            day_rev = db.execute(
+                f"SELECT COALESCE(SUM(deal_value),0) FROM leads WHERE {where} AND status='ganho' AND deal_closed_at>=? AND deal_closed_at<?",
+                params + [day_start, day_end],
+            ).fetchone()[0]
+            from datetime import datetime
+            day_str = datetime.utcfromtimestamp(day_start).strftime("%d/%m")
+            daily.append({"date": day_str, "value": day_rev})
+        daily.reverse()
+
+        # Ultimas vendas
+        sales = db.execute(
+            f"SELECT name, deal_value, deal_closed_at, source FROM leads WHERE {where} AND status='ganho' AND deal_value>0 ORDER BY deal_closed_at DESC LIMIT 10",
+            params,
+        ).fetchall()
+        recent_sales = [{"name": r["name"], "value": r["deal_value"],
+                         "date": r["deal_closed_at"], "source": r["source"]} for r in sales]
+
+    avg_ticket = rev / deals if deals > 0 else 0
+    # ROI: estima custo do plano como R$115 (Starter)
+    plan_cost = 115
+    total_cost = plan_cost + cost
+    roi = ((rev - total_cost) / total_cost * 100) if total_cost > 0 else 0
+
+    return {
+        "revenue_total": round(rev, 2),
+        "revenue_previous": round(rev_prev, 2),
+        "deals_closed": deals,
+        "deals_previous": deals_prev,
+        "avg_ticket": round(avg_ticket, 2),
+        "roi_percent": round(roi, 1),
+        "funnel": funnel,
+        "total_leads": total_leads,
+        "cost_tokens": round(cost, 2),
+        "cost_plan": plan_cost,
+        "daily_revenue": daily,
+        "recent_sales": recent_sales,
+    }
