@@ -216,7 +216,8 @@ a{color:var(--p);text-decoration:none}
 /* WhatsApp mockup */
 .wpp-mockup{background:#0B141A;border-radius:20px;padding:0;overflow:hidden;border:2px solid #2A3942;max-width:340px;margin:0 auto;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .wpp-mock-header{background:#1F2C34;padding:12px 16px;display:flex;align-items:center;gap:10px}
-.wpp-mock-avatar{width:36px;height:36px;border-radius:50%;background:#2A3942;display:flex;align-items:center;justify-content:center;font-size:16px}
+.wpp-mock-avatar{width:36px;height:36px;border-radius:50%;background:#fff;overflow:hidden;flex-shrink:0}
+.wpp-mock-avatar img{width:100%;height:100%;object-fit:cover}
 .wpp-mock-info{flex:1}
 .wpp-mock-name{color:#E9EDEF;font-size:14px;font-weight:500}
 .wpp-mock-status{color:#8696A0;font-size:11px}
@@ -396,7 +397,7 @@ a{color:var(--p);text-decoration:none}
     <div>
       <div class="wpp-mockup">
         <div class="wpp-mock-header">
-          <div class="wpp-mock-avatar">&#129302;</div>
+          <div class="wpp-mock-avatar"><img src="/static/brand/clow-logo-avatar.jpg" alt="Clow"></div>
           <div class="wpp-mock-info">
             <div class="wpp-mock-name">Clow Agent</div>
             <div class="wpp-mock-status">online</div>
