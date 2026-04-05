@@ -73,10 +73,10 @@ a{color:var(--p);text-decoration:none}
 .integrations-strip{max-width:800px;margin:0 auto}
 .integrations-strip p{font-size:.85rem;color:var(--tm);margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;font-weight:500}
 .int-logos{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
-.int-logo{width:56px;height:56px;display:flex;align-items:center;justify-content:center;background:rgba(155,89,252,.04);border:1px solid rgba(100,100,180,.18);border-radius:14px;transition:all .35s;cursor:default}
-.int-logo:hover{border-color:rgba(155,89,252,.45);transform:translateY(-4px) scale(1.08);box-shadow:0 12px 28px rgba(0,0,0,.4),0 0 16px rgba(155,89,252,.1)}
-.int-logo svg{width:28px;height:28px;opacity:.75;transition:opacity .3s}
-.int-logo:hover svg{opacity:1}
+.int-logo{width:52px;height:52px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(155,89,252,.04),rgba(108,92,231,.03));border:1px solid rgba(120,90,200,.12);border-radius:12px;transition:all .35s;cursor:default}
+.int-logo:hover{border-color:rgba(155,89,252,.4);transform:translateY(-3px) scale(1.06);box-shadow:0 10px 24px rgba(0,0,0,.35),0 0 12px rgba(155,89,252,.08)}
+.int-logo svg{width:26px;height:26px;opacity:.6;transition:all .3s}
+.int-logo:hover svg{opacity:1;filter:drop-shadow(0 0 4px rgba(155,89,252,.3))}
 
 /* ── DEMO ── */
 .demo{padding:60px 20px;text-align:center;position:relative;z-index:1}
@@ -102,9 +102,12 @@ a{color:var(--p);text-decoration:none}
 .step::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:var(--gp);opacity:0;transition:opacity .3s}
 .step:hover{border-color:rgba(155,89,252,.3);transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.3)}
 .step:hover::before{opacity:1}
-.step-num{width:44px;height:44px;background:var(--gp);border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;margin-bottom:16px;box-shadow:0 4px 16px rgba(155,89,252,.3)}
-.step h3{font-size:1.15rem;font-weight:700;margin-bottom:8px}
-.step p{color:var(--t2);line-height:1.6;font-size:.95rem}
+.step-num{width:48px;height:48px;background:var(--gp);border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.3rem;box-shadow:0 4px 20px rgba(155,89,252,.35),inset 0 1px 0 rgba(255,255,255,.15);flex-shrink:0}
+.step-icon{width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(155,89,252,.1),rgba(108,92,231,.06));border:1px solid rgba(155,89,252,.15);border-radius:10px;color:var(--p);flex-shrink:0}
+.step-icon svg{width:18px;height:18px}
+.step:hover .step-icon{border-color:rgba(155,89,252,.4);box-shadow:0 0 10px rgba(155,89,252,.15);color:#fff}
+.step h3{font-size:1.1rem;font-weight:700;margin-bottom:6px;color:#fff;text-shadow:0 0 16px rgba(155,89,252,.08)}
+.step p{color:var(--t2);line-height:1.65;font-size:.88rem}
 
 /* Feature Cards */
 .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
@@ -226,11 +229,32 @@ a{color:var(--p);text-decoration:none}
 <!-- ════ COMO FUNCIONA ════ -->
 <section class="section">
   <h2>Como <span>funciona</span></h2>
-  <p class="sub">3 passos e voc&#234; est&#225; usando. Sem cart&#227;o de cr&#233;dito.</p>
+  <p class="sub">Comece em menos de 1 minuto. Sem cart&#227;o de cr&#233;dito.</p>
   <div class="steps">
-    <div class="step"><div class="step-num">1</div><h3>Crie sua conta</h3><p>Email, nome completo e senha. 30 segundos. Totalmente gr&#225;tis.</p></div>
-    <div class="step"><div class="step-num">2</div><h3>Cole sua API Key</h3><p>Pegue em console.anthropic.com. O Clow valida na hora e garante que est&#225; funcionando.</p></div>
-    <div class="step"><div class="step-num">3</div><h3>Use sem limites</h3><p>24 tools, 108 skills, 5 agentes, extended thinking. Pague direto pra Anthropic s&#243; o que usar.</p></div>
+    <div class="step">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div class="step-num">1</div>
+        <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg></div>
+      </div>
+      <h3>Crie sua conta</h3>
+      <p>Crie sua conta em segundos. Sem burocracia e totalmente gr&#225;tis.</p>
+    </div>
+    <div class="step">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div class="step-num">2</div>
+        <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div>
+      </div>
+      <h3>Conecte sua API Key</h3>
+      <p>Conecte sua API em segundos. Valida&#231;&#227;o autom&#225;tica e instant&#226;nea.</p>
+    </div>
+    <div class="step">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div class="step-num">3</div>
+        <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+      </div>
+      <h3>Use sem limites</h3>
+      <p>Comece a usar imediatamente com acesso completo &#224; plataforma.</p>
+    </div>
   </div>
 </section>
 
