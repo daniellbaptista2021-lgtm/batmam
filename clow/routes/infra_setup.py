@@ -148,3 +148,41 @@ def register_infra_setup_routes(app) -> None:
             return _JR({"error": "Nao autenticado"}, status_code=401)
         from ..infra_setup import get_infra_status
         return _JR(get_infra_status(_tenant(sess)))
+
+    # ── Monitor de saude ──
+
+    @app.get("/api/v1/infra/health", tags=["infra"])
+    async def infra_health(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..infra_monitor import check_health
+        return _JR(check_health(_tenant(sess)))
+
+    @app.get("/api/v1/infra/health/history", tags=["infra"])
+    async def infra_health_history(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..infra_monitor import get_health_history
+        limit = int(request.query_params.get("limit", "50"))
+        return _JR({"history": get_health_history(_tenant(sess), limit)})
+
+    @app.get("/api/v1/infra/health/uptime", tags=["infra"])
+    async def infra_uptime(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..infra_monitor import get_uptime
+        days = int(request.query_params.get("days", "30"))
+        return _JR({"uptime_percent": get_uptime(_tenant(sess), days), "days": days})
+
+    @app.put("/api/v1/infra/health/config", tags=["infra"])
+    async def infra_health_config(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        from ..infra_monitor import save_monitor_config
+        save_monitor_config(_tenant(sess), body)
+        return _JR({"success": True})
