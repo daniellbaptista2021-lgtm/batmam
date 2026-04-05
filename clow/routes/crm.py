@@ -55,10 +55,10 @@ def register_crm_routes(app) -> None:
             from ..chatwoot import get_crm_config
             cfg = get_crm_config(_tenant(sess))
             return _JR({
-                "chatwoot_url": cfg.chatwoot_url if cfg else "",
-                "api_token": cfg.api_token if cfg else "",
-                "account_id": cfg.account_id if cfg else "",
-                "configured": cfg is not None and bool(cfg.api_token),
+                "url": cfg.chatwoot_url if cfg else "",
+                "token": cfg.chatwoot_api_token[:8] + "..." if cfg and cfg.chatwoot_api_token else "",
+                "account_id": cfg.chatwoot_account_id if cfg else 1,
+                "configured": cfg.configured if cfg else False,
             })
         except Exception as exc:
             return _JR({"error": f"Erro ao buscar configuracao: {exc}"}, status_code=500)
@@ -70,12 +70,12 @@ def register_crm_routes(app) -> None:
             return _JR({"error": "Nao autenticado"}, status_code=401)
         try:
             body = await request.json()
-            chatwoot_url = body.get("chatwoot_url", "").strip()
-            api_token = body.get("api_token", "").strip()
-            account_id = body.get("account_id", "").strip()
+            chatwoot_url = (body.get("url") or body.get("chatwoot_url") or "").strip()
+            api_token = (body.get("token") or body.get("api_token") or "").strip()
+            account_id = int(body.get("account_id", 1))
 
-            if not chatwoot_url or not api_token or not account_id:
-                return _JR({"error": "Todos os campos sao obrigatorios (chatwoot_url, api_token, account_id)"}, status_code=400)
+            if not chatwoot_url or not api_token:
+                return _JR({"error": "URL e Token sao obrigatorios."}, status_code=400)
 
             from ..chatwoot import save_crm_config
             result = save_crm_config(_tenant(sess), chatwoot_url, api_token, account_id)
@@ -88,14 +88,25 @@ def register_crm_routes(app) -> None:
         sess = _auth(request)
         if not sess:
             return _JR({"error": "Nao autenticado"}, status_code=401)
-        client, err = _client_or_error(_tenant(sess))
-        if err:
-            return err
         try:
+            body = await request.json()
+            url = (body.get("url") or body.get("chatwoot_url") or "").strip()
+            token = (body.get("token") or body.get("api_token") or "").strip()
+            account_id = int(body.get("account_id", 1))
+            if url and token:
+                from ..chatwoot import ChatwootClient, CRMConfig
+                cfg = CRMConfig(tenant_id=_tenant(sess), chatwoot_url=url, chatwoot_api_token=token, chatwoot_account_id=account_id)
+                client = ChatwootClient(cfg)
+            else:
+                client, err = _client_or_error(_tenant(sess))
+                if err:
+                    return err
             result = client.test_connection()
-            return _JR({"ok": True, "data": result})
+            if result.get("connected"):
+                return _JR({"ok": True, "message": f"{result.get('inboxes', 0)} inboxes encontrados"})
+            return _JR({"error": result.get("error", "Falha na conexao")}, status_code=400)
         except Exception as exc:
-            return _JR({"error": f"Falha na conexao com o Chatwoot: {exc}"}, status_code=502)
+            return _JR({"error": f"Falha na conexao: {exc}"}, status_code=502)
 
     # ── Contacts ──────────────────────────────────────────────
 
@@ -316,8 +327,18 @@ def register_crm_routes(app) -> None:
             return err
         try:
             counts = client.get_conversation_counts()
-            summary = client.get_account_summary()
-            return _JR({"counts": counts, "summary": summary})
+            contacts = client.list_contacts(page=1)
+            inboxes = client.list_inboxes()
+            total_contacts = len(contacts.get("payload", []))
+            total_inboxes = len(inboxes.get("payload", []))
+            return _JR({
+                "open": counts.get("open", 0),
+                "resolved": counts.get("resolved", 0),
+                "pending": counts.get("pending", 0),
+                "contacts": total_contacts,
+                "inboxes": total_inboxes,
+                "today": counts.get("open", 0) + counts.get("resolved", 0),
+            })
         except Exception as exc:
             return _JR({"error": f"Erro ao carregar dashboard: {exc}"}, status_code=500)
 
