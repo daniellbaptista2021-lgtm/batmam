@@ -187,6 +187,10 @@ if HAS_FASTAPI:
     from .routes.data import register_data_routes
     register_data_routes(app)
 
+    # ── Install Tokens (CLI setup seguro) ────────────────────
+    from .routes.install_tokens import register_install_token_routes
+    register_install_token_routes(app)
+
     # ── Team (multi-usuario, roles) ───────────────────────────
     from .routes.team import register_team_routes
     register_team_routes(app)

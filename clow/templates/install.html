@@ -157,12 +157,12 @@ details p{color:var(--t2);font-size:.85rem;margin-top:8px}
         <p>Abra o PowerShell (ou Prompt de Comando) e digite:</p>
         <div class="code-block">
           <code>python --version</code>
-          <button onclick="copyCode(this)">&#x1F4CB;</button>
+          <button class="copy-btn">&#x1F4CB;</button>
         </div>
         <p>Deve mostrar algo como <code style="color:var(--g)">Python 3.12.x</code></p>
         <div class="code-block">
           <code>git --version</code>
-          <button onclick="copyCode(this)">&#x1F4CB;</button>
+          <button class="copy-btn">&#x1F4CB;</button>
         </div>
         <p>Deve mostrar algo como <code style="color:var(--g)">git version 2.x.x</code></p>
         <p>Se nao aparecer, instale pelos links acima. Na instalacao do Python, marque a opcao <strong>"Add Python to PATH"</strong>.</p>
@@ -187,23 +187,23 @@ details p{color:var(--t2);font-size:.85rem;margin-top:8px}
           <p>Copie e cole estes comandos um por um:</p>
           <div class="code-block">
             <code>git clone https://github.com/daniellbaptista2021-lgtm/batmam.git clow</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
           <div class="code-block">
             <code>cd clow</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
           <div class="code-block">
             <code>python -m venv .venv</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
           <div class="code-block">
             <code>.venv\Scripts\activate</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
           <div class="code-block">
             <code>pip install -e .</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
         </div>
       </div>
@@ -212,27 +212,45 @@ details p{color:var(--t2);font-size:.85rem;margin-top:8px}
         <div class="step-number">3</div>
         <div class="step-content">
           <h4>Configure sua API Key</h4>
-          <p>Se voce tem plano pago no Clow, use a key do seu plano. Se e plano gratuito, use sua propria key da Anthropic.</p>
 
-          <div class="config-option">
-            <h5>Plano pago (Lite, Starter, Pro, Business):</h5>
-            <p>Sua API key esta no painel do Clow em <a href="/app/settings" target="_blank">Settings &rarr; API Key</a>. Copie e cole:</p>
-            <div class="code-block">
-              <code>mkdir -p ~/.clow/app && echo "CLOW_PROVIDER=anthropic
-ANTHROPIC_API_KEY=SUA_KEY_AQUI
-CLOW_MODEL=claude-sonnet-4-20250514" > ~/.clow/app/.env</code>
-              <button onclick="copyCode(this)">&#x1F4CB;</button>
+          <!-- Plano pago: gera token de instalacao (API key nunca exposta) -->
+          <div id="install-paid" style="display:none">
+            <div class="config-option" style="border-color:var(--p)">
+              <h5 class="paid-plan-title" style="color:var(--p)">Plano pago &mdash; Instalacao automatica</h5>
+              <p>Clique no botao abaixo pra gerar seu comando de instalacao personalizado. Tudo ja vem configurado &mdash; e so copiar e colar.</p>
+              <button id="btnGenerate" style="margin:12px 0;padding:10px 24px;background:var(--gp);color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:var(--sans)">&#x1F511; Gerar meu comando de instalacao</button>
+              <div id="generatedCommand" style="display:none;margin-top:12px">
+                <p style="font-size:.85rem;color:var(--t2);margin-bottom:8px">Copie e cole este comando no seu terminal:</p>
+                <div class="os-tabs" style="display:flex;gap:4px;margin-bottom:8px">
+                  <button class="active" data-os="win" style="padding:4px 12px;background:var(--bg3);border:1px solid var(--bd);color:var(--t1);border-radius:4px;cursor:pointer;font-size:.8rem;font-family:var(--sans)">Windows</button>
+                  <button data-os="unix" style="padding:4px 12px;background:transparent;border:1px solid var(--bd);color:var(--tm);border-radius:4px;cursor:pointer;font-size:.8rem;font-family:var(--sans)">Mac/Linux</button>
+                </div>
+                <div id="cmd-win">
+                  <div class="code-block"><code id="cmdWindows"></code><button class="copy-btn">&#x1F4CB;</button></div>
+                </div>
+                <div id="cmd-unix" style="display:none">
+                  <div class="code-block"><code id="cmdUnix"></code><button class="copy-btn">&#x1F4CB;</button></div>
+                </div>
+                <div style="margin-top:12px;font-size:.8rem;color:var(--tm);display:flex;flex-direction:column;gap:4px">
+                  <span>&#x23F0; Este comando expira em 24 horas</span>
+                  <span>&#x1F512; Uso unico &mdash; apos instalar, o comando e invalidado</span>
+                  <span>&#x1F511; Sua API key nunca e exposta</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="config-option">
-            <h5>Plano gratuito (Traga sua Key):</h5>
-            <p>Pegue sua key em <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> e cole:</p>
-            <div class="code-block">
-              <code>mkdir -p ~/.clow/app && echo "CLOW_PROVIDER=anthropic
+          <!-- Plano gratuito (BYOK): usuario usa propria key -->
+          <div id="install-free">
+            <div class="config-option">
+              <h5>Plano gratuito (Traga sua Key):</h5>
+              <p>Pegue sua key em <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> e cole:</p>
+              <div class="code-block">
+                <code>mkdir -p ~/.clow/app && echo "CLOW_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sk-ant-SUA_KEY_AQUI
 CLOW_MODEL=claude-sonnet-4-20250514" > ~/.clow/app/.env</code>
-              <button onclick="copyCode(this)">&#x1F4CB;</button>
+                <button class="copy-btn">&#x1F4CB;</button>
+              </div>
             </div>
           </div>
         </div>
@@ -244,7 +262,7 @@ CLOW_MODEL=claude-sonnet-4-20250514" > ~/.clow/app/.env</code>
           <h4>Rode o Clow</h4>
           <div class="code-block">
             <code>clow</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
           <p>Deve aparecer:</p>
           <div class="code-block terminal-output">
@@ -264,15 +282,15 @@ CLOW_MODEL=claude-sonnet-4-20250514" > ~/.clow/app/.env</code>
           <p>Agora voce pode usar o terminal completo do Clow. Exemplos:</p>
           <div class="code-block">
             <code>clow "cria uma landing page pro meu restaurante"</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
           <div class="code-block">
             <code>clow "faz uma planilha de controle de estoque"</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
           <div class="code-block">
             <code>clow "cria uma API em Python pra integrar com WhatsApp"</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
         </div>
       </div>
@@ -283,7 +301,7 @@ CLOW_MODEL=claude-sonnet-4-20250514" > ~/.clow/app/.env</code>
       <p style="color:var(--t2);font-size:.9rem;margin-bottom:8px">Quando tiver atualizacao disponivel:</p>
       <div class="code-block">
         <code>cd clow && git pull && pip install -e .</code>
-        <button onclick="copyCode(this)">&#x1F4CB;</button>
+        <button class="copy-btn">&#x1F4CB;</button>
       </div>
     </div>
   </div>
@@ -319,7 +337,7 @@ CLOW_MODEL=claude-sonnet-4-20250514" > ~/.clow/app/.env</code>
           <h4>Clone e instale</h4>
           <div class="code-block">
             <code>git clone https://github.com/daniellbaptista2021-lgtm/batmam.git clow && cd clow && python3 -m venv .venv && source .venv/bin/activate && pip install -e .</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
         </div>
       </div>
@@ -334,7 +352,7 @@ CLOW_PROVIDER=anthropic
 ANTHROPIC_API_KEY=SUA_KEY_AQUI
 CLOW_MODEL=claude-sonnet-4-20250514
 EOF</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
         </div>
       </div>
@@ -345,7 +363,7 @@ EOF</code>
           <h4>Rode</h4>
           <div class="code-block">
             <code>clow</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
         </div>
       </div>
@@ -363,7 +381,7 @@ EOF</code>
       <h3>Atualizar o Clow</h3>
       <div class="code-block">
         <code>cd clow && git pull && pip install -e .</code>
-        <button onclick="copyCode(this)">&#x1F4CB;</button>
+        <button class="copy-btn">&#x1F4CB;</button>
       </div>
     </div>
   </div>
@@ -391,7 +409,7 @@ EOF</code>
           <h4>Instale dependencias (se necessario)</h4>
           <div class="code-block">
             <code>sudo apt update && sudo apt install -y python3 python3-venv python3-pip git</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
         </div>
       </div>
@@ -402,7 +420,7 @@ EOF</code>
           <h4>Clone e instale</h4>
           <div class="code-block">
             <code>git clone https://github.com/daniellbaptista2021-lgtm/batmam.git clow && cd clow && python3 -m venv .venv && source .venv/bin/activate && pip install -e .</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
         </div>
       </div>
@@ -417,7 +435,7 @@ CLOW_PROVIDER=anthropic
 ANTHROPIC_API_KEY=SUA_KEY_AQUI
 CLOW_MODEL=claude-sonnet-4-20250514
 EOF</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
         </div>
       </div>
@@ -428,7 +446,7 @@ EOF</code>
           <h4>Rode</h4>
           <div class="code-block">
             <code>clow</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
         </div>
       </div>
@@ -446,7 +464,7 @@ EOF</code>
       <h3>Atualizar o Clow</h3>
       <div class="code-block">
         <code>cd clow && git pull && pip install -e .</code>
-        <button onclick="copyCode(this)">&#x1F4CB;</button>
+        <button class="copy-btn">&#x1F4CB;</button>
       </div>
     </div>
   </div>
@@ -475,7 +493,7 @@ EOF</code>
           <p>Use terminal, Putty, Termius ou qualquer cliente SSH:</p>
           <div class="code-block">
             <code>ssh root@SEU_IP_DA_VPS</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
         </div>
       </div>
@@ -486,7 +504,7 @@ EOF</code>
           <h4>Instale tudo com um comando</h4>
           <div class="code-block">
             <code>apt update && apt install -y python3 python3-venv python3-pip git && git clone https://github.com/daniellbaptista2021-lgtm/batmam.git clow && cd clow && python3 -m venv .venv && source .venv/bin/activate && pip install -e .</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
         </div>
       </div>
@@ -501,7 +519,7 @@ CLOW_PROVIDER=anthropic
 ANTHROPIC_API_KEY=SUA_KEY_AQUI
 CLOW_MODEL=claude-sonnet-4-20250514
 EOF</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
         </div>
       </div>
@@ -513,12 +531,12 @@ EOF</code>
           <p>Pra rodar como terminal interativo:</p>
           <div class="code-block">
             <code>clow</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
           <p>Pra rodar o web app na VPS (acessivel de qualquer lugar):</p>
           <div class="code-block">
             <code>clow --web --port 8080</code>
-            <button onclick="copyCode(this)">&#x1F4CB;</button>
+            <button class="copy-btn">&#x1F4CB;</button>
           </div>
           <p>Acesse: <code style="color:var(--g)">http://SEU_IP:8080</code></p>
         </div>
@@ -537,12 +555,12 @@ EOF</code>
       <h3>Dica: rodar como servico (nao morre quando fechar SSH)</h3>
       <div class="code-block">
         <code>nohup clow --web --port 8080 > clow.log 2>&amp;1 &amp;</code>
-        <button onclick="copyCode(this)">&#x1F4CB;</button>
+        <button class="copy-btn">&#x1F4CB;</button>
       </div>
       <p style="color:var(--t2);font-size:.88rem;margin-top:8px">Ou use o systemd service que vem no projeto:</p>
       <div class="code-block">
         <code>sudo cp deploy/clow.service /etc/systemd/system/ && sudo systemctl enable clow && sudo systemctl start clow</code>
-        <button onclick="copyCode(this)">&#x1F4CB;</button>
+        <button class="copy-btn">&#x1F4CB;</button>
       </div>
     </div>
   </div>
@@ -557,42 +575,42 @@ EOF</code>
         <div class="command-title">Criar landing page</div>
         <div class="code-block">
           <code>clow "cria uma landing page pro meu negocio"</code>
-          <button onclick="copyCode(this)">&#x1F4CB;</button>
+          <button class="copy-btn">&#x1F4CB;</button>
         </div>
       </div>
       <div class="command-card">
         <div class="command-title">Criar planilha</div>
         <div class="code-block">
           <code>clow "faz uma planilha de controle financeiro"</code>
-          <button onclick="copyCode(this)">&#x1F4CB;</button>
+          <button class="copy-btn">&#x1F4CB;</button>
         </div>
       </div>
       <div class="command-card">
         <div class="command-title">Criar documento</div>
         <div class="code-block">
           <code>clow "escreve uma proposta comercial"</code>
-          <button onclick="copyCode(this)">&#x1F4CB;</button>
+          <button class="copy-btn">&#x1F4CB;</button>
         </div>
       </div>
       <div class="command-card">
         <div class="command-title">Code review</div>
         <div class="code-block">
           <code>clow /review</code>
-          <button onclick="copyCode(this)">&#x1F4CB;</button>
+          <button class="copy-btn">&#x1F4CB;</button>
         </div>
       </div>
       <div class="command-card">
         <div class="command-title">Ajuda completa</div>
         <div class="code-block">
           <code>clow /help</code>
-          <button onclick="copyCode(this)">&#x1F4CB;</button>
+          <button class="copy-btn">&#x1F4CB;</button>
         </div>
       </div>
       <div class="command-card">
         <div class="command-title">Conectar WhatsApp</div>
         <div class="code-block">
           <code>clow /whatsapp connect</code>
-          <button onclick="copyCode(this)">&#x1F4CB;</button>
+          <button class="copy-btn">&#x1F4CB;</button>
         </div>
       </div>
     </div>
@@ -637,42 +655,6 @@ EOF</code>
 
 </div>
 
-<script>
-// Tab switching
-document.getElementById('installTabs').addEventListener('click', function(e) {
-  var btn = e.target.closest('.tab');
-  if (!btn) return;
-  var tab = btn.getAttribute('data-tab');
-
-  // Update active tab
-  this.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
-  btn.classList.add('active');
-
-  // Show/hide content
-  document.querySelectorAll('.install-content').forEach(function(el) { el.style.display = 'none'; });
-  document.getElementById('tab-' + tab).style.display = 'block';
-});
-
-// Copy code
-function copyCode(btn) {
-  var code = btn.previousElementSibling.textContent;
-  navigator.clipboard.writeText(code).then(function() {
-    var orig = btn.textContent;
-    btn.textContent = '\u2705';
-    setTimeout(function() { btn.textContent = orig; }, 2000);
-  });
-}
-
-// Auto-detect OS and select tab
-(function() {
-  var ua = navigator.userAgent.toLowerCase();
-  var tab = 'windows';
-  if (ua.indexOf('mac') !== -1) tab = 'mac';
-  else if (ua.indexOf('linux') !== -1) tab = 'linux';
-
-  var btn = document.querySelector('[data-tab="' + tab + '"]');
-  if (btn) btn.click();
-})();
-</script>
+<script src="/static/js/install.js"></script>
 </body>
 </html>
