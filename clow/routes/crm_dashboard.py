@@ -12,6 +12,8 @@ from pathlib import Path
 from urllib.request import urlopen, Request
 from urllib.error import URLError, HTTPError
 
+import ssl
+
 from fastapi import Request as _Req
 from fastapi.responses import JSONResponse as _JR, HTMLResponse as _HR, RedirectResponse
 
@@ -21,13 +23,19 @@ _TPL_DIR = Path(__file__).resolve().parent.parent / "templates"
 _metrics_cache: dict = {}
 _CACHE_TTL = 300
 
+# SSL context que aceita certificados (pra funcionar com qualquer setup)
+_SSL_CTX = ssl.create_default_context()
+_SSL_CTX.check_hostname = False
+_SSL_CTX.verify_mode = ssl.CERT_NONE
+
 
 def _chatwoot_get(base_url: str, token: str, path: str, account_id: int = 1) -> dict | list | None:
     """GET na API do Chatwoot com tratamento de erro robusto."""
     url = f"{base_url.rstrip('/')}/api/v1/accounts/{account_id}/{path}"
     req = Request(url, headers={"api_access_token": token, "Content-Type": "application/json"})
     try:
-        resp = urlopen(req, timeout=15)
+        ctx = _SSL_CTX if url.startswith("https") else None
+        resp = urlopen(req, timeout=15, context=ctx)
         return json.loads(resp.read().decode())
     except HTTPError as e:
         return {"_error": f"HTTP {e.code}", "_status": e.code}
@@ -112,8 +120,10 @@ def register_crm_dashboard_routes(app) -> None:
 
         # Testa conexao (profile e endpoint global, nao por account)
         try:
-            req = Request(f"{url.rstrip('/')}/api/v1/profile", headers={"api_access_token": token})
-            resp = urlopen(req, timeout=10)
+            profile_url = f"{url.rstrip('/')}/api/v1/profile"
+            req = Request(profile_url, headers={"api_access_token": token})
+            ctx = _SSL_CTX if profile_url.startswith("https") else None
+            resp = urlopen(req, timeout=10, context=ctx)
             test = json.loads(resp.read().decode())
         except Exception as e:
             test = {"_error": str(e)[:200]}
@@ -185,8 +195,10 @@ def register_crm_dashboard_routes(app) -> None:
         if not infra:
             return _JR({"online": False, "error": "Chatwoot nao configurado"})
         try:
-            req = Request(f"{infra['chatwoot_url'].rstrip('/')}/api/v1/profile", headers={"api_access_token": infra["api_token"]})
-            resp = urlopen(req, timeout=10)
+            h_url = f"{infra['chatwoot_url'].rstrip('/')}/api/v1/profile"
+            req = Request(h_url, headers={"api_access_token": infra["api_token"]})
+            ctx = _SSL_CTX if h_url.startswith("https") else None
+            resp = urlopen(req, timeout=10, context=ctx)
             return _JR({"online": True, "url": infra["chatwoot_url"]})
         except Exception as e:
             return _JR({"online": False, "error": str(e)[:200], "url": infra["chatwoot_url"]})
