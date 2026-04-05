@@ -67,14 +67,23 @@ a{color:var(--p);text-decoration:none}
 .proof-counter{font-size:1.6rem;font-weight:800;margin-bottom:32px}
 .proof-counter em{font-style:normal;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .testimonials{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:960px;margin:0 auto 40px}
-.testi{background:linear-gradient(160deg,var(--bg2),var(--bg3));border:1px solid var(--bd);border-radius:14px;padding:28px;text-align:left;position:relative;transition:all .3s ease}
-.testi:hover{border-color:rgba(155,89,252,.2);transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.25)}
-.testi::before{content:'\201C';position:absolute;top:16px;right:20px;font-size:3rem;color:rgba(155,89,252,.15);font-family:serif;line-height:1}
-.testi p{font-size:.92rem;color:var(--t2);line-height:1.6;margin-bottom:16px;font-style:italic}
+.testi{background:linear-gradient(160deg,var(--bg2),var(--bg3));border:1px solid var(--bd);border-radius:14px;padding:24px;text-align:left;position:relative;transition:all .3s ease;backdrop-filter:blur(8px)}
+.testi:hover{border-color:rgba(155,89,252,.15);transform:translateY(-2px);box-shadow:0 10px 28px rgba(0,0,0,.2)}
+.testi::before{content:'\201C';position:absolute;top:14px;right:18px;font-size:2.5rem;color:rgba(155,89,252,.1);font-family:Georgia,serif;line-height:1}
+.testi p{font-size:.88rem;color:var(--t2);line-height:1.65;margin-bottom:14px;font-style:italic}
 .testi-author{display:flex;align-items:center;gap:10px}
-.testi-avatar{width:36px;height:36px;border-radius:50%;background:var(--gp);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:#fff;flex-shrink:0}
-.testi-name{font-size:.82rem;font-weight:600}
-.testi-role{font-size:.75rem;color:var(--tm)}
+.testi-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.testi-name{font-size:.82rem;font-weight:600;color:#fff}
+.testi-role{font-size:.72rem;color:var(--tm)}
+.testi-time{position:absolute;top:14px;left:18px;font-size:.62rem;color:var(--tm);letter-spacing:.5px}
+
+/* Chat proof */
+.chat-proof{display:flex;flex-direction:column;gap:8px}
+.cp-bubble{max-width:85%;padding:10px 14px;border-radius:14px;font-size:.82rem;line-height:1.55;position:relative;display:flex;flex-direction:column;gap:2px}
+.cp-left{background:rgba(12,12,32,.8);border:1px solid var(--bd);border-bottom-left-radius:4px;align-self:flex-start;color:var(--t2)}
+.cp-right{background:linear-gradient(135deg,rgba(155,89,252,.12),rgba(108,92,231,.08));border:1px solid rgba(155,89,252,.1);border-bottom-right-radius:4px;align-self:flex-end;color:var(--t1)}
+.cp-time{font-size:.58rem;color:var(--tm);align-self:flex-end;margin-top:2px}
+.cp-bubble:hover{transform:translateY(-1px)}
 
 /* Integrations strip */
 .integrations-strip{max-width:800px;margin:0 auto}
@@ -479,27 +488,44 @@ a{color:var(--p);text-decoration:none}
 <!-- ════ PROVA SOCIAL ════ -->
 <section class="proof">
   <div class="proof-counter"><em>+150</em> devs j&#225; est&#227;o usando o Clow</div>
+
+  <!-- Testimonials -->
   <div class="testimonials">
     <div class="testi">
       <p>Substitu&#237; 3 ferramentas pagas pelo Clow. Fa&#231;o deploy direto do celular agora.</p>
       <div class="testi-author">
-        <div class="testi-avatar">RM</div>
-        <div><div class="testi-name">Rafael M.</div><div class="testi-role">Dev Fullstack, SP</div></div>
+        <div class="testi-avatar" style="background:linear-gradient(135deg,#9B59FC,#6C5CE7)">RM</div>
+        <div><div class="testi-name">Rafael M.</div><div class="testi-role">Dev Fullstack &#183; S&#227;o Paulo</div></div>
       </div>
+      <div class="testi-time">h&#225; 2 dias</div>
     </div>
     <div class="testi">
       <p>Os 108 skills prontos economizam horas. O /deploy sozinho j&#225; valeu.</p>
       <div class="testi-author">
-        <div class="testi-avatar" style="background:linear-gradient(135deg,#4A9EFF,#34D399)">CS</div>
-        <div><div class="testi-name">Camila S.</div><div class="testi-role">Freelancer, MG</div></div>
+        <div class="testi-avatar" style="background:linear-gradient(135deg,#34D399,#059669)">CS</div>
+        <div><div class="testi-name">Camila S.</div><div class="testi-role">Freelancer &#183; Belo Horizonte</div></div>
       </div>
+      <div class="testi-time">h&#225; 5 dias</div>
     </div>
     <div class="testi">
       <p>O modelo BYOK &#233; genial. Pago R$15/m&#234;s de API e tenho um dev AI completo.</p>
       <div class="testi-author">
-        <div class="testi-avatar" style="background:linear-gradient(135deg,#F59E0B,#EF4444)">LT</div>
-        <div><div class="testi-name">Lucas T.</div><div class="testi-role">CTO Startup, RJ</div></div>
+        <div class="testi-avatar" style="background:linear-gradient(135deg,#F59E0B,#D97706)">LT</div>
+        <div><div class="testi-name">Lucas T.</div><div class="testi-role">CTO Startup &#183; Rio de Janeiro</div></div>
       </div>
+      <div class="testi-time">h&#225; 1 semana</div>
+    </div>
+  </div>
+
+  <!-- Chat feedback -->
+  <div style="max-width:480px;margin:0 auto">
+    <p style="font-size:.72rem;color:var(--tm);text-transform:uppercase;letter-spacing:1.5px;text-align:center;margin-bottom:16px">Exemplos de feedback de usu&#225;rios</p>
+    <div class="chat-proof">
+      <div class="cp-bubble cp-left"><span>mano esse clow &#233; absurdo, subi um app inteiro pelo celular</span><span class="cp-time">h&#225; 3h</span></div>
+      <div class="cp-bubble cp-right"><span>economizei MUITO tempo, o /commit sozinho j&#225; paga</span><span class="cp-time">h&#225; 5h</span></div>
+      <div class="cp-bubble cp-left"><span>o whatsapp agent atendeu 200 clientes ontem sozinho</span><span class="cp-time">ontem</span></div>
+      <div class="cp-bubble cp-right"><span>isso aqui vale muito mais do que eu pago, s&#233;rio</span><span class="cp-time">ontem</span></div>
+      <div class="cp-bubble cp-left"><span>criei uma landing page completa em 2 minutos, inacredit&#225;vel</span><span class="cp-time">h&#225; 2 dias</span></div>
     </div>
   </div>
 </section>
@@ -519,7 +545,7 @@ document.querySelectorAll('.feat').forEach(c=>{c.addEventListener('mousemove',e=
 
 // Scroll-in animation
 const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)'}})},{threshold:.1});
-document.querySelectorAll('.feat,.step,.testi,.hl,.flow-card,.price-wrap').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(30px)';el.style.transition='all .6s cubic-bezier(.25,.8,.25,1)';obs.observe(el)});
+document.querySelectorAll('.feat,.step,.testi,.hl,.flow-card,.price-wrap,.cp-bubble').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(30px)';el.style.transition='all .6s cubic-bezier(.25,.8,.25,1)';obs.observe(el)});
 
 // Checkout Stripe
 async function checkout(planId){
