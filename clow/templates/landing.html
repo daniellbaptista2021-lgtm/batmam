@@ -236,8 +236,12 @@ a{color:var(--p);text-decoration:none}
 
 /* Niches grid */
 .niches-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;max-width:900px;margin:0 auto}
-.niche-item{text-align:center;padding:16px;background:linear-gradient(160deg,rgba(13,11,26,.9),rgba(20,16,38,.8));border:1px solid rgba(120,90,200,.1);border-radius:12px;font-size:.85rem;color:var(--t2);transition:all .3s}
-.niche-item:hover{border-color:rgba(155,89,252,.25);color:var(--t1);transform:translateY(-2px)}
+.niche-item{text-align:center;padding:18px 16px;background:linear-gradient(145deg,rgba(16,14,32,.95),rgba(24,20,48,.85));border:1px solid rgba(120,90,200,.12);border-radius:14px;font-size:.9rem;font-weight:600;color:#fff;letter-spacing:.02em;transition:all .4s cubic-bezier(.25,.8,.25,1);position:relative;overflow:hidden;text-shadow:0 0 20px rgba(255,255,255,.15),0 0 40px rgba(155,89,252,.08);cursor:default;transform:perspective(600px) rotateX(0) rotateY(0);transform-style:preserve-3d}
+.niche-item::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);transition:opacity .3s}
+.niche-item::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(155,89,252,.06),transparent 70%);opacity:0;transition:opacity .3s}
+.niche-item:hover{border-color:rgba(155,89,252,.35);transform:perspective(600px) translateY(-4px) scale(1.03);box-shadow:0 16px 40px rgba(0,0,0,.4),0 0 20px rgba(155,89,252,.08);text-shadow:0 0 24px rgba(255,255,255,.25),0 0 48px rgba(155,89,252,.12)}
+.niche-item:hover::before{opacity:1}
+.niche-item:hover::after{opacity:1}
 
 /* Two-col section */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;max-width:1060px;margin:0 auto}
@@ -441,18 +445,18 @@ a{color:var(--p);text-decoration:none}
   <h2>Para <span>quem</span> &#233; o Clow</h2>
   <p class="sub">Se voc&#234; atende clientes, o Clow &#233; pra voc&#234;.</p>
   <div class="niches-grid">
-    <div class="niche-item">&#127869; Restaurantes</div>
-    <div class="niche-item">&#128722; Lojas</div>
-    <div class="niche-item">&#127973; Cl&#237;nicas</div>
-    <div class="niche-item">&#128135; Sal&#245;es de Beleza</div>
-    <div class="niche-item">&#127968; Imobili&#225;rias</div>
-    <div class="niche-item">&#128203; Seguros</div>
-    <div class="niche-item">&#127947;&#65039; Academias</div>
-    <div class="niche-item">&#127891; Educa&#231;&#227;o</div>
-    <div class="niche-item">&#128295; Servi&#231;os</div>
-    <div class="niche-item">&#128188; Vendedores</div>
-    <div class="niche-item">&#128196; Escrit&#243;rios</div>
-    <div class="niche-item">&#127912; Ag&#234;ncias</div>
+    <div class="niche-item">Restaurantes e Delivery</div>
+    <div class="niche-item">Lojas e E-commerce</div>
+    <div class="niche-item">Cl&#237;nicas e Consult&#243;rios</div>
+    <div class="niche-item">Sal&#245;es de Beleza</div>
+    <div class="niche-item">Imobili&#225;rias</div>
+    <div class="niche-item">Corretoras de Seguros</div>
+    <div class="niche-item">Academias e Fitness</div>
+    <div class="niche-item">Cursos e Educa&#231;&#227;o</div>
+    <div class="niche-item">Prestadores de Servi&#231;o</div>
+    <div class="niche-item">Vendedores Aut&#244;nomos</div>
+    <div class="niche-item">Escrit&#243;rios e Consultorias</div>
+    <div class="niche-item">Ag&#234;ncias de Marketing</div>
   </div>
 </section>
 
