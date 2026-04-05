@@ -160,9 +160,20 @@ def register_crm_routes(app) -> None:
         valid = {"novo", "contatado", "qualificado", "proposta", "ganho", "perdido"}
         if new_status not in valid:
             return _JR({"error": f"Status invalido. Use: {', '.join(sorted(valid))}"}, status_code=400)
-        lead = change_lead_status(lead_id, _tenant(sess), new_status)
+        tid = _tenant(sess)
+        lead = change_lead_status(lead_id, tid, new_status)
         if not lead:
             return _JR({"error": "Lead nao encontrado"}, status_code=404)
+        # Marca como arraste manual para o funil automatico respeitar
+        try:
+            from ..crm_models import update_lead, add_activity
+            import json as _json
+            cf = _json.loads(lead.get("custom_fields") or "{}") if isinstance(lead.get("custom_fields"), str) else (lead.get("custom_fields") or {})
+            cf["last_move_source"] = "manual"
+            update_lead(lead_id, tid, custom_fields=cf)
+            add_activity(lead_id, tid, "status_change", f"👤 Movido manualmente para {new_status}")
+        except Exception:
+            pass
         return _JR(lead)
 
     # ══════════════════════════════════════════════════════════
@@ -471,6 +482,209 @@ def register_crm_routes(app) -> None:
         return _JR(metrics)
 
     # ══════════════════════════════════════════════════════════
+    # FUNIL AUTOMATICO
+    # ══════════════════════════════════════════════════════════
+
+    @app.get("/api/v1/crm/funnel/rules", tags=["crm"])
+    async def crm_funnel_rules(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        instance_id = request.query_params.get("instance_id", "")
+        if not instance_id:
+            return _JR({"error": "instance_id obrigatorio"}, status_code=400)
+        from ..crm_auto_funnel import get_rules, is_enabled
+        return _JR({"rules": get_rules(_tenant(sess), instance_id), "enabled": is_enabled(_tenant(sess), instance_id)})
+
+    @app.put("/api/v1/crm/funnel/rules", tags=["crm"])
+    async def crm_funnel_save_rules(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        instance_id = body.get("instance_id", "")
+        if not instance_id:
+            return _JR({"error": "instance_id obrigatorio"}, status_code=400)
+        from ..crm_auto_funnel import set_rules, set_enabled
+        if "rules" in body:
+            set_rules(_tenant(sess), instance_id, body["rules"])
+        if "enabled" in body:
+            set_enabled(_tenant(sess), instance_id, body["enabled"])
+        return _JR({"success": True})
+
+    @app.get("/api/v1/crm/funnel/suggestions", tags=["crm"])
+    async def crm_funnel_suggestions(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        instance_id = request.query_params.get("instance_id", "")
+        from ..crm_auto_funnel import get_pending_suggestions
+        return _JR({"suggestions": get_pending_suggestions(_tenant(sess), instance_id)})
+
+    @app.post("/api/v1/crm/funnel/suggestion/{lead_id}/accept", tags=["crm"])
+    async def crm_funnel_accept(lead_id: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        tid = _tenant(sess)
+        body = await request.json()
+        instance_id = body.get("instance_id", "")
+        from ..crm_auto_funnel import get_pending_suggestions, dismiss_suggestion
+        suggestions = get_pending_suggestions(tid, instance_id)
+        suggestion = next((s for s in suggestions if s.get("lead_id") == lead_id), None)
+        if not suggestion:
+            return _JR({"error": "Sugestao nao encontrada"}, status_code=404)
+        from ..crm_models import change_lead_status, add_activity
+        change_lead_status(lead_id, tid, suggestion["suggested_stage"])
+        add_activity(lead_id, tid, "status_change",
+                     f"👤 Sugestao IA aceita: {suggestion['current_stage']} → {suggestion['suggested_stage']}")
+        dismiss_suggestion(tid, instance_id, lead_id)
+        return _JR({"success": True})
+
+    @app.post("/api/v1/crm/funnel/suggestion/{lead_id}/dismiss", tags=["crm"])
+    async def crm_funnel_dismiss(lead_id: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        from ..crm_auto_funnel import dismiss_suggestion
+        dismiss_suggestion(_tenant(sess), body.get("instance_id", ""), lead_id)
+        return _JR({"success": True})
+
+    # ══════════════════════════════════════════════════════════
+    # FOLLOW-UP AUTOMATICO
+    # ══════════════════════════════════════════════════════════
+
+    @app.get("/api/v1/crm/followup/config", tags=["crm"])
+    async def crm_followup_config(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        instance_id = request.query_params.get("instance_id", "")
+        from ..crm_followup import get_followup_config
+        return _JR(get_followup_config(_tenant(sess), instance_id))
+
+    @app.put("/api/v1/crm/followup/config", tags=["crm"])
+    async def crm_followup_save(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        instance_id = body.get("instance_id", "")
+        from ..crm_followup import save_followup_config
+        save_followup_config(_tenant(sess), instance_id, body.get("config", body))
+        return _JR({"success": True})
+
+    @app.post("/api/v1/crm/followup/{lead_id}/pause", tags=["crm"])
+    async def crm_followup_pause(lead_id: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_followup import pause_followup
+        pause_followup(lead_id)
+        return _JR({"success": True})
+
+    @app.get("/api/v1/crm/followup/{lead_id}/history", tags=["crm"])
+    async def crm_followup_history(lead_id: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_followup import get_followup_history
+        return _JR({"history": get_followup_history(lead_id)})
+
+    # ══════════════════════════════════════════════════════════
+    # RELATORIO DIARIO
+    # ══════════════════════════════════════════════════════════
+
+    @app.get("/api/v1/crm/report/config", tags=["crm"])
+    async def crm_report_config(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        instance_id = request.query_params.get("instance_id", "")
+        from ..crm_daily_report import get_report_config
+        return _JR(get_report_config(_tenant(sess), instance_id))
+
+    @app.put("/api/v1/crm/report/config", tags=["crm"])
+    async def crm_report_save(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        from ..crm_daily_report import save_report_config
+        save_report_config(_tenant(sess), body.get("instance_id", ""), body.get("config", body))
+        return _JR({"success": True})
+
+    @app.post("/api/v1/crm/report/preview", tags=["crm"])
+    async def crm_report_preview(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        from ..crm_daily_report import generate_report, format_whatsapp_message
+        report = generate_report(_tenant(sess), body.get("instance_id", ""))
+        return _JR({"report": report, "message": format_whatsapp_message(report)})
+
+    @app.post("/api/v1/crm/report/send-now", tags=["crm"])
+    async def crm_report_send(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        from ..crm_daily_report import send_report
+        result = send_report(_tenant(sess), body.get("instance_id", ""))
+        return _JR(result)
+
+    # ══════════════════════════════════════════════════════════
+    # TREINAMENTO DO AGENTE
+    # ══════════════════════════════════════════════════════════
+
+    @app.post("/api/v1/crm/training/correction", tags=["crm"])
+    async def crm_save_correction(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        from ..crm_agent_training import record_correction
+        cid = record_correction(
+            _tenant(sess), body.get("instance_id", ""),
+            body.get("client_message", ""),
+            body.get("original_response", ""),
+            body.get("corrected_response", ""),
+            body.get("context"),
+        )
+        return _JR({"success": True, "correction_id": cid})
+
+    @app.get("/api/v1/crm/training/corrections", tags=["crm"])
+    async def crm_list_corrections(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        instance_id = request.query_params.get("instance_id", "")
+        from ..crm_agent_training import get_corrections
+        return _JR({"corrections": get_corrections(_tenant(sess), instance_id)})
+
+    @app.delete("/api/v1/crm/training/correction/{cid}", tags=["crm"])
+    async def crm_delete_correction(cid: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        instance_id = request.query_params.get("instance_id", "")
+        from ..crm_agent_training import delete_correction
+        ok = delete_correction(_tenant(sess), instance_id, cid)
+        return _JR({"success": ok})
+
+    @app.post("/api/v1/crm/training/consolidate", tags=["crm"])
+    async def crm_consolidate(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        from ..crm_agent_training import consolidate_corrections
+        rules = consolidate_corrections(_tenant(sess), body.get("instance_id", ""))
+        return _JR({"success": True, "rules": rules})
+
+    # ══════════════════════════════════════════════════════════
     # DASHBOARD CRM
     # ══════════════════════════════════════════════════════════
 
@@ -515,15 +729,10 @@ def register_crm_routes(app) -> None:
 
     @app.post("/api/v1/crm/webhook/form/{tenant_id}", tags=["crm"])
     async def crm_form_webhook(tenant_id: str, request: _Req):
-        """Recebe dados de formulario — SOMENTE admin.
-        Assinantes recebem leads apenas via WhatsApp (Z-API).
+        """Recebe dados de formulario de landing pages (publico).
+        Cria lead e opcionalmente envia WhatsApp de boas-vindas.
         """
-        from ..database import get_user_by_id
-        user = get_user_by_id(tenant_id)
-        if not user or not user.get("is_admin"):
-            return _JR({"error": "Webhook disponivel apenas para contas admin"}, status_code=403)
-
-        from ..crm_models import create_lead, get_lead_by_email, get_lead_by_phone
+        from ..crm_models import create_lead, get_lead_by_email, get_lead_by_phone, add_activity
         try:
             content_type = request.headers.get("content-type", "")
             if "json" in content_type:
@@ -532,10 +741,14 @@ def register_crm_routes(app) -> None:
                 form = await request.form()
                 body = dict(form)
 
-            name = body.get("name", "").strip()
-            email = body.get("email", "").strip()
-            phone = body.get("phone", "").strip()
+            name = (body.get("name") or body.get("nome") or "").strip()
+            email = (body.get("email") or "").strip()
+            phone = (body.get("phone") or body.get("telefone") or "").strip()
             source = body.get("source", "landing_page")
+            instance_id = body.get("instance_id", "")
+            welcome_msg = body.get("welcome_message", "")
+            interesse = body.get("interesse", "")
+            pagina = body.get("pagina", "")
 
             if not name and not email and not phone:
                 return _JR({"error": "Dados insuficientes"}, status_code=400)
@@ -548,9 +761,37 @@ def register_crm_routes(app) -> None:
                 existing = get_lead_by_phone(tenant_id, phone)
 
             if existing:
-                return _JR({"success": True, "lead_id": existing["id"], "message": "Lead ja existe"})
+                lead = existing
+            else:
+                lead = create_lead(tenant_id, name=name, email=email, phone=phone,
+                                   source=source, instance_id=instance_id)
+                add_activity(lead["id"], tenant_id, "note",
+                             f"🌐 Lead via landing page" + (f": {pagina}" if pagina else ""))
 
-            lead = create_lead(tenant_id, name=name, email=email, phone=phone, source=source)
+            # Envia WhatsApp de boas-vindas se tiver phone e instance_id
+            if phone and instance_id and welcome_msg:
+                import threading
+                delay = int(body.get("delay", "30"))
+                def _send_welcome():
+                    import time as _t
+                    _t.sleep(delay)
+                    try:
+                        from ..whatsapp_agent import get_wa_manager
+                        manager = get_wa_manager()
+                        inst = manager.get_instance(instance_id, tenant_id)
+                        if inst and inst.active:
+                            # Substitui variaveis
+                            msg = welcome_msg.replace("{nome}", name).replace("{email}", email)
+                            msg = msg.replace("{telefone}", phone).replace("{interesse}", interesse)
+                            msg = msg.replace("{pagina}", pagina)
+                            manager._send_zapi(inst, phone, msg)
+                            manager._save_message(inst, phone, "assistant", msg)
+                            add_activity(lead["id"], tenant_id, "whatsapp",
+                                         f"📱 Boas-vindas enviada: {msg[:80]}")
+                    except Exception:
+                        pass
+                threading.Thread(target=_send_welcome, daemon=True).start()
+
             return _JR({"success": True, "lead_id": lead["id"]})
         except Exception as e:
             return _JR({"error": str(e)[:200]}, status_code=500)

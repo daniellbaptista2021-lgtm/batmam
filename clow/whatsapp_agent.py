@@ -215,6 +215,16 @@ class WhatsAppAgentManager:
             system_parts.append(inst.system_prompt)
         if inst.rag_text:
             system_parts.append(f"\n[Base de Conhecimento]\n{inst.rag_text}")
+
+        # Injeta correcoes/treinamento do agente
+        try:
+            from .crm_agent_training import get_training_context
+            training = get_training_context(inst.tenant_id, inst.id)
+            if training:
+                system_parts.append(training)
+        except Exception:
+            pass
+
         system_parts.append("\nVoce esta respondendo via WhatsApp. Seja conciso e objetivo. Use formatacao simples (sem markdown complexo).")
 
         system_prompt = "\n\n".join(system_parts)
@@ -267,6 +277,18 @@ class WhatsAppAgentManager:
                              f"Cliente: {message_text[:100]}")
                 add_activity(crm_lead_id, inst.tenant_id, "whatsapp",
                              f"Bot: {reply[:100]}")
+            except Exception:
+                pass
+
+            # ── CRM: funil automatico — analisa conversa e move/sugere ──
+            try:
+                from .crm_auto_funnel import process_new_message
+                lead_status = crm_lead.get("status", "novo") if crm_lead else "novo"
+                recent = history[-(inst.context_size):] + [
+                    {"role": "user", "content": message_text},
+                    {"role": "assistant", "content": reply},
+                ]
+                process_new_message(inst.tenant_id, inst.id, crm_lead_id, lead_status, recent)
             except Exception:
                 pass
 
