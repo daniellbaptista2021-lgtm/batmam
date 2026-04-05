@@ -110,8 +110,13 @@ def register_crm_dashboard_routes(app) -> None:
         url = infra["chatwoot_url"]
         token = infra["api_token"]
 
-        # Testa conexao
-        test = _chatwoot_get(url, token, "profile")
+        # Testa conexao (profile e endpoint global, nao por account)
+        try:
+            req = Request(f"{url.rstrip('/')}/api/v1/profile", headers={"api_access_token": token})
+            resp = urlopen(req, timeout=10)
+            test = json.loads(resp.read().decode())
+        except Exception as e:
+            test = {"_error": str(e)[:200]}
         if not test or test.get("_error"):
             return _JR({"connected": False, "error": test.get("_error", "Chatwoot inacessivel"), "url": url})
 
@@ -179,10 +184,12 @@ def register_crm_dashboard_routes(app) -> None:
         infra = _get_infra(_tenant(sess))
         if not infra:
             return _JR({"online": False, "error": "Chatwoot nao configurado"})
-        test = _chatwoot_get(infra["chatwoot_url"], infra["api_token"], "profile")
-        if test and not test.get("_error"):
+        try:
+            req = Request(f"{infra['chatwoot_url'].rstrip('/')}/api/v1/profile", headers={"api_access_token": infra["api_token"]})
+            resp = urlopen(req, timeout=10)
             return _JR({"online": True, "url": infra["chatwoot_url"]})
-        return _JR({"online": False, "error": test.get("_error", "Inacessivel"), "url": infra["chatwoot_url"]})
+        except Exception as e:
+            return _JR({"online": False, "error": str(e)[:200], "url": infra["chatwoot_url"]})
 
     @app.post("/api/v1/crm/dashboard/refresh", tags=["crm"])
     async def crm_refresh(request: _Req):
