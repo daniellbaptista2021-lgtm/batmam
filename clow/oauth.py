@@ -250,6 +250,8 @@ def save_credential(cred: OAuthCredential) -> None:
             json.dump(cred.to_dict(), f, indent=2)
         # Renomeia atomicamente
         Path(tmp_path).replace(cred_file)
+        # Restringe permissoes: somente o dono pode ler/escrever
+        os.chmod(cred_file, 0o600)
         log_action("oauth_saved", f"Credential saved: {cred.provider}")
     except Exception:
         try:

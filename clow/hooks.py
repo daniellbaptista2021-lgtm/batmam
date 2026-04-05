@@ -34,6 +34,7 @@ Configurados em ~/.clow/settings.json:
 """
 
 from __future__ import annotations
+import shlex
 import subprocess
 import os
 import json
@@ -205,8 +206,7 @@ class HookRunner:
 
         try:
             proc = subprocess.run(
-                command,
-                shell=True,
+                shlex.split(command),
                 input=payload_json,
                 capture_output=True,
                 text=True,

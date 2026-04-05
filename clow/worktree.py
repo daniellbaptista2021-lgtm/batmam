@@ -30,10 +30,10 @@ class WorktreeManager:
         wt_path = Path(self.repo_dir).parent / f".clow-wt-{wt_id}"
 
         # Detecta branch atual
-        base_branch = self._run_git("rev-parse --abbrev-ref HEAD").strip()
+        base_branch = self._run_git(["rev-parse", "--abbrev-ref", "HEAD"]).strip()
 
         # Cria worktree com nova branch
-        self._run_git(f"worktree add -b {branch_name} {wt_path}")
+        self._run_git(["worktree", "add", "-b", branch_name, str(wt_path)])
 
         return WorktreeInfo(
             path=str(wt_path),
@@ -48,8 +48,8 @@ class WorktreeManager:
         # Verifica se houve mudanças
         try:
             status = subprocess.run(
-                "git status --porcelain",
-                shell=True, capture_output=True, text=True,
+                ["git", "status", "--porcelain"],
+                capture_output=True, text=True,
                 cwd=info.path,
             )
             has_changes = bool(status.stdout.strip())
@@ -58,8 +58,13 @@ class WorktreeManager:
             if has_changes:
                 # Commit automático das mudanças
                 subprocess.run(
-                    'git add -A && git commit -m "clow: worktree changes"',
-                    shell=True, capture_output=True, text=True,
+                    ["git", "add", "-A"],
+                    capture_output=True, text=True,
+                    cwd=info.path,
+                )
+                subprocess.run(
+                    ["git", "commit", "-m", "clow: worktree changes"],
+                    capture_output=True, text=True,
                     cwd=info.path,
                 )
         except Exception:
@@ -67,40 +72,40 @@ class WorktreeManager:
 
         # Remove worktree
         try:
-            self._run_git(f"worktree remove {info.path} --force")
+            self._run_git(["worktree", "remove", info.path, "--force"])
         except Exception:
             if wt_path.exists():
                 shutil.rmtree(wt_path, ignore_errors=True)
                 try:
-                    self._run_git("worktree prune")
+                    self._run_git(["worktree", "prune"])
                 except Exception:
                     pass
 
         # Se não houve mudanças, deleta a branch
         if not has_changes:
             try:
-                self._run_git(f"branch -D {info.branch}")
+                self._run_git(["branch", "-D", info.branch])
             except Exception:
                 pass
 
         return info
 
-    def _run_git(self, cmd: str) -> str:
+    def _run_git(self, args: list[str]) -> str:
         result = subprocess.run(
-            f"git {cmd}",
-            shell=True, capture_output=True, text=True,
+            ["git"] + args,
+            capture_output=True, text=True,
             cwd=self.repo_dir,
         )
         if result.returncode != 0:
-            raise RuntimeError(f"git {cmd} falhou: {result.stderr}")
+            raise RuntimeError(f"git {' '.join(args)} falhou: {result.stderr}")
         return result.stdout
 
     @staticmethod
     def is_git_repo(path: str) -> bool:
         try:
             result = subprocess.run(
-                "git rev-parse --is-inside-work-tree",
-                shell=True, capture_output=True, text=True,
+                ["git", "rev-parse", "--is-inside-work-tree"],
+                capture_output=True, text=True,
                 cwd=path,
             )
             return result.returncode == 0

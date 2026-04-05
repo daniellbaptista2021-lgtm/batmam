@@ -4,16 +4,20 @@ Shared across all route modules.
 """
 
 from __future__ import annotations
+import logging
 import os
+import sqlite3
 import time
 import secrets
-from collections import defaultdict
+from pathlib import Path
 from typing import Any
 
 from fastapi import Request, HTTPException
 
 from .. import config
 from ..database import authenticate_user, create_user, get_user_by_email
+
+logger = logging.getLogger(__name__)
 
 
 # ── Authentication ──────────────────────────────────────────────
@@ -173,38 +177,87 @@ def _get_user_session(request: Request) -> dict | None:
     return _validate_session(token)
 
 
-# ── Rate Limiting ───────────────────────────────────────────────
+# ── Rate Limiting (SQLite persistente) ──────────────────────────
+
+_RATE_LIMIT_DB = Path(__file__).resolve().parent.parent.parent / "data" / "rate_limits.db"
+_RATE_LIMIT_DB.parent.mkdir(parents=True, exist_ok=True)
+
+
+def _get_rate_db():
+    """Retorna conexao SQLite para rate limiting."""
+    conn = sqlite3.connect(str(_RATE_LIMIT_DB), timeout=5)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("""CREATE TABLE IF NOT EXISTS rate_limits (
+        key TEXT NOT NULL,
+        timestamp REAL NOT NULL
+    )""")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_rl_key_ts ON rate_limits(key, timestamp)")
+    return conn
+
 
 class RateLimiter:
-    """Rate limiter por IP com sliding window."""
+    """Rate limiter por IP com sliding window persistido em SQLite."""
 
-    def __init__(self, max_requests: int = 60, window_seconds: int = 60):
+    def __init__(self, max_requests: int = 60, window_seconds: int = 60, prefix: str = ""):
         self.max_requests = max_requests
         self.window = window_seconds
-        self._requests: dict[str, list[float]] = defaultdict(list)
+        self.prefix = prefix
+
+    def _key(self, ip: str) -> str:
+        return f"{self.prefix}:{ip}" if self.prefix else ip
 
     def is_allowed(self, ip: str) -> bool:
         now = time.time()
         window_start = now - self.window
+        key = self._key(ip)
 
-        # Limpa requests antigos
-        self._requests[ip] = [t for t in self._requests[ip] if t > window_start]
+        try:
+            conn = _get_rate_db()
+            try:
+                # Limpa registros antigos
+                conn.execute("DELETE FROM rate_limits WHERE key=? AND timestamp<=?", (key, window_start))
+                # Conta requests na janela
+                row = conn.execute(
+                    "SELECT COUNT(*) FROM rate_limits WHERE key=? AND timestamp>?",
+                    (key, window_start),
+                ).fetchone()
+                count = row[0] if row else 0
 
-        if len(self._requests[ip]) >= self.max_requests:
-            return False
+                if count >= self.max_requests:
+                    conn.commit()
+                    return False
 
-        self._requests[ip].append(now)
-        return True
+                conn.execute("INSERT INTO rate_limits (key, timestamp) VALUES (?, ?)", (key, now))
+                conn.commit()
+                return True
+            finally:
+                conn.close()
+        except sqlite3.OperationalError as e:
+            logger.warning("Rate limiter DB error: %s", e)
+            return True  # Falha aberta — nao bloqueia se DB falhar
 
     def remaining(self, ip: str) -> int:
         now = time.time()
         window_start = now - self.window
-        recent = [t for t in self._requests[ip] if t > window_start]
-        return max(0, self.max_requests - len(recent))
+        key = self._key(ip)
+
+        try:
+            conn = _get_rate_db()
+            try:
+                row = conn.execute(
+                    "SELECT COUNT(*) FROM rate_limits WHERE key=? AND timestamp>?",
+                    (key, window_start),
+                ).fetchone()
+                count = row[0] if row else 0
+                return max(0, self.max_requests - count)
+            finally:
+                conn.close()
+        except sqlite3.OperationalError:
+            return self.max_requests
 
 
-_rate_limiter = RateLimiter(max_requests=60, window_seconds=60)
-_ws_rate_limiter = RateLimiter(max_requests=10, window_seconds=60)
+_rate_limiter = RateLimiter(max_requests=60, window_seconds=60, prefix="http")
+_ws_rate_limiter = RateLimiter(max_requests=10, window_seconds=60, prefix="ws")
 
 
 async def _rate_limit_dependency(request: Request) -> None:

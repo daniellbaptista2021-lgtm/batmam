@@ -45,91 +45,9 @@ def get_db():
 
 
 def init_db():
-    with get_db() as db:
-        db.executescript("""
-        CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            name TEXT DEFAULT '',
-            plan TEXT DEFAULT 'free',
-            active INTEGER DEFAULT 1,
-            is_admin INTEGER DEFAULT 0,
-            created_at REAL NOT NULL,
-            last_login REAL
-        );
-
-        CREATE TABLE IF NOT EXISTS usage_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT NOT NULL,
-            model TEXT NOT NULL,
-            input_tokens INTEGER DEFAULT 0,
-            output_tokens INTEGER DEFAULT 0,
-            cost_usd REAL DEFAULT 0,
-            action TEXT DEFAULT 'chat',
-            created_at REAL NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        );
-
-        CREATE TABLE IF NOT EXISTS conversations (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL,
-            title TEXT DEFAULT 'Nova conversa',
-            created_at REAL NOT NULL,
-            updated_at REAL NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        );
-
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            conversation_id TEXT NOT NULL,
-            role TEXT NOT NULL,
-            content TEXT NOT NULL,
-            file_data TEXT,
-            created_at REAL NOT NULL,
-            FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_usage_user_date ON usage_log(user_id, created_at);
-        CREATE INDEX IF NOT EXISTS idx_conv_user ON conversations(user_id, updated_at);
-        CREATE INDEX IF NOT EXISTS idx_msg_conv ON messages(conversation_id, created_at);
-
-        CREATE TABLE IF NOT EXISTS missions (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL,
-            title TEXT NOT NULL,
-            description TEXT NOT NULL,
-            status TEXT DEFAULT 'planning',
-            plan_json TEXT,
-            context_json TEXT DEFAULT '{}',
-            current_step INTEGER DEFAULT 0,
-            total_steps INTEGER DEFAULT 0,
-            error_count INTEGER DEFAULT 0,
-            created_at REAL NOT NULL,
-            updated_at REAL NOT NULL,
-            completed_at REAL,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        );
-
-        CREATE TABLE IF NOT EXISTS mission_steps (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            mission_id TEXT NOT NULL,
-            step_number INTEGER NOT NULL,
-            title TEXT NOT NULL,
-            description TEXT,
-            status TEXT DEFAULT 'pending',
-            model TEXT DEFAULT 'haiku',
-            result_json TEXT,
-            error TEXT,
-            attempts INTEGER DEFAULT 0,
-            started_at REAL,
-            completed_at REAL,
-            FOREIGN KEY (mission_id) REFERENCES missions(id) ON DELETE CASCADE
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_missions_user ON missions(user_id, created_at);
-        CREATE INDEX IF NOT EXISTS idx_msteps_mission ON mission_steps(mission_id, step_number);
-        """)
+    """Inicializa o banco via migrations.py (schema centralizado)."""
+    from .migrations import run_migrations
+    run_migrations()
 
 
 # ── Users ────────────────────────────────────────────────────────

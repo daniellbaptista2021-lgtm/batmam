@@ -21,7 +21,7 @@ Suporta rules customizaveis em settings.json com:
 from __future__ import annotations
 import re
 import fnmatch
-from enum import IntEnum
+from enum import IntEnum, Enum
 from . import config
 
 
@@ -139,7 +139,7 @@ def needs_confirmation(tool_name: str, arguments: dict) -> bool:
         # Bash: depende do comando
         if tool_name == "bash":
             risk = classify_bash_command(arguments.get("command", ""))
-            return risk in ("dangerous", "blocked")
+            return risk in (BashRiskLevel.DANGEROUS, BashRiskLevel.BLOCKED)
         return True
 
     # Prompt (padrao): usa logica detalhada
@@ -151,7 +151,7 @@ def needs_confirmation(tool_name: str, arguments: dict) -> bool:
         if is_dangerous_command(cmd):
             return True
         risk = classify_bash_command(cmd)
-        if risk == "safe":
+        if risk == BashRiskLevel.SAFE:
             return False
         return not config.AUTO_APPROVE_BASH
 
@@ -283,6 +283,16 @@ def _check_custom_rules(tool_name: str, arguments: dict) -> bool | None:
     return None
 
 
+# ── Niveis de risco de comandos Bash ─────────────────────────
+
+class BashRiskLevel(str, Enum):
+    """Niveis de risco para comandos bash."""
+    SAFE = "safe"
+    WRITE = "write"
+    DANGEROUS = "dangerous"
+    BLOCKED = "blocked"
+
+
 # ── Classificacao de acoes por risco ──────────────────────────
 
 ACTION_CLASSIFICATIONS = {
@@ -313,7 +323,7 @@ ACTION_CLASSIFICATIONS = {
 }
 
 BASH_RISK_LEVELS = {
-    "safe": [
+    BashRiskLevel.SAFE: [
         r"^ls\b", r"^cat\b", r"^head\b", r"^tail\b", r"^wc\b",
         r"^echo\b", r"^pwd\b", r"^which\b", r"^whoami\b",
         r"^date\b", r"^env\b", r"^printenv\b",
@@ -322,12 +332,12 @@ BASH_RISK_LEVELS = {
         r"^python\s+-c\b", r"^node\s+-e\b",
         r"^pip\s+list", r"^pip\s+show", r"^npm\s+list",
     ],
-    "write": [
+    BashRiskLevel.WRITE: [
         r"^git\s+add\b", r"^git\s+commit\b",
         r"^pip\s+install\b", r"^npm\s+install\b",
         r"^mkdir\b", r"^touch\b", r"^cp\b", r"^mv\b",
     ],
-    "dangerous": [
+    BashRiskLevel.DANGEROUS: [
         r"^rm\b", r"^git\s+push\b", r"^git\s+reset\b",
         r"^git\s+checkout\s+--", r"^git\s+clean\b",
         r"^git\s+branch\s+-[dD]\b", r"^git\s+stash\s+drop",
@@ -342,12 +352,12 @@ def classify_bash_command(command: str) -> str:
     """Classifica comando bash: safe, write, dangerous, blocked."""
     cmd = command.strip()
     if is_dangerous_command(cmd):
-        return "blocked"
-    for level in ["safe", "dangerous", "write"]:
+        return BashRiskLevel.BLOCKED
+    for level in [BashRiskLevel.SAFE, BashRiskLevel.DANGEROUS, BashRiskLevel.WRITE]:
         for pattern in BASH_RISK_LEVELS.get(level, []):
             if re.match(pattern, cmd, re.IGNORECASE):
                 return level
-    return "write"
+    return BashRiskLevel.WRITE
 
 
 def classify_action(tool_name: str, arguments: dict) -> dict:
@@ -358,6 +368,6 @@ def classify_action(tool_name: str, arguments: dict) -> dict:
         cmd = arguments.get("command", "")
         risk = classify_bash_command(cmd)
         result["level"] = risk
-        result["reversible"] = risk == "safe"
+        result["reversible"] = risk == BashRiskLevel.SAFE
         result["external"] = bool(re.search(r"curl|wget|ssh|scp|git\s+push", cmd))
     return result

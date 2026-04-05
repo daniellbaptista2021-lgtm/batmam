@@ -111,12 +111,17 @@ def _setup_middleware():
     settings = config.load_settings()
     webapp_cfg = settings.get("webapp", {})
 
-    # CORS — restrito aos dominios reais
-    allowed_origins = webapp_cfg.get("cors_origins", [
+    # CORS — env var CLOW_CORS_ORIGINS (comma-separated) com fallback
+    _default_origins = [
         "https://clow.pvcorretor01.com.br",
         "http://localhost:8001",
         "http://127.0.0.1:8001",
-    ])
+    ]
+    env_origins = os.getenv("CLOW_CORS_ORIGINS", "")
+    if env_origins:
+        allowed_origins = [o.strip() for o in env_origins.split(",") if o.strip()]
+    else:
+        allowed_origins = webapp_cfg.get("cors_origins", _default_origins)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,

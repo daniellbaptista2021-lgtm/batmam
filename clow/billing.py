@@ -12,12 +12,28 @@ WhatsApp Agent SEMPRE usa Haiku. Franquia separada do chat.
 
 from __future__ import annotations
 import json
+import logging
 import os
+import sqlite3
 import time
 from typing import Any
 
 from . import config
 from .logging import log_action
+
+logger = logging.getLogger(__name__)
+
+# IPs conhecidos do Stripe para validacao de webhooks
+STRIPE_WEBHOOK_IPS = frozenset({
+    "3.18.12.63",
+    "3.130.192.163",
+    "13.235.26.127",
+    "18.211.135.69",
+    "35.154.171.200",
+    "54.187.174.169",
+    "54.187.205.235",
+    "54.187.216.72",
+})
 
 # ── Plan Definitions ──────────────────────────────────────────
 
@@ -153,7 +169,8 @@ def check_quota(user_id: str, plan_id: str, source: str = "chat") -> dict[str, A
                     (user_id, today_start),
                 ).fetchone()
                 wa_used = row[0] if row else 0
-            except Exception:
+            except sqlite3.OperationalError as e:
+                logger.warning("Erro ao consultar uso WhatsApp: %s", e)
                 wa_used = 0
 
         if wa_used >= wa_daily:
@@ -274,8 +291,13 @@ def create_portal_session(customer_id: str, return_url: str = "") -> dict[str, A
         return {"error": str(e)[:200]}
 
 
-def handle_webhook(payload: bytes, sig_header: str) -> dict[str, Any]:
+def handle_webhook(payload: bytes, sig_header: str, source_ip: str = "") -> dict[str, Any]:
     """Processa webhook do Stripe. Retorna resultado."""
+    # Valida IP de origem — apenas IPs conhecidos da Stripe
+    if source_ip and source_ip not in STRIPE_WEBHOOK_IPS:
+        logger.warning("Webhook rejeitado: IP %s nao autorizado", source_ip)
+        return {"error": "Forbidden", "status_code": 403}
+
     stripe = _get_stripe()
     if not stripe:
         return {"error": "Stripe nao configurado"}
@@ -322,12 +344,12 @@ def _handle_checkout_completed(session: dict) -> dict:
             db.execute("UPDATE users SET plan=? WHERE id=?", (plan_id, user_id))
             try:
                 db.execute("ALTER TABLE users ADD COLUMN stripe_customer_id TEXT DEFAULT ''")
-            except Exception:
-                pass
+            except sqlite3.OperationalError:
+                pass  # Coluna ja existe
             try:
                 db.execute("ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT DEFAULT ''")
-            except Exception:
-                pass
+            except sqlite3.OperationalError:
+                pass  # Coluna ja existe
             db.execute(
                 "UPDATE users SET stripe_customer_id=?, stripe_subscription_id=? WHERE id=?",
                 (customer_id, subscription_id, user_id),
@@ -367,8 +389,8 @@ def _send_welcome_email(email: str, plan_id: str) -> None:
         # - Aviso de falha de pagamento
         # - Aviso de cancelamento
         # Basta ativar em: dashboard.stripe.com/settings/emails
-    except Exception:
-        pass
+    except OSError as e:
+        logger.warning("Erro ao enviar email de boas-vindas: %s", e)
 
 
 def _handle_subscription_updated(sub: dict) -> dict:
