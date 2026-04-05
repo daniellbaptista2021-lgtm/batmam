@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#050510">
+<title>Clow — Setup Chatwoot</title>
+<link rel="icon" href="/static/brand/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050510;--bg2:#0a0a1a;--bg3:#0f0f24;
+  --border:#1a1a2e;--bdf:rgba(124,92,252,.5);
+  --t1:#e4e4e7;--t2:#71717a;--tm:#52525b;
+  --p:#7c5cfc;--p2:#6346e0;--p-glow:rgba(124,92,252,.15);
+  --green:#22c55e;--green-bg:rgba(34,197,94,.1);--green-bd:rgba(34,197,94,.25);
+  --red:#ef4444;--red-bg:rgba(239,68,68,.1);--red-bd:rgba(239,68,68,.25);
+  --yellow:#fbbf24;
+  --sans:'DM Sans',sans-serif;--mono:'JetBrains Mono',monospace;
+  --radius:12px;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased}
+a{color:var(--p);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Layout */
+.setup-wrap{max-width:680px;margin:0 auto;padding:32px 20px 60px}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px}
+.top-bar img{height:32px}
+.back-link{font-size:.85rem;color:var(--t2);display:flex;align-items:center;gap:6px;transition:color .2s}
+.back-link:hover{color:var(--t1);text-decoration:none}
+.back-link svg{width:16px;height:16px}
+
+/* Step indicators */
+.steps-bar{display:flex;align-items:center;gap:0;margin-bottom:40px;position:relative}
+.step-ind{display:flex;align-items:center;gap:8px;flex:1;position:relative}
+.step-ind:last-child{flex:0 0 auto}
+.step-dot{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:600;color:var(--t2);transition:all .3s;flex-shrink:0;z-index:1}
+.step-dot.active{border-color:var(--p);background:var(--p);color:#fff}
+.step-dot.done{border-color:var(--green);background:var(--green);color:#fff}
+.step-line{flex:1;height:2px;background:var(--border);transition:background .3s}
+.step-line.done{background:var(--green)}
+.step-label{display:none}
+@media(min-width:600px){
+  .step-label{display:block;position:absolute;top:40px;left:0;font-size:.68rem;color:var(--t2);white-space:nowrap;text-transform:uppercase;letter-spacing:.5px}
+  .step-ind .step-label{transform:translateX(calc(-50% + 16px))}
+  .steps-bar{margin-bottom:64px}
+}
+
+/* Panels */
+.panel{display:none;animation:fadeUp .35s ease}
+.panel.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* Headings */
+.panel h2{font-size:1.35rem;font-weight:700;margin-bottom:6px}
+.panel .desc{color:var(--t2);font-size:.9rem;margin-bottom:24px;line-height:1.5}
+
+/* Option cards */
+.opt-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:8px}
+@media(max-width:500px){.opt-cards{grid-template-columns:1fr}}
+.opt-card{background:var(--bg2);border:2px solid var(--border);border-radius:var(--radius);padding:22px 18px;cursor:pointer;transition:all .25s;position:relative}
+.opt-card:hover{border-color:rgba(124,92,252,.3)}
+.opt-card.selected{border-color:var(--p);background:rgba(124,92,252,.05)}
+.opt-card .badge{position:absolute;top:12px;right:12px;background:var(--p);color:#fff;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border-radius:20px}
+.opt-card h3{font-size:1rem;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.opt-card h3 svg{width:20px;height:20px;color:var(--p);flex-shrink:0}
+.opt-card .reqs{margin-top:12px;font-size:.78rem;color:var(--t2);line-height:1.7}
+.opt-card .reqs span{display:block;padding-left:16px;position:relative}
+.opt-card .reqs span::before{content:'';position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;background:var(--border)}
+.opt-card.selected .reqs span::before{background:var(--p)}
+
+/* Form fields */
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:.78rem;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:500}
+.fg input,.fg select{width:100%;padding:11px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--t1);font-family:var(--sans);font-size:.9rem;outline:none;transition:border .2s}
+.fg input:focus,.fg select:focus{border-color:var(--bdf)}
+.fg input::placeholder{color:var(--tm)}
+.fg .hint{font-size:.72rem;color:var(--tm);margin-top:4px}
+.fg .error-hint{font-size:.72rem;color:var(--red);margin-top:4px;display:none}
+.fg.has-error input{border-color:var(--red)}
+.fg.has-error .error-hint{display:block}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:500px){.row2{grid-template-columns:1fr}}
+
+/* Toggle */
+.toggle-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;cursor:pointer;user-select:none}
+.toggle-track{width:44px;height:24px;border-radius:12px;background:var(--border);position:relative;transition:background .2s;flex-shrink:0}
+.toggle-track.on{background:var(--p)}
+.toggle-knob{width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;transition:left .2s}
+.toggle-track.on .toggle-knob{left:23px}
+.toggle-label{font-size:.9rem;color:var(--t2)}
+.toggle-row:hover .toggle-label{color:var(--t1)}
+
+/* Code box */
+.code-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;margin-bottom:16px}
+.code-box code{font-family:var(--mono);font-size:.8rem;color:var(--green);word-break:break-all;line-height:1.6;display:block;padding-right:40px}
+.copy-btn{position:absolute;top:12px;right:12px;background:rgba(124,92,252,.1);border:1px solid rgba(124,92,252,.2);color:var(--p);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:.72rem;font-weight:600;font-family:var(--sans);transition:all .2s;display:flex;align-items:center;gap:4px}
+.copy-btn:hover{background:rgba(124,92,252,.2)}
+.copy-btn svg{width:14px;height:14px}
+
+/* Download link */
+.dl-link{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;color:var(--p);margin-bottom:20px}
+.dl-link svg{width:16px;height:16px}
+
+/* Info notes */
+.info-box{background:rgba(124,92,252,.05);border:1px solid rgba(124,92,252,.12);border-radius:10px;padding:14px 16px;margin-bottom:20px}
+.info-box p{font-size:.82rem;color:var(--t2);line-height:1.6;margin-bottom:4px}
+.info-box p:last-child{margin-bottom:0}
+.info-box p svg{width:14px;height:14px;vertical-align:-2px;margin-right:4px;color:var(--p)}
+
+/* Connection code input */
+.conn-input-wrap{margin-bottom:20px}
+.conn-input{width:100%;padding:18px 20px;background:var(--bg2);border:2px solid var(--border);border-radius:var(--radius);color:var(--t1);font-family:var(--mono);font-size:1.1rem;text-align:center;outline:none;transition:border .2s;letter-spacing:1px}
+.conn-input:focus{border-color:var(--p)}
+.conn-input::placeholder{color:var(--tm);letter-spacing:0;font-size:.9rem}
+
+/* Result states */
+.result-box{border-radius:var(--radius);padding:20px;margin-top:16px;display:none;animation:fadeUp .3s ease}
+.result-box.success{display:block;background:var(--green-bg);border:1px solid var(--green-bd)}
+.result-box.success .result-icon{color:var(--green)}
+.result-box.error{display:block;background:var(--red-bg);border:1px solid var(--red-bd)}
+.result-box.error .result-icon{color:var(--red)}
+.result-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.result-icon svg{width:24px;height:24px}
+.result-title{font-weight:600;font-size:1rem}
+.result-detail{font-size:.82rem;color:var(--t2);line-height:1.5}
+
+/* Buttons */
+.nav-buttons{display:flex;justify-content:space-between;align-items:center;margin-top:32px;gap:12px}
+.btn{padding:11px 26px;border:none;border-radius:10px;font-weight:600;font-size:.9rem;cursor:pointer;transition:all .2s;font-family:var(--sans);display:inline-flex;align-items:center;gap:8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--p);color:#fff}
+.btn-primary:hover:not(:disabled){background:var(--p2)}
+.btn-secondary{background:var(--bg3);color:var(--t2);border:1px solid var(--border)}
+.btn-secondary:hover:not(:disabled){border-color:var(--p);color:var(--t1)}
+.btn-success{background:var(--green);color:#fff}
+.btn-success:hover:not(:disabled){filter:brightness(1.1)}
+
+/* Spinner */
+.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:none}
+.btn.loading .spinner{display:block}
+.btn.loading .btn-text{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Toast */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg3);border:1px solid var(--border);color:var(--t1);padding:10px 22px;border-radius:10px;font-size:.85rem;font-weight:500;z-index:999;transition:transform .3s ease;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* Responsive */
+@media(max-width:500px){
+  .setup-wrap{padding:20px 16px 40px}
+  .nav-buttons{flex-direction:column-reverse}
+  .nav-buttons .btn{width:100%;justify-content:center}
+  .code-box code{font-size:.7rem}
+  .conn-input{font-size:.95rem;padding:14px 16px}
+}
+</style>
+</head>
+<body>
+
+<div class="setup-wrap">
+  <!-- Top bar -->
+  <div class="top-bar">
+    <a href="/"><img src="/static/brand/logo-sidebar.png" alt="Clow"></a>
+    <a href="/" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+      voltar
+    </a>
+  </div>
+
+  <!-- Step indicators -->
+  <div class="steps-bar">
+    <div class="step-ind"><div class="step-dot active" data-step="1">1</div><span class="step-label">Tipo</span><div class="step-line"></div></div>
+    <div class="step-ind"><div class="step-dot" data-step="2">2</div><span class="step-label">Dados</span><div class="step-line"></div></div>
+    <div class="step-ind"><div class="step-dot" data-step="3">3</div><span class="step-label">Z-API</span><div class="step-line"></div></div>
+    <div class="step-ind"><div class="step-dot" data-step="4">4</div><span class="step-label">Script</span><div class="step-line"></div></div>
+    <div class="step-ind"><div class="step-dot" data-step="5">5</div><span class="step-label">Conectar</span></div>
+  </div>
+
+  <!-- Step 1: Choose Type -->
+  <div class="panel active" id="step1">
+    <h2>Escolha o tipo de instalacao</h2>
+    <p class="desc">Selecione onde o Chatwoot sera instalado.</p>
+    <div class="opt-cards">
+      <div class="opt-card selected" data-type="vps" onclick="selectType('vps')">
+        <div class="badge">Recomendado</div>
+        <h3>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1"/><circle cx="6" cy="18" r="1"/></svg>
+          VPS / Servidor
+        </h3>
+        <div class="reqs">
+          <span>Ubuntu 22.04 ou superior</span>
+          <span>Minimo 2GB RAM</span>
+          <span>Acesso root (SSH)</span>
+        </div>
+      </div>
+      <div class="opt-card" data-type="local" onclick="selectType('local')">
+        <h3>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/><path d="M12 16v4"/></svg>
+          Maquina Local
+        </h3>
+        <div class="reqs">
+          <span>Docker Desktop instalado</span>
+          <span>Minimo 4GB RAM</span>
+        </div>
+      </div>
+    </div>
+    <div class="nav-buttons">
+      <div></div>
+      <button class="btn btn-primary" onclick="goStep(2)"><span class="btn-text">Proximo</span> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+    </div>
+  </div>
+
+  <!-- Step 2: Info Form -->
+  <div class="panel" id="step2">
+    <h2>Informacoes do servidor</h2>
+    <p class="desc">Preencha os dados para gerar o script de instalacao.</p>
+
+    <!-- VPS fields -->
+    <div id="vps-fields">
+      <div class="fg">
+        <label for="f-domain">Dominio ou IP</label>
+        <input id="f-domain" type="text" placeholder="ex: 192.168.1.100 ou chat.suaempresa.com">
+      </div>
+      <div class="fg">
+        <label for="f-subdomain">Subdominio do Chatwoot</label>
+        <input id="f-subdomain" type="text" placeholder="ex: chat (sera chat.seudominio.com)">
+        <span class="hint">Deixe vazio se for usar IP direto</span>
+      </div>
+      <div class="row2">
+        <div class="fg">
+          <label for="f-email">Email do admin</label>
+          <input id="f-email" type="email" placeholder="admin@email.com">
+        </div>
+        <div class="fg">
+          <label for="f-port">Porta</label>
+          <input id="f-port" type="number" placeholder="3000" value="3000">
+        </div>
+      </div>
+    </div>
+
+    <!-- Local fields (hidden by default) -->
+    <div id="local-fields" style="display:none">
+      <div class="fg">
+        <label for="f-email-local">Email do admin</label>
+        <input id="f-email-local" type="email" placeholder="admin@email.com">
+      </div>
+    </div>
+
+    <!-- Password (shared) -->
+    <div class="fg" id="fg-pass">
+      <label for="f-pass">Senha do admin</label>
+      <input id="f-pass" type="password" placeholder="Minimo 8 caracteres">
+      <span class="error-hint">A senha deve ter no minimo 8 caracteres</span>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-secondary" onclick="goStep(1)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg> <span class="btn-text">Voltar</span></button>
+      <button class="btn btn-primary" onclick="validateStep2()"><span class="btn-text">Proximo</span> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+    </div>
+  </div>
+
+  <!-- Step 3: Z-API -->
+  <div class="panel" id="step3">
+    <h2>Integracao Z-API</h2>
+    <p class="desc">Opcional. Configure a integracao com o Z-API para conectar WhatsApp.</p>
+
+    <div class="toggle-row" onclick="toggleZapi()">
+      <div class="toggle-track" id="zapi-toggle">
+        <div class="toggle-knob"></div>
+      </div>
+      <span class="toggle-label">Configurar Z-API agora</span>
+    </div>
+
+    <div id="zapi-fields" style="display:none">
+      <div class="fg">
+        <label for="f-zapi-id">Instance ID</label>
+        <input id="f-zapi-id" type="text" placeholder="Seu Instance ID do Z-API">
+      </div>
+      <div class="fg">
+        <label for="f-zapi-token">Token</label>
+        <input id="f-zapi-token" type="text" placeholder="Seu Token do Z-API">
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-secondary" onclick="goStep(2)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg> <span class="btn-text">Voltar</span></button>
+      <button class="btn btn-primary" id="btn-generate" onclick="generateScript()"><span class="btn-text">Gerar Script</span><div class="spinner"></div> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+    </div>
+  </div>
+
+  <!-- Step 4: Script Generated -->
+  <div class="panel" id="step4">
+    <h2>Script de instalacao</h2>
+    <p class="desc">Execute o comando abaixo no terminal do seu servidor para instalar o Chatwoot.</p>
+
+    <div class="code-box">
+      <code id="script-cmd">curl -sSL https://clow.pvcorretor01.com.br/api/v1/setup/script/TOKEN | sudo bash</code>
+      <button class="copy-btn" onclick="copyScript()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar
+      </button>
+    </div>
+
+    <a class="dl-link" id="dl-script" href="#" target="_blank">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download script
+    </a>
+
+    <div class="info-box">
+      <p>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        A instalacao leva entre <strong>3 a 8 minutos</strong> dependendo do servidor.
+      </p>
+      <p>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></svg>
+        O script nao envia dados de volta. Tudo roda localmente no seu servidor.
+      </p>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-secondary" onclick="goStep(3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg> <span class="btn-text">Voltar</span></button>
+      <button class="btn btn-primary" onclick="goStep(5)"><span class="btn-text">Ja executei, proximo</span> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button>
+    </div>
+  </div>
+
+  <!-- Step 5: Connect -->
+  <div class="panel" id="step5">
+    <h2>Conectar ao Clow</h2>
+    <p class="desc">Apos a instalacao, um codigo de conexao sera exibido no terminal. Cole-o abaixo.</p>
+
+    <div class="conn-input-wrap">
+      <input class="conn-input" id="f-conn-code" type="text" placeholder="clow_conn_..." autocomplete="off" spellcheck="false">
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn btn-secondary" onclick="goStep(4)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg> <span class="btn-text">Voltar</span></button>
+      <button class="btn btn-success" id="btn-connect" onclick="testAndConnect()"><span class="btn-text">Testar e Conectar</span><div class="spinner"></div></button>
+    </div>
+
+    <div class="result-box" id="result-success">
+      <div class="result-header">
+        <span class="result-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg></span>
+        <span class="result-title">Conectado com sucesso!</span>
+      </div>
+      <div class="result-detail" id="result-success-detail"></div>
+    </div>
+
+    <div class="result-box" id="result-error">
+      <div class="result-header">
+        <span class="result-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>
+        <span class="result-title">Erro na conexao</span>
+      </div>
+      <div class="result-detail" id="result-error-detail"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">Copiado!</div>
+
+<script>
+(function(){
+  let currentStep = 1;
+  let setupType = 'vps';
+  let setupToken = '';
+  let zapiEnabled = false;
+
+  /* --- Type selection --- */
+  window.selectType = function(type){
+    setupType = type;
+    document.querySelectorAll('.opt-card').forEach(c => c.classList.remove('selected'));
+    document.querySelector('.opt-card[data-type="'+type+'"]').classList.add('selected');
+  };
+
+  /* --- Step navigation --- */
+  window.goStep = function(n){
+    if(n < 1 || n > 5) return;
+    document.getElementById('step'+currentStep).classList.remove('active');
+    document.getElementById('step'+n).classList.add('active');
+    currentStep = n;
+    updateIndicators();
+
+    /* Show/hide VPS vs Local fields on step 2 */
+    if(n === 2){
+      document.getElementById('vps-fields').style.display = setupType === 'vps' ? 'block' : 'none';
+      document.getElementById('local-fields').style.display = setupType === 'local' ? 'block' : 'none';
+    }
+  };
+
+  function updateIndicators(){
+    document.querySelectorAll('.step-dot').forEach(dot => {
+      const s = parseInt(dot.dataset.step);
+      dot.className = 'step-dot';
+      if(s < currentStep) dot.classList.add('done');
+      else if(s === currentStep) dot.classList.add('active');
+      /* Update checkmark for done dots */
+      if(s < currentStep){
+        dot.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+      } else {
+        dot.textContent = s;
+      }
+    });
+    document.querySelectorAll('.step-line').forEach((line, i) => {
+      line.className = 'step-line' + (i + 1 < currentStep ? ' done' : '');
+    });
+  }
+
+  /* --- Step 2 validation --- */
+  window.validateStep2 = function(){
+    const pass = document.getElementById('f-pass').value;
+    const fgPass = document.getElementById('fg-pass');
+
+    if(pass.length < 8){
+      fgPass.classList.add('has-error');
+      document.getElementById('f-pass').focus();
+      return;
+    }
+    fgPass.classList.remove('has-error');
+
+    if(setupType === 'vps'){
+      const domain = document.getElementById('f-domain').value.trim();
+      if(!domain){
+        document.getElementById('f-domain').focus();
+        return;
+      }
+    } else {
+      const emailLocal = document.getElementById('f-email-local').value.trim();
+      if(!emailLocal){
+        document.getElementById('f-email-local').focus();
+        return;
+      }
+    }
+
+    goStep(3);
+  };
+
+  /* --- Z-API toggle --- */
+  window.toggleZapi = function(){
+    zapiEnabled = !zapiEnabled;
+    const track = document.getElementById('zapi-toggle');
+    const fields = document.getElementById('zapi-fields');
+    if(zapiEnabled){
+      track.classList.add('on');
+      fields.style.display = 'block';
+    } else {
+      track.classList.remove('on');
+      fields.style.display = 'none';
+    }
+  };
+
+  /* --- Generate script (API call) --- */
+  window.generateScript = async function(){
+    const btn = document.getElementById('btn-generate');
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    const payload = { type: setupType };
+
+    if(setupType === 'vps'){
+      payload.domain = document.getElementById('f-domain').value.trim();
+      payload.subdomain = document.getElementById('f-subdomain').value.trim();
+      payload.email = document.getElementById('f-email').value.trim();
+      payload.port = parseInt(document.getElementById('f-port').value) || 3000;
+    } else {
+      payload.email = document.getElementById('f-email-local').value.trim();
+    }
+    payload.password = document.getElementById('f-pass').value;
+
+    if(zapiEnabled){
+      payload.zapi_instance_id = document.getElementById('f-zapi-id').value.trim();
+      payload.zapi_token = document.getElementById('f-zapi-token').value.trim();
+    }
+
+    try {
+      const res = await fetch('/api/v1/setup/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if(!res.ok) throw new Error(data.detail || data.error || 'Erro ao gerar script');
+
+      setupToken = data.setup_token;
+      const cmd = 'curl -sSL https://clow.pvcorretor01.com.br/api/v1/setup/script/' + setupToken + ' | sudo bash';
+      document.getElementById('script-cmd').textContent = cmd;
+      document.getElementById('dl-script').href = '/api/v1/setup/script/' + setupToken + '?download=1';
+
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      goStep(4);
+    } catch(e){
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      alert(e.message);
+    }
+  };
+
+  /* --- Copy script --- */
+  window.copyScript = function(){
+    const text = document.getElementById('script-cmd').textContent;
+    navigator.clipboard.writeText(text).then(() => showToast('Copiado!')).catch(() => {
+      /* Fallback */
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Copiado!');
+    });
+  };
+
+  /* --- Toast --- */
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  /* --- Test and connect --- */
+  window.testAndConnect = async function(){
+    const code = document.getElementById('f-conn-code').value.trim();
+    if(!code || !code.startsWith('clow_conn_')){
+      document.getElementById('f-conn-code').focus();
+      return;
+    }
+
+    const btn = document.getElementById('btn-connect');
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    /* Hide previous results */
+    document.getElementById('result-success').className = 'result-box';
+    document.getElementById('result-error').className = 'result-box';
+
+    try {
+      /* Step A: test connection */
+      const testRes = await fetch('/api/v1/setup/test-connection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ connection_code: code, setup_token: setupToken })
+      });
+      const testData = await testRes.json();
+
+      if(!testRes.ok) throw new Error(testData.detail || testData.error || 'Falha no teste de conexao');
+
+      /* Step B: save connection */
+      const connRes = await fetch('/api/v1/setup/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ connection_code: code, setup_token: setupToken })
+      });
+      const connData = await connRes.json();
+
+      if(!connRes.ok) throw new Error(connData.detail || connData.error || 'Falha ao salvar conexao');
+
+      btn.classList.remove('loading');
+      btn.disabled = false;
+
+      const detail = document.getElementById('result-success-detail');
+      let info = 'Chatwoot conectado ao Clow com sucesso.';
+      if(connData.url) info += '<br>URL: <strong>' + connData.url + '</strong>';
+      if(connData.version) info += '<br>Versao: ' + connData.version;
+      detail.innerHTML = info;
+      document.getElementById('result-success').className = 'result-box success';
+
+    } catch(e){
+      btn.classList.remove('loading');
+      btn.disabled = false;
+
+      document.getElementById('result-error-detail').textContent = e.message;
+      document.getElementById('result-error').className = 'result-box error';
+    }
+  };
+
+  /* Remove password error on typing */
+  document.getElementById('f-pass').addEventListener('input', function(){
+    if(this.value.length >= 8) document.getElementById('fg-pass').classList.remove('has-error');
+  });
+})();
+</script>
+</body>
+</html>

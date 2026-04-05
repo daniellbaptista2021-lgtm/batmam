@@ -170,6 +170,10 @@ if HAS_FASTAPI:
     from .routes.crm_chat import register_crm_chat_routes
     register_crm_chat_routes(app)
 
+    # ── Infra Setup (wizard de instalacao) ────────────────────
+    from .routes.infra_setup import register_infra_setup_routes
+    register_infra_setup_routes(app)
+
     # ── Autopilot, Automations & Spectator Endpoints ──────────
     from .routes.extensions import register_extension_routes
     register_extension_routes(app)
