@@ -103,11 +103,26 @@ def _fix_handler(args: str, ctx: dict) -> str:
     ) + "Explique a causa raiz e como o fix resolve o problema."
 
 def _init_handler(args: str, ctx: dict) -> str:
-    project_type = args or "genérico"
+    from .clow_md_template import generate_clow_md, detect_project_type
+    import os
+    cwd = os.getcwd()
+    project_name = args.strip() if args.strip() else ""
+    ptype = detect_project_type(cwd)
+    clow_md = generate_clow_md(cwd, project_name)
+    clow_md_path = os.path.join(cwd, "CLOW.md")
+    if os.path.exists(clow_md_path):
+        return (
+            f"CLOW.md ja existe neste projeto (tipo detectado: {ptype}). "
+            "Se quiser regerar, delete o CLOW.md atual primeiro e rode /init novamente. "
+            f"Conteudo atual tem {len(open(clow_md_path).read())} bytes."
+        )
+    with open(clow_md_path, "w", encoding="utf-8") as f:
+        f.write(clow_md)
     return (
-        f"Inicialize um novo projeto {project_type}. "
-        "Crie a estrutura de diretórios, arquivos de configuração, "
-        "dependências, README, e um exemplo funcional mínimo."
+        f"CLOW.md criado com sucesso! Projeto detectado como '{ptype}'.\n\n"
+        "O Clow agora vai usar essas instrucoes automaticamente em cada conversa.\n"
+        "Edite o CLOW.md para personalizar: estrutura, convencoes, deploy, erros comuns.\n"
+        "Quanto mais detalhado, melhor o Clow trabalha no seu projeto."
     )
 
 def _simplify_handler(args: str, ctx: dict) -> str:

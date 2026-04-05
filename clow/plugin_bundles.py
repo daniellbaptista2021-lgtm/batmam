@@ -28,78 +28,105 @@ logger = logging.getLogger(__name__)
 BUNDLES: dict[str, dict[str, Any]] = {
     "security-pro": {
         "name": "Security Pro",
-        "description": "Ferramentas de seguranca: secret scanner, command blocker, audit",
+        "description": "Auditoria de seguranca, scan de vulnerabilidades, compliance",
         "hooks": ["secret_scanner", "dangerous_command_blocker", "change_logger"],
-        "skills": ["security_audit", "vulnerability_scan"],
-        "icon": "\U0001f512",  # lock
+        "skills": ["security_audit", "vulnerability_scan", "dependency_check", "secret_rotate", "ssl_check"],
+        "icon": "\U0001f512",
+        "plan_required": "starter",
+        "tags": ["security", "audit", "compliance"],
     },
     "git-workflow": {
-        "name": "Git Workflow",
-        "description": "Automacao Git: conventional commits, worktrees, branch management",
+        "name": "Git Workflow Pro",
+        "description": "Worktrees, conventional commits, release management, changelog",
         "hooks": ["conventional_commits", "tdd_gate"],
-        "skills": ["git_review", "git_changelog"],
-        "icon": "\U0001f500",  # twisted arrows
+        "skills": ["git_review", "git_changelog", "worktree_init", "worktree_deliver",
+                   "branch_cleanup", "pr_review", "release_prep"],
+        "icon": "\U0001f500",
+        "plan_required": "byok_free",
+        "tags": ["git", "workflow", "release"],
     },
     "crm-suite": {
         "name": "CRM Suite",
-        "description": "CRM completo: leads, funil, WhatsApp, email campaigns",
+        "description": "Gestao avancada: lead scoring, conversion reports, customer journey",
         "hooks": [],
-        "skills": ["crm_lead_management", "crm_pipeline", "crm_reports"],
-        "icon": "\U0001f4ca",  # bar chart
+        "skills": ["crm_lead_management", "crm_pipeline", "crm_reports",
+                   "lead_scoring", "conversion_report", "customer_journey"],
+        "icon": "\U0001f4bc",
+        "plan_required": "lite",
+        "tags": ["crm", "leads", "vendas"],
     },
     "whatsapp-pro": {
         "name": "WhatsApp Pro",
-        "description": "WhatsApp avancado: multi-instancia, A/B testing, RAG docs",
+        "description": "Analytics de conversa, sentiment analysis, respostas otimizadas",
         "hooks": [],
-        "skills": ["whatsapp_setup", "whatsapp_templates", "whatsapp_analytics"],
-        "icon": "\U0001f4ac",  # speech balloon
+        "skills": ["whatsapp_analytics", "conversation_summary", "sentiment_analysis",
+                   "auto_tag", "response_optimizer", "peak_hours_report"],
+        "icon": "\U0001f4f1",
+        "plan_required": "lite",
+        "tags": ["whatsapp", "atendimento", "analytics"],
     },
     "devops": {
-        "name": "DevOps",
-        "description": "CI/CD, deploy, monitoring, infraestrutura",
+        "name": "DevOps Toolkit",
+        "description": "Docker, deploy, CI/CD, monitoring, infra as code",
         "hooks": ["plan_gate", "scope_guard"],
-        "skills": ["docker_setup", "nginx_config", "systemd_service"],
-        "icon": "\U0001f680",  # rocket
+        "skills": ["docker_compose_gen", "dockerfile_gen", "nginx_config",
+                   "ssl_setup", "systemd_service", "backup_script", "log_analyzer"],
+        "icon": "\U0001f433",
+        "plan_required": "starter",
+        "tags": ["devops", "docker", "deploy", "infra"],
     },
     "quality-gates": {
         "name": "Quality Gates",
-        "description": "TDD gate, plan gate, scope guard, code review",
+        "description": "TDD, plan gate, scope guard, code review, coverage",
         "hooks": ["tdd_gate", "plan_gate", "scope_guard"],
-        "skills": ["code_review", "test_coverage"],
-        "icon": "\u2705",  # check mark
+        "skills": ["code_review", "test_coverage", "test_generator",
+                   "lint_fix", "complexity_report", "dead_code_finder"],
+        "icon": "\u2705",
+        "plan_required": "byok_free",
+        "tags": ["quality", "testing", "review"],
     },
     "content-creator": {
         "name": "Content Creator",
-        "description": "Landing pages, blog posts, social media, email marketing",
+        "description": "Landing pages, blog posts, social media, email marketing, ad copy",
         "hooks": [],
-        "skills": ["landing_page", "blog_post", "social_media", "email_sequence"],
-        "icon": "\u270d\ufe0f",  # writing hand
+        "skills": ["landing_page", "blog_post", "social_media", "email_sequence",
+                   "product_description", "ad_copy", "seo_article", "video_script"],
+        "icon": "\u270d\ufe0f",
+        "plan_required": "byok_free",
+        "tags": ["content", "marketing", "copy"],
     },
     "data-analytics": {
         "name": "Data Analytics",
-        "description": "Planilhas, dashboards, relatorios, metricas",
+        "description": "Analise de dados, relatorios, dashboards, ETL",
         "hooks": [],
-        "skills": ["spreadsheet", "dashboard", "report", "kpi_tracker"],
-        "icon": "\U0001f4c8",  # chart increasing
+        "skills": ["csv_analyzer", "chart_generator", "report_builder",
+                   "data_cleaner", "pivot_table", "trend_analysis", "export_pdf_report"],
+        "icon": "\U0001f4ca",
+        "plan_required": "byok_free",
+        "tags": ["data", "analytics", "report"],
     },
     "automation": {
-        "name": "Automation",
-        "description": "n8n workflows, cron jobs, webhooks, integracoes",
+        "name": "Automation Suite",
+        "description": "Fluxos n8n, cron avancado, webhooks, integracao entre sistemas",
         "hooks": ["change_logger"],
-        "skills": ["n8n_workflow", "webhook_setup", "cron_scheduler"],
-        "icon": "\u26a1",  # lightning
+        "skills": ["n8n_flow_gen", "cron_manager", "webhook_builder",
+                   "api_connector", "scheduled_report", "data_sync"],
+        "icon": "\u26a1",
+        "plan_required": "starter",
+        "tags": ["automation", "n8n", "cron", "webhook"],
     },
     "full-stack": {
-        "name": "Full Stack",
-        "description": "Pacote completo: security + git + quality + devops",
+        "name": "Full Stack Dev",
+        "description": "Frontend + backend + deploy: security + git + quality + devops",
         "hooks": [
-            "secret_scanner",
-            "conventional_commits",
-            "tdd_gate",
-            "dangerous_command_blocker",
+            "secret_scanner", "conventional_commits",
+            "tdd_gate", "dangerous_command_blocker",
         ],
-        "skills": [],
-        "icon": "\U0001f3d7\ufe0f",  # building construction
+        "skills": ["react_component", "api_endpoint", "database_schema",
+                   "auth_setup", "crud_generator", "form_builder"],
+        "icon": "\U0001f680",
+        "plan_required": "byok_free",
+        "tags": ["fullstack", "frontend", "backend", "web"],
     },
 }
 
@@ -256,6 +283,19 @@ class BundleManager:
         """Retorna lista de bundle IDs atualmente instalados."""
         settings = self._load_settings()
         return list(settings.get("installed_bundles", []))
+
+    def search(self, query: str) -> list[dict]:
+        """Busca bundles por nome, descricao ou tag."""
+        q = query.lower()
+        results = []
+        installed = set(self.get_installed())
+        for bid, bdata in BUNDLES.items():
+            tags = bdata.get("tags", [])
+            if (q in bid or q in bdata["name"].lower()
+                    or q in bdata["description"].lower()
+                    or any(q in t for t in tags)):
+                results.append({"id": bid, "installed": bid in installed, **bdata})
+        return results
 
     def install_hook(self, hook_name: str) -> bool:
         """Ativa um hook builtin no settings.json.

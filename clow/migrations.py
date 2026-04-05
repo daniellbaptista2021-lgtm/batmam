@@ -342,6 +342,78 @@ MIGRATIONS: list[tuple[int, str, str]] = [
         LIMIT 20;
         """,
     ),
+    # ── v9: Auto-aggregation tables for dashboard ──────────────
+    (
+        9,
+        "Create daily_stats, weekly_stats, action_distribution, top_users_weekly for auto-aggregation",
+        """
+        CREATE TABLE IF NOT EXISTS daily_stats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tenant_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            input_tokens INTEGER DEFAULT 0,
+            output_tokens INTEGER DEFAULT 0,
+            cache_hits INTEGER DEFAULT 0,
+            total_requests INTEGER DEFAULT 0,
+            successful_requests INTEGER DEFAULT 0,
+            failed_requests INTEGER DEFAULT 0,
+            whatsapp_messages_received INTEGER DEFAULT 0,
+            whatsapp_messages_sent INTEGER DEFAULT 0,
+            whatsapp_auto_replies INTEGER DEFAULT 0,
+            leads_created INTEGER DEFAULT 0,
+            leads_converted INTEGER DEFAULT 0,
+            avg_latency_ms REAL DEFAULT 0,
+            max_latency_ms REAL DEFAULT 0,
+            estimated_cost_usd REAL DEFAULT 0,
+            created_at REAL DEFAULT (strftime('%s','now')),
+            updated_at REAL DEFAULT (strftime('%s','now')),
+            UNIQUE(tenant_id, date)
+        );
+
+        CREATE TABLE IF NOT EXISTS weekly_stats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tenant_id TEXT NOT NULL,
+            week TEXT NOT NULL,
+            input_tokens INTEGER DEFAULT 0,
+            output_tokens INTEGER DEFAULT 0,
+            total_requests INTEGER DEFAULT 0,
+            whatsapp_messages INTEGER DEFAULT 0,
+            leads_created INTEGER DEFAULT 0,
+            leads_converted INTEGER DEFAULT 0,
+            estimated_cost_usd REAL DEFAULT 0,
+            created_at REAL DEFAULT (strftime('%s','now')),
+            updated_at REAL DEFAULT (strftime('%s','now')),
+            UNIQUE(tenant_id, week)
+        );
+
+        CREATE TABLE IF NOT EXISTS action_distribution (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tenant_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            action_type TEXT NOT NULL,
+            action_name TEXT NOT NULL,
+            count INTEGER DEFAULT 0,
+            total_tokens INTEGER DEFAULT 0,
+            UNIQUE(tenant_id, date, action_type, action_name)
+        );
+
+        CREATE TABLE IF NOT EXISTS top_users_weekly (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tenant_id TEXT NOT NULL,
+            week TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            user_name TEXT DEFAULT '',
+            total_requests INTEGER DEFAULT 0,
+            total_tokens INTEGER DEFAULT 0,
+            UNIQUE(tenant_id, week, user_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_daily_stats_td ON daily_stats(tenant_id, date);
+        CREATE INDEX IF NOT EXISTS idx_weekly_stats_tw ON weekly_stats(tenant_id, week);
+        CREATE INDEX IF NOT EXISTS idx_action_dist_td ON action_distribution(tenant_id, date);
+        CREATE INDEX IF NOT EXISTS idx_top_users_tw ON top_users_weekly(tenant_id, week);
+        """,
+    ),
 ]
 
 
