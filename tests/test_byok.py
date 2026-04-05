@@ -235,7 +235,7 @@ class TestRoutes(unittest.TestCase):
         self.assertIn("step2", html)
         self.assertIn("step3", html)
         self.assertIn("sk-ant-", html)
-        self.assertIn("signup", html)
+        self.assertIn("onboarding.js", html)
         self.assertIn("Validar e Salvar", html)
         print("[OK] Routes: onboarding page com 3 steps")
 

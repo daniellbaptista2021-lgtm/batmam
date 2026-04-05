@@ -509,7 +509,7 @@ h1{font-size:1.4rem;font-weight:700;text-align:center;margin-bottom:4px}
     <div class="fg"><label>Email</label><input id="email" type="email" placeholder="seu@email.com" required></div>
     <div class="fg"><label>Senha</label><input id="password" type="password" placeholder="m&iacute;nimo 6 caracteres" required></div>
     <label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:14px;cursor:pointer;font-size:.82rem;color:var(--t2);line-height:1.5"><input type="checkbox" id="terms" style="margin-top:3px;accent-color:var(--p);width:16px;height:16px;flex-shrink:0"><span>Li e aceito os <a href="/termos" target="_blank" style="color:var(--p)">Termos de Uso</a> e a <a href="/privacidade" target="_blank" style="color:var(--p)">Pol&iacute;tica de Privacidade</a></span></label>
-    <button class="btn btn-primary" onclick="signup()">Criar Conta</button>
+    <button class="btn btn-primary">Criar Conta</button>
     <a class="link" href="/logout">J&aacute; tenho conta</a>
     <div class="msg" id="msg1"></div>
   </div>
@@ -524,7 +524,7 @@ h1{font-size:1.4rem;font-weight:700;text-align:center;margin-bottom:4px}
       <p>3. Em <a href="https://console.anthropic.com/settings/billing" target="_blank" style="color:var(--p)">Billing</a>, adicione saldo m&iacute;nimo de <strong style="color:var(--g)">$5 USD</strong></p>
       <p style="margin-top:8px;color:var(--tm);font-size:.75rem">Sua key fica salva apenas no Clow. N&atilde;o &eacute; compartilhada com terceiros.</p>
     </div>
-    <button class="btn btn-primary" onclick="saveKey()" id="btn-key">Validar e Salvar</button>
+    <button class="btn btn-primary" id="btn-key">Validar e Salvar</button>
     <div class="msg" id="msg2"></div>
   </div>
 
@@ -537,7 +537,7 @@ h1{font-size:1.4rem;font-weight:700;text-align:center;margin-bottom:4px}
       <div>
         <h3 class="ititle">Usar na Web</h3>
         <p class="idesc">Acesse direto no navegador, sem instalar nada.</p>
-        <button class="btn btn-primary" onclick="goToClow()" style="padding:10px 20px;font-size:.9rem;width:auto;margin-top:8px">Abrir Clow Web</button>
+        <button class="btn btn-primary" style="padding:10px 20px;font-size:.9rem;width:auto;margin-top:8px">Abrir Clow Web</button>
       </div>
     </div>
 
@@ -598,72 +598,7 @@ h1{font-size:1.4rem;font-weight:700;text-align:center;margin-bottom:4px}
 </div>
 </div>
 
-<script>
-let token='';
-function $(id){return document.getElementById(id)}
-function showStep(n){document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));$('step'+n).classList.add('active');for(let i=1;i<=3;i++){$('d'+i).className=i<n?'dot done':i===n?'dot active':'dot'}}
-function showMsg(id,text,type){const el=$(id);el.className='msg '+type;el.textContent=text}
-
-let userEmail='';
-async function signup(){
-  const name=$('name').value.trim(),email=$('email').value.trim(),password=$('password').value;
-  if(!$('terms').checked)return showMsg('msg1','Aceite os Termos de Uso e Politica de Privacidade','error');
-  if(!name)return showMsg('msg1','Informe seu nome completo','error');
-  if(name.split(/\s+/).length<2)return showMsg('msg1','Informe nome e sobrenome','error');
-  if(!email)return showMsg('msg1','Informe seu email','error');
-  if(!email.includes('@')||!email.split('@')[1].includes('.'))return showMsg('msg1','Email invalido','error');
-  if(!password)return showMsg('msg1','Crie uma senha','error');
-  if(password.length<6)return showMsg('msg1','Senha deve ter pelo menos 6 caracteres','error');
-  try{
-    const r=await fetch('/api/v1/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({name,email,password,accepted_terms:true})});
-    const d=await r.json();
-    if(d.error){
-      if(d.action==='login'){
-        $('msg1').className='msg error';
-        $('msg1').innerHTML=d.error+' <a href="/login" style="color:var(--p);text-decoration:underline">Ir para o login</a>';
-        return;
-      }
-      return showMsg('msg1',d.error,'error');
-    }
-    token=d.token;userEmail=email;
-    // Se veio com ?plan= na URL, vai direto pro checkout Stripe
-    const urlPlan=new URLSearchParams(window.location.search).get('plan');
-    if(urlPlan&&['lite','starter','pro','business'].includes(urlPlan)){
-      // Redireciona pro Stripe checkout
-      try{
-        const cr=await fetch('/api/v1/billing/checkout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({plan_id:urlPlan})});
-        const cd=await cr.json();
-        if(cd.url){window.location.href=cd.url;return}
-      }catch(ex){}
-      showStep(3);
-    }else{showStep(2)}
-  }catch(e){showMsg('msg1','Erro de rede. Tente novamente.','error')}
-}
-
-async function saveKey(){
-  const key=$('apikey').value.trim();
-  if(!key)return showMsg('msg2','Cole sua API key','error');
-  if(!key.startsWith('sk-ant-'))return showMsg('msg2','Key deve comecar com sk-ant-','error');
-  $('btn-key').disabled=true;$('btn-key').innerHTML='<span class="spinner"></span> Validando...';showMsg('msg2','Validando key com a Anthropic...','info');
-  try{const r=await fetch('/api/v1/me/api-key',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({api_key:key})});const d=await r.json();if(d.error){showMsg('msg2',d.error,'error');$('btn-key').disabled=false;$('btn-key').textContent='Validar e Salvar';return}const un=$('userName');if(un)un.textContent=userEmail.split('@')[0];showStep(3)}catch(e){showMsg('msg2','Erro de rede','error');$('btn-key').disabled=false;$('btn-key').textContent='Validar e Salvar'}
-}
-
-async function goToClow(){
-  // Verifica que a sessao do usuario esta ativa antes de redirecionar
-  try{
-    const r=await fetch('/api/v1/me',{credentials:'same-origin'});
-    const d=await r.json();
-    if(d.error||!d.email){
-      // Sessao invalida — faz login manual
-      window.location='/login';
-      return;
-    }
-    // Sessao valida — redireciona pro chat
-    window.location='/';
-  }catch(e){window.location='/login';}
-  return;
-}
-</script>
+<script src="/static/js/onboarding.js"></script>
 </body>
 </html>"""
 
