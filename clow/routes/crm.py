@@ -73,13 +73,20 @@ def register_crm_routes(app) -> None:
         if not sess:
             return _JR({"error": "Nao autenticado"}, status_code=401)
         from ..crm_models import create_lead
+
+        # Assinantes so recebem leads via WhatsApp; manual apenas admin
+        is_admin = sess.get("is_admin", False)
         body = await request.json()
+        source = body.get("source", "manual")
+        if not is_admin and source not in ("whatsapp", "agendamento"):
+            source = "manual"  # Admin pode qualquer source
+
         lead = create_lead(
             tenant_id=_tenant(sess),
             name=body.get("name", ""),
             email=body.get("email", ""),
             phone=body.get("phone", ""),
-            source=body.get("source", "manual"),
+            source=source,
             notes=body.get("notes", ""),
             tags=body.get("tags"),
             custom_fields=body.get("custom_fields"),
@@ -453,7 +460,14 @@ def register_crm_routes(app) -> None:
 
     @app.post("/api/v1/crm/webhook/form/{tenant_id}", tags=["crm"])
     async def crm_form_webhook(tenant_id: str, request: _Req):
-        """Recebe dados de formulario de landing pages (publico)."""
+        """Recebe dados de formulario — SOMENTE admin.
+        Assinantes recebem leads apenas via WhatsApp (Z-API).
+        """
+        from ..database import get_user_by_id
+        user = get_user_by_id(tenant_id)
+        if not user or not user.get("is_admin"):
+            return _JR({"error": "Webhook disponivel apenas para contas admin"}, status_code=403)
+
         from ..crm_models import create_lead, get_lead_by_email, get_lead_by_phone
         try:
             content_type = request.headers.get("content-type", "")
