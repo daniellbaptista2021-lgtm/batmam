@@ -16,7 +16,7 @@ pip install -e "." -q
 python -m pytest tests/ -v --tb=short --ignore=tests/test_hooks.py || { echo "Tests failed! Aborting."; exit 1; }
 
 # Restart service
-sudo systemctl restart clow
+sudo systemctl restart system-clow
 sleep 3
 
 # Verify
