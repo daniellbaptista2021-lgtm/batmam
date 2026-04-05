@@ -182,6 +182,18 @@ if HAS_FASTAPI:
     from .routes.public_api import register_public_api_routes
     register_public_api_routes(app)
 
+    # ── Data (backup, export, import) ─────────────────────────
+    from .routes.data import register_data_routes
+    register_data_routes(app)
+
+    # ── Team (multi-usuario, roles) ───────────────────────────
+    from .routes.team import register_team_routes
+    register_team_routes(app)
+
+    # ── Audit (log de atividades) ─────────────────────────────
+    from .routes.audit import register_audit_routes
+    register_audit_routes(app)
+
     # ── Autopilot, Automations & Spectator Endpoints ──────────
     from .routes.extensions import register_extension_routes
     register_extension_routes(app)
