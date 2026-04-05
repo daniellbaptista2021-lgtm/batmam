@@ -274,7 +274,7 @@ async function loadPlan(){
   ];
   $('plan-grid').innerHTML=plans.map(p=>{
     const cur=s.plan_id===p.id;
-    const btnText=p.id==='lite'?'Testar 7 dias gratis':'Assinar '+p.name;
+    const btnText='Assinar '+p.name;
     return `<div class="plan-card ${cur?'current':''}"><h4>${p.name}</h4><div class="plan-price">${p.price}</div><ul>${p.items.map(i=>'<li>'+i+'</li>').join('')}</ul>${cur?'<button class="btn btn-secondary" disabled>Plano atual</button>':p.id==='byok_free'?'<a href="/onboarding" class="btn btn-secondary">Configurar</a>':`<button class="btn btn-primary" onclick="checkout('${p.id}')">${btnText}</button>`}</div>`;
   }).join('');
 }
