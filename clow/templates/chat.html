@@ -133,7 +133,7 @@
     <select class="mod-pill haiku" id="modSel" onchange="onMod()" title="Modelo AI" aria-label="Selecionar modelo AI"><option value="haiku">Haiku</option><option value="sonnet">Sonnet</option></select>
     <div class="on-badge" id="onBdg" aria-live="polite"><span class="on-dot"></span><span id="onLbl">online</span></div>
     <div class="hdr-menu">
-      <button class="hdr-mbtn" onclick="togDrop()" aria-label="Menu de opções">&#x22EE;</button>
+      <button class="hdr-mbtn" id="menuBtn" aria-label="Menu de opcoes">&#x22EE;</button>
       <div class="hdr-drop" id="hdrDrop" role="menu">
         <a href="/app/settings" onclick="clsDrop()">Configuracoes</a>
         <a href="/usage" onclick="clsDrop()">Uso e Franquia</a>
@@ -173,13 +173,30 @@
   <div class="lightbox" id="lightbox" onclick="closeLightbox()"><button class="lb-close" onclick="closeLightbox()">&times;</button><img id="lbImg" src=""></div>
 </div>
 <div class="modal-bg" id="modalBg" onclick="if(event.target===this)clsModal()" role="dialog" aria-modal="true"><div class="modal" id="modalC"></div></div>
+<script src="/static/js/chat.js?v=20260405b"></script>
 <script>
-/* Fallback — garante que menu funciona mesmo se chat.js falhar */
-if(typeof togDrop==='undefined'){function togDrop(){document.getElementById('hdrDrop').classList.toggle('show')}}
-if(typeof clsDrop==='undefined'){function clsDrop(){document.getElementById('hdrDrop').classList.remove('show')}}
-if(typeof toggleSB==='undefined'){function toggleSB(){var s=document.getElementById('sb'),o=document.getElementById('sbOv');if(s)s.classList.toggle('open');if(o)o.classList.toggle('show')}}
-document.addEventListener('click',function(e){if(!e.target.closest('.hdr-menu')&&typeof clsDrop==='function')clsDrop()});
+/* Menu dropdown — funciona independente do chat.js */
+(function(){
+  var drop=document.getElementById('hdrDrop');
+  var btn=document.getElementById('menuBtn');
+  if(btn&&drop){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      drop.classList.toggle('show');
+    });
+    document.addEventListener('click',function(e){
+      if(!e.target.closest('.hdr-menu'))drop.classList.remove('show');
+    });
+  }
+  /* Sidebar toggle */
+  window.toggleSB=function(){
+    var s=document.getElementById('sb'),o=document.getElementById('sbOv');
+    if(s)s.classList.toggle('open');if(o)o.classList.toggle('show');
+  };
+  /* Compat com chat.js */
+  window.togDrop=function(){if(drop)drop.classList.toggle('show')};
+  window.clsDrop=function(){if(drop)drop.classList.remove('show')};
+})();
 </script>
-<script src="/static/js/chat.js?v=20260405"></script>
 </body>
 </html>
