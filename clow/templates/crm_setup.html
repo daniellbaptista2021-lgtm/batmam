@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CRM — Configurar | Clow</title>
+<link rel="icon" href="/static/brand/favicon.png">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050510;--bg2:#0a0a1a;--border:#1a1a2e;--t1:#e4e4e7;--t2:#71717a;--p:#7c5cfc;--green:#22c55e;--radius:12px}
+body{background:var(--bg);color:var(--t1);font-family:system-ui,-apple-system,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+a{color:var(--p);text-decoration:none}
+.top{display:flex;align-items:center;gap:10px;padding:12px 24px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.top img{height:24px}
+.top .label{font-weight:700;font-size:15px;color:var(--p)}
+.top a.back{color:var(--t2);font-size:13px}
+.main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:40px;max-width:600px;width:100%;text-align:center}
+.card .icon{font-size:48px;margin-bottom:16px}
+.card h2{font-size:22px;margin-bottom:8px}
+.card>p{color:var(--t2);font-size:14px;margin-bottom:28px;line-height:1.6}
+.benefits{display:grid;grid-template-columns:1fr 1fr;gap:14px;text-align:left;margin-bottom:28px}
+.benefit{display:flex;gap:10px;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)}
+.benefit span{font-size:24px;flex-shrink:0}
+.benefit strong{font-size:13px;display:block;margin-bottom:2px}
+.benefit p{font-size:11px;color:var(--t2);margin:0;line-height:1.4}
+.actions{display:flex;flex-direction:column;gap:10px}
+.btn{padding:12px 24px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .2s}
+.btn-primary{background:var(--p);color:#fff}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-secondary{background:var(--bg);color:var(--t1);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--p)}
+.btn-link{background:none;color:var(--p);font-size:13px;padding:8px}
+@media(max-width:600px){.benefits{grid-template-columns:1fr}.card{padding:24px}}
+</style>
+</head>
+<body>
+<div class="top">
+  <a href="/" class="back">&larr; voltar</a>
+  <img src="/static/brand/logo-sidebar.png" alt="Clow">
+  <span class="label">CRM</span>
+</div>
+<div class="main">
+  <div class="card">
+    <div class="icon">💬</div>
+    <h2>Configure seu CRM</h2>
+    <p>O Clow usa o Chatwoot como CRM — uma plataforma completa e gratuita pra gerenciar conversas, leads e atendimentos.</p>
+    <div class="benefits">
+      <div class="benefit"><span>💬</span><div><strong>Atendimento completo</strong><p>Conversas, etiquetas, equipe, filas</p></div></div>
+      <div class="benefit"><span>📱</span><div><strong>WhatsApp, Instagram, Email</strong><p>Todos os canais num lugar so</p></div></div>
+      <div class="benefit"><span>📊</span><div><strong>Dashboard no Clow</strong><p>Metricas em tempo real</p></div></div>
+      <div class="benefit"><span>📲</span><div><strong>App no celular</strong><p>Atenda de qualquer lugar</p></div></div>
+    </div>
+    <div class="actions">
+      <a href="/setup" class="btn btn-primary">Instalar Chatwoot (5 minutos)</a>
+      <button onclick="document.getElementById('connectForm').style.display='block';this.style.display='none'" class="btn btn-link">Ja tenho Chatwoot &rarr; conectar</button>
+      <div id="connectForm" style="display:none;text-align:left;margin-top:12px">
+        <label style="font-size:12px;color:var(--t2);display:block;margin-bottom:4px">Codigo de conexao</label>
+        <input id="connCode" type="text" placeholder="clow_conn_..." style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--t1);font-size:14px;margin-bottom:8px">
+        <button onclick="connect()" class="btn btn-primary" style="width:100%">Testar e Conectar</button>
+        <div id="connResult" style="margin-top:8px;font-size:13px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+async function connect(){
+  const code=document.getElementById('connCode').value.trim();
+  const res=document.getElementById('connResult');
+  if(!code){res.textContent='Cole o codigo de conexao';res.style.color='#ef4444';return;}
+  res.textContent='Testando...';res.style.color='var(--t2)';
+  try{
+    const r=await fetch('/api/v1/setup/connect',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({connection_code:code})});
+    const d=await r.json();
+    if(d.connected){res.textContent='Conectado! Redirecionando...';res.style.color='#22c55e';setTimeout(()=>location.reload(),1000);}
+    else{res.textContent=d.error||'Falha na conexao';res.style.color='#ef4444';}
+  }catch(e){res.textContent='Erro: '+e.message;res.style.color='#ef4444';}
+}
+</script>
+</body>
+</html>

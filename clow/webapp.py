@@ -162,13 +162,9 @@ if HAS_FASTAPI:
     from .routes.whatsapp_agent import register_whatsapp_agent_routes
     register_whatsapp_agent_routes(app)
 
-    # ── CRM Routes ─────────────────────────────────────────────
-    from .routes.crm import register_crm_routes
-    register_crm_routes(app)
-
-    # ── CRM Chat (WhatsApp Web no Pipeline) ───────────────────
-    from .routes.crm_chat import register_crm_chat_routes
-    register_crm_chat_routes(app)
+    # ── CRM Dashboard (metricas do Chatwoot) ─────────────────
+    from .routes.crm_dashboard import register_crm_dashboard_routes
+    register_crm_dashboard_routes(app)
 
     # ── Infra Setup (wizard de instalacao) ────────────────────
     from .routes.infra_setup import register_infra_setup_routes

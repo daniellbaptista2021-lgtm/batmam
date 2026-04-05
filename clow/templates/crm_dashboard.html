@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#050510">
+<link rel="icon" type="image/png" href="/static/brand/favicon.png">
+<title>Clow — CRM Dashboard</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050510;--bg2:#0a0a1a;--border:#1a1a2e;
+  --t1:#e4e4e7;--t2:#71717a;--p:#7c5cfc;
+  --green:#22c55e;--red:#ef4444;
+  --radius:12px;--radius-sm:8px;
+}
+body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh;line-height:1.5}
+a{color:var(--p);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Header */
+.header{display:flex;align-items:center;gap:12px;padding:14px 24px;background:var(--bg2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.header-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.back-link{color:var(--t2);font-size:14px;transition:color .2s}
+.back-link:hover{color:var(--t1);text-decoration:none}
+.logo-infinity{width:28px;height:28px;fill:none;stroke:url(#hGrad);stroke-width:2.2;stroke-linecap:round}
+.logo-text{font-weight:700;font-size:18px;background:linear-gradient(90deg,#9B59FC,#4A9EFF);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-title{font-size:15px;color:var(--t2);margin-left:4px}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .2s}
+.btn-primary{background:var(--p);color:#fff}
+.btn-primary:hover{background:#6a4ae0}
+.btn-outline{background:transparent;color:var(--t2);border:1px solid var(--border)}
+.btn-outline:hover{color:var(--t1);border-color:var(--t2)}
+.sync-time{font-size:12px;color:var(--t2)}
+
+/* Status bar */
+.status-bar{display:flex;align-items:center;gap:12px;padding:10px 24px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:13px;flex-wrap:wrap}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.status-dot.online{background:var(--green);box-shadow:0 0 6px var(--green)}
+.status-dot.offline{background:var(--red);box-shadow:0 0 6px var(--red)}
+.status-text{color:var(--t2)}
+.status-url{color:var(--p);font-size:12px}
+.status-version{color:var(--t2);font-size:12px;margin-left:auto}
+
+/* Main */
+.main{max-width:1200px;margin:0 auto;padding:24px}
+
+/* Metrics cards */
+.metrics-row{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:28px}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px 16px;text-align:center;transition:border-color .2s}
+.metric-card:hover{border-color:var(--p)}
+.metric-value{font-size:32px;font-weight:700;color:var(--t1);line-height:1.2}
+.metric-value.loading{color:var(--t2);font-size:16px}
+.metric-label{font-size:12px;color:var(--t2);margin-top:6px;text-transform:uppercase;letter-spacing:.5px}
+
+/* Detail grid */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.detail-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;min-height:200px}
+.detail-card h3{font-size:14px;font-weight:600;color:var(--t1);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.detail-card h3 .icon{font-size:16px}
+
+/* Canais list */
+.inbox-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.inbox-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,.02);border-radius:var(--radius-sm);border:1px solid transparent;transition:border-color .2s}
+.inbox-item:hover{border-color:var(--border)}
+.inbox-icon{font-size:18px;width:28px;text-align:center;flex-shrink:0}
+.inbox-name{font-size:13px;color:var(--t1);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inbox-type{font-size:11px;color:var(--t2);background:rgba(255,255,255,.05);padding:2px 8px;border-radius:4px}
+.inbox-empty{color:var(--t2);font-size:13px;font-style:italic}
+
+/* Quick links */
+.quick-links{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quick-link{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;background:rgba(124,92,252,.06);border:1px solid rgba(124,92,252,.15);border-radius:var(--radius-sm);color:var(--t1);font-size:13px;font-weight:500;transition:all .2s;text-decoration:none}
+.quick-link:hover{background:rgba(124,92,252,.12);border-color:var(--p);text-decoration:none}
+.quick-link .ql-icon{font-size:18px}
+
+/* PWA tip */
+.pwa-tip{font-size:13px;color:var(--t2);line-height:1.7}
+.pwa-tip strong{color:var(--t1)}
+.pwa-tip ol{padding-left:18px;margin-top:8px}
+.pwa-tip li{margin-bottom:4px}
+
+/* Connection details */
+.conn-details summary{cursor:pointer;font-size:13px;color:var(--p);padding:4px 0;user-select:none}
+.conn-details summary:hover{text-decoration:underline}
+.conn-details[open] summary{margin-bottom:12px}
+.conn-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.conn-row:last-child{border-bottom:none}
+.conn-label{color:var(--t2)}
+.conn-val{color:var(--t1);font-family:'SF Mono',Monaco,Consolas,monospace;font-size:12px;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.conn-actions{display:flex;gap:8px;margin-top:14px}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:6px}
+.btn-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25)}
+.btn-green:hover{background:rgba(34,197,94,.2)}
+.btn-red{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.btn-red:hover{background:rgba(239,68,68,.18)}
+
+/* Spinner */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--p);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Error banner */
+.error-banner{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:var(--radius-sm);padding:14px 20px;margin-bottom:20px;display:none;align-items:center;gap:10px;font-size:13px;color:var(--red)}
+.error-banner .err-icon{font-size:18px}
+
+/* Responsive */
+@media(max-width:900px){
+  .metrics-row{grid-template-columns:repeat(3,1fr)}
+  .detail-grid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .metrics-row{grid-template-columns:repeat(2,1fr)}
+  .header{padding:12px 16px}
+  .main{padding:16px}
+  .status-bar{padding:8px 16px}
+  .header-title{display:none}
+  .quick-links{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<svg style="position:absolute;width:0;height:0"><defs><linearGradient id="hGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#9B59FC"/><stop offset="100%" stop-color="#4A9EFF"/></linearGradient></defs></svg>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <a href="/" class="back-link">&larr; voltar</a>
+    <svg class="logo-infinity" viewBox="0 0 32 32">
+      <path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(0.95)"/>
+    </svg>
+    <span class="logo-text">Clow</span>
+    <span class="header-title">CRM Dashboard</span>
+  </div>
+  <div class="header-right">
+    <a href="{{CHATWOOT_URL}}" target="_blank" class="btn btn-outline">Abrir Chatwoot ↗</a>
+    <button class="btn btn-primary" id="btnRefresh"><span class="spinner" id="refreshSpinner" style="display:none"></span> Atualizar</button>
+    <span class="sync-time" id="syncTime">Ultima sync: --:--</span>
+  </div>
+</div>
+
+<!-- Status bar -->
+<div class="status-bar" id="statusBar">
+  <span class="status-dot" id="statusDot"></span>
+  <span class="status-text" id="statusText">Verificando conexao...</span>
+  <a href="{{CHATWOOT_URL}}" target="_blank" class="status-url" id="statusUrl">{{CHATWOOT_URL}}</a>
+  <span class="status-version" id="statusVersion"></span>
+</div>
+
+<!-- Main content -->
+<div class="main">
+
+  <!-- Error banner -->
+  <div class="error-banner" id="errorBanner">
+    <span class="err-icon">&#9888;</span>
+    <span id="errorText">Nao foi possivel conectar ao Chatwoot.</span>
+  </div>
+
+  <!-- Metrics cards -->
+  <div class="metrics-row" id="metricsRow">
+    <div class="metric-card">
+      <div class="metric-value loading" id="mConversasAbertas"><span class="spinner"></span></div>
+      <div class="metric-label">Conversas abertas</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value loading" id="mResolvidasHoje"><span class="spinner"></span></div>
+      <div class="metric-label">Resolvidas hoje</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value loading" id="mPendentes"><span class="spinner"></span></div>
+      <div class="metric-label">Pendentes</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value loading" id="mContatos"><span class="spinner"></span></div>
+      <div class="metric-label">Total de contatos</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value loading" id="mInboxes"><span class="spinner"></span></div>
+      <div class="metric-label">Inboxes ativos</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value loading" id="mWhatsapp"><span class="spinner"></span></div>
+      <div class="metric-label">WhatsApp conectados</div>
+    </div>
+  </div>
+
+  <!-- Detail grid -->
+  <div class="detail-grid">
+
+    <!-- Canais -->
+    <div class="detail-card">
+      <h3><span class="icon">&#128225;</span> Canais</h3>
+      <ul class="inbox-list" id="inboxList">
+        <li class="inbox-empty">Carregando canais...</li>
+      </ul>
+    </div>
+
+    <!-- Acesso rapido -->
+    <div class="detail-card">
+      <h3><span class="icon">&#9889;</span> Acesso rapido</h3>
+      <div class="quick-links">
+        <a href="{{CHATWOOT_URL}}/app/accounts/1/conversations" target="_blank" class="quick-link">
+          <span class="ql-icon">&#128172;</span> Conversas
+        </a>
+        <a href="{{CHATWOOT_URL}}/app/accounts/1/contacts" target="_blank" class="quick-link">
+          <span class="ql-icon">&#128101;</span> Contatos
+        </a>
+        <a href="{{CHATWOOT_URL}}/app/accounts/1/reports/overview" target="_blank" class="quick-link">
+          <span class="ql-icon">&#128202;</span> Relatorios
+        </a>
+        <a href="{{CHATWOOT_URL}}/app/accounts/1/settings/general" target="_blank" class="quick-link">
+          <span class="ql-icon">&#9881;</span> Configuracoes
+        </a>
+      </div>
+    </div>
+
+    <!-- Dica PWA -->
+    <div class="detail-card">
+      <h3><span class="icon">&#128241;</span> Dica PWA</h3>
+      <div class="pwa-tip">
+        <strong>Instale o Chatwoot como app no celular:</strong>
+        <ol>
+          <li>Abra <a href="{{CHATWOOT_URL}}" target="_blank">{{CHATWOOT_URL}}</a> no navegador do celular</li>
+          <li>No <strong>Chrome</strong>: toque no menu (3 pontos) &rarr; <strong>"Adicionar a tela inicial"</strong></li>
+          <li>No <strong>Safari</strong>: toque no botao de compartilhar &rarr; <strong>"Adicionar a Tela de Inicio"</strong></li>
+          <li>O Chatwoot vai abrir como um app nativo, com notificacoes push</li>
+        </ol>
+        <p style="margin-top:10px;color:var(--t2)">Funciona em Android e iOS. Nao precisa da App Store.</p>
+      </div>
+    </div>
+
+    <!-- Conexao -->
+    <div class="detail-card">
+      <h3><span class="icon">&#128279;</span> Conexao</h3>
+      <details class="conn-details" open>
+        <summary>Detalhes da conexao</summary>
+        <div class="conn-row">
+          <span class="conn-label">URL</span>
+          <span class="conn-val" id="connUrl">{{CHATWOOT_URL}}</span>
+        </div>
+        <div class="conn-row">
+          <span class="conn-label">Status</span>
+          <span class="conn-val" id="connStatus">Verificando...</span>
+        </div>
+        <div class="conn-row">
+          <span class="conn-label">Uptime</span>
+          <span class="conn-val" id="connUptime">--</span>
+        </div>
+        <div class="conn-row">
+          <span class="conn-label">Latencia</span>
+          <span class="conn-val" id="connLatency">--</span>
+        </div>
+        <div class="conn-actions">
+          <button class="btn btn-sm btn-green" id="btnTestConn">Testar conexao</button>
+          <button class="btn btn-sm btn-red" id="btnDisconnect">Desconectar</button>
+        </div>
+      </details>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  const REFRESH_INTERVAL = 5 * 60 * 1000;
+  let refreshTimer = null;
+
+  const $ = id => document.getElementById(id);
+
+  const INBOX_ICONS = {
+    'whatsapp': '\uD83D\uDCF1',
+    'email': '\uD83D\uDCE7',
+    'facebook': '\uD83D\uDCD8',
+    'api': '\uD83D\uDD0C',
+    'web': '\uD83C\uDF10',
+    'telegram': '\u2708\uFE0F',
+    'twitter': '\uD83D\uDC26',
+    'sms': '\uD83D\uDCEC',
+    'line': '\uD83D\uDFE2'
+  };
+
+  function formatTime(d){
+    const h = String(d.getHours()).padStart(2,'0');
+    const m = String(d.getMinutes()).padStart(2,'0');
+    const s = String(d.getSeconds()).padStart(2,'0');
+    return h+':'+m+':'+s;
+  }
+
+  function setMetric(id, val){
+    const el = $(id);
+    if(!el) return;
+    el.classList.remove('loading');
+    el.textContent = val !== null && val !== undefined ? val : '--';
+  }
+
+  function setMetricsLoading(){
+    ['mConversasAbertas','mResolvidasHoje','mPendentes','mContatos','mInboxes','mWhatsapp'].forEach(id => {
+      const el = $(id);
+      if(el){ el.classList.add('loading'); el.innerHTML = '<span class="spinner"></span>'; }
+    });
+  }
+
+  function showError(msg){
+    const banner = $('errorBanner');
+    $('errorText').textContent = msg;
+    banner.style.display = 'flex';
+  }
+
+  function hideError(){
+    $('errorBanner').style.display = 'none';
+  }
+
+  function setOnline(online, version){
+    const dot = $('statusDot');
+    const text = $('statusText');
+    const ver = $('statusVersion');
+    dot.className = 'status-dot ' + (online ? 'online' : 'offline');
+    text.textContent = online ? 'Chatwoot online' : 'Chatwoot offline';
+    if(version) ver.textContent = 'v' + version;
+    $('connStatus').textContent = online ? 'Online' : 'Offline';
+    $('connStatus').style.color = online ? 'var(--green)' : 'var(--red)';
+  }
+
+  function renderInboxes(inboxes){
+    const list = $('inboxList');
+    if(!inboxes || inboxes.length === 0){
+      list.innerHTML = '<li class="inbox-empty">Nenhum canal encontrado</li>';
+      return;
+    }
+    list.innerHTML = '';
+    inboxes.forEach(inbox => {
+      const type = (inbox.channel_type || inbox.type || '').toLowerCase();
+      let key = 'api';
+      Object.keys(INBOX_ICONS).forEach(k => { if(type.includes(k)) key = k; });
+      const li = document.createElement('li');
+      li.className = 'inbox-item';
+      li.innerHTML =
+        '<span class="inbox-icon">' + INBOX_ICONS[key] + '</span>' +
+        '<span class="inbox-name">' + (inbox.name || 'Sem nome') + '</span>' +
+        '<span class="inbox-type">' + (key.charAt(0).toUpperCase() + key.slice(1)) + '</span>';
+      list.appendChild(li);
+    });
+  }
+
+  async function fetchJSON(url, opts){
+    const res = await fetch(url, Object.assign({credentials:'same-origin'}, opts || {}));
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  }
+
+  async function checkHealth(){
+    try{
+      const t0 = Date.now();
+      const data = await fetchJSON('/api/v1/crm/health');
+      const latency = Date.now() - t0;
+      setOnline(data.online !== false, data.version);
+      $('connLatency').textContent = latency + 'ms';
+      if(data.uptime) $('connUptime').textContent = data.uptime;
+      if(data.online === false){
+        showError('Chatwoot esta offline. Verifique a instancia.');
+      } else {
+        hideError();
+      }
+    } catch(e){
+      setOnline(false);
+      $('connLatency').textContent = 'Erro';
+      showError('Nao foi possivel conectar ao Chatwoot: ' + e.message);
+    }
+  }
+
+  async function loadDashboard(forceRefresh){
+    setMetricsLoading();
+    const spinner = $('refreshSpinner');
+    spinner.style.display = 'inline-block';
+
+    try{
+      if(forceRefresh){
+        await fetchJSON('/api/v1/crm/dashboard/refresh', {method:'POST'});
+      }
+      const data = await fetchJSON('/api/v1/crm/dashboard');
+
+      setMetric('mConversasAbertas', data.open_conversations ?? 0);
+      setMetric('mResolvidasHoje', data.resolved_today ?? 0);
+      setMetric('mPendentes', data.pending_conversations ?? 0);
+      setMetric('mContatos', data.total_contacts ?? 0);
+      setMetric('mInboxes', data.active_inboxes ?? 0);
+      setMetric('mWhatsapp', data.whatsapp_connected ?? 0);
+
+      renderInboxes(data.inboxes || []);
+      hideError();
+      $('syncTime').textContent = 'Ultima sync: ' + formatTime(new Date());
+
+    } catch(e){
+      ['mConversasAbertas','mResolvidasHoje','mPendentes','mContatos','mInboxes','mWhatsapp'].forEach(id => setMetric(id, '--'));
+      showError('Erro ao carregar dados: ' + e.message);
+    } finally {
+      spinner.style.display = 'none';
+    }
+  }
+
+  // Button handlers
+  $('btnRefresh').addEventListener('click', function(){
+    loadDashboard(true);
+    checkHealth();
+  });
+
+  $('btnTestConn').addEventListener('click', function(){
+    this.textContent = 'Testando...';
+    checkHealth().then(() => { this.textContent = 'Testar conexao'; });
+  });
+
+  $('btnDisconnect').addEventListener('click', function(){
+    if(confirm('Deseja desconectar o Chatwoot? Voce pode reconectar nas configuracoes.')){
+      fetch('/api/v1/crm/disconnect', {method:'POST', credentials:'same-origin'})
+        .then(() => { setOnline(false); showError('Chatwoot desconectado.'); })
+        .catch(() => showError('Erro ao desconectar.'));
+    }
+  });
+
+  // Initial load
+  checkHealth();
+  loadDashboard(false);
+
+  // Auto-refresh
+  refreshTimer = setInterval(function(){
+    loadDashboard(false);
+    checkHealth();
+  }, REFRESH_INTERVAL);
+})();
+</script>
+</body>
+</html>
