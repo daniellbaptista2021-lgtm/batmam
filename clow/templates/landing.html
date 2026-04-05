@@ -116,16 +116,26 @@ a{color:var(--p);text-decoration:none}
 .feature h4{font-size:1rem;font-weight:700;margin-bottom:6px;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .feature p{color:var(--t2);font-size:.9rem;line-height:1.55}
 
-/* Pricing */
-.price-wrap{border-radius:20px;overflow:hidden;max-width:480px;margin:0 auto;border:1px solid rgba(155,89,252,.3);background:linear-gradient(145deg,var(--bg2),rgba(20,20,46,.9));position:relative}
-.price-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gp)}
-.price-inner{padding:44px}
-.price{font-size:3.5rem;font-weight:900;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.price-sub{color:var(--t2);margin-bottom:24px;font-size:.95rem}
-.price-list{text-align:left;list-style:none;margin:24px 0}
-.price-list li{padding:10px 0;border-bottom:1px solid var(--bd);font-size:.95rem;display:flex;align-items:center;gap:10px}
-.price-list li::before{content:'';width:18px;height:18px;background:var(--gp);border-radius:50%;flex-shrink:0}
-.cta-below{font-size:.78rem;color:var(--tm);margin-top:12px;text-align:center}
+/* Pricing — Premium SaaS */
+.price-wrap{border-radius:16px;overflow:hidden;border:1px solid rgba(120,90,200,.12);background:linear-gradient(160deg,rgba(13,11,26,.95),rgba(20,16,38,.9));position:relative;transition:all .35s cubic-bezier(.25,.8,.25,1)}
+.price-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(155,89,252,.3),transparent);transition:opacity .3s}
+.price-wrap:hover{border-color:rgba(155,89,252,.25);transform:translateY(-4px) scale(1.01);box-shadow:0 24px 48px rgba(0,0,0,.4),0 0 20px rgba(155,89,252,.05)}
+.price-wrap:hover::before{background:var(--gp)}
+.price-wrap.popular{border-color:rgba(155,89,252,.35);box-shadow:0 0 24px rgba(155,89,252,.08)}
+.price-inner{padding:28px 24px}
+.plan-label{font-size:.68rem;color:var(--tm);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;font-weight:600}
+.plan-title{font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:2px;text-shadow:0 0 20px rgba(155,89,252,.15)}
+.price{font-size:2.2rem;font-weight:900;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
+.price small{font-size:.8rem;-webkit-text-fill-color:var(--tm);font-weight:500}
+.price-sub{color:var(--t2);font-size:.78rem;margin:4px 0 8px;line-height:1.5}
+.price-value{color:rgba(155,89,252,.5);font-size:.7rem;margin-bottom:14px;line-height:1.5;font-style:italic}
+.price-list{text-align:left;list-style:none;margin:0 0 16px}
+.price-list li{padding:5px 0;font-size:.74rem;display:flex;align-items:center;gap:8px;color:var(--t2);line-height:1.5;font-weight:400;border:none}
+.price-list li::before{content:'';width:6px;height:6px;background:var(--gp);border-radius:50%;flex-shrink:0;box-shadow:0 0 4px rgba(155,89,252,.3),inset 0 1px 0 rgba(255,255,255,.2)}
+.price-list li.dim{color:var(--tm);opacity:.7}
+.price-list li.dim::before{background:var(--tm);box-shadow:none}
+.popular-badge{position:absolute;top:12px;right:12px;background:var(--gp);color:#fff;font-size:.6rem;font-weight:700;padding:3px 10px;border-radius:6px;letter-spacing:.8px;text-transform:uppercase}
+.cta-below{font-size:.7rem;color:var(--tm);margin-top:8px;text-align:center}
 
 /* Footer */
 .footer{text-align:center;padding:40px 20px;color:var(--tm);font-size:.85rem;border-top:1px solid var(--bd)}
@@ -233,14 +243,16 @@ a{color:var(--p);text-decoration:none}
 <section class="section" id="planos">
   <h2>Escolha seu <span>plano</span></h2>
   <p class="sub">Use gr&#225;tis com sua key ou assine com IA inclusa.<br><span style="font-size:.85rem">Aceitamos cart&#227;o de cr&#233;dito e <strong style="color:var(--g)">PIX</strong></span></p>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:1100px">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:12px;max-width:1100px">
 
     <!-- BYOK Free -->
-    <div class="price-wrap"><div class="price-inner" style="padding:22px">
-      <div style="font-size:.7rem;color:var(--tm);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Traga sua Key</div>
-      <div class="price" style="font-size:2rem">R$ 0</div>
-      <div class="price-sub" style="font-size:.8rem">Voc&#234; paga s&#243; a API</div>
-      <ul class="price-list" style="font-size:.78rem">
+    <div class="price-wrap"><div class="price-inner">
+      <div class="plan-label">Traga sua Key</div>
+      <div class="plan-title">Gratuito</div>
+      <div class="price">R$ 0</div>
+      <div class="price-sub">Voc&#234; paga s&#243; a API da Anthropic</div>
+      <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
+      <ul class="price-list">
         <li>Claude Sonnet 4 (sua key)</li>
         <li>Sem limite de uso</li>
         <li>33 tools + 108 skills</li>
@@ -248,36 +260,40 @@ a{color:var(--p);text-decoration:none}
         <li>Landing pages e documentos</li>
         <li>GitHub + deploy autom&#225;tico</li>
         <li>Dashboard de uso</li>
-        <li style="color:var(--tm)">WhatsApp: +R$50/inst&#226;ncia</li>
-        <li style="color:var(--tm)">Sem fluxos n8n</li>
+        <li class="dim">WhatsApp: +R$50/inst&#226;ncia</li>
+        <li class="dim">Sem fluxos n8n inclusos</li>
       </ul>
-      <a href="/onboarding" class="cta" style="width:100%;padding:10px;font-size:.85rem;margin-top:10px">Come&#231;ar Gr&#225;tis</a>
+      <a href="/onboarding" class="cta" style="width:100%;padding:10px;font-size:.82rem">Come&#231;ar Gr&#225;tis</a>
     </div></div>
 
     <!-- Lite -->
-    <div class="price-wrap"><div class="price-inner" style="padding:22px">
-      <div style="font-size:.7rem;color:var(--tm);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Lite <span style="background:rgba(108,92,231,.15);color:var(--bl);padding:2px 8px;border-radius:8px;font-size:.6rem">Haiku 4.5</span></div>
-      <div class="price" style="font-size:2rem">R$ 89<span style="font-size:.85rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
-      <div class="price-sub" style="font-size:.8rem">IA inclusa, sem API key</div>
-      <ul class="price-list" style="font-size:.78rem">
+    <div class="price-wrap"><div class="price-inner">
+      <div class="plan-label">Lite &#183; Haiku 4.5</div>
+      <div class="plan-title">Lite</div>
+      <div class="price">R$ 89<small>/m&#234;s</small></div>
+      <div class="price-sub">Haiku incluso + Chat interativo incluso</div>
+      <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
+      <ul class="price-list">
         <li>Haiku 4.5 incluso</li>
         <li>200K + 50K tokens/dia</li>
         <li>Cria sites, apps, planilhas</li>
         <li>Landing pages e PDFs</li>
         <li>GitHub integrado</li>
         <li>Dashboard de uso</li>
-        <li style="color:var(--tm)">WhatsApp: +R$50/inst&#226;ncia</li>
-        <li style="color:var(--tm)">Sem fluxos n8n</li>
+        <li class="dim">WhatsApp: +R$50/inst&#226;ncia</li>
+        <li class="dim">Sem fluxos n8n inclusos</li>
       </ul>
-      <button class="cta" style="width:100%;padding:10px;font-size:.85rem;margin-top:10px" onclick="checkout('lite')">Testar 7 dias gr&#225;tis</button>
+      <button class="cta" style="width:100%;padding:10px;font-size:.82rem" onclick="checkout('lite')">Testar 7 dias gr&#225;tis</button>
     </div></div>
 
     <!-- Starter -->
-    <div class="price-wrap"><div class="price-inner" style="padding:22px">
-      <div style="font-size:.7rem;color:var(--tm);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Starter <span style="background:rgba(155,89,252,.15);color:var(--p);padding:2px 8px;border-radius:8px;font-size:.6rem">Sonnet 4</span></div>
-      <div class="price" style="font-size:2rem">R$ 115<span style="font-size:.85rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
-      <div class="price-sub" style="font-size:.8rem">Sonnet + WhatsApp + n8n</div>
-      <ul class="price-list" style="font-size:.78rem">
+    <div class="price-wrap"><div class="price-inner">
+      <div class="plan-label">Starter &#183; Sonnet 4</div>
+      <div class="plan-title">Starter</div>
+      <div class="price">R$ 115<small>/m&#234;s</small></div>
+      <div class="price-sub">Sonnet + WhatsApp + 8 fluxos n8n</div>
+      <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
+      <ul class="price-list">
         <li>Claude Sonnet 4 incluso</li>
         <li>500K + 100K tokens/dia</li>
         <li>2 WhatsApp Agent inclusos</li>
@@ -286,50 +302,54 @@ a{color:var(--p);text-decoration:none}
         <li>Cria sistemas e apps</li>
         <li>Sites, planilhas, PDFs</li>
         <li>GitHub + deploy + n8n</li>
-        <li>Suporte WhatsApp</li>
+        <li>Suporte via WhatsApp</li>
       </ul>
-      <button class="cta" style="width:100%;padding:10px;font-size:.85rem;margin-top:10px" onclick="checkout('starter')">Assinar Starter</button>
+      <button class="cta" style="width:100%;padding:10px;font-size:.82rem" onclick="checkout('starter')">Assinar Starter</button>
     </div></div>
 
     <!-- Pro -->
-    <div class="price-wrap" style="border-color:rgba(155,89,252,.6);box-shadow:0 0 30px rgba(155,89,252,.1)"><div class="price-inner" style="padding:22px;position:relative">
-      <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--gp);color:#fff;font-size:.65rem;font-weight:700;padding:3px 14px;border-radius:0 0 8px 8px;letter-spacing:1px">MAIS POPULAR</div>
-      <div style="font-size:.7rem;color:var(--tm);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;margin-top:14px">Pro <span style="background:rgba(155,89,252,.15);color:var(--p);padding:2px 8px;border-radius:8px;font-size:.6rem">Sonnet 4</span></div>
-      <div class="price" style="font-size:2rem">R$ 189<span style="font-size:.85rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
-      <div class="price-sub" style="font-size:.8rem">Tudo + 2.000 fluxos</div>
-      <ul class="price-list" style="font-size:.78rem">
-        <li>Tudo do Starter</li>
+    <div class="price-wrap popular"><div class="price-inner" style="position:relative">
+      <div class="popular-badge">Mais Popular</div>
+      <div class="plan-label">Pro &#183; Sonnet 4</div>
+      <div class="plan-title">Pro</div>
+      <div class="price">R$ 189<small>/m&#234;s</small></div>
+      <div class="price-sub">Tudo do Starter + 2.000 fluxos</div>
+      <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
+      <ul class="price-list">
+        <li>Tudo do Starter incluso</li>
         <li>1M + 200K tokens/dia</li>
         <li>2 WhatsApp Agent inclusos</li>
         <li>2.000 fluxos n8n prontos</li>
-        <li>Cria sistemas completos</li>
-        <li>Apps, APIs, automacoes</li>
-        <li>Landing pages premium</li>
+        <li>Sistemas completos</li>
+        <li>Apps, APIs, automa&#231;&#245;es</li>
         <li>GitHub Autopilot</li>
         <li>Agent Teams (4 agentes)</li>
+        <li>Landing pages premium</li>
         <li>Prioridade no suporte</li>
       </ul>
-      <button class="cta" style="width:100%;padding:10px;font-size:.85rem;margin-top:10px" onclick="checkout('pro')">Assinar Pro</button>
+      <button class="cta" style="width:100%;padding:10px;font-size:.82rem" onclick="checkout('pro')">Assinar Pro</button>
     </div></div>
 
     <!-- Business -->
-    <div class="price-wrap"><div class="price-inner" style="padding:22px">
-      <div style="font-size:.7rem;color:var(--tm);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Business <span style="background:rgba(155,89,252,.15);color:var(--p);padding:2px 8px;border-radius:8px;font-size:.6rem">Sonnet 4</span></div>
-      <div class="price" style="font-size:2rem">R$ 229<span style="font-size:.85rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
-      <div class="price-sub" style="font-size:.8rem">M&#225;ximo + consultoria</div>
-      <ul class="price-list" style="font-size:.78rem">
-        <li>Tudo do Pro</li>
+    <div class="price-wrap"><div class="price-inner">
+      <div class="plan-label">Business &#183; Sonnet 4</div>
+      <div class="plan-title">Business</div>
+      <div class="price">R$ 229<small>/m&#234;s</small></div>
+      <div class="price-sub">M&#225;ximo poder + consultoria</div>
+      <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
+      <ul class="price-list">
+        <li>Tudo do Pro incluso</li>
         <li>2M + 400K tokens/dia</li>
         <li>2 WhatsApp Agent inclusos</li>
         <li>3.000 fluxos n8n prontos</li>
         <li>Sistemas sob medida</li>
-        <li>Automacoes ilimitadas</li>
         <li>Extended Thinking ativo</li>
         <li>Self-Learning avan&#231;ado</li>
         <li>Spectator Mode</li>
+        <li>Automa&#231;&#245;es ilimitadas</li>
         <li>Suporte + consultoria</li>
       </ul>
-      <button class="cta" style="width:100%;padding:10px;font-size:.85rem;margin-top:10px" onclick="checkout('business')">Assinar Business</button>
+      <button class="cta" style="width:100%;padding:10px;font-size:.82rem" onclick="checkout('business')">Assinar Business</button>
     </div></div>
   </div>
 </section>
