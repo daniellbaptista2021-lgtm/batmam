@@ -152,33 +152,43 @@ class Agent:
     # ── System Messages ────────────────────────────────────────
 
     def _build_system_messages(self) -> None:
-        """Constroi system prompt com contexto de projeto e memoria."""
-        system_parts = [get_system_prompt(self.cwd)]
+        """Constroi system prompt separando base (cacheavel) de dinamico."""
+        # Base: prompt principal (raramente muda, ideal para cache)
+        self._system_base = get_system_prompt(self.cwd)
+
+        # Dinamico: contexto que muda entre sessoes
+        dynamic_parts = []
 
         # CLOW.md do projeto
         project_ctx = load_project_context(self.cwd)
         if project_ctx:
-            system_parts.append(f"\n# Contexto do Projeto (CLOW.md)\n{project_ctx}")
+            dynamic_parts.append(f"\n# Contexto do Projeto (CLOW.md)\n{project_ctx}")
 
-        # ── Project DNA: INSTRUCTIONS.md com heranca de diretorios pai ──
+        # Project DNA: INSTRUCTIONS.md com heranca de diretorios pai
         instructions = self._load_project_instructions()
         if instructions:
-            system_parts.append(f"\n# [Instrucoes do Projeto]\n{instructions}")
+            dynamic_parts.append(f"\n# [Instrucoes do Projeto]\n{instructions}")
 
-        # ── Self-Learning: injeta learned.md ──
+        # Self-Learning: injeta learned.md
         if not self.is_subagent and config.CLOW_SELF_LEARN:
             learned_ctx = load_learned_context()
             if learned_ctx:
-                system_parts.append(f"\n# [Aprendizado Automatico]\n{learned_ctx}")
+                dynamic_parts.append(f"\n# [Aprendizado Automatico]\n{learned_ctx}")
 
         # Memoria persistente
         if not self.is_subagent:
             memory_ctx = load_memory_context()
             if memory_ctx:
-                system_parts.append(f"\n# Memoria\n{memory_ctx}")
+                dynamic_parts.append(f"\n# Memoria\n{memory_ctx}")
 
+        self._system_dynamic = "\n\n".join(dynamic_parts) if dynamic_parts else ""
+
+        # Monta mensagem completa para historico (usado por OpenAI/Ollama)
+        full_system = self._system_base
+        if self._system_dynamic:
+            full_system += "\n\n" + self._system_dynamic
         self.session.messages = [
-            {"role": "system", "content": "\n\n".join(system_parts)}
+            {"role": "system", "content": full_system}
         ]
 
     def _load_project_instructions(self) -> str:
@@ -459,13 +469,26 @@ class Agent:
             "max_tokens": config.MAX_TOKENS,
         }
 
-        # ── Prompt Caching: system prompt como content blocks com cache_control ──
+        # ── Prompt Caching: base (cacheavel) + dinamico (nao cacheavel) ──
         if system_prompt.strip():
-            kwargs["system"] = [{
-                "type": "text",
-                "text": system_prompt.strip(),
-                "cache_control": {"type": "ephemeral"},
-            }]
+            system_blocks = []
+            # Bloco base: cacheavel (muda raramente — prompt principal ~10K tokens)
+            base = getattr(self, "_system_base", system_prompt.strip())
+            if base:
+                system_blocks.append({
+                    "type": "text",
+                    "text": base,
+                    "cache_control": {"type": "ephemeral"},
+                })
+            # Bloco dinamico: nao cacheavel (memoria, learned, CLOW.md — muda por sessao)
+            dynamic = getattr(self, "_system_dynamic", "")
+            if dynamic:
+                system_blocks.append({
+                    "type": "text",
+                    "text": dynamic,
+                })
+            if system_blocks:
+                kwargs["system"] = system_blocks
 
         if tools:
             kwargs["tools"] = tools
