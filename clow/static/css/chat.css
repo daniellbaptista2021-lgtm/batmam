@@ -104,7 +104,7 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 
 /* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg-0);position:relative;z-index:2}
-.hdr{display:flex;align-items:center;padding:0 16px;padding-top:var(--st);height:calc(48px + var(--st));background:var(--bg-1);border-bottom:1px solid var(--bd);flex-shrink:0;gap:10px}
+.hdr{display:flex;align-items:center;padding:0 16px;padding-top:var(--st);height:calc(48px + var(--st));background:var(--bg-1);border-bottom:1px solid var(--bd);flex-shrink:0;gap:8px;overflow:hidden}
 .ham{display:none;background:none;border:none;color:var(--t2);font-size:20px;cursor:pointer;padding:4px}
 .hdr-t{flex:1;font-size:14px;font-weight:500;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--sans)}
 .mod-pill{height:24px;padding:0 10px;border-radius:12px;font-family:var(--mono);font-size:11px;font-weight:600;cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;border:1px solid;background-repeat:no-repeat;background-position:right 6px center;padding-right:18px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath fill='%23606078' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E")}
