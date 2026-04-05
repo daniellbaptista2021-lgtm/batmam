@@ -456,8 +456,9 @@ const CAMP_BADGE = {draft:'draft',sending:'sending',sent:'sent',scheduled:'sched
 
 /* ── Utility ── */
 function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=String(s);return d.innerHTML;}
-function fmtDate(d){if(!d)return'—';const dt=new Date(d);if(isNaN(dt))return esc(d);const pad=n=>String(n).padStart(2,'0');return`${pad(dt.getDate())}/${pad(dt.getMonth()+1)}/${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;}
-function daysSince(d){if(!d)return'?';const ms=Date.now()-new Date(d).getTime();return Math.max(0,Math.floor(ms/86400000));}
+function toMs(d){if(!d)return 0;const n=Number(d);if(n<1e12)return n*1000;return n;}
+function fmtDate(d){if(!d)return'—';const dt=new Date(toMs(d));if(isNaN(dt.getTime()))return typeof d==='string'?esc(d):'—';const pad=n=>String(n).padStart(2,'0');return`${pad(dt.getDate())}/${pad(dt.getMonth()+1)}/${dt.getFullYear()} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;}
+function daysSince(d){if(!d)return'?';const ms=Date.now()-toMs(d);return Math.max(0,Math.floor(ms/86400000));}
 function toast(msg,ok=true){const t=document.createElement('div');t.className='toast '+(ok?'toast-ok':'toast-err');t.textContent=msg;document.getElementById('toasts').appendChild(t);setTimeout(()=>t.remove(),3500);}
 
 async function api(path,opts={}){
