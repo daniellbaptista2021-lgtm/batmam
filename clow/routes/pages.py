@@ -106,6 +106,11 @@ def register_page_routes(app: FastAPI) -> None:
     if _js_dir.is_dir():
         app.mount("/static/js", StaticFiles(directory=str(_js_dir)), name="js_static")
 
+    # ── Install tutorial (publica, sem login) ─────────────────────
+    @app.get("/install", response_class=HTMLResponse)
+    async def install_page():
+        return _get_template("install.html")
+
     # ── Protected routes ─────────────────────────────────────────
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):

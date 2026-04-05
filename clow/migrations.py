@@ -284,6 +284,64 @@ MIGRATIONS: list[tuple[int, str, str]] = [
         ALTER TABLE leads ADD COLUMN cost_estimated_brl REAL DEFAULT 0;
         """,
     ),
+    # ── v8: Analytics views and daily aggregation ─────────────
+    (
+        8,
+        "Create usage_daily_stats table and analytics views",
+        """
+        CREATE TABLE IF NOT EXISTS usage_daily_stats (
+            date TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            plan TEXT DEFAULT 'free',
+            total_input_tokens INTEGER DEFAULT 0,
+            total_output_tokens INTEGER DEFAULT 0,
+            total_cost_usd REAL DEFAULT 0,
+            request_count INTEGER DEFAULT 0,
+            PRIMARY KEY (date, user_id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_daily_stats_date ON usage_daily_stats(date);
+
+        -- View: uso diario agregado
+        CREATE VIEW IF NOT EXISTS v_daily_usage AS
+        SELECT
+            date(created_at, 'unixepoch') as date,
+            user_id,
+            SUM(input_tokens) as total_input,
+            SUM(output_tokens) as total_output,
+            SUM(cost_usd) as total_cost,
+            COUNT(*) as requests
+        FROM usage_log
+        GROUP BY date(created_at, 'unixepoch'), user_id;
+
+        -- View: comandos populares (WhatsApp vs Chat)
+        CREATE VIEW IF NOT EXISTS v_action_distribution AS
+        SELECT
+            action,
+            COUNT(*) as count,
+            SUM(input_tokens + output_tokens) as total_tokens,
+            SUM(cost_usd) as total_cost
+        FROM usage_log
+        WHERE created_at >= strftime('%s', 'now', '-30 days')
+        GROUP BY action
+        ORDER BY count DESC;
+
+        -- View: top users nos ultimos 7 dias
+        CREATE VIEW IF NOT EXISTS v_top_users_week AS
+        SELECT
+            u.email,
+            u.plan,
+            SUM(l.input_tokens + l.output_tokens) as total_tokens,
+            SUM(l.cost_usd) as total_cost,
+            COUNT(*) as requests
+        FROM usage_log l
+        JOIN users u ON l.user_id = u.id
+        WHERE l.created_at >= strftime('%s', 'now', '-7 days')
+        GROUP BY l.user_id
+        ORDER BY total_tokens DESC
+        LIMIT 20;
+        """,
+    ),
 ]
 
 
