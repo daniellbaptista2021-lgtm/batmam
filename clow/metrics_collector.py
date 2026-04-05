@@ -7,12 +7,12 @@ from typing import Any
 from . import config
 
 
-def record_request(user_id: str, plan: str, input_tokens: int, output_tokens: int, cache_hit: bool = False, latency_ms: float = 0) -> None:
-    """Registra uma requisicao no usage_log."""
+def record_request(user_id: str, plan: str, input_tokens: int, output_tokens: int, cache_hit: bool = False, latency_ms: float = 0, source: str = "chat") -> None:
+    """Registra uma requisicao no usage_log. source: 'chat' ou 'whatsapp'."""
     from .database import get_db
 
-    # Calcula custo baseado no plano
-    if plan == "lite":
+    # WhatsApp sempre usa Haiku pricing
+    if source == "whatsapp" or plan == "lite":
         cost = (input_tokens * config.HAIKU_INPUT_PRICE_PER_MTOK + output_tokens * config.HAIKU_OUTPUT_PRICE_PER_MTOK) / 1_000_000
     else:
         cost = (input_tokens * config.SONNET_INPUT_PRICE_PER_MTOK + output_tokens * config.SONNET_OUTPUT_PRICE_PER_MTOK) / 1_000_000
@@ -20,7 +20,7 @@ def record_request(user_id: str, plan: str, input_tokens: int, output_tokens: in
     with get_db() as db:
         db.execute(
             "INSERT INTO usage_log (user_id, model, input_tokens, output_tokens, cost_usd, action, created_at) VALUES (?,?,?,?,?,?,?)",
-            (user_id, plan, input_tokens, output_tokens, cost, "chat", time.time()),
+            (user_id, plan, input_tokens, output_tokens, cost, source, time.time()),
         )
 
 

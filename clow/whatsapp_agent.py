@@ -186,7 +186,7 @@ class WhatsAppAgentManager:
             plan_id = "byok_free"
 
         if plan_uses_server_key(plan_id):
-            quota = check_quota(inst.tenant_id, plan_id)
+            quota = check_quota(inst.tenant_id, plan_id, source="whatsapp")
             if not quota["allowed"]:
                 return "Ola! Nosso atendimento automatico esta temporariamente indisponivel. Por favor, tente novamente mais tarde ou aguarde que um atendente humano entrara em contato."
 
@@ -209,10 +209,10 @@ class WhatsAppAgentManager:
             messages.append({"role": msg["role"], "content": msg["content"]})
         messages.append({"role": "user", "content": message_text})
 
-        # Call LLM
+        # Call LLM — WhatsApp SEMPRE usa Haiku (wa_model)
         try:
             plan = get_plan(plan_id)
-            model = plan["model"]
+            wa_model = plan.get("wa_model", "claude-haiku-4-5-20251001")
             api_key = None
             if not plan_uses_server_key(plan_id):
                 api_key = get_user_api_key(inst.tenant_id)
@@ -222,18 +222,18 @@ class WhatsAppAgentManager:
             from anthropic import Anthropic
             client = Anthropic(api_key=api_key or config.ANTHROPIC_API_KEY)
             response = client.messages.create(
-                model=model,
+                model=wa_model,
                 system=system_prompt,
                 messages=[m for m in messages if m["role"] != "system"],
                 max_tokens=1024,
             )
             reply = response.content[0].text if response.content else ""
 
-            # Record usage
+            # Record usage com source=whatsapp
             inp_tokens = response.usage.input_tokens if response.usage else 0
             out_tokens = response.usage.output_tokens if response.usage else 0
             from .metrics_collector import record_request
-            record_request(inst.tenant_id, plan_id, inp_tokens, out_tokens)
+            record_request(inst.tenant_id, plan_id, inp_tokens, out_tokens, source="whatsapp")
 
         except Exception as e:
             log_action("whatsapp_agent_error", str(e)[:200], level="error")

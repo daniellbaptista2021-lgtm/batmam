@@ -1,11 +1,14 @@
 """Stripe Billing — planos, checkout, portal, webhook, franquia.
 
 Planos:
-- BYOK_FREE: R$0, user usa propria API key
-- LITE: R$89/mes, Haiku 4.5, franquia diaria 200K in + 50K out
-- STARTER: R$115/mes, Sonnet 4, franquia diaria 500K in + 100K out, 8 fluxos n8n
-- PRO: R$189/mes, Sonnet 4, franquia diaria 1M in + 200K out, 2000 fluxos
-- BUSINESS: R$229/mes, Sonnet 4, franquia diaria 2M in + 400K out, 3000 fluxos
+- BYOK_FREE: R$0, user usa propria API key, sem WhatsApp incluso
+- LITE: R$89/mes, Haiku 4.5 (chat), sem WhatsApp incluso
+- STARTER: R$115/mes, Sonnet 4 (chat), Haiku 4.5 (WhatsApp), 2 instancias, 500K wa tokens/dia
+- PRO: R$189/mes, Sonnet 4 (chat), Haiku 4.5 (WhatsApp), 2 instancias, 750K wa tokens/dia
+- BUSINESS: R$229/mes, Sonnet 4 (chat), Haiku 4.5 (WhatsApp), 2 instancias, 1M wa tokens/dia
+
+WhatsApp Agent SEMPRE usa Haiku (mais barato), independente do plano.
+Franquia de WhatsApp e separada da franquia do chat.
 """
 
 from __future__ import annotations
@@ -25,12 +28,15 @@ PLANS = {
         "price_brl": 0,
         "model": "claude-sonnet-4-20250514",
         "uses_server_key": False,
-        "daily_input_tokens": 0,   # 0 = sem limite nosso
+        "daily_input_tokens": 0,
         "daily_output_tokens": 0,
         "weekly_input_tokens": 0,
         "weekly_output_tokens": 0,
         "n8n_flows": 0,
         "stripe_price_id": "",
+        "wa_model": "claude-haiku-4-5-20251001",
+        "wa_daily_tokens": 0,
+        "wa_included_instances": 0,
     },
     "lite": {
         "name": "Lite",
@@ -43,6 +49,9 @@ PLANS = {
         "weekly_output_tokens": 170_000,
         "n8n_flows": 0,
         "stripe_price_id": config.STRIPE_LITE_PRICE_ID,
+        "wa_model": "claude-haiku-4-5-20251001",
+        "wa_daily_tokens": 0,
+        "wa_included_instances": 0,
     },
     "starter": {
         "name": "Starter",
@@ -55,6 +64,9 @@ PLANS = {
         "weekly_output_tokens": 70_000,
         "n8n_flows": 8,
         "stripe_price_id": config.STRIPE_STARTER_PRICE_ID,
+        "wa_model": "claude-haiku-4-5-20251001",
+        "wa_daily_tokens": 500_000,
+        "wa_included_instances": 2,
     },
     "pro": {
         "name": "Pro",
@@ -67,6 +79,9 @@ PLANS = {
         "weekly_output_tokens": 120_000,
         "n8n_flows": 2000,
         "stripe_price_id": config.STRIPE_PRO_PRICE_ID,
+        "wa_model": "claude-haiku-4-5-20251001",
+        "wa_daily_tokens": 750_000,
+        "wa_included_instances": 2,
     },
     "business": {
         "name": "Business",
@@ -79,6 +94,9 @@ PLANS = {
         "weekly_output_tokens": 145_000,
         "n8n_flows": 3000,
         "stripe_price_id": config.STRIPE_BUSINESS_PRICE_ID,
+        "wa_model": "claude-haiku-4-5-20251001",
+        "wa_daily_tokens": 1_000_000,
+        "wa_included_instances": 2,
     },
 }
 
@@ -102,14 +120,38 @@ def plan_uses_server_key(plan_id: str) -> bool:
 
 # ── Quota Checking ────────────────────────────────────────────
 
-def check_quota(user_id: str, plan_id: str) -> dict[str, Any]:
+def check_quota(user_id: str, plan_id: str, source: str = "chat") -> dict[str, Any]:
     """Verifica se o user ainda tem franquia disponivel.
 
+    source: "chat" ou "whatsapp" — franquias separadas.
     Returns dict com allowed=True/False e detalhes.
     """
     plan = get_plan(plan_id)
 
-    # BYOK nao tem limite nosso
+    # WhatsApp: franquia separada (verifica ANTES do BYOK check)
+    if source == "whatsapp":
+        wa_daily = plan.get("wa_daily_tokens", 0)
+        if wa_daily <= 0:
+            return {"allowed": False, "reason": "WhatsApp nao incluso neste plano.", "plan": plan_id}
+
+        from .database import get_db
+        now = time.time()
+        today_start = now - (now % 86400)
+        with get_db() as db:
+            try:
+                row = db.execute(
+                    "SELECT COALESCE(SUM(input_tokens + output_tokens),0) FROM usage_log WHERE user_id=? AND created_at>=? AND action='whatsapp'",
+                    (user_id, today_start),
+                ).fetchone()
+                wa_used = row[0] if row else 0
+            except Exception:
+                wa_used = 0
+
+        if wa_used >= wa_daily:
+            return {"allowed": False, "reason": "Franquia diaria do WhatsApp atingida.", "plan": plan_id}
+        return {"allowed": True, "plan": plan_id, "wa_remaining": wa_daily - wa_used}
+
+    # BYOK nao tem limite nosso (chat)
     if not plan["uses_server_key"]:
         return {"allowed": True, "plan": plan_id}
 
@@ -120,15 +162,15 @@ def check_quota(user_id: str, plan_id: str) -> dict[str, Any]:
     week_start = now - (7 * 86400)
 
     with get_db() as db:
-        # Uso hoje
+        # Uso hoje (apenas chat)
         today = db.execute(
-            "SELECT COALESCE(SUM(input_tokens),0) as inp, COALESCE(SUM(output_tokens),0) as out FROM usage_log WHERE user_id=? AND created_at>=?",
+            "SELECT COALESCE(SUM(input_tokens),0) as inp, COALESCE(SUM(output_tokens),0) as out FROM usage_log WHERE user_id=? AND created_at>=? AND (action='chat' OR action IS NULL)",
             (user_id, today_start),
         ).fetchone()
 
-        # Uso semanal
+        # Uso semanal (apenas chat)
         week = db.execute(
-            "SELECT COALESCE(SUM(input_tokens),0) as inp, COALESCE(SUM(output_tokens),0) as out FROM usage_log WHERE user_id=? AND created_at>=?",
+            "SELECT COALESCE(SUM(input_tokens),0) as inp, COALESCE(SUM(output_tokens),0) as out FROM usage_log WHERE user_id=? AND created_at>=? AND (action='chat' OR action IS NULL)",
             (user_id, week_start),
         ).fetchone()
 
