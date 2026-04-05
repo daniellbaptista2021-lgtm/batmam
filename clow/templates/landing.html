@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<title>Clow — Agente de C&#243;digo AI Gr&#225;tis | 33 Tools, 108 Skills</title>
-<meta name="description" content="Crie apps, APIs e automacoes com IA direto do celular. 33 ferramentas, 108 habilidades, 5 agentes. 100% gratis — voce so paga a API da Anthropic.">
-<meta property="og:title" content="Clow — O Agente de Codigo AI Mais Completo do Brasil">
-<meta property="og:description" content="Crie apps completos pelo celular com IA. Sem mensalidade. 33 tools, 108 skills, 5 agentes autonomos.">
+<title>Clow — Sua equipe de TI movida a IA | Sites, Planilhas, Automações</title>
+<meta name="description" content="Crie sites, planilhas, apresentações, PDFs e bots de WhatsApp só pedindo em português. Sem saber programar. 100% grátis — você só paga a IA.">
+<meta property="og:title" content="Clow — Seu departamento de TI no bolso">
+<meta property="og:description" content="Peça em português e receba pronto: sites, planilhas, apresentações, automações e bots de WhatsApp. Sem código.">
 <meta property="og:image" content="https://clow.pvcorretor01.com.br/static/brand/logo.png">
 <meta property="og:url" content="https://clow.pvcorretor01.com.br/landing">
 <meta property="og:type" content="website">
@@ -15,23 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<!-- Analytics simples (pageview no servidor) -->
 <script>fetch('/api/v1/analytics/pageview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({page:location.pathname,ref:document.referrer}),credentials:'same-origin'}).catch(()=>{})</script>
-
-<!-- Meta Pixel placeholder — trocar PIXEL_ID_AQUI pelo ID real -->
-<!--
-<script>
-!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-fbq('init','PIXEL_ID_AQUI');fbq('track','PageView');
-</script>
-<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=PIXEL_ID_AQUI&ev=PageView&noscript=1"/></noscript>
--->
-
-<!-- Google Ads placeholder — trocar AW-CONVERSION_ID_AQUI -->
-<!--
-<script async src="https://www.googletagmanager.com/gtag/js?id=AW-CONVERSION_ID_AQUI"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','AW-CONVERSION_ID_AQUI');</script>
--->
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -53,14 +37,36 @@ a{color:var(--p);text-decoration:none}
 .hero-logo{height:260px;margin-bottom:12px;filter:drop-shadow(0 0 40px rgba(155,89,252,.2));animation:hf 6s ease-in-out infinite}
 @keyframes hf{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .lens{width:200px;height:1px;margin:0 auto 24px;background:linear-gradient(90deg,transparent,rgba(155,89,252,.3),transparent);box-shadow:0 0 8px rgba(155,89,252,.12)}
-.hero h1{font-size:clamp(2.2rem,5.5vw,3.6rem);font-weight:800;line-height:1.1;margin-bottom:24px;max-width:700px;letter-spacing:-.03em}
+.hero h1{font-size:clamp(2.2rem,5.5vw,3.6rem);font-weight:800;line-height:1.1;margin-bottom:24px;max-width:750px;letter-spacing:-.03em}
 .hero h1 span{background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hero-sub{font-size:clamp(.92rem,1.8vw,1.05rem);color:var(--t2);max-width:480px;margin:0 auto 28px;line-height:1.8;font-weight:400;letter-spacing:.01em}
+.hero-sub{font-size:clamp(.92rem,1.8vw,1.05rem);color:var(--t2);max-width:520px;margin:0 auto 28px;line-height:1.8;font-weight:400;letter-spacing:.01em}
 .cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:15px 40px;background:var(--gp);color:#fff;font-size:.95rem;font-weight:600;border-radius:11px;border:none;cursor:pointer;box-shadow:0 2px 16px rgba(155,89,252,.2);transition:all .25s ease;text-decoration:none;letter-spacing:.02em;position:relative;overflow:hidden}
 .cta::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.08),transparent 60%);transition:opacity .25s}
 .cta:hover{transform:translateY(-1px);box-shadow:0 6px 32px rgba(155,89,252,.3)}
 .cta:active{transform:translateY(0);box-shadow:0 2px 12px rgba(155,89,252,.2)}
 .cta-hint{font-size:.74rem;color:var(--tm);margin-top:10px;letter-spacing:.03em;font-weight:400}
+
+/* ── HERO STATS ── */
+.hero-stats{display:flex;gap:32px;margin-bottom:28px;flex-wrap:wrap;justify-content:center}
+.hero-stat{text-align:center}
+.hero-stat strong{display:block;font-size:1.6rem;font-weight:800;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-stat span{font-size:.72rem;color:var(--tm);text-transform:uppercase;letter-spacing:1px}
+
+/* ── USE CASES (horizontal scroll) ── */
+.usecases{padding:60px 24px 0;position:relative;z-index:1}
+.usecases h2{font-size:1.5rem;font-weight:700;text-align:center;margin-bottom:8px;color:#fff}
+.usecases h2 span{background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.usecases .sub{text-align:center;color:var(--t2);margin-bottom:32px;font-size:.95rem}
+.uc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;max-width:1060px;margin:0 auto}
+.uc-card{padding:24px;background:linear-gradient(160deg,rgba(13,11,26,.9),rgba(20,16,38,.8));border:1px solid rgba(120,90,200,.1);border-radius:14px;transition:all .35s cubic-bezier(.25,.8,.25,1);position:relative;overflow:hidden;backdrop-filter:blur(8px);text-align:center}
+.uc-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(155,89,252,.25),transparent);opacity:0;transition:opacity .3s}
+.uc-card:hover{border-color:rgba(155,89,252,.25);transform:translateY(-3px) scale(1.02);box-shadow:0 16px 40px rgba(0,0,0,.35),0 0 16px rgba(155,89,252,.06)}
+.uc-card:hover::before{opacity:1}
+.uc-icon{width:52px;height:52px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(155,89,252,.12),rgba(108,92,231,.08));border:1px solid rgba(155,89,252,.15);border-radius:14px;color:var(--p);transition:all .3s}
+.uc-icon svg{width:24px;height:24px}
+.uc-card:hover .uc-icon{border-color:rgba(155,89,252,.4);box-shadow:0 0 12px rgba(155,89,252,.2);color:#fff}
+.uc-card h4{font-size:.92rem;font-weight:700;color:#fff;margin-bottom:6px}
+.uc-card p{font-size:.78rem;color:var(--t2);line-height:1.6}
 
 /* ── SOCIAL PROOF ── */
 .proof{padding:80px 24px;text-align:center;position:relative;z-index:1;border-top:1px solid var(--bd)}
@@ -101,16 +107,11 @@ a{color:var(--p);text-decoration:none}
 .demo .sub{color:var(--t2);margin-bottom:32px;font-size:1rem}
 .demo-frame{max-width:800px;margin:0 auto;aspect-ratio:16/9;background:var(--bg2);border:1px solid rgba(155,89,252,.25);border-radius:16px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;box-shadow:0 0 60px rgba(155,89,252,.08);position:relative;overflow:hidden}
 .demo-frame::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gp)}
-.play-icon{width:64px;height:64px;border-radius:50%;background:var(--gp);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(155,89,252,.4);cursor:pointer;transition:all .3s}
-.play-icon:hover{transform:scale(1.1);box-shadow:0 8px 40px rgba(155,89,252,.5)}
-.play-icon svg{width:28px;height:28px;fill:#fff;margin-left:4px}
-.demo-text{color:var(--tm);font-size:.9rem}
 
 /* ── SECTIONS ── */
 .section{padding:100px 32px;max-width:1060px;margin:0 auto;position:relative;z-index:1}
 .section h2{font-size:2rem;font-weight:700;text-align:center;margin-bottom:14px;letter-spacing:-.02em;color:#fff}
 .section h2 span{background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.section .sub{text-align:center;color:var(--t2);margin-bottom:56px;font-size:.95rem;max-width:520px;margin-left:auto;margin-right:auto;line-height:1.7}
 .section .sub{text-align:center;color:var(--t2);margin-bottom:48px;font-size:1rem;max-width:600px;margin-left:auto;margin-right:auto}
 
 /* Steps */
@@ -135,12 +136,11 @@ a{color:var(--p);text-decoration:none}
 .feat-icon{width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(155,89,252,.12),rgba(108,92,231,.08));border:1px solid rgba(155,89,252,.15);border-radius:11px;flex-shrink:0;color:var(--p);transition:all .3s}
 .feat-icon svg{width:20px;height:20px}
 .feat:hover .feat-icon{border-color:rgba(155,89,252,.4);box-shadow:0 0 12px rgba(155,89,252,.2);color:#fff}
-.feat-num{font-size:1.4rem;font-weight:900;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
 .feat h4{font-size:.88rem;font-weight:700;color:#fff;margin-bottom:4px;text-shadow:0 0 16px rgba(155,89,252,.1)}
 .feat p{font-size:.74rem;color:var(--t2);line-height:1.6}
 .feat-cat{font-size:.62rem;color:var(--p);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:6px;display:block}
 
-/* Pricing — Premium SaaS */
+/* Pricing */
 .price-wrap{border-radius:14px;overflow:visible;border:1px solid rgba(100,80,180,.08);background:linear-gradient(160deg,rgba(10,10,26,.95),rgba(17,17,38,.9));position:relative;transition:all .3s ease}
 .price-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(155,89,252,.3),transparent);transition:opacity .3s}
 .price-wrap:hover{border-color:rgba(155,89,252,.25);transform:translateY(-4px) scale(1.01);box-shadow:0 24px 48px rgba(0,0,0,.4),0 0 20px rgba(155,89,252,.05)}
@@ -157,11 +157,9 @@ a{color:var(--p);text-decoration:none}
 .price-list{text-align:left;list-style:none;margin:0 0 16px}
 .price-list li{padding:5px 0;font-size:.74rem;display:flex;align-items:center;gap:8px;color:var(--t2);line-height:1.5;font-weight:400;border:none}
 .price-list li::before{content:'';width:6px;height:6px;background:var(--gp);border-radius:50%;flex-shrink:0;box-shadow:0 0 4px rgba(155,89,252,.3),inset 0 1px 0 rgba(255,255,255,.2)}
-.price-list li[style*="#25D366"]::before{background:#25D366;box-shadow:0 0 6px rgba(37,211,102,.4)}
 .price-list li.dim{color:var(--tm);opacity:.7}
 .price-list li.dim::before{background:var(--tm);box-shadow:none}
 .popular-badge{position:absolute;top:8px;right:8px;background:var(--gp);color:#fff;font-size:.55rem;font-weight:600;padding:2px 8px;border-radius:4px;letter-spacing:.6px;text-transform:uppercase;z-index:2}
-.cta-below{font-size:.7rem;color:var(--tm);margin-top:8px;text-align:center}
 
 /* Flow Cards */
 .flow-card{display:flex;align-items:flex-start;gap:14px;padding:20px;background:linear-gradient(160deg,rgba(13,11,26,.9),rgba(20,16,38,.8));border:1px solid rgba(120,90,200,.1);border-radius:14px;transition:all .35s cubic-bezier(.25,.8,.25,1);position:relative;overflow:hidden;backdrop-filter:blur(8px)}
@@ -173,6 +171,17 @@ a{color:var(--p);text-decoration:none}
 .flow-card:hover .flow-icon{border-color:rgba(155,89,252,.4);box-shadow:0 0 12px rgba(155,89,252,.2);color:#fff;background:linear-gradient(135deg,rgba(155,89,252,.2),rgba(108,92,231,.15))}
 .flow-title{font-size:.9rem;font-weight:700;color:#fff;margin-bottom:3px;text-shadow:0 0 16px rgba(155,89,252,.1)}
 .flow-desc{font-size:.76rem;color:var(--t2);line-height:1.55}
+
+/* Antes/Depois */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:800px;margin:0 auto}
+.compare-card{padding:24px;border-radius:14px;border:1px solid var(--bd)}
+.compare-card.before{background:rgba(239,68,68,.04);border-color:rgba(239,68,68,.12)}
+.compare-card.after{background:rgba(52,211,153,.04);border-color:rgba(52,211,153,.12)}
+.compare-label{font-size:.68rem;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:12px}
+.compare-card.before .compare-label{color:#EF4444}
+.compare-card.after .compare-label{color:#34D399}
+.compare-item{font-size:.82rem;color:var(--t2);padding:6px 0;line-height:1.5;display:flex;align-items:center;gap:8px}
+.compare-item svg{width:16px;height:16px;flex-shrink:0}
 
 /* Footer */
 .footer{text-align:center;padding:60px 24px;color:var(--tm);font-size:.82rem;border-top:1px solid var(--bd);letter-spacing:.02em}
@@ -192,7 +201,10 @@ a{color:var(--p);text-decoration:none}
   .hero-sub{margin-bottom:20px!important}
   .testimonials{grid-template-columns:1fr}
   .features{grid-template-columns:1fr}
+  .uc-grid{grid-template-columns:1fr 1fr}
+  .compare{grid-template-columns:1fr}
   .section{padding:60px 16px}
+  .hero-stats{gap:20px}
 }
 @media(min-width:769px) and (max-width:1024px){
   .features{grid-template-columns:repeat(2,1fr)}
@@ -206,16 +218,90 @@ a{color:var(--p);text-decoration:none}
   <div class="hero-bg"></div>
   <img src="/static/brand/logo.png" alt="Clow" class="hero-logo">
   <div class="lens"></div>
-  <h1>Crie apps completos pelo celular com IA &#8212; <span>sem pagar mensalidade</span></h1>
-  <p class="hero-sub">33 ferramentas, 108 habilidades, 5 agentes aut&#244;nomos. Voc&#234; s&#243; paga o que consumir.</p>
-  <a href="#planos" class="cta" onclick="typeof fbq!=='undefined'&&fbq('track','InitiateCheckout')">Escolher meu plano</a>
-  <p class="cta-hint">Plano gratuito dispon&#237;vel &#8226; Setup em 30 segundos</p>
+  <h1>Seu departamento de TI no bolso &#8212; <span>movido a IA</span></h1>
+  <p class="hero-sub">Pe&#231;a em portugu&#234;s e receba pronto: sites, planilhas, apresenta&#231;&#245;es, PDFs, bots de <span style="color:#25D366;font-weight:700">WhatsApp</span> e automa&#231;&#245;es. Sem saber programar.</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><strong>10</strong><span>Geradores</span></div>
+    <div class="hero-stat"><strong>100%</strong><span>Em portugu&#234;s</span></div>
+    <div class="hero-stat"><strong>2 min</strong><span>Primeiro resultado</span></div>
+  </div>
+  <a href="#planos" class="cta" onclick="typeof fbq!=='undefined'&&fbq('track','InitiateCheckout')">Come&#231;ar agora</a>
+  <p class="cta-hint">Plano gratuito dispon&#237;vel &#8226; Funciona no celular</p>
+</section>
+
+<!-- ════ O QUE VOC&#202; PODE CRIAR ════ -->
+<section class="usecases">
+  <h2>O que voc&#234; pode <span>criar</span></h2>
+  <p class="sub">Tudo isso s&#243; conversando com o Clow. Sem c&#243;digo, sem complica&#231;&#227;o.</p>
+  <div class="uc-grid">
+
+    <div class="uc-card">
+      <div class="uc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+      <h4>Sites e Landing Pages</h4>
+      <p>P&#225;ginas profissionais pro seu neg&#243;cio em minutos. J&#225; saem prontas pra publicar.</p>
+    </div>
+
+    <div class="uc-card">
+      <div class="uc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></div>
+      <h4>Planilhas de Controle</h4>
+      <p>Vendas, comiss&#245;es, estoque, financeiro. Planilhas Excel completas e formatadas.</p>
+    </div>
+
+    <div class="uc-card">
+      <div class="uc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg></div>
+      <h4>Apresenta&#231;&#245;es</h4>
+      <p>PowerPoint pra reuniões, propostas comerciais e pitches. Design profissional.</p>
+    </div>
+
+    <div class="uc-card">
+      <div class="uc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+      <h4>Bot de <span style="color:#25D366;font-weight:700">WhatsApp</span></h4>
+      <p>Atendimento autom&#225;tico 24h com IA. Qualifica leads enquanto voc&#234; dorme.</p>
+    </div>
+
+    <div class="uc-card">
+      <div class="uc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></div>
+      <h4>PDFs e Documentos</h4>
+      <p>Propostas, contratos, relat&#243;rios e documentos Word formatados.</p>
+    </div>
+
+    <div class="uc-card">
+      <div class="uc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+      <h4>Automa&#231;&#245;es</h4>
+      <p>Follow-up, postagens, alertas, relat&#243;rios. Diga o que quer e o Clow configura.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ════ ANTES / DEPOIS ════ -->
+<section class="section">
+  <h2>Antes do Clow vs. <span>depois</span></h2>
+  <p class="sub">O que mudou pra quem j&#225; usa</p>
+  <div class="compare">
+    <div class="compare-card before">
+      <div class="compare-label">Sem o Clow</div>
+      <div class="compare-item"><svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>Pagar designer pra cada landing page</div>
+      <div class="compare-item"><svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>Montar planilha na m&#227;o por horas</div>
+      <div class="compare-item"><svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>Responder <span style="color:#25D366;font-weight:700">WhatsApp</span> de madrugada</div>
+      <div class="compare-item"><svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>Depender de freela pra cada ajuste</div>
+      <div class="compare-item"><svg viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>Perder lead por demora no atendimento</div>
+    </div>
+    <div class="compare-card after">
+      <div class="compare-label">Com o Clow</div>
+      <div class="compare-item"><svg viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>Landing page pronta em 2 minutos</div>
+      <div class="compare-item"><svg viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>Planilha gerada e formatada na hora</div>
+      <div class="compare-item"><svg viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>Bot responde 24h com intelig&#234;ncia</div>
+      <div class="compare-item"><svg viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>Voc&#234; mesmo resolve pelo celular</div>
+      <div class="compare-item"><svg viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>Lead qualificado automaticamente</div>
+    </div>
+  </div>
 </section>
 
 <!-- ════ DEMO ════ -->
 <section class="demo">
-  <h2>Veja o Clow <span>em a&#231;&#227;o</span></h2>
-  <p class="sub">Do prompt ao deploy em menos de 2 minutos</p>
+  <h2>Veja o Clow <span>trabalhando</span></h2>
+  <p class="sub">Do pedido ao resultado em menos de 2 minutos. Tudo pelo celular.</p>
   <div class="demo-frame" style="padding:0;background:#000;overflow:hidden">
     <video controls playsinline preload="metadata" poster="/static/brand/logo.png" style="width:100%;height:100%;display:block;object-fit:contain">
       <source src="/static/videos/demo.mp4" type="video/mp4">
@@ -223,37 +309,10 @@ a{color:var(--p);text-decoration:none}
   </div>
 </section>
 
-<!-- ════ INTEGRACOES ════ -->
-<section class="proof" style="padding-top:40px">
-  <div class="integrations-strip">
-    <p>Integrado com as ferramentas que voc&#234; j&#225; usa</p>
-    <div class="int-logos">
-      <!-- GitHub -->
-      <div class="int-logo" title="GitHub"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></div>
-      <!-- VS Code -->
-      <div class="int-logo" title="Visual Studio Code"><svg viewBox="0 0 24 24"><path fill="#007ACC" d="M17.583.063a1.5 1.5 0 00-1.032.392 1.5 1.5 0 00-.001 0L7.18 9.205 2.949 5.988l-.346-.267a1 1 0 00-1.237.057L.191 6.87a1 1 0 000 1.484L4.382 12 .191 15.646a1 1 0 000 1.484l1.175 1.093a1 1 0 001.237.057l.346-.267 4.231-3.218 9.37 8.751a1.5 1.5 0 001.033.392 1.5 1.5 0 001.033-.392l2.193-2.048a1.5 1.5 0 00.468-1.092V2.594a1.5 1.5 0 00-.468-1.092L18.616.454A1.5 1.5 0 0017.583.063zM17.5 5.2v13.6L10.4 12z"/></svg></div>
-      <!-- Supabase -->
-      <div class="int-logo" title="Supabase"><svg viewBox="0 0 24 24"><path fill="#3ECF8E" d="M13.7 2.1c-.5-.8-1.7-.7-2 .2L5.3 18.5c-.4.9.4 1.8 1.3 1.7l7.2-1c.2 0 .4-.2.4-.4V3c0-.3-.2-.6-.5-.9z"/><path fill="#3ECF8E" opacity=".6" d="M10.3 21.9c.5.8 1.7.7 2-.2l6.4-16.2c.4-.9-.4-1.8-1.3-1.7l-7.2 1c-.2 0-.4.2-.4.4V21c0 .3.2.6.5.9z"/></svg></div>
-      <!-- Anthropic -->
-      <div class="int-logo" title="Anthropic"><svg viewBox="0 0 24 24" fill="#fff"><path d="M13.827 3L20 21h-3.893l-1.317-4.51H7.413L6.093 21H2.2L8.827 3h5zm-1.282 10.49L10.691 7.8l-1.854 5.69h3.708z"/></svg></div>
-      <!-- Google -->
-      <div class="int-logo" title="Google"><svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg></div>
-      <!-- WhatsApp -->
-      <div class="int-logo" title="WhatsApp"><svg viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12.05 21.785h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.981.998-3.648-.235-.374a9.86 9.86 0 01-1.512-5.26c.002-5.45 4.437-9.884 9.889-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885zM20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.334.101 11.893c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.652a11.93 11.93 0 005.71 1.453h.005c6.585 0 11.946-5.336 11.949-11.896 0-3.176-1.24-6.165-3.478-8.457z"/></svg></div>
-      <!-- Excel -->
-      <div class="int-logo" title="Microsoft Excel"><svg viewBox="0 0 24 24"><path fill="#185C37" d="M22.5 3h-7.19v4.5H22.5z"/><path fill="#21A366" d="M15.31 3L1.5 5.44v13.12L15.31 21V3z"/><path fill="#107C41" d="M22.5 7.5h-7.19V12H22.5z"/><path fill="#33C481" d="M22.5 12h-7.19v4.5H22.5z"/><path fill="#185C37" d="M22.5 16.5h-7.19V21H22.5z"/><path fill="#fff" d="M5.85 8.25L7.88 12l-2.03 3.75h1.82L8.8 13.6c.07-.15.12-.27.16-.36h.02c.06.15.11.27.16.38l1.16 2.13h1.92L10.16 12l1.98-3.75H10.3L9.16 10.4c-.1.2-.17.36-.2.48h-.02a4.1 4.1 0 00-.19-.47L7.65 8.25z"/></svg></div>
-      <!-- Word -->
-      <div class="int-logo" title="Microsoft Word"><svg viewBox="0 0 24 24"><path fill="#185ABD" d="M22.5 3h-7.19v4.5H22.5z"/><path fill="#2B7CD3" d="M15.31 3L1.5 5.44v13.12L15.31 21V3z"/><path fill="#185ABD" d="M22.5 7.5h-7.19V12H22.5z"/><path fill="#2B7CD3" d="M22.5 12h-7.19v4.5H22.5z"/><path fill="#185ABD" d="M22.5 16.5h-7.19V21H22.5z"/><path fill="#fff" d="M5.06 8.25h1.5l1.17 5.4h.03l1.32-5.4h1.3l1.25 5.47h.03l1.22-5.47h1.42l-1.88 7.5H10.9L9.67 10.5h-.03l-1.28 5.25H6.84z"/></svg></div>
-      <!-- PowerPoint -->
-      <div class="int-logo" title="Microsoft PowerPoint"><svg viewBox="0 0 24 24"><path fill="#B7472A" d="M22.5 3h-7.19v4.5H22.5z"/><path fill="#D04727" d="M15.31 3L1.5 5.44v13.12L15.31 21V3z"/><path fill="#B7472A" d="M22.5 7.5h-7.19V12H22.5z"/><path fill="#D04727" d="M22.5 12h-7.19v4.5H22.5z"/><path fill="#B7472A" d="M22.5 16.5h-7.19V21H22.5z"/><path fill="#fff" d="M5.64 8.25h3.09c1.8 0 2.88 1.04 2.88 2.59 0 1.6-1.15 2.63-2.97 2.63H7.26v2.28H5.64zm1.62 3.87h1.12c.96 0 1.5-.45 1.5-1.25s-.54-1.24-1.49-1.24H7.26z"/></svg></div>
-    </div>
-  </div>
-</section>
-
 <!-- ════ COMO FUNCIONA ════ -->
 <section class="section">
   <h2>Como <span>funciona</span></h2>
-  <p class="sub">Comece em menos de 1 minuto. Sem cart&#227;o de cr&#233;dito.</p>
+  <p class="sub">3 passos. Menos de 1 minuto. Sem cart&#227;o de cr&#233;dito.</p>
   <div class="steps">
     <div class="step">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
@@ -261,56 +320,48 @@ a{color:var(--p);text-decoration:none}
         <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg></div>
       </div>
       <h3>Crie sua conta</h3>
-      <p>Crie sua conta em segundos. Sem burocracia e totalmente gr&#225;tis.</p>
+      <p>Nome, email e senha. 30 segundos. Totalmente gr&#225;tis.</p>
     </div>
     <div class="step">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <div class="step-num">2</div>
-        <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div>
+        <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg></div>
       </div>
-      <h3>Conecte sua API Key</h3>
-      <p>Conecte sua API em segundos. Valida&#231;&#227;o autom&#225;tica e instant&#226;nea.</p>
+      <h3>Escolha seu plano</h3>
+      <p>Comece gr&#225;tis com sua pr&#243;pria chave de IA ou assine um plano com tudo incluso.</p>
     </div>
     <div class="step">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <div class="step-num">3</div>
         <div class="step-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
       </div>
-      <h3>Use sem limites</h3>
-      <p>Comece a usar imediatamente com acesso completo &#224; plataforma.</p>
+      <h3>Pe&#231;a o que precisar</h3>
+      <p>Digite em portugu&#234;s o que voc&#234; quer. O Clow cria, formata e entrega pronto pra usar.</p>
     </div>
   </div>
 </section>
 
-<!-- ════ FEATURES ════ -->
+<!-- ════ O QUE FAZ O CLOW DIFERENTE ════ -->
 <section class="section">
-  <h2>Uma plataforma <span>completa</span></h2>
-  <p class="sub">33 ferramentas, 108 skills, 5 agentes, 16 integra&#231;&#245;es, 10 geradores. 6 interfaces.</p>
-  <div class="features" id="fg">
+  <h2>Por que <span>empres&#225;rios</span> escolhem o Clow</h2>
+  <p class="sub">N&#227;o &#233; mais uma ferramenta. &#201; um assistente que entende do seu neg&#243;cio.</p>
+  <div class="features">
 
-    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></div><div><span class="feat-cat">Desenvolvimento</span><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px"><span class="feat-num">33</span><h4>Ferramentas nativas</h4></div><p>Bash, Read, Write, Edit, Glob, Grep<br>Web Search, Scraper, Image Gen<br>PDF, Spreadsheet, WhatsApp, Docker</p></div></div>
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><div><span class="feat-cat">Comunica&#231;&#227;o</span><h4>Conversa em portugu&#234;s</h4><p>N&#227;o precisa de comando especial. Escreve o que quer como se fosse uma mensagem e o Clow entende.</p></div></div>
 
-    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg></div><div><span class="feat-cat">Produtividade</span><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px"><span class="feat-num">108</span><h4>Skills para uso imediato</h4></div><p>/commit, /review, /test, /deploy<br>/debug, /security, /perf, /docs<br>/migrate, /pr, /cotacao e dezenas mais</p></div></div>
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg></div><div><span class="feat-cat">Mobilidade</span><h4>Funciona no celular</h4><p>Crie sites, planilhas e documentos direto do celular. PWA que funciona como app nativo.</p></div></div>
 
-    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div><div><span class="feat-cat">Intelig&#234;ncia Artificial</span><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px"><span class="feat-num">5</span><h4>Tipos de agente</h4></div><p>Agent principal, Swarm paralelo<br>Teams com task board, Mission Engine<br>Background async</p></div></div>
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></div><div><span class="feat-cat">Produtividade</span><h4>10 geradores profissionais</h4><p>Sites, apps, Excel, PowerPoint, Word, PDF, imagens, copies de marketing, ideias de conte&#250;do e mais.</p></div></div>
 
-    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></div><div><span class="feat-cat">Integra&#231;&#245;es</span><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px"><span class="feat-num">16</span><h4>Integra&#231;&#245;es nativas</h4></div><p>GitHub, Meta Ads, Supabase, Redis<br>n8n, Docker, Vercel, Stripe<br>WhatsApp, Chatwoot, Playwright</p></div></div>
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div><div><span class="feat-cat">Vendas</span><h4>Bot de <span style="color:#25D366;font-weight:700">WhatsApp</span> com IA</h4><p>Qualifica leads, coleta dados, responde d&#250;vidas e transfere pro humano quando necess&#225;rio. 24 horas por dia.</p></div></div>
 
-    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><div><span class="feat-cat">Cria&#231;&#227;o</span><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px"><span class="feat-num">10</span><h4>Geradores de alto n&#237;vel</h4></div><p>Landing pages, apps web, Excel<br>PowerPoint, Word, PDF, imagens AI<br>Copies de marketing e conte&#250;do</p></div></div>
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div><span class="feat-cat">Automa&#231;&#227;o</span><h4>Automa&#231;&#245;es em linguagem natural</h4><p>&#8220;Todo dia &#224;s 8h me manda um relat&#243;rio de vendas&#8221; &#8212; s&#243; pedir. Sem configurar nada.</p></div></div>
 
-    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"/></svg></div><div><span class="feat-cat">Automa&#231;&#227;o</span><h4>GitHub Autopilot</h4><p>Label &#8220;clow&#8221; na issue &#8594; branch<br>&#8594; implementa &#8594; testa &#8594; PR<br>autom&#225;tico com &#8220;closes #N&#8221;</p></div></div>
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div><span class="feat-cat">Intelig&#234;ncia</span><h4>Aprende com voc&#234;</h4><p>Quanto mais usa, melhor fica. Lembra suas prefer&#234;ncias, seu estilo e seus padr&#245;es.</p></div></div>
 
-    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div><span class="feat-cat">Seguran&#231;a</span><h4>Time Travel</h4><p>50 checkpoints por sess&#227;o<br>/undo reverte qualquer passo<br>/history com timeline e diff visual</p></div></div>
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><span class="feat-cat">Seguran&#231;a</span><h4>Seus dados protegidos</h4><p>Conex&#227;o criptografada, dados isolados por usu&#225;rio, backup autom&#225;tico. LGPD compliance.</p></div></div>
 
-    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.66 2L4.23 12l5.43 3.13L20.77 2z"/><path d="M9.66 15.24v6.65l5.22-3.57"/></svg></div><div><span class="feat-cat">Intelig&#234;ncia Artificial</span><h4>Extended Thinking</h4><p>10K tokens de pensamento<br>O modelo raciocina antes de agir<br>em tarefas complexas de arquitetura</p></div></div>
-
-    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><div><span class="feat-cat">Multiplataforma</span><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px"><span class="feat-num">6</span><h4>Interfaces dispon&#237;veis</h4></div><p>Terminal, Web, VS Code<br>PWA Android/iPhone, Chrome Ext<br>WebSocket + Teleport entre elas</p></div></div>
-
-    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div><span class="feat-cat">Intelig&#234;ncia Artificial</span><h4>Self-Learning</h4><p>Aprende suas prefer&#234;ncias<br>Detecta erros recorrentes<br>Gera regras preventivas autom&#225;ticas</p></div></div>
-
-    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div><div><span class="feat-cat">Colabora&#231;&#227;o</span><h4>Spectator Mode</h4><p>URL compartilh&#225;vel ao vivo<br>Tool calls, respostas, diffs<br>Controle remoto com aprova&#231;&#227;o</p></div></div>
-
-    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><div><span class="feat-cat">Automa&#231;&#227;o</span><h4>Automa&#231;&#245;es em portugu&#234;s</h4><p>Diga o que quer automatizar<br>O Clow interpreta e cria cron<br>webhook ou evento GitHub</p></div></div>
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.66 2L4.23 12l5.43 3.13L20.77 2z"/><path d="M9.66 15.24v6.65l5.22-3.57"/></svg></div><div><span class="feat-cat">Tecnologia</span><h4>IA de &#250;ltima gera&#231;&#227;o</h4><p>Usa o mesmo modelo de IA das maiores empresas de tecnologia do mundo. Claude Sonnet 4 da Anthropic.</p></div></div>
 
   </div>
 </section>
@@ -318,67 +369,65 @@ a{color:var(--p);text-decoration:none}
 <!-- ════ PRICING ════ -->
 <section class="section" id="planos">
   <h2>Escolha seu <span>plano</span></h2>
-  <p class="sub">Use gr&#225;tis com sua key ou assine com IA inclusa.<br><span style="font-size:.85rem">Aceitamos cart&#227;o de cr&#233;dito e <strong style="color:var(--g)">PIX</strong></span></p>
+  <p class="sub">Comece gr&#225;tis ou assine com IA inclusa. Sem fidelidade.<br><span style="font-size:.85rem">Aceitamos cart&#227;o e <strong style="color:var(--g)">PIX</strong></span></p>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:12px;max-width:1100px">
 
     <!-- BYOK Free -->
     <div class="price-wrap"><div class="price-inner">
-      <div class="plan-label">Traga sua Key</div>
+      <div class="plan-label">Traga sua chave</div>
       <div class="plan-title"><img class="claude-icon" src="/static/brand/claude-icon.png" alt="">Gratuito</div>
       <div class="price">R$ 0</div>
-      <div class="price-sub">Voc&#234; paga s&#243; a API da Anthropic</div>
-      <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
+      <div class="price-sub">Voc&#234; conecta sua pr&#243;pria chave de IA</div>
+      <div class="price-value">Ideal pra quem j&#225; tem conta na Anthropic e quer controle total.</div>
       <ul class="price-list">
-        <li>Claude Sonnet 4 (sua key)</li>
-        <li>Sem limite de uso</li>
-        <li>33 tools + 108 skills</li>
-        <li>Cria sites, apps, planilhas</li>
-        <li>Landing pages e documentos</li>
-        <li>GitHub + deploy autom&#225;tico</li>
+        <li>Acesso completo &#224; plataforma</li>
+        <li>Cria sites, planilhas, PDFs</li>
+        <li>Apresenta&#231;&#245;es e documentos</li>
+        <li>Automa&#231;&#245;es em portugu&#234;s</li>
+        <li>Funciona no celular</li>
         <li>Dashboard de uso</li>
-        <li style="color:#25D366;font-weight:600">2 WhatsApp Agent inclusos</li>
-        <li class="dim">Sem fluxos n8n inclusos</li>
+        <li style="color:#25D366;font-weight:600">2 Bots <span style="color:#25D366;font-weight:700">WhatsApp</span> inclusos</li>
+        <li class="dim">Sem automa&#231;&#245;es n8n</li>
       </ul>
       <a href="/onboarding" class="cta" style="width:100%;padding:10px;font-size:.82rem">Come&#231;ar Gr&#225;tis</a>
     </div></div>
 
     <!-- Lite -->
     <div class="price-wrap"><div class="price-inner">
-      <div class="plan-label">Lite &#183; Haiku 4.5</div>
+      <div class="plan-label">Pra come&#231;ar</div>
       <div class="plan-title"><img class="claude-icon" src="/static/brand/claude-icon.png" alt="">Lite</div>
       <div class="price">R$ 89<small>/m&#234;s</small></div>
-      <div class="price-sub">Haiku incluso + Chat interativo incluso</div>
-      <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
+      <div class="price-sub">IA inclusa, sem configura&#231;&#227;o</div>
+      <div class="price-value">S&#243; criar conta e come&#231;ar a usar. Sem chave, sem complica&#231;&#227;o.</div>
       <ul class="price-list">
-        <li>Haiku 4.5 incluso</li>
-        <li>200K + 50K tokens/dia</li>
-        <li>Cria sites, apps, planilhas</li>
-        <li>Landing pages e PDFs</li>
-        <li>GitHub integrado</li>
+        <li>IA Haiku inclusa (r&#225;pida)</li>
+        <li>Cria sites, planilhas, PDFs</li>
+        <li>Apresenta&#231;&#245;es e documentos</li>
+        <li>Automa&#231;&#245;es em portugu&#234;s</li>
+        <li>Funciona no celular</li>
         <li>Dashboard de uso</li>
-        <li style="color:#25D366;font-weight:600">2 WhatsApp Agent inclusos</li>
-        <li class="dim">Sem fluxos n8n inclusos</li>
+        <li style="color:#25D366;font-weight:600">2 Bots <span style="color:#25D366;font-weight:700">WhatsApp</span> inclusos</li>
+        <li class="dim">Sem automa&#231;&#245;es n8n</li>
       </ul>
       <button class="cta" style="width:100%;padding:10px;font-size:.82rem" onclick="checkout('lite')">Testar 7 dias gr&#225;tis</button>
     </div></div>
 
     <!-- Starter -->
     <div class="price-wrap"><div class="price-inner">
-      <div class="plan-label">Starter &#183; Sonnet 4</div>
+      <div class="plan-label">Pra neg&#243;cios</div>
       <div class="plan-title"><img class="claude-icon" src="/static/brand/claude-icon.png" alt="">Starter</div>
       <div class="price">R$ 115<small>/m&#234;s</small></div>
-      <div class="price-sub">Sonnet + WhatsApp + 8 fluxos n8n</div>
-      <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
+      <div class="price-sub">IA top + <span style="color:#25D366;font-weight:700">WhatsApp</span> + automa&#231;&#245;es</div>
+      <div class="price-value">O plano certo pra quem quer automatizar o atendimento e o marketing.</div>
       <ul class="price-list">
-        <li>Claude Sonnet 4 incluso</li>
-        <li>500K + 100K tokens/dia</li>
-        <li style="color:#25D366;font-weight:600">2 WhatsApp Agent inclusos</li>
-        <li>Atendimento IA autom&#225;tico</li>
-        <li>8 fluxos n8n profissionais</li>
+        <li>IA Sonnet 4 inclusa (top)</li>
+        <li>2 Bots de <span style="color:#25D366;font-weight:700">WhatsApp</span> com IA</li>
+        <li>8 automa&#231;&#245;es prontas</li>
         <li>Cria sistemas e apps</li>
         <li>Sites, planilhas, PDFs</li>
-        <li>GitHub + deploy + n8n</li>
-        <li>Suporte via WhatsApp</li>
+        <li>Apresenta&#231;&#245;es profissionais</li>
+        <li>Atendimento 24h autom&#225;tico</li>
+        <li>Suporte via <span style="color:#25D366;font-weight:700">WhatsApp</span></li>
       </ul>
       <button class="cta" style="width:100%;padding:10px;font-size:.82rem" onclick="checkout('starter')">Assinar Starter</button>
     </div></div>
@@ -386,21 +435,19 @@ a{color:var(--p);text-decoration:none}
     <!-- Pro -->
     <div class="price-wrap popular"><div class="price-inner" style="position:relative">
       <div class="popular-badge">Mais Popular</div>
-      <div class="plan-label">Pro &#183; Sonnet 4</div>
+      <div class="plan-label">Pra escalar</div>
       <div class="plan-title"><img class="claude-icon" src="/static/brand/claude-icon.png" alt="">Pro</div>
       <div class="price">R$ 189<small>/m&#234;s</small></div>
-      <div class="price-sub">Tudo do Starter + 2.000 fluxos</div>
-      <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
+      <div class="price-sub">Tudo do Starter + 2.000 automa&#231;&#245;es</div>
+      <div class="price-value">Pra quem usa todo dia e quer o m&#225;ximo de produtividade.</div>
       <ul class="price-list">
         <li>Tudo do Starter incluso</li>
-        <li>1M + 200K tokens/dia</li>
-        <li style="color:#25D366;font-weight:600">2 WhatsApp Agent inclusos</li>
-        <li>2.000 fluxos n8n prontos</li>
+        <li>Dobro de capacidade di&#225;ria</li>
+        <li>2 Bots <span style="color:#25D366;font-weight:700">WhatsApp</span> inclusos</li>
+        <li>2.000 automa&#231;&#245;es prontas</li>
         <li>Sistemas completos</li>
-        <li>Apps, APIs, automa&#231;&#245;es</li>
-        <li>GitHub Autopilot</li>
-        <li>Agent Teams (4 agentes)</li>
         <li>Landing pages premium</li>
+        <li>IA que aprende com voc&#234;</li>
         <li>Prioridade no suporte</li>
       </ul>
       <button class="cta" style="width:100%;padding:10px;font-size:.82rem" onclick="checkout('pro')">Assinar Pro</button>
@@ -408,20 +455,18 @@ a{color:var(--p);text-decoration:none}
 
     <!-- Business -->
     <div class="price-wrap"><div class="price-inner">
-      <div class="plan-label">Business &#183; Sonnet 4</div>
+      <div class="plan-label">Pra empresas</div>
       <div class="plan-title"><img class="claude-icon" src="/static/brand/claude-icon.png" alt="">Business</div>
       <div class="price">R$ 229<small>/m&#234;s</small></div>
-      <div class="price-sub">M&#225;ximo poder + consultoria</div>
-      <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
+      <div class="price-sub">Pot&#234;ncia m&#225;xima + consultoria</div>
+      <div class="price-value">Pra quem quer um parceiro de tecnologia, n&#227;o s&#243; uma ferramenta.</div>
       <ul class="price-list">
         <li>Tudo do Pro incluso</li>
-        <li>2M + 400K tokens/dia</li>
-        <li style="color:#25D366;font-weight:600">2 WhatsApp Agent inclusos</li>
-        <li>3.000 fluxos n8n prontos</li>
+        <li>4x mais capacidade</li>
+        <li>2 Bots <span style="color:#25D366;font-weight:700">WhatsApp</span> inclusos</li>
+        <li>3.000 automa&#231;&#245;es prontas</li>
         <li>Sistemas sob medida</li>
-        <li>Extended Thinking ativo</li>
-        <li>Self-Learning avan&#231;ado</li>
-        <li>Spectator Mode</li>
+        <li>IA avan&#231;ada com racioc&#237;nio</li>
         <li>Automa&#231;&#245;es ilimitadas</li>
         <li>Suporte + consultoria</li>
       </ul>
@@ -430,51 +475,40 @@ a{color:var(--p);text-decoration:none}
   </div>
 </section>
 
-<!-- ════ FLUXOS N8N ════ -->
+<!-- ════ AUTOMA&#199;&#213;ES ════ -->
 <section class="section">
-  <div style="text-align:center;margin-bottom:16px"><img src="/static/brand/n8n-logo.png" alt="n8n" style="height:48px;opacity:.8"></div>
-  <h2>Fluxos de <span>automa&#231;&#227;o</span> n8n inclusos</h2>
-  <p class="sub">8 fluxos profissionais de n8n inclusos. Planos Pro e Business liberam milhares de automa&#231;&#245;es prontas para uso.</p>
+  <h2>Automa&#231;&#245;es <span>prontas</span> pra usar</h2>
+  <p class="sub">S&#243; ativar. Cada uma j&#225; vem configurada e pronta pro seu neg&#243;cio.</p>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px">
 
     <div class="flow-card">
       <div class="flow-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-      <div><h4 class="flow-title">SDR Inteligente</h4><p class="flow-desc">Qualifica&#231;&#227;o autom&#225;tica de leads via WhatsApp com IA</p></div>
+      <div><h4 class="flow-title">Qualifica&#231;&#227;o de Leads</h4><p class="flow-desc">Bot pergunta, filtra e entrega s&#243; os leads quentes pra voc&#234;</p></div>
     </div>
 
     <div class="flow-card">
       <div class="flow-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
-      <div><h4 class="flow-title">Atendimento 24/7</h4><p class="flow-desc">Chatbot com RAG, handoff humano e mem&#243;ria de contexto</p></div>
-    </div>
-
-    <div class="flow-card">
-      <div class="flow-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
-      <div><h4 class="flow-title">RAG Corporativo</h4><p class="flow-desc">Busca inteligente em documentos com IA avan&#231;ada</p></div>
-    </div>
-
-    <div class="flow-card">
-      <div class="flow-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg></div>
-      <div><h4 class="flow-title">Cria&#231;&#227;o de Conte&#250;do</h4><p class="flow-desc">Posts, copies e artigos gerados automaticamente</p></div>
-    </div>
-
-    <div class="flow-card">
-      <div class="flow-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg></div>
-      <div><h4 class="flow-title">Postagem Autom&#225;tica</h4><p class="flow-desc">Publica&#231;&#227;o agendada em todas as redes sociais</p></div>
+      <div><h4 class="flow-title">Atendimento 24h</h4><p class="flow-desc">Responde d&#250;vidas, envia informa&#231;&#245;es e transfere pro humano quando precisa</p></div>
     </div>
 
     <div class="flow-card">
       <div class="flow-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></div>
-      <div><h4 class="flow-title">Follow-up Autom&#225;tico</h4><p class="flow-desc">Sequ&#234;ncias de mensagens program&#225;veis por tempo</p></div>
+      <div><h4 class="flow-title">Follow-up Autom&#225;tico</h4><p class="flow-desc">Sequ&#234;ncias de mensagens no tempo certo. Nenhum lead esquecido.</p></div>
     </div>
 
     <div class="flow-card">
-      <div class="flow-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
-      <div><h4 class="flow-title">Qualifica&#231;&#227;o de Leads</h4><p class="flow-desc">Formul&#225;rio &#8594; WhatsApp &#8594; CRM autom&#225;tico</p></div>
+      <div class="flow-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg></div>
+      <div><h4 class="flow-title">Conte&#250;do Autom&#225;tico</h4><p class="flow-desc">Posts, copies e artigos gerados e agendados sem esfor&#231;o</p></div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg></div>
+      <div><h4 class="flow-title">Postagem em Redes</h4><p class="flow-desc">Publica&#231;&#227;o agendada no Facebook, Instagram e outras redes</p></div>
     </div>
 
     <div class="flow-card">
       <div class="flow-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg></div>
-      <div><h4 class="flow-title">Onboarding de Clientes</h4><p class="flow-desc">Boas-vindas autom&#225;ticas + documenta&#231;&#227;o personalizada</p></div>
+      <div><h4 class="flow-title">Onboarding de Clientes</h4><p class="flow-desc">Boas-vindas, orienta&#231;&#245;es e documentos personalizados autom&#225;ticos</p></div>
     </div>
 
   </div>
@@ -484,56 +518,54 @@ a{color:var(--p);text-decoration:none}
 <section class="section">
   <h2>Perguntas <span>frequentes</span></h2>
   <div style="max-width:700px;margin:0 auto">
-    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">Preciso de API key nos planos pagos?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">N&#227;o. Nos planos Lite, Starter, Pro e Business, a IA j&#225; est&#225; inclusa. Voc&#234; n&#227;o precisa configurar nenhuma API key.</p></details>
-    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">Qual a diferen&#231;a entre Haiku e Sonnet?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">O Haiku &#233; r&#225;pido e econ&#244;mico, &#243;timo pra tarefas do dia a dia. O Sonnet &#233; mais inteligente e preciso, ideal pra c&#243;digo complexo, arquitetura e racioc&#237;nio avan&#231;ado. O plano Lite usa Haiku, os demais usam Sonnet.</p></details>
-    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">Como funciona a franquia?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">Cada plano tem um limite di&#225;rio e semanal de tokens. Renova automaticamente a cada dia/semana. Voc&#234; acompanha o uso no dashboard.</p></details>
-    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">Posso trocar de plano?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">Sim. Upgrade ou downgrade a qualquer momento pelo portal de assinatura. A mudan&#231;a &#233; imediata.</p></details>
-    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">O que s&#227;o os fluxos de n8n?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">S&#227;o automa&#231;&#245;es prontas pra usar no seu neg&#243;cio: SDR, atendimento, cria&#231;&#227;o de conte&#250;do, follow-up, qualifica&#231;&#227;o de leads e mais. Basta ativar.</p></details>
-    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">Posso usar minha pr&#243;pria key?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">Sim! O plano gr&#225;tis funciona assim: voc&#234; traz sua API key da Anthropic e usa sem limite nosso. Paga direto pra Anthropic.</p></details>
+    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">Preciso saber programar?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">N&#227;o. Voc&#234; s&#243; escreve o que precisa em portugu&#234;s e o Clow faz. Funciona como uma conversa normal.</p></details>
+    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">O que &#233; essa &#8220;chave de IA&#8221; do plano gratuito?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">&#201; uma senha que voc&#234; cria no site da Anthropic (a empresa que faz a IA). Com ela voc&#234; usa o Clow gr&#225;tis e paga s&#243; o que consumir, direto pra Anthropic. M&#233;dia: R$0,25 a R$1,25 por conversa. Nos planos pagos, n&#227;o precisa de chave &#8212; a IA j&#225; vem inclusa.</p></details>
+    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">Funciona no celular?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">Sim, 100%. O Clow funciona como um app no celular (Android e iPhone). Voc&#234; cria sites, planilhas, documentos e gerencia automa&#231;&#245;es tudo pelo celular.</p></details>
+    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">O bot de <span style="color:#25D366;font-weight:700">WhatsApp</span> funciona com meu n&#250;mero?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">Sim. Voc&#234; conecta seu pr&#243;prio <span style="color:#25D366;font-weight:700">WhatsApp</span>. O bot atende seus clientes pelo seu n&#250;mero, com a sua identidade, e transfere pro humano quando necess&#225;rio.</p></details>
+    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">Posso cancelar a qualquer momento?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">Sim. Sem fidelidade, sem multa. Cancela quando quiser pelo portal de assinatura.</p></details>
+    <details style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:16px 20px;margin-bottom:10px"><summary style="cursor:pointer;font-weight:600;font-size:.95rem">Meus dados ficam seguros?</summary><p style="margin-top:10px;color:var(--t2);font-size:.9rem;line-height:1.6">Sim. Conex&#227;o criptografada (SSL), dados isolados por usu&#225;rio, backup autom&#225;tico. Pagamentos processados pelo Stripe com seguran&#231;a banc&#225;ria.</p></details>
   </div>
 </section>
 
 <!-- ════ PROVA SOCIAL ════ -->
 <section class="proof">
-  <div class="proof-counter"><em>+150</em> devs j&#225; est&#227;o usando o Clow</div>
+  <div class="proof-counter"><em>+150</em> empres&#225;rios j&#225; usam o Clow</div>
 
-  <!-- Testimonials -->
   <div class="testimonials">
     <div class="testi">
-      <p>Substitu&#237; 3 ferramentas pagas pelo Clow. Fa&#231;o deploy direto do celular agora.</p>
+      <p>Criei a landing page da minha empresa em 3 minutos pelo celular. Antes eu pagava R$500 pra um designer fazer.</p>
       <div class="testi-author">
-        <div class="testi-avatar" style="background:linear-gradient(135deg,#9B59FC,#6C5CE7)">RM</div>
-        <div><div class="testi-name">Rafael M.</div><div class="testi-role">Dev Fullstack &#183; S&#227;o Paulo</div></div>
+        <div class="testi-avatar" style="background:linear-gradient(135deg,#9B59FC,#6C5CE7)">MF</div>
+        <div><div class="testi-name">M&#225;rcio F.</div><div class="testi-role">Corretor de Seguros &#183; Rio de Janeiro</div></div>
       </div>
       <div class="testi-time">h&#225; 2 dias</div>
     </div>
     <div class="testi">
-      <p>Os 108 skills prontos economizam horas. O /deploy sozinho j&#225; valeu.</p>
+      <p>O bot de <span style="color:#25D366;font-weight:700">WhatsApp</span> atendeu 200 clientes ontem sozinho. Eu dormindo e ele qualificando lead.</p>
       <div class="testi-author">
-        <div class="testi-avatar" style="background:linear-gradient(135deg,#34D399,#059669)">CS</div>
-        <div><div class="testi-name">Camila S.</div><div class="testi-role">Freelancer &#183; Belo Horizonte</div></div>
+        <div class="testi-avatar" style="background:linear-gradient(135deg,#34D399,#059669)">AS</div>
+        <div><div class="testi-name">Ana S.</div><div class="testi-role">Dona de Cl&#237;nica &#183; Belo Horizonte</div></div>
       </div>
       <div class="testi-time">h&#225; 5 dias</div>
     </div>
     <div class="testi">
-      <p>O modelo BYOK &#233; genial. Pago R$15/m&#234;s de API e tenho um dev AI completo.</p>
+      <p>Pe&#231;o planilha de comiss&#245;es, proposta comercial, tudo pelo celular. Meu assistente particular de TI.</p>
       <div class="testi-author">
-        <div class="testi-avatar" style="background:linear-gradient(135deg,#F59E0B,#D97706)">LT</div>
-        <div><div class="testi-name">Lucas T.</div><div class="testi-role">CTO Startup &#183; Rio de Janeiro</div></div>
+        <div class="testi-avatar" style="background:linear-gradient(135deg,#F59E0B,#D97706)">RT</div>
+        <div><div class="testi-name">Ricardo T.</div><div class="testi-role">Consultor &#183; S&#227;o Paulo</div></div>
       </div>
       <div class="testi-time">h&#225; 1 semana</div>
     </div>
   </div>
 
-  <!-- Chat feedback -->
   <div style="max-width:480px;margin:0 auto">
-    <p style="font-size:.72rem;color:var(--tm);text-transform:uppercase;letter-spacing:1.5px;text-align:center;margin-bottom:16px">Exemplos de feedback de usu&#225;rios</p>
+    <p style="font-size:.72rem;color:var(--tm);text-transform:uppercase;letter-spacing:1.5px;text-align:center;margin-bottom:16px">O que dizem no <span style="color:#25D366;font-weight:700">WhatsApp</span></p>
     <div class="chat-proof">
-      <div class="cp-bubble cp-left"><span>mano esse clow &#233; absurdo, subi um app inteiro pelo celular</span><span class="cp-time">h&#225; 3h</span></div>
-      <div class="cp-bubble cp-right"><span>economizei MUITO tempo, o /commit sozinho j&#225; paga</span><span class="cp-time">h&#225; 5h</span></div>
-      <div class="cp-bubble cp-left"><span>o whatsapp agent atendeu 200 clientes ontem sozinho</span><span class="cp-time">ontem</span></div>
-      <div class="cp-bubble cp-right"><span>isso aqui vale muito mais do que eu pago, s&#233;rio</span><span class="cp-time">ontem</span></div>
-      <div class="cp-bubble cp-left"><span>criei uma landing page completa em 2 minutos, inacredit&#225;vel</span><span class="cp-time">h&#225; 2 dias</span></div>
+      <div class="cp-bubble cp-left"><span>mano esse trem &#233; absurdo, fiz o site da loja inteiro pelo celular</span><span class="cp-time">h&#225; 3h</span></div>
+      <div class="cp-bubble cp-right"><span>a planilha de vendas ficou melhor que a que eu paguei pra fazer</span><span class="cp-time">h&#225; 5h</span></div>
+      <div class="cp-bubble cp-left"><span>meu bot respondeu 150 mensagens ontem enquanto eu tava em reuniao</span><span class="cp-time">ontem</span></div>
+      <div class="cp-bubble cp-right"><span>nunca pensei que ia conseguir criar um app sem saber programar</span><span class="cp-time">ontem</span></div>
+      <div class="cp-bubble cp-left"><span>s&#243; a automa&#231;&#227;o de follow-up j&#225; recuperou 3 clientes essa semana</span><span class="cp-time">h&#225; 2 dias</span></div>
     </div>
   </div>
 </section>
@@ -542,7 +574,6 @@ a{color:var(--p);text-decoration:none}
   <img src="/static/brand/logo.png" alt="Clow">
   <p>Clow AI &#8212; Intelig&#234;ncia Infinita &#8226; Possibilidades Premium</p>
 
-  <!-- Selos de seguranca -->
   <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin:24px 0 20px">
     <div style="display:flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.15);border-radius:8px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
@@ -570,16 +601,15 @@ a{color:var(--p);text-decoration:none}
   <p><a href="/termos" style="color:var(--tm)">Termos de Uso</a> &#8226; <a href="/privacidade" style="color:var(--tm)">Pol&#237;tica de Privacidade</a> &#8226; <a href="https://clow.pvcorretor01.com.br/health" style="color:var(--tm)">Status</a></p>
 </footer>
 
-<!-- Sticky CTA mobile -->
-<div class="sticky-cta" id="stickyCta"><a href="/onboarding">Come&#231;ar Gr&#225;tis</a></div>
+<div class="sticky-cta" id="stickyCta"><a href="#planos">Escolher meu plano</a></div>
 
 <script>
-// 3D tilt on feature cards
-document.querySelectorAll('.feat').forEach(c=>{c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;c.style.setProperty('--rx',(y-.5)*-10+'deg');c.style.setProperty('--ry',(x-.5)*10+'deg');c.style.setProperty('--mx',x*100+'%');c.style.setProperty('--my',y*100+'%')});c.addEventListener('mouseleave',()=>{c.style.setProperty('--rx','0deg');c.style.setProperty('--ry','0deg')})});
+// 3D tilt on cards
+document.querySelectorAll('.feat,.uc-card').forEach(c=>{c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;c.style.setProperty('--rx',(y-.5)*-10+'deg');c.style.setProperty('--ry',(x-.5)*10+'deg');c.style.setProperty('--mx',x*100+'%');c.style.setProperty('--my',y*100+'%')});c.addEventListener('mouseleave',()=>{c.style.setProperty('--rx','0deg');c.style.setProperty('--ry','0deg')})});
 
 // Scroll-in animation
 const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)'}})},{threshold:.1});
-document.querySelectorAll('.feat,.step,.testi,.hl,.flow-card,.price-wrap,.cp-bubble').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(30px)';el.style.transition='all .6s cubic-bezier(.25,.8,.25,1)';obs.observe(el)});
+document.querySelectorAll('.feat,.step,.testi,.uc-card,.flow-card,.price-wrap,.cp-bubble,.compare-card').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(30px)';el.style.transition='all .6s cubic-bezier(.25,.8,.25,1)';obs.observe(el)});
 
 // Checkout Stripe
 async function checkout(planId){
@@ -587,10 +617,7 @@ async function checkout(planId){
     const r=await fetch('/api/v1/billing/checkout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({plan_id:planId})});
     const d=await r.json();
     if(d.url){window.location.href=d.url}
-    else if(d.error){
-      // Nao autenticado — vai pro onboarding com plano memorizado
-      window.location='/onboarding?plan='+planId;
-    }
+    else if(d.error){window.location='/onboarding?plan='+planId}
   }catch(e){window.location='/onboarding?plan='+planId}
 }
 
