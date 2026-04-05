@@ -261,6 +261,16 @@ MIGRATIONS: list[tuple[int, str, str]] = [
         CREATE INDEX IF NOT EXISTS idx_slinks_tenant ON scheduling_links(tenant_id);
         """,
     ),
+    # ── v6: CRM leads — instance_id e source_phone ──────────────
+    (
+        6,
+        "Add instance_id and source_phone to leads for per-WhatsApp pipeline",
+        """
+        ALTER TABLE leads ADD COLUMN instance_id TEXT DEFAULT '';
+        ALTER TABLE leads ADD COLUMN source_phone TEXT DEFAULT '';
+        CREATE INDEX IF NOT EXISTS idx_leads_instance ON leads(tenant_id, instance_id);
+        """,
+    ),
 ]
 
 

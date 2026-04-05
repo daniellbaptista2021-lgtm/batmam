@@ -266,8 +266,45 @@ tr:hover td{background:rgba(124,92,252,.03)}
 /* Source icons */
 .src-icon{font-size:14px}
 
+/* CRM Sidebar (instances) */
+.crm-layout{display:flex;height:calc(100vh - 90px)}
+.crm-sidebar{width:240px;background:#0d0d1a;border-right:1px solid var(--border);padding:12px;overflow-y:auto;flex-shrink:0}
+.crm-sidebar-title{color:var(--t2);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.crm-instance-card{background:var(--bg2);border-radius:10px;padding:10px 12px;margin-bottom:6px;cursor:pointer;border:2px solid transparent;transition:all .2s}
+.crm-instance-card:hover{background:#151528}
+.crm-instance-card.active{border-color:var(--p);background:#12122a}
+.crm-inst-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+.crm-inst-status{width:8px;height:8px;border-radius:50%}
+.crm-inst-status.online{background:var(--green);box-shadow:0 0 4px var(--green)}
+.crm-inst-status.offline{background:#6B7280}
+.crm-inst-name{color:var(--t1);font-size:13px;font-weight:500}
+.crm-inst-phone{color:var(--t2);font-size:11px;margin-top:1px}
+.crm-inst-stats{color:var(--t2);font-size:11px;margin-top:4px}
+.crm-inst-stats .crm-new{color:var(--p);font-weight:600}
+.crm-add-number{display:block;text-align:center;color:var(--p);font-size:12px;padding:8px;text-decoration:none;border:1px dashed var(--border);border-radius:8px;margin-top:6px}
+.crm-add-number:hover{background:var(--bg2);border-color:var(--p)}
+.crm-sep{border:none;border-top:1px solid var(--border);margin:12px 0}
+.crm-metric{display:flex;justify-content:space-between;padding:5px 0;font-size:12px}
+.crm-metric-label{color:var(--t2)}
+.crm-metric-value{color:var(--t1);font-weight:500}
+.crm-empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;color:var(--t2);padding:30px;gap:12px}
+.crm-empty-state a{color:var(--p)}
+.crm-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.crm-main .main{flex:1;overflow-y:auto}
+
+/* Instance header in Kanban */
+.kanban-inst-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.kanban-inst-header h2{font-size:16px;margin:0}
+.kanban-inst-header .phone-badge{color:var(--t2);font-size:12px;background:var(--bg2);padding:3px 8px;border-radius:12px}
+.kanban-inst-header .status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block}
+
 /* Responsive */
 @media(max-width:900px){
+  .crm-layout{flex-direction:column;height:auto}
+  .crm-sidebar{width:100%;height:auto;border-right:none;border-bottom:1px solid var(--border);padding:8px 12px;display:flex;gap:8px;overflow-x:auto;flex-wrap:nowrap}
+  .crm-sidebar-title{display:none}
+  .crm-instance-card{min-width:160px;flex-shrink:0;margin-bottom:0}
+  .crm-sep,.crm-add-number,.crm-sidebar .crm-metrics-panel{display:none}
   .kanban{grid-template-columns:1fr;overflow-x:visible}
   .kanban-col{max-height:300px}
   .sched-grid{grid-template-columns:1fr}
@@ -293,6 +330,22 @@ tr:hover td{background:rgba(124,92,252,.03)}
   </div>
 </div>
 
+<div class="crm-layout">
+
+<!-- SIDEBAR DE INSTANCIAS -->
+<div class="crm-sidebar" id="crmSidebar">
+  <div class="crm-sidebar-title">WhatsApp</div>
+  <div id="instanceCards"><div class="loading"><div class="spinner"></div></div></div>
+  <a href="/app/whatsapp" class="crm-add-number">+ Conectar numero</a>
+  <hr class="crm-sep">
+  <div class="crm-metrics-panel" id="metricsPanel" style="display:none">
+    <div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:6px" id="metricTitle"></div>
+    <div id="metricsList"></div>
+  </div>
+</div>
+
+<!-- AREA PRINCIPAL -->
+<div class="crm-main">
 <div class="tabs" id="tabs">
   <button class="tab active" data-tab="pipeline">Pipeline</button>
   <button class="tab" data-tab="leads">Leads</button>
@@ -304,6 +357,11 @@ tr:hover td{background:rgba(124,92,252,.03)}
 <div class="main">
   <!-- PIPELINE -->
   <div class="tab-content active" id="tc-pipeline">
+    <div class="kanban-inst-header" id="kanbanHeader" style="display:none">
+      <span class="status-dot"></span>
+      <h2 id="kanbanTitle">Pipeline</h2>
+      <span class="phone-badge" id="kanbanPhone"></span>
+    </div>
     <div class="kanban" id="kanban"></div>
   </div>
 
@@ -377,6 +435,8 @@ tr:hover td{background:rgba(124,92,252,.03)}
     </div>
   </div>
 </div>
+</div><!-- /crm-main -->
+</div><!-- /crm-layout -->
 
 <!-- Modals -->
 <div class="modal-overlay" id="modalOverlay">
@@ -448,7 +508,8 @@ async function loadPipeline(){
   const kb=document.getElementById('kanban');
   kb.innerHTML='<div class="loading" style="grid-column:1/-1"><div class="spinner"></div></div>';
   try{
-    const data=await api('/leads');
+    const q=currentInstanceId?`/leads?instance_id=${currentInstanceId}&limit=200`:'/leads?limit=200';
+    const data=await api(q);
     const leads=Array.isArray(data)?data:(data.leads||data.items||[]);
     pipelineData={};
     STATUSES.forEach(s=>pipelineData[s]=[]);
@@ -762,6 +823,7 @@ async function loadLeads(){
   const status=document.getElementById('filterStatus').value;
   const source=document.getElementById('filterSource').value;
   let q=`/leads?page=${leadsPage}`;
+  if(currentInstanceId)q+=`&instance_id=${currentInstanceId}`;
   if(search)q+=`&search=${encodeURIComponent(search)}`;
   if(status)q+=`&status=${status}`;
   if(source)q+=`&source=${source}`;
@@ -821,7 +883,7 @@ async function createLead(){
   const name=document.getElementById('nlName').value.trim();
   if(!name){toast('Nome obrigatorio',false);return;}
   try{
-    await api('/leads',{method:'POST',body:{name,email:document.getElementById('nlEmail').value.trim()||undefined,phone:document.getElementById('nlPhone').value.trim()||undefined,source:document.getElementById('nlSource').value,notes:document.getElementById('nlNotes').value.trim()||undefined}});
+    await api('/leads',{method:'POST',body:{name,email:document.getElementById('nlEmail').value.trim()||undefined,phone:document.getElementById('nlPhone').value.trim()||undefined,source:document.getElementById('nlSource').value,notes:document.getElementById('nlNotes').value.trim()||undefined,instance_id:currentInstanceId}});
     toast('Lead criado');closeModal();loadLeads();if(currentTab==='pipeline')loadPipeline();
   }catch(e){toast('Erro: '+e.message,false);}
 }
@@ -1152,8 +1214,94 @@ async function execSuggestion(leadId,action){
   try{await api(`/suggestions/${leadId}/execute`,{method:'POST',body:{action}});toast('Sugestao executada');loadDashboard();}catch(e){toast('Erro: '+e.message,false);}
 }
 
+/* ══════════════════════════════════════════════
+   INSTANCE SIDEBAR
+   ══════════════════════════════════════════════ */
+let currentInstanceId = '';
+let crmInstances = [];
+
+async function initCRM() {
+  try {
+    const instances = await api('/instances');
+    crmInstances = Array.isArray(instances) ? instances : (instances.instances || []);
+    const container = document.getElementById('instanceCards');
+    if (crmInstances.length === 0) {
+      container.innerHTML = '<div style="color:var(--t2);font-size:12px;text-align:center;padding:12px">Nenhum WhatsApp conectado.<br>Conecte para receber leads.</div>';
+      document.getElementById('kanban').innerHTML = '<div class="crm-empty-state"><div style="font-size:40px">📱</div><p>Conecte seu WhatsApp para comecar a receber leads.</p><a href="/app/whatsapp">Conectar WhatsApp</a></div>';
+      return;
+    }
+    container.innerHTML = crmInstances.map(inst => `
+      <div class="crm-instance-card" data-instance="${esc(inst.instance_id)}" onclick="selectInstance('${esc(inst.instance_id)}')">
+        <div class="crm-inst-header">
+          <span>📱</span>
+          <span class="crm-inst-status ${inst.active ? 'online' : 'offline'}"></span>
+        </div>
+        <div class="crm-inst-name">${esc(inst.name)}</div>
+        <div class="crm-inst-phone">${esc(inst.phone || '')}</div>
+        <div class="crm-inst-stats">
+          <span>${inst.leads_count || 0} leads</span>
+          ${inst.new_today ? ` · <span class="crm-new">${inst.new_today} novos</span>` : ''}
+        </div>
+      </div>
+    `).join('');
+    // Seleciona primeira instancia
+    selectInstance(crmInstances[0].instance_id);
+  } catch (e) {
+    document.getElementById('instanceCards').innerHTML = '<div style="color:var(--red);font-size:12px;padding:8px">Erro ao carregar instancias</div>';
+    loadPipeline(); // fallback sem filtro
+  }
+  // Polling sidebar a cada 30s
+  setInterval(refreshSidebar, 30000);
+}
+
+async function selectInstance(instanceId) {
+  currentInstanceId = instanceId;
+  document.querySelectorAll('.crm-instance-card').forEach(c => c.classList.toggle('active', c.dataset.instance === instanceId));
+  // Atualiza header do Kanban
+  const inst = crmInstances.find(i => i.instance_id === instanceId);
+  if (inst) {
+    document.getElementById('kanbanHeader').style.display = 'flex';
+    document.getElementById('kanbanTitle').textContent = inst.name || 'Pipeline';
+    document.getElementById('kanbanPhone').textContent = inst.phone || '';
+  }
+  // Carrega pipeline filtrado
+  loadPipeline();
+  // Carrega metricas
+  loadInstanceMetrics(instanceId);
+}
+
+async function loadInstanceMetrics(instanceId) {
+  const panel = document.getElementById('metricsPanel');
+  try {
+    const m = await api(`/metrics?instance_id=${instanceId}`);
+    document.getElementById('metricTitle').textContent = m.instance_name || 'Metricas';
+    document.getElementById('metricsList').innerHTML = `
+      <div class="crm-metric"><span class="crm-metric-label">Leads total</span><span class="crm-metric-value">${m.leads_total||0}</span></div>
+      <div class="crm-metric"><span class="crm-metric-label">Leads hoje</span><span class="crm-metric-value">${m.leads_today||0}</span></div>
+      <div class="crm-metric"><span class="crm-metric-label">Leads semana</span><span class="crm-metric-value">${m.leads_this_week||0}</span></div>
+      <div class="crm-metric"><span class="crm-metric-label">Msgs hoje</span><span class="crm-metric-value">${m.messages_today||0}</span></div>
+      <div class="crm-metric"><span class="crm-metric-label">Conversoes</span><span class="crm-metric-value">${m.conversions_this_week||0} semana</span></div>
+    `;
+    panel.style.display = 'block';
+  } catch (e) { panel.style.display = 'none'; }
+}
+
+async function refreshSidebar() {
+  try {
+    const instances = await api('/instances');
+    crmInstances = Array.isArray(instances) ? instances : (instances.instances || []);
+    crmInstances.forEach(inst => {
+      const card = document.querySelector(`.crm-instance-card[data-instance="${inst.instance_id}"]`);
+      if (card) {
+        const stats = card.querySelector('.crm-inst-stats');
+        if (stats) stats.innerHTML = `<span>${inst.leads_count||0} leads</span>${inst.new_today?` · <span class="crm-new">${inst.new_today} novos</span>`:''}`;
+      }
+    });
+  } catch (e) {}
+}
+
 /* ── Init ── */
-loadPipeline();
+initCRM();
 </script>
 </body>
 </html>

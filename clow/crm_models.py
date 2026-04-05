@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS leads (
     notes TEXT,
     tags TEXT,
     custom_fields TEXT,
+    instance_id TEXT DEFAULT '',
+    source_phone TEXT DEFAULT '',
     last_contact_at REAL,
     next_followup_at REAL,
     created_at REAL NOT NULL,
@@ -58,6 +60,7 @@ CREATE TABLE IF NOT EXISTS leads (
 );
 
 CREATE INDEX IF NOT EXISTS idx_leads_tenant ON leads(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_leads_instance ON leads(tenant_id, instance_id);
 CREATE INDEX IF NOT EXISTS idx_leads_phone ON leads(phone);
 CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email);
 
@@ -154,18 +157,20 @@ def init_crm_tables() -> None:
 def create_lead(tenant_id: str, name: str = "", email: str = "",
                 phone: str = "", source: str = "manual",
                 notes: str = "", tags: list | None = None,
-                custom_fields: dict | None = None) -> dict:
+                custom_fields: dict | None = None,
+                instance_id: str = "", source_phone: str = "") -> dict:
     """Cria um novo lead. Retorna o lead criado."""
     lead_id = _uid()
     now = _now()
     with get_db() as db:
         db.execute(
             """INSERT INTO leads (id, tenant_id, name, email, phone, source,
-               status, score, notes, tags, custom_fields, created_at, updated_at)
-               VALUES (?,?,?,?,?,?, 'novo', 0, ?,?,?, ?,?)""",
+               status, score, notes, tags, custom_fields,
+               instance_id, source_phone, created_at, updated_at)
+               VALUES (?,?,?,?,?,?, 'novo', 0, ?,?,?, ?,?, ?,?)""",
             (lead_id, tenant_id, name, email, phone, source,
              notes, json.dumps(tags or []), json.dumps(custom_fields or {}),
-             now, now),
+             instance_id, source_phone, now, now),
         )
         # Registra atividade de criacao
         db.execute(
@@ -189,6 +194,7 @@ def update_lead(lead_id: str, tenant_id: str, **kwargs) -> dict | None:
     """Atualiza campos do lead."""
     allowed = {"name", "email", "phone", "source", "status", "score",
                "assigned_to", "notes", "tags", "custom_fields",
+               "instance_id", "source_phone",
                "last_contact_at", "next_followup_at"}
     updates = {k: v for k, v in kwargs.items() if k in allowed}
     if not updates:
@@ -223,11 +229,15 @@ def delete_lead(lead_id: str, tenant_id: str) -> bool:
 
 
 def list_leads(tenant_id: str, status: str = "", source: str = "",
+               instance_id: str = "",
                page: int = 1, limit: int = 50) -> dict:
     """Lista leads com filtros. Retorna {leads, total, page, pages}."""
     conditions = ["tenant_id=?"]
     params: list[Any] = [tenant_id]
 
+    if instance_id:
+        conditions.append("instance_id=?")
+        params.append(instance_id)
     if status:
         conditions.append("status=?")
         params.append(status)
@@ -704,15 +714,93 @@ def get_dashboard_stats(tenant_id: str) -> dict:
     }
 
 
-def get_stale_leads(tenant_id: str, days: int = 3) -> list[dict]:
+def get_stale_leads(tenant_id: str, days: int = 3, instance_id: str = "") -> list[dict]:
     """Retorna leads sem contato ha X dias e com status ativo."""
     cutoff = _now() - (days * 86400)
+    conditions = ["tenant_id=?", "status NOT IN ('ganho', 'perdido')",
+                  "(last_contact_at IS NULL OR last_contact_at < ?)"]
+    params: list[Any] = [tenant_id, cutoff]
+    if instance_id:
+        conditions.append("instance_id=?")
+        params.append(instance_id)
+    where = " AND ".join(conditions)
     with get_db() as db:
         rows = db.execute(
-            """SELECT * FROM leads WHERE tenant_id=?
-               AND status NOT IN ('ganho', 'perdido')
-               AND (last_contact_at IS NULL OR last_contact_at < ?)
-               ORDER BY last_contact_at ASC NULLS FIRST LIMIT 50""",
-            (tenant_id, cutoff),
+            f"SELECT * FROM leads WHERE {where} ORDER BY last_contact_at ASC NULLS FIRST LIMIT 50",
+            params,
         ).fetchall()
     return _rows_to_list(rows)
+
+
+def get_instance_metrics(tenant_id: str, instance_id: str) -> dict:
+    """Retorna metricas filtradas por instancia Z-API."""
+    now = _now()
+    today_start = now - (now % 86400)
+    week_start = now - 7 * 86400
+
+    with get_db() as db:
+        # Leads total
+        total = db.execute(
+            "SELECT COUNT(*) FROM leads WHERE tenant_id=? AND instance_id=?",
+            (tenant_id, instance_id),
+        ).fetchone()[0]
+
+        # Leads hoje
+        today = db.execute(
+            "SELECT COUNT(*) FROM leads WHERE tenant_id=? AND instance_id=? AND created_at>=?",
+            (tenant_id, instance_id, today_start),
+        ).fetchone()[0]
+
+        # Leads semana
+        week = db.execute(
+            "SELECT COUNT(*) FROM leads WHERE tenant_id=? AND instance_id=? AND created_at>=?",
+            (tenant_id, instance_id, week_start),
+        ).fetchone()[0]
+
+        # Leads por status
+        status_rows = db.execute(
+            "SELECT status, COUNT(*) as cnt FROM leads WHERE tenant_id=? AND instance_id=? GROUP BY status",
+            (tenant_id, instance_id),
+        ).fetchall()
+        pipeline = {r["status"]: r["cnt"] for r in status_rows}
+
+        # Msgs WhatsApp hoje (filtra por leads da instancia)
+        msgs_today = db.execute(
+            """SELECT COUNT(*) FROM lead_activities la
+               JOIN leads l ON la.lead_id=l.id
+               WHERE l.tenant_id=? AND l.instance_id=? AND la.type='whatsapp' AND la.created_at>=?""",
+            (tenant_id, instance_id, today_start),
+        ).fetchone()[0]
+
+        # Conversoes semana (leads que ficaram 'ganho' esta semana)
+        conversions = db.execute(
+            """SELECT COUNT(*) FROM lead_activities la
+               JOIN leads l ON la.lead_id=l.id
+               WHERE l.tenant_id=? AND l.instance_id=? AND la.type='status_change'
+               AND la.content LIKE '%ganho%' AND la.created_at>=?""",
+            (tenant_id, instance_id, week_start),
+        ).fetchone()[0]
+
+    return {
+        "instance_id": instance_id,
+        "leads_total": total,
+        "leads_today": today,
+        "leads_this_week": week,
+        "messages_today": msgs_today,
+        "conversions_this_week": conversions,
+        "pipeline": pipeline,
+    }
+
+
+def get_leads_count_by_instance(tenant_id: str) -> dict:
+    """Retorna contagem de leads por instance_id."""
+    now = _now()
+    today_start = now - (now % 86400)
+    with get_db() as db:
+        rows = db.execute(
+            """SELECT instance_id, COUNT(*) as total,
+               SUM(CASE WHEN created_at>=? THEN 1 ELSE 0 END) as new_today
+               FROM leads WHERE tenant_id=? GROUP BY instance_id""",
+            (today_start, tenant_id),
+        ).fetchall()
+    return {r["instance_id"]: {"total": r["total"], "new_today": r["new_today"]} for r in rows}

@@ -190,7 +190,7 @@ class WhatsAppAgentManager:
         if not quota["allowed"]:
             return "Ola! Nosso atendimento automatico esta temporariamente indisponivel. Por favor, tente novamente mais tarde ou aguarde que um atendente humano entrara em contato."
 
-        # ── CRM: busca/cria lead automaticamente ──
+        # ── CRM: busca/cria lead automaticamente com instance_id ──
         crm_lead_id = None
         try:
             from .crm_models import get_lead_by_phone, create_lead, add_activity
@@ -198,7 +198,9 @@ class WhatsAppAgentManager:
             if not crm_lead:
                 crm_lead = create_lead(
                     inst.tenant_id, phone=sender_phone,
-                    source="whatsapp", notes=f"Lead criado automaticamente via WhatsApp",
+                    source="whatsapp", notes="Lead criado automaticamente via WhatsApp",
+                    instance_id=inst.id,
+                    source_phone=inst.zapi_instance_id,
                 )
             crm_lead_id = crm_lead["id"] if crm_lead else None
         except Exception:

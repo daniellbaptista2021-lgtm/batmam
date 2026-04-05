@@ -57,15 +57,18 @@ def register_crm_routes(app) -> None:
             return _JR({"error": "Nao autenticado"}, status_code=401)
         from ..crm_models import list_leads, search_leads
         tid = _tenant(sess)
+        instance_id = request.query_params.get("instance_id", "")
         search = request.query_params.get("search", "")
         if search:
             leads = search_leads(tid, search)
+            if instance_id:
+                leads = [l for l in leads if l.get("instance_id") == instance_id]
             return _JR({"leads": leads, "total": len(leads), "page": 1, "pages": 1})
         status = request.query_params.get("status", "")
         source = request.query_params.get("source", "")
         page = int(request.query_params.get("page", "1"))
         limit = int(request.query_params.get("limit", "50"))
-        return _JR(list_leads(tid, status=status, source=source, page=page, limit=limit))
+        return _JR(list_leads(tid, status=status, source=source, instance_id=instance_id, page=page, limit=limit))
 
     @app.post("/api/v1/crm/leads", tags=["crm"])
     async def crm_create_lead(request: _Req):
@@ -90,6 +93,8 @@ def register_crm_routes(app) -> None:
             notes=body.get("notes", ""),
             tags=body.get("tags"),
             custom_fields=body.get("custom_fields"),
+            instance_id=body.get("instance_id", ""),
+            source_phone=body.get("source_phone", ""),
         )
         return _JR(lead)
 
@@ -414,6 +419,56 @@ def register_crm_routes(app) -> None:
                      f"Agendamento: {date} {time_str} ({link['title']})")
 
         return _JR({"success": True, "appointment": apt})
+
+    # ══════════════════════════════════════════════════════════
+    # INSTANCIAS + METRICAS POR INSTANCIA
+    # ══════════════════════════════════════════════════════════
+
+    @app.get("/api/v1/crm/instances", tags=["crm"])
+    async def crm_instances(request: _Req):
+        """Lista instancias Z-API do tenant com contagem de leads."""
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        tid = _tenant(sess)
+        from ..whatsapp_agent import get_wa_manager
+        from ..crm_models import get_leads_count_by_instance
+        manager = get_wa_manager()
+        wa_instances = manager.get_instances(tid)
+        lead_counts = get_leads_count_by_instance(tid)
+        result = []
+        for inst in wa_instances:
+            iid = inst["id"]
+            counts = lead_counts.get(iid, {"total": 0, "new_today": 0})
+            result.append({
+                "instance_id": iid,
+                "name": inst.get("name", "WhatsApp"),
+                "phone": inst.get("zapi_instance_id", ""),
+                "active": inst.get("active", True),
+                "leads_count": counts["total"],
+                "new_today": counts["new_today"],
+            })
+        return _JR(result)
+
+    @app.get("/api/v1/crm/metrics", tags=["crm"])
+    async def crm_metrics(request: _Req):
+        """Metricas filtradas por instancia."""
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        tid = _tenant(sess)
+        instance_id = request.query_params.get("instance_id", "")
+        if not instance_id:
+            return _JR({"error": "instance_id obrigatorio"}, status_code=400)
+        from ..crm_models import get_instance_metrics
+        metrics = get_instance_metrics(tid, instance_id)
+        # Adiciona nome da instancia
+        from ..whatsapp_agent import get_wa_manager
+        inst = get_wa_manager().get_instance(instance_id, tid)
+        if inst:
+            metrics["instance_name"] = inst.name
+            metrics["phone"] = inst.zapi_instance_id
+        return _JR(metrics)
 
     # ══════════════════════════════════════════════════════════
     # DASHBOARD CRM
