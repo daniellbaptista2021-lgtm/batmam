@@ -750,7 +750,7 @@ async function checkout(planId){
   try{
     const r=await fetch('/api/v1/billing/checkout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({plan_id:planId})});
     const d=await r.json();
-    if(d.url){window.location.href=d.url}
+    if(d.url){const a=document.createElement('a');a.href=d.url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove()}
     else if(d.error){window.location='/onboarding?plan='+planId}
   }catch(e){window.location='/onboarding?plan='+planId}
 }
