@@ -114,6 +114,57 @@ def register_whatsapp_agent_routes(app) -> None:
         from ..whatsapp_agent import get_wa_manager
         return _JR(get_wa_manager().update_instance(instance_id, sess["user_id"], active=False))
 
+    # ── Auto-Reply Toggle ────────────────────────────────────
+
+    @app.put("/api/v1/whatsapp/instances/{instance_id}/auto-reply", tags=["whatsapp"])
+    async def toggle_auto_reply(instance_id: str, request: _Req):
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        enabled = body.get("enabled", True)
+        from ..whatsapp_agent import get_wa_manager
+        result = get_wa_manager().update_instance(instance_id, sess["user_id"], auto_reply_enabled=enabled)
+        return _JR(result)
+
+    @app.get("/api/v1/whatsapp/instances/{instance_id}/diagnose", tags=["whatsapp"])
+    async def diagnose_instance(instance_id: str, request: _Req):
+        """Diagnostico completo de uma instancia WhatsApp."""
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..whatsapp_agent import get_wa_manager
+        inst = get_wa_manager().get_instance(instance_id, sess["user_id"])
+        if not inst:
+            return _JR({"error": "Instancia nao encontrada"}, status_code=404)
+
+        checks = []
+
+        # 1. Credenciais Z-API
+        try:
+            from urllib.request import urlopen as _urlopen, Request as _Request
+            import json as _json
+            zurl = f"https://api.z-api.io/instances/{inst.zapi_instance_id}/token/{inst.zapi_token}/status"
+            zresp = _urlopen(_Request(zurl), timeout=10)
+            zdata = _json.loads(zresp.read().decode())
+            checks.append({"name": "Credenciais Z-API", "status": "ok", "detail": f"Conectado: {zdata}"})
+        except Exception as e:
+            checks.append({"name": "Credenciais Z-API", "status": "error", "detail": str(e)[:150]})
+
+        # 2. Prompt
+        has_prompt = bool(inst.system_prompt and len(inst.system_prompt) > 10)
+        checks.append({"name": "Prompt do agente", "status": "ok" if has_prompt else "warning",
+                        "detail": f"{len(inst.system_prompt)} caracteres" if has_prompt else "Vazio ou muito curto"})
+
+        # 3. Auto-reply
+        checks.append({"name": "Resposta automatica (IA)", "status": "ok" if inst.auto_reply_enabled else "off",
+                        "detail": "Ativada" if inst.auto_reply_enabled else "Desativada"})
+
+        # 4. Webhook URL esperada
+        checks.append({"name": "Webhook URL", "status": "info", "detail": inst.webhook_url})
+
+        return _JR({"instance": inst.name, "checks": checks})
+
     # ── RAG ───────────────────────────────────────────────────
 
     @app.put("/api/v1/whatsapp/instances/{instance_id}/rag/text", tags=["whatsapp"])

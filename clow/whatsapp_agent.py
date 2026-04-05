@@ -40,6 +40,7 @@ class WhatsAppInstance:
     rag_text: str = ""
     rag_documents: list = field(default_factory=list)
     active: bool = True
+    auto_reply_enabled: bool = True
     context_size: int = 20
     handoff_enabled: bool = False
     handoff_keyword: str = "humano"
@@ -168,6 +169,11 @@ class WhatsAppAgentManager:
     def process_incoming(self, instance_id: str, sender_phone: str, message_text: str) -> str | None:
         inst = self.get_instance(instance_id)
         if not inst or not inst.active:
+            return None
+
+        # Check auto_reply — se desligado, nao responde mas registra metricas
+        if not inst.auto_reply_enabled:
+            log_action("whatsapp_msg_skipped", f"inst={instance_id} auto_reply=off")
             return None
 
         # Check handoff
