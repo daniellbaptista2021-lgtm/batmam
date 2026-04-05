@@ -50,7 +50,7 @@ a{color:var(--p);text-decoration:none}
 .hero::after{content:'';position:absolute;top:18%;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(155,89,252,.06),transparent 60%);border-radius:50%;filter:blur(80px);z-index:0;animation:orbPulse 8s ease-in-out infinite}
 @keyframes orbPulse{0%,100%{opacity:.5;transform:translateX(-50%) scale(1)}50%{opacity:.8;transform:translateX(-50%) scale(1.05)}}
 .hero>*{position:relative;z-index:1}
-.hero-logo{height:88px;margin-bottom:28px;filter:drop-shadow(0 0 40px rgba(155,89,252,.2));animation:hf 6s ease-in-out infinite}
+.hero-logo{height:140px;margin-bottom:28px;filter:drop-shadow(0 0 40px rgba(155,89,252,.2));animation:hf 6s ease-in-out infinite}
 @keyframes hf{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .lens{width:200px;height:1px;margin:0 auto 48px;background:linear-gradient(90deg,transparent,rgba(155,89,252,.3),transparent);box-shadow:0 0 8px rgba(155,89,252,.12)}
 .hero h1{font-size:clamp(2.2rem,5.5vw,3.6rem);font-weight:800;line-height:1.1;margin-bottom:24px;max-width:700px;letter-spacing:-.03em}
@@ -165,7 +165,7 @@ a{color:var(--p);text-decoration:none}
 
 /* Footer */
 .footer{text-align:center;padding:60px 24px;color:var(--tm);font-size:.82rem;border-top:1px solid var(--bd);letter-spacing:.02em}
-.footer img{height:32px;margin-bottom:8px;opacity:.5}
+.footer img{height:56px;margin-bottom:12px;opacity:.6}
 
 /* Sticky CTA mobile */
 .sticky-cta{position:fixed;bottom:0;left:0;right:0;z-index:999;padding:12px 20px;padding-bottom:calc(12px + env(safe-area-inset-bottom));background:rgba(5,5,16,.95);backdrop-filter:blur(12px);border-top:1px solid rgba(155,89,252,.2);transform:translateY(100%);transition:transform .3s;display:none}
