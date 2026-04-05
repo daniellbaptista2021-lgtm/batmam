@@ -166,6 +166,10 @@ if HAS_FASTAPI:
     from .routes.crm import register_crm_routes
     register_crm_routes(app)
 
+    # ── CRM Chat (WhatsApp Web no Pipeline) ───────────────────
+    from .routes.crm_chat import register_crm_chat_routes
+    register_crm_chat_routes(app)
+
     # ── Autopilot, Automations & Spectator Endpoints ──────────
     from .routes.extensions import register_extension_routes
     register_extension_routes(app)

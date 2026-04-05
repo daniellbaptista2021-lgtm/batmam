@@ -104,6 +104,79 @@ tr:hover td{background:rgba(124,92,252,.03)}
 .modal-overlay.open{display:flex}
 .modal{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:600px;max-height:90vh;overflow-y:auto;padding:24px}
 .modal-lg{max-width:720px}
+.modal-chat{max-width:1100px;padding:0;overflow:hidden;display:flex;flex-direction:column}
+
+/* WhatsApp Web Chat */
+.lead-chat-layout{display:flex;height:75vh;min-height:400px}
+.lead-detail-col{width:340px;min-width:280px;overflow-y:auto;padding:20px;border-right:1px solid var(--border);flex-shrink:0}
+.lead-chat-col{flex:1;display:flex;flex-direction:column;background:#0B141A}
+.lead-chat-col.hidden{display:none}
+.lead-detail-col.full{flex:1;border-right:none}
+.lead-top-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.lead-top-bar .lead-name{font-size:16px;font-weight:700}
+
+/* WPP Header */
+.wpp-header{display:flex;align-items:center;padding:10px 16px;background:#1F2C34;border-bottom:1px solid #2A3942;flex-shrink:0}
+.wpp-avatar{width:40px;height:40px;border-radius:50%;background:#2A3942;display:flex;align-items:center;justify-content:center;color:#8696A0;font-size:18px;font-weight:600;margin-right:12px;flex-shrink:0}
+.wpp-contact-info{flex:1;min-width:0}
+.wpp-contact-name{color:#E9EDEF;font-size:14px;font-weight:500}
+.wpp-contact-status{color:#8696A0;font-size:12px}
+.wpp-header-actions{display:flex;gap:4px}
+.wpp-header-actions button{background:none;border:none;color:#8696A0;cursor:pointer;padding:6px;font-size:16px;border-radius:50%}
+.wpp-header-actions button:hover{background:rgba(255,255,255,.05)}
+.wpp-header-actions select{background:#2A3942;color:#E9EDEF;border:1px solid #3A4A54;border-radius:6px;font-size:11px;padding:4px 6px;outline:none}
+
+/* WPP Messages area */
+.wpp-messages{flex:1;overflow-y:auto;padding:16px 40px;background-color:#0B141A;scroll-behavior:smooth}
+.wpp-date-separator{text-align:center;margin:12px 0}
+.wpp-date-separator span{background:#1F2C34;color:#8696A0;font-size:11.5px;padding:5px 12px;border-radius:7px;display:inline-block}
+.wpp-msg{display:flex;margin-bottom:2px}
+.wpp-msg-sent{justify-content:flex-end}
+.wpp-msg-received{justify-content:flex-start}
+.wpp-msg-bubble{max-width:65%;padding:6px 7px 8px 9px;border-radius:7.5px;position:relative;word-wrap:break-word}
+.wpp-msg-sent .wpp-msg-bubble{background:#005C4B;border-top-right-radius:0}
+.wpp-msg-received .wpp-msg-bubble{background:#202C33;border-top-left-radius:0}
+.wpp-msg-text{color:#E9EDEF;font-size:14.2px;line-height:19px;white-space:pre-wrap}
+.wpp-msg-time{color:hsla(210,11%,63%,.9);font-size:11px;float:right;margin:4px 0 -4px 12px}
+.wpp-msg-system{justify-content:center}
+.wpp-msg-system .wpp-msg-bubble{background:rgba(31,44,52,.8);max-width:80%;text-align:center;padding:5px 12px;border-radius:7px}
+.wpp-msg-system .wpp-msg-text{font-size:12px;color:#8696A0}
+
+/* WPP Input area */
+.wpp-input-area{display:flex;align-items:center;padding:8px 12px;background:#1F2C34;border-top:1px solid #2A3942;gap:6px;flex-shrink:0}
+.wpp-btn-icon{width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:#8696A0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:color .15s}
+.wpp-btn-icon:hover{color:#E9EDEF}
+.wpp-input-wrapper{flex:1}
+.wpp-input-wrapper input{width:100%;padding:9px 12px;border-radius:8px;border:none;background:#2A3942;color:#E9EDEF;font-size:14px;outline:none;font-family:inherit}
+.wpp-input-wrapper input::placeholder{color:#8696A0}
+.wpp-btn-send{width:36px;height:36px;border-radius:50%;border:none;background:#00A884;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;opacity:.6;transition:opacity .15s}
+.wpp-btn-send.active{opacity:1}
+
+/* Attach menu */
+.wpp-attach-menu{position:absolute;bottom:60px;left:12px;background:#233138;border-radius:12px;padding:8px;display:none;flex-direction:column;gap:2px;box-shadow:0 4px 16px rgba(0,0,0,.4);z-index:10}
+.wpp-attach-menu.open{display:flex}
+.wpp-attach-menu button{display:flex;align-items:center;gap:12px;padding:8px 16px;border:none;background:transparent;color:#E9EDEF;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit}
+.wpp-attach-menu button:hover{background:#2A3942}
+
+/* Recording bar */
+.wpp-recording-bar{display:flex;align-items:center;width:100%;gap:10px}
+.wpp-rec-dot{width:10px;height:10px;border-radius:50%;background:#FF3B30;animation:wppPulse 1s ease-in-out infinite}
+@keyframes wppPulse{0%,100%{opacity:1}50%{opacity:.3}}
+.wpp-rec-timer{color:#E9EDEF;font-size:14px;font-variant-numeric:tabular-nums;flex:1}
+.wpp-btn-cancel-rec{background:none;border:none;color:#8696A0;cursor:pointer;font-size:18px;padding:6px}
+.wpp-btn-stop-rec{background:#00A884;color:#fff;border:none;border-radius:20px;padding:6px 16px;cursor:pointer;font-size:13px;font-family:inherit}
+
+/* No instance warning */
+.wpp-no-instance{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#8696A0;text-align:center;padding:40px;gap:12px}
+.wpp-no-instance a{color:var(--p)}
+
+@media(max-width:768px){
+  .lead-chat-layout{flex-direction:column;height:auto;max-height:90vh}
+  .lead-detail-col{width:100%;max-height:40vh;border-right:none;border-bottom:1px solid var(--border)}
+  .lead-chat-col{min-height:50vh}
+  .wpp-messages{padding:12px 16px}
+  .wpp-msg-bubble{max-width:85%}
+}
 .modal h2{font-size:18px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
 .modal .field{margin-bottom:12px}
 .modal .field label{display:block;font-size:12px;font-weight:600;color:var(--t2);margin-bottom:4px}
@@ -426,42 +499,244 @@ function renderKanban(){
 /* ══════════════════════════════════════════════
    LEAD DETAIL MODAL
    ══════════════════════════════════════════════ */
+let chatLeadId=null,chatPhone=null,chatInstanceId=null,chatPollTimer=null,lastMsgTs=0;
+
 async function openLeadDetail(id){
   openModal('<div class="loading"><div class="spinner"></div></div>',true);
   try{
     const lead=await api(`/leads/${id}`);
     const timeline=lead.timeline||lead.activities||[];
     const statusOpts=STATUSES.map(s=>`<option value="${s}"${lead.status===s?' selected':''}>${esc(STATUS_LABELS[s])}</option>`).join('');
+    const hasPhone=!!lead.phone;
+    const initial=(lead.name||'?')[0].toUpperCase();
+    const m=document.getElementById('modalContent');
+    m.className='modal'+(hasPhone?' modal-chat':' modal-lg');
+
     let html=`
-      <div class="lead-header">
-        <span class="lead-name">${esc(lead.name)}</span>
-        <span class="badge badge-${esc(lead.status)}">${esc(STATUS_LABELS[lead.status]||lead.status)}</span>
-        ${lead.score!=null?`<span style="color:var(--t2);font-size:13px">Score: ${esc(lead.score)}</span>`:''}
-      </div>
-      <div class="lead-contact">
-        <div><span>Email:</span> ${esc(lead.email||'—')}</div>
-        <div><span>Telefone:</span> ${esc(lead.phone||'—')}</div>
-        <div><span>Fonte:</span> ${esc(lead.source||'—')}</div>
-        <div><span>Criado:</span> ${fmtDate(lead.created_at)}</div>
-      </div>
-      <div class="quick-actions">
-        <div class="field" style="margin:0"><label style="font-size:11px;color:var(--t2)">Alterar Status</label>
-          <select id="detailStatus" style="font-size:13px" onchange="changeLeadStatus(${esc(String(lead.id))},this.value)">${statusOpts}</select>
+      <div class="lead-top-bar">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="lead-name">${esc(lead.name||'Sem nome')}</span>
+          <span class="badge badge-${esc(lead.status)}">${esc(STATUS_LABELS[lead.status]||lead.status)}</span>
         </div>
-        <div class="field" style="margin:0;flex:1"><label style="font-size:11px;color:var(--t2)">Adicionar Nota</label>
-          <div style="display:flex;gap:6px"><input id="detailNote" placeholder="Nota..." style="flex:1;font-size:13px"><button class="btn btn-sm btn-p" onclick="addNote(${esc(String(lead.id))})">Salvar</button></div>
+        <div style="display:flex;gap:6px">
+          ${hasPhone?`<button class="btn btn-sm" style="background:#005C4B;border-color:#005C4B;color:#fff" onclick="toggleChat('${esc(lead.id)}','${esc(lead.phone)}','${esc(lead.name)}')">💬 WhatsApp</button>`:''}
+          <button class="btn btn-sm" onclick="closeModal()">✕</button>
         </div>
       </div>
-      <div class="timeline"><h3>Historico de Atividades</h3>`;
-    if(timeline.length===0){html+=`<p style="color:var(--t2);font-size:13px;padding:12px 0">Nenhuma atividade registrada.</p>`;}
-    else{timeline.forEach(a=>{
+      <div class="lead-chat-layout">
+        <div class="lead-detail-col${hasPhone?'':' full'}" id="detailCol">
+          <div class="lead-contact">
+            <div><span>Email:</span> ${esc(lead.email||'—')}</div>
+            <div><span>Telefone:</span> ${esc(lead.phone||'—')}</div>
+            <div><span>Fonte:</span> ${esc(lead.source||'—')}</div>
+            <div><span>Criado:</span> ${fmtDate(lead.created_at)}</div>
+          </div>
+          <div class="quick-actions" style="flex-direction:column">
+            <div class="field" style="margin:0"><label style="font-size:11px;color:var(--t2)">Status</label>
+              <select id="detailStatus" style="font-size:13px" onchange="changeLeadStatus('${esc(lead.id)}',this.value)">${statusOpts}</select>
+            </div>
+            <div class="field" style="margin:0"><label style="font-size:11px;color:var(--t2)">Nota</label>
+              <div style="display:flex;gap:6px"><input id="detailNote" placeholder="Nota..." style="flex:1;font-size:13px"><button class="btn btn-sm btn-p" onclick="addNote('${esc(lead.id)}')">+</button></div>
+            </div>
+          </div>
+          <div class="timeline"><h3>Historico</h3>`;
+    if(timeline.length===0){html+=`<p style="color:var(--t2);font-size:13px;padding:8px 0">Nenhuma atividade.</p>`;}
+    else{timeline.slice(-20).forEach(a=>{
       const icon=ACTIVITY_ICONS[a.type]||'📋';
-      html+=`<div class="tl-item"><div class="tl-icon">${icon}</div><div class="tl-body"><div class="tl-text">${esc(a.content||a.description||a.type)}</div><div class="tl-time">${fmtDate(a.created_at||a.timestamp)}</div></div></div>`;
+      html+=`<div class="tl-item"><div class="tl-icon">${icon}</div><div class="tl-body"><div class="tl-text">${esc(a.content||a.type)}</div><div class="tl-time">${fmtDate(a.created_at||a.timestamp)}</div></div></div>`;
     });}
-    html+=`</div><div class="modal-actions"><button class="btn" onclick="closeModal()">Fechar</button></div>`;
-    document.getElementById('modalContent').innerHTML=html;
+    html+=`</div></div>
+        <div class="lead-chat-col${hasPhone?'':' hidden'}" id="chatCol">
+          <div class="wpp-no-instance" id="wppNoInst" style="display:none">
+            <div style="font-size:36px">📱</div>
+            <p>Nenhuma instancia WhatsApp configurada.</p>
+            <a href="/app/whatsapp">Configurar no WhatsApp Trigger</a>
+          </div>
+          <div id="wppChat" style="display:none;flex-direction:column;height:100%">
+            <div class="wpp-header">
+              <div class="wpp-avatar" id="wppAvatar">${initial}</div>
+              <div class="wpp-contact-info">
+                <div class="wpp-contact-name" id="wppName">${esc(lead.name||'')}</div>
+                <div class="wpp-contact-status" id="wppPhone">${esc(lead.phone||'')}</div>
+              </div>
+              <div class="wpp-header-actions">
+                <select id="instanceSelect" style="display:none" onchange="chatInstanceId=this.value;loadChatMessages()"></select>
+                <button onclick="closeChatPanel()" title="Fechar chat">✕</button>
+              </div>
+            </div>
+            <div class="wpp-messages" id="chatMessages">
+              <div class="wpp-msg-system"><div class="wpp-msg-bubble"><span class="wpp-msg-text">Carregando mensagens...</span></div></div>
+            </div>
+            <div class="wpp-input-area" style="position:relative">
+              <div class="wpp-attach-menu" id="attachMenu">
+                <button onclick="document.getElementById('photoInput').click();toggleAttach()">📷 Foto</button>
+                <button onclick="document.getElementById('docInput').click();toggleAttach()">📄 Documento</button>
+              </div>
+              <button class="wpp-btn-icon" onclick="toggleAttach()">📎</button>
+              <div class="wpp-input-wrapper">
+                <input type="text" id="chatInput" placeholder="Digite uma mensagem" onkeypress="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg()}" oninput="updSendBtn()">
+              </div>
+              <button class="wpp-btn-icon" id="btnMic" onclick="startRec()" title="Gravar audio">🎤</button>
+              <button class="wpp-btn-send" id="btnSend" onclick="sendChatMsg()" style="display:none">➤</button>
+              <input type="file" id="photoInput" accept="image/*" hidden onchange="sendMedia(this,'image')">
+              <input type="file" id="docInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip" hidden onchange="sendMedia(this,'document')">
+            </div>
+            <div class="wpp-input-area" id="recBar" style="display:none">
+              <div class="wpp-recording-bar">
+                <button class="wpp-btn-cancel-rec" onclick="cancelRec()">🗑</button>
+                <span class="wpp-rec-dot"></span>
+                <span class="wpp-rec-timer" id="recTimer">0:00</span>
+                <button class="wpp-btn-stop-rec" onclick="stopRec()">Enviar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    m.innerHTML=html;
   }catch(e){document.getElementById('modalContent').innerHTML=`<p style="color:var(--red)">Erro: ${esc(e.message)}</p><div class="modal-actions"><button class="btn" onclick="closeModal()">Fechar</button></div>`;}
 }
+
+/* ── Chat WhatsApp Functions ── */
+
+async function toggleChat(leadId,phone,name){
+  chatLeadId=leadId;chatPhone=phone;lastMsgTs=0;
+  const col=document.getElementById('chatCol');
+  col.classList.remove('hidden');
+  // Busca instancias
+  try{
+    const data=await fetch('/api/v1/crm/chat/instances',{credentials:'same-origin'}).then(r=>r.json());
+    const insts=data.instances||[];
+    if(insts.length===0){document.getElementById('wppNoInst').style.display='flex';document.getElementById('wppChat').style.display='none';return;}
+    document.getElementById('wppNoInst').style.display='none';document.getElementById('wppChat').style.display='flex';
+    chatInstanceId=insts[0].id;
+    if(insts.length>1){
+      const sel=document.getElementById('instanceSelect');
+      sel.innerHTML=insts.map(i=>`<option value="${esc(i.id)}">${esc(i.name)}</option>`).join('');
+      sel.style.display='block';
+    }
+    loadChatMessages();
+    // Polling cada 3s
+    clearInterval(chatPollTimer);
+    chatPollTimer=setInterval(pollNewMessages,3000);
+  }catch(e){console.error(e);}
+}
+
+function closeChatPanel(){
+  clearInterval(chatPollTimer);chatPollTimer=null;
+  document.getElementById('chatCol').classList.add('hidden');
+}
+
+async function loadChatMessages(){
+  const area=document.getElementById('chatMessages');
+  area.innerHTML='<div class="wpp-msg-system"><div class="wpp-msg-bubble"><span class="wpp-msg-text">Carregando...</span></div></div>';
+  try{
+    const data=await fetch(`/api/v1/crm/chat/messages/${chatLeadId}?phone=${encodeURIComponent(chatPhone)}&instance_id=${chatInstanceId||''}&limit=50`,{credentials:'same-origin'}).then(r=>r.json());
+    const msgs=data.messages||[];
+    area.innerHTML='';
+    if(msgs.length===0){area.innerHTML='<div class="wpp-msg-system"><div class="wpp-msg-bubble"><span class="wpp-msg-text">Nenhuma mensagem ainda. Envie a primeira!</span></div></div>';return;}
+    let lastDay='';
+    msgs.forEach(m=>{
+      const day=new Date(m.timestamp*1000).toLocaleDateString('pt-BR');
+      if(day!==lastDay){area.innerHTML+=`<div class="wpp-date-separator"><span>${day}</span></div>`;lastDay=day;}
+      appendChatBubble(m);
+      lastMsgTs=Math.max(lastMsgTs,m.timestamp);
+    });
+    area.scrollTop=area.scrollHeight;
+  }catch(e){area.innerHTML=`<div class="wpp-msg-system"><div class="wpp-msg-bubble"><span class="wpp-msg-text" style="color:#ef4444">Erro ao carregar: ${esc(e.message)}</span></div></div>`;}
+}
+
+function appendChatBubble(m){
+  const area=document.getElementById('chatMessages');
+  const cls=m.fromMe?'wpp-msg-sent':'wpp-msg-received';
+  const time=new Date(m.timestamp*1000).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const check=m.fromMe?' ✓✓':'';
+  const body=m.body||'';
+  let bubble;
+  if(body.startsWith('[image]')||body.startsWith('[audio]')||body.startsWith('[document]')){
+    const label=body.replace(/^\[(\w+)\]\s*/,'');
+    bubble=`<div class="wpp-msg ${cls}"><div class="wpp-msg-bubble"><span class="wpp-msg-text" style="font-style:italic;color:#8696A0">📎 ${esc(body)}</span><span class="wpp-msg-time">${time}${check}</span></div></div>`;
+  }else{
+    bubble=`<div class="wpp-msg ${cls}"><div class="wpp-msg-bubble"><span class="wpp-msg-text">${esc(body)}</span><span class="wpp-msg-time">${time}${check}</span></div></div>`;
+  }
+  area.insertAdjacentHTML('beforeend',bubble);
+}
+
+async function pollNewMessages(){
+  if(!chatLeadId||!chatPhone)return;
+  try{
+    const data=await fetch(`/api/v1/crm/chat/messages/${chatLeadId}?phone=${encodeURIComponent(chatPhone)}&instance_id=${chatInstanceId||''}&since=${lastMsgTs}`,{credentials:'same-origin'}).then(r=>r.json());
+    const msgs=data.messages||[];
+    if(msgs.length>0){
+      msgs.forEach(m=>{appendChatBubble(m);lastMsgTs=Math.max(lastMsgTs,m.timestamp);});
+      document.getElementById('chatMessages').scrollTop=document.getElementById('chatMessages').scrollHeight;
+    }
+  }catch(e){}
+}
+
+async function sendChatMsg(){
+  const inp=document.getElementById('chatInput');
+  const text=inp.value.trim();if(!text)return;
+  inp.value='';updSendBtn();
+  // Optimistic UI
+  const now=Date.now()/1000;
+  appendChatBubble({body:text,fromMe:true,timestamp:now,status:'sending'});
+  document.getElementById('chatMessages').scrollTop=document.getElementById('chatMessages').scrollHeight;
+  try{
+    await fetch('/api/v1/crm/chat/send',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({lead_id:chatLeadId,phone:chatPhone,content:text,instance_id:chatInstanceId||''})});
+    lastMsgTs=now;
+  }catch(e){toast('Erro ao enviar: '+e.message,false);}
+}
+
+async function sendMedia(input,type){
+  const file=input.files[0];if(!file)return;input.value='';
+  const now=Date.now()/1000;
+  appendChatBubble({body:`[${type}] ${file.name}`,fromMe:true,timestamp:now});
+  document.getElementById('chatMessages').scrollTop=document.getElementById('chatMessages').scrollHeight;
+  const fd=new FormData();
+  fd.append('file',file);fd.append('lead_id',chatLeadId);fd.append('phone',chatPhone);fd.append('instance_id',chatInstanceId||'');fd.append('type',type);
+  try{
+    await fetch('/api/v1/crm/chat/send-media',{method:'POST',credentials:'same-origin',body:fd});
+    toast(type==='image'?'Foto enviada':'Documento enviado');lastMsgTs=now;
+  }catch(e){toast('Erro: '+e.message,false);}
+}
+
+function updSendBtn(){
+  const has=document.getElementById('chatInput').value.trim().length>0;
+  document.getElementById('btnMic').style.display=has?'none':'flex';
+  document.getElementById('btnSend').style.display=has?'flex':'none';
+}
+function toggleAttach(){document.getElementById('attachMenu').classList.toggle('open');}
+
+/* Audio recording */
+let mediaRec=null,audioChunks=[],recInterval=null,recSecs=0;
+async function startRec(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    mediaRec=new MediaRecorder(stream,{mimeType:'audio/webm;codecs=opus'});
+    audioChunks=[];recSecs=0;
+    mediaRec.ondataavailable=e=>audioChunks.push(e.data);
+    mediaRec.onstop=async()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      const blob=new Blob(audioChunks,{type:'audio/ogg'});
+      const now=Date.now()/1000;
+      appendChatBubble({body:`[audio] 0:${String(recSecs).padStart(2,'0')}`,fromMe:true,timestamp:now});
+      document.getElementById('chatMessages').scrollTop=document.getElementById('chatMessages').scrollHeight;
+      const fd=new FormData();
+      fd.append('file',blob,'audio.ogg');fd.append('lead_id',chatLeadId);fd.append('phone',chatPhone);fd.append('instance_id',chatInstanceId||'');fd.append('type','audio');
+      try{await fetch('/api/v1/crm/chat/send-media',{method:'POST',credentials:'same-origin',body:fd});toast('Audio enviado');lastMsgTs=now;}catch(e){toast('Erro: '+e.message,false);}
+    };
+    mediaRec.start();
+    document.querySelector('.wpp-input-area').style.display='none';
+    document.getElementById('recBar').style.display='flex';
+    recInterval=setInterval(()=>{recSecs++;document.getElementById('recTimer').textContent=`${Math.floor(recSecs/60)}:${String(recSecs%60).padStart(2,'0')}`;},1000);
+  }catch(e){toast('Microfone nao disponivel',false);}
+}
+function stopRec(){if(mediaRec&&mediaRec.state==='recording')mediaRec.stop();clearInterval(recInterval);document.querySelector('.wpp-input-area').style.display='flex';document.getElementById('recBar').style.display='none';}
+function cancelRec(){if(mediaRec&&mediaRec.state==='recording'){mediaRec.ondataavailable=null;mediaRec.onstop=()=>{};mediaRec.stop();}clearInterval(recInterval);document.querySelector('.wpp-input-area').style.display='flex';document.getElementById('recBar').style.display='none';}
+
+/* Override closeModal to cleanup chat */
+const _origCloseModal=closeModal;
+closeModal=function(){clearInterval(chatPollTimer);chatPollTimer=null;chatLeadId=null;_origCloseModal();}
 
 async function changeLeadStatus(id,status){
   try{await api(`/leads/${id}/status`,{method:'PUT',body:{status}});toast('Status atualizado');if(currentTab==='pipeline')loadPipeline();else if(currentTab==='leads')loadLeads();}catch(e){toast('Erro: '+e.message,false);}
