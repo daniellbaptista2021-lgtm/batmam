@@ -173,6 +173,13 @@
   <div class="lightbox" id="lightbox" onclick="closeLightbox()"><button class="lb-close" onclick="closeLightbox()">&times;</button><img id="lbImg" src=""></div>
 </div>
 <div class="modal-bg" id="modalBg" onclick="if(event.target===this)clsModal()" role="dialog" aria-modal="true"><div class="modal" id="modalC"></div></div>
-<script src="/static/js/chat.js"></script>
+<script>
+/* Fallback — garante que menu funciona mesmo se chat.js falhar */
+if(typeof togDrop==='undefined'){function togDrop(){document.getElementById('hdrDrop').classList.toggle('show')}}
+if(typeof clsDrop==='undefined'){function clsDrop(){document.getElementById('hdrDrop').classList.remove('show')}}
+if(typeof toggleSB==='undefined'){function toggleSB(){var s=document.getElementById('sb'),o=document.getElementById('sbOv');if(s)s.classList.toggle('open');if(o)o.classList.toggle('show')}}
+document.addEventListener('click',function(e){if(!e.target.closest('.hdr-menu')&&typeof clsDrop==='function')clsDrop()});
+</script>
+<script src="/static/js/chat.js?v=20260405"></script>
 </body>
 </html>
