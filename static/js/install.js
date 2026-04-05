@@ -165,13 +165,23 @@
       var installFree = document.getElementById('install-free');
       var installPaid = document.getElementById('install-paid');
 
-      if (paidPlans.indexOf(planId) !== -1 && installPaid && installFree) {
-        installFree.style.display = 'none';
-        installPaid.style.display = 'block';
-        var planTitle = installPaid.querySelector('.paid-plan-title');
-        if (planTitle) {
-          planTitle.textContent = 'Plano ' + (data.plan_name || planId) + ' — Instalacao automatica';
+      if (paidPlans.indexOf(planId) !== -1) {
+        // Windows tab: show paid section, hide free
+        if (installPaid && installFree) {
+          installFree.style.display = 'none';
+          installPaid.style.display = 'block';
+          var planTitle = installPaid.querySelector('.paid-plan-title');
+          if (planTitle) {
+            planTitle.textContent = 'Plano ' + (data.plan_name || planId) + ' — Instalacao automatica';
+          }
         }
+        // Mac/Linux/VPS tabs: show paid hints, hide free hints
+        document.querySelectorAll('.install-paid-hint').forEach(function(el) {
+          el.style.display = 'block';
+        });
+        document.querySelectorAll('.install-free-hint').forEach(function(el) {
+          el.style.display = 'none';
+        });
       }
     })
     .catch(function() {
