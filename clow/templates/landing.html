@@ -50,7 +50,7 @@ a{color:var(--p);text-decoration:none}
 .hero::after{content:'';position:absolute;top:18%;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,rgba(155,89,252,.06),transparent 60%);border-radius:50%;filter:blur(80px);z-index:0;animation:orbPulse 8s ease-in-out infinite}
 @keyframes orbPulse{0%,100%{opacity:.5;transform:translateX(-50%) scale(1)}50%{opacity:.8;transform:translateX(-50%) scale(1.05)}}
 .hero>*{position:relative;z-index:1}
-.hero-logo{height:180px;margin-bottom:20px;filter:drop-shadow(0 0 40px rgba(155,89,252,.2));animation:hf 6s ease-in-out infinite}
+.hero-logo{height:260px;margin-bottom:12px;filter:drop-shadow(0 0 40px rgba(155,89,252,.2));animation:hf 6s ease-in-out infinite}
 @keyframes hf{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .lens{width:200px;height:1px;margin:0 auto 24px;background:linear-gradient(90deg,transparent,rgba(155,89,252,.3),transparent);box-shadow:0 0 8px rgba(155,89,252,.12)}
 .hero h1{font-size:clamp(2.2rem,5.5vw,3.6rem);font-weight:800;line-height:1.1;margin-bottom:24px;max-width:700px;letter-spacing:-.03em}
@@ -148,7 +148,8 @@ a{color:var(--p);text-decoration:none}
 .price-wrap.popular{border-color:rgba(155,89,252,.25);box-shadow:0 0 20px rgba(155,89,252,.06)}
 .price-inner{padding:28px 24px}
 .plan-label{font-size:.68rem;color:var(--tm);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;font-weight:600}
-.plan-title{font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:2px;text-shadow:0 0 20px rgba(155,89,252,.15)}
+.plan-title{font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:2px;text-shadow:0 0 20px rgba(155,89,252,.15);display:flex;align-items:center;gap:6px}
+.claude-icon{width:18px;height:18px;flex-shrink:0}
 .price{font-size:2.2rem;font-weight:900;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
 .price small{font-size:.8rem;-webkit-text-fill-color:var(--tm);font-weight:500}
 .price-sub{color:var(--t2);font-size:.78rem;margin:4px 0 8px;line-height:1.5}
@@ -184,7 +185,7 @@ a{color:var(--p);text-decoration:none}
 @media(max-width:768px){
   .sticky-cta{display:block}
   .hero{padding:40px 20px 40px}
-  .hero-logo{height:150px!important}
+  .hero-logo{height:200px!important}
   .hero h1{font-size:1.8rem}
   .lens{margin-bottom:16px!important}
   .hero-sub{margin-bottom:20px!important}
@@ -322,7 +323,7 @@ a{color:var(--p);text-decoration:none}
     <!-- BYOK Free -->
     <div class="price-wrap"><div class="price-inner">
       <div class="plan-label">Traga sua Key</div>
-      <div class="plan-title">Gratuito</div>
+      <div class="plan-title"><img class="claude-icon" src="/static/brand/claude-icon.png" alt="">Gratuito</div>
       <div class="price">R$ 0</div>
       <div class="price-sub">Voc&#234; paga s&#243; a API da Anthropic</div>
       <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
@@ -343,7 +344,7 @@ a{color:var(--p);text-decoration:none}
     <!-- Lite -->
     <div class="price-wrap"><div class="price-inner">
       <div class="plan-label">Lite &#183; Haiku 4.5</div>
-      <div class="plan-title">Lite</div>
+      <div class="plan-title"><img class="claude-icon" src="/static/brand/claude-icon.png" alt="">Lite</div>
       <div class="price">R$ 89<small>/m&#234;s</small></div>
       <div class="price-sub">Haiku incluso + Chat interativo incluso</div>
       <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
@@ -363,7 +364,7 @@ a{color:var(--p);text-decoration:none}
     <!-- Starter -->
     <div class="price-wrap"><div class="price-inner">
       <div class="plan-label">Starter &#183; Sonnet 4</div>
-      <div class="plan-title">Starter</div>
+      <div class="plan-title"><img class="claude-icon" src="/static/brand/claude-icon.png" alt="">Starter</div>
       <div class="price">R$ 115<small>/m&#234;s</small></div>
       <div class="price-sub">Sonnet + WhatsApp + 8 fluxos n8n</div>
       <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
@@ -385,7 +386,7 @@ a{color:var(--p);text-decoration:none}
     <div class="price-wrap popular"><div class="price-inner" style="position:relative">
       <div class="popular-badge">Mais Popular</div>
       <div class="plan-label">Pro &#183; Sonnet 4</div>
-      <div class="plan-title">Pro</div>
+      <div class="plan-title"><img class="claude-icon" src="/static/brand/claude-icon.png" alt="">Pro</div>
       <div class="price">R$ 189<small>/m&#234;s</small></div>
       <div class="price-sub">Tudo do Starter + 2.000 fluxos</div>
       <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
@@ -407,7 +408,7 @@ a{color:var(--p);text-decoration:none}
     <!-- Business -->
     <div class="price-wrap"><div class="price-inner">
       <div class="plan-label">Business &#183; Sonnet 4</div>
-      <div class="plan-title">Business</div>
+      <div class="plan-title"><img class="claude-icon" src="/static/brand/claude-icon.png" alt="">Business</div>
       <div class="price">R$ 229<small>/m&#234;s</small></div>
       <div class="price-sub">M&#225;ximo poder + consultoria</div>
       <div class="price-value">Use no celular, web ou terminal. Seu ambiente completo na palma da m&#227;o.</div>
