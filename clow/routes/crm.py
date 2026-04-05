@@ -136,7 +136,14 @@ def register_crm_routes(app) -> None:
             return err
         try:
             body = await request.json()
-            data = client.create_contact(body)
+            name = (body.get("name") or "").strip()
+            if not name:
+                return _JR({"error": "Nome e obrigatorio"}, status_code=400)
+            data = client.create_contact(
+                name=name,
+                phone=body.get("phone_number") or body.get("phone") or "",
+                email=body.get("email") or "",
+            )
             return _JR(data)
         except Exception as exc:
             return _JR({"error": f"Erro ao criar contato: {exc}"}, status_code=500)
@@ -151,7 +158,7 @@ def register_crm_routes(app) -> None:
             return err
         try:
             body = await request.json()
-            data = client.update_contact(contact_id, body)
+            data = client.update_contact(contact_id, **body)
             return _JR(data)
         except Exception as exc:
             return _JR({"error": f"Erro ao atualizar contato: {exc}"}, status_code=500)
@@ -183,8 +190,22 @@ def register_crm_routes(app) -> None:
         try:
             status = request.query_params.get("status", "open")
             page = int(request.query_params.get("page", "1"))
-            data = client.list_conversations(status=status, page=page)
-            return _JR(data)
+
+            if status == "all":
+                # Chatwoot nao suporta status=all, busca open + resolved
+                raw_open = client.list_conversations(status="open", page=page)
+                raw_resolved = client.list_conversations(status="resolved", page=page)
+                open_inner = raw_open.get("data", raw_open)
+                resolved_inner = raw_resolved.get("data", raw_resolved)
+                combined = open_inner.get("payload", []) + resolved_inner.get("payload", [])
+                return _JR({"payload": combined, "meta": open_inner.get("meta", {})})
+
+            raw = client.list_conversations(status=status, page=page)
+            inner = raw.get("data", raw)
+            return _JR({
+                "payload": inner.get("payload", []),
+                "meta": inner.get("meta", {}),
+            })
         except Exception as exc:
             return _JR({"error": f"Erro ao listar conversas: {exc}"}, status_code=500)
 
@@ -278,7 +299,14 @@ def register_crm_routes(app) -> None:
             return err
         try:
             body = await request.json()
-            data = client.create_label(body)
+            title = (body.get("title") or "").strip()
+            if not title:
+                return _JR({"error": "Titulo e obrigatorio"}, status_code=400)
+            data = client.create_label(
+                title=title,
+                description=body.get("description", ""),
+                color=body.get("color", "#1F93FF"),
+            )
             return _JR(data)
         except Exception as exc:
             return _JR({"error": f"Erro ao criar label: {exc}"}, status_code=500)
