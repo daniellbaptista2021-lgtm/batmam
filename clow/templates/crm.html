@@ -102,7 +102,7 @@ html,body{height:100%;overflow:hidden;background:#050510;color:#e4e4e7;font-fami
   </div>
 </div>
 
-<iframe id="crmFrame" class="crm-frame" style="display:none" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+<iframe id="crmFrame" class="crm-frame" style="display:none" allow="clipboard-write"></iframe>
 
 <script>
 const API = '/api/v1/crm';
@@ -128,8 +128,8 @@ function loadCRM() {
   loader.style.display = 'flex';
   loader.style.opacity = '1';
 
-  // Carrega Chatwoot via proxy Nginx (sem X-Frame-Options)
-  frame.src = '/crm-embed/app/login';
+  // Carrega Chatwoot direto (X-Frame-Options removido via Traefik)
+  frame.src = 'https://ads.pvcorretor01.com.br/app/login';
   frame.style.display = 'block';
 
   frame.onload = function() {
