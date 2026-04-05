@@ -1,6 +1,6 @@
 # System Clow
 
-**Agente de código AI no terminal e web** — open-source, multi-provider (Anthropic Claude / OpenAI GPT / Ollama), com 24 tools, 62 skills e 8 agent types.
+**Agente de código AI no terminal e web** — multi-provider (Anthropic Claude / OpenAI GPT / Ollama), com 33 tools, 108 skills e 5 tipos de agente.
 
 Lê, escreve, edita código, executa comandos, busca na web, gerencia projetos, roda pipelines, agenda cron jobs — tudo direto do terminal ou via web app.
 

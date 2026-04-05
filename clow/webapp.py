@@ -42,11 +42,11 @@ except Exception as e:
     logging.getLogger("clow.webapp").warning("Migrations skipped: %s", e)
 
 app = FastAPI(
-    title="Clow",
+    title="Clow API",
     version=__version__,
-    docs_url=None,      # Desabilita Swagger UI
-    redoc_url=None,     # Desabilita ReDoc
-    openapi_url=None,   # Esconde schema OpenAPI
+    docs_url="/docs",
+    redoc_url=None,
+    openapi_url="/openapi.json",
 ) if HAS_FASTAPI else None
 
 
@@ -165,6 +165,21 @@ if HAS_FASTAPI:
     # ── Autopilot, Automations & Spectator Endpoints ──────────
     from .routes.extensions import register_extension_routes
     register_extension_routes(app)
+
+    # ── Proteger /docs e /openapi.json (admin only) ──────────────
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from fastapi.responses import JSONResponse as _DocsJR
+
+    class DocsAuthMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            if request.url.path in ("/docs", "/openapi.json", "/redoc"):
+                from .routes.auth import _get_user_session
+                sess = _get_user_session(request)
+                if not sess or not sess.get("is_admin"):
+                    return _DocsJR({"error": "Admin only"}, status_code=403)
+            return await call_next(request)
+
+    app.add_middleware(DocsAuthMiddleware)
 
     # ── Metrics & Error tracking endpoints ──────────────────────
     from fastapi import Request as _Req
