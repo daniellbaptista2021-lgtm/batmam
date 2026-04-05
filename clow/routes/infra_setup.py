@@ -136,8 +136,22 @@ def register_infra_setup_routes(app) -> None:
         result = test_chatwoot_connection(decoded["chatwoot_url"], decoded["api_token"])
         if not result.get("ok"):
             return _JR({"error": f"Nao foi possivel conectar: {result.get('error', '')}"}, status_code=400)
-        save_tenant_infra(_tenant(sess), decoded["chatwoot_url"], decoded["api_token"])
-        return _JR({"connected": True, "chatwoot_url": decoded["chatwoot_url"]})
+        tid = _tenant(sess)
+        save_tenant_infra(tid, decoded["chatwoot_url"], decoded["api_token"])
+
+        # Auto-sync: importa inboxes e contatos do Chatwoot
+        sync_result = {}
+        try:
+            from ..chatwoot_sync import full_sync
+            sync_result = full_sync(tid)
+        except Exception:
+            pass
+
+        return _JR({
+            "connected": True,
+            "chatwoot_url": decoded["chatwoot_url"],
+            "sync": sync_result,
+        })
 
     # ── Status da infra ──
 
@@ -186,3 +200,51 @@ def register_infra_setup_routes(app) -> None:
         from ..infra_monitor import save_monitor_config
         save_monitor_config(_tenant(sess), body)
         return _JR({"success": True})
+
+    # ── Chatwoot Sync ──
+
+    @app.post("/api/v1/infra/sync", tags=["infra"])
+    async def infra_sync(request: _Req):
+        """Sincroniza Chatwoot → CRM (inboxes, contatos, conversas)."""
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..chatwoot_sync import full_sync
+        result = full_sync(_tenant(sess))
+        if "error" in result:
+            return _JR(result, status_code=400)
+        return _JR(result)
+
+    @app.get("/api/v1/infra/inboxes", tags=["infra"])
+    async def infra_inboxes(request: _Req):
+        """Lista inboxes WhatsApp do Chatwoot do cliente."""
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..chatwoot_sync import get_sync_client
+        client = get_sync_client(_tenant(sess))
+        if not client:
+            return _JR({"error": "Chatwoot nao configurado", "inboxes": []})
+        inboxes = client.get_whatsapp_inboxes()
+        return _JR({"inboxes": [
+            {"id": i["id"], "name": i["name"], "channel_type": i.get("channel_type", "")}
+            for i in inboxes
+        ]})
+
+    @app.post("/api/v1/infra/send-via-chatwoot", tags=["infra"])
+    async def infra_send_chatwoot(request: _Req):
+        """Envia mensagem via Chatwoot (para instancias que usam Chatwoot como bridge)."""
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        conv_id = body.get("conversation_id")
+        content = body.get("content", "")
+        if not conv_id or not content:
+            return _JR({"error": "conversation_id e content obrigatorios"}, status_code=400)
+        from ..chatwoot_sync import get_sync_client
+        client = get_sync_client(_tenant(sess))
+        if not client:
+            return _JR({"error": "Chatwoot nao configurado"}, status_code=400)
+        result = client.send_message(conv_id, content)
+        return _JR(result)
