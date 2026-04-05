@@ -35,6 +35,18 @@ async function _loadPlanBadge(){
       document.getElementById('planUsage').textContent='Uso livre';
       document.getElementById('planLimit').textContent='Sem limite';
     }
+    // Header bar
+    const hp=document.getElementById('hdrPlan'),hb=document.getElementById('hdrBar'),hpct=document.getElementById('hdrPct');
+    if(hp){
+      const names2={'byok_free':'BYOK','lite':'Lite','starter':'Starter','pro':'Pro','business':'Business','free':'Free','unlimited':'Admin'};
+      hp.textContent=names2[u.plan_id]||u.plan_id;
+      if(u.limits.daily_input>0){
+        const used2=u.today.input+u.today.output,limit2=u.limits.daily_input+u.limits.daily_output;
+        const p2=Math.min(100,Math.round(used2/limit2*100));
+        if(hb){hb.style.width=p2+'%';if(p2>=90)hb.style.background='#F87171';else if(p2>=70)hb.style.background='#FBBF24'}
+        if(hpct)hpct.textContent=p2+'%';
+      }else{if(hb)hb.style.width='100%';if(hpct)hpct.textContent='ilimitado'}
+    }
   }catch(e){}
 }
 function initMod(plan,adm){const s=document.getElementById('modSel');selMod='sonnet';if(s)s.style.display='none'}
