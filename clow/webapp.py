@@ -111,15 +111,18 @@ def _setup_middleware():
     settings = config.load_settings()
     webapp_cfg = settings.get("webapp", {})
 
-    # CORS — permite webapp, localhost e Chrome Extension
-    allowed_origins = webapp_cfg.get("cors_origins", ["http://localhost:*", "http://127.0.0.1:*"])
+    # CORS — restrito aos dominios reais
+    allowed_origins = webapp_cfg.get("cors_origins", [
+        "https://clow.pvcorretor01.com.br",
+        "http://localhost:8001",
+        "http://127.0.0.1:8001",
+    ])
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["*"],
-        expose_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "Cookie"],
     )
 
     # Security headers (CSP, X-Frame-Options, HSTS, etc.)

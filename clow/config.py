@@ -40,11 +40,11 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 
-# Modelo fixo: Sonnet 4.5 em todos os posicionamentos
-CLOW_MODEL = "claude-sonnet-4-20250514"
+# Modelo principal (configuravel via env)
+CLOW_MODEL = os.getenv("CLOW_MODEL", "claude-sonnet-4-20250514")
 
-# Modelo pesado — mesmo modelo (Sonnet 4.5 em tudo)
-CLOW_MODEL_HEAVY = "claude-sonnet-4-20250514"
+# Modelo pesado (configuravel via env)
+CLOW_MODEL_HEAVY = os.getenv("CLOW_MODEL_HEAVY", "claude-sonnet-4-20250514")
 
 # ── Limites ─────────────────────────────────────────────────
 MAX_TOKENS = 16384

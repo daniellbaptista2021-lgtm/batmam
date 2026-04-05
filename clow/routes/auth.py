@@ -37,7 +37,9 @@ def _verify_api_key(key: str) -> bool:
     """Verifica se uma API key e valida."""
     valid_keys = _get_api_keys()
     if not valid_keys:
-        return True  # Sem keys configuradas = sem autenticacao (dev mode)
+        # So permite dev mode se CLOW_DEV_MODE=true explicitamente
+        import os
+        return os.getenv("CLOW_DEV_MODE", "").lower() in ("true", "1")
     return key in valid_keys
 
 
@@ -45,7 +47,10 @@ async def _auth_dependency(request: Request) -> None:
     """FastAPI dependency para verificar autenticacao."""
     keys = _get_api_keys()
     if not keys:
-        return  # Dev mode — sem autenticacao
+        import os
+        if os.getenv("CLOW_DEV_MODE", "").lower() in ("true", "1"):
+            return  # Dev mode explicito
+        raise HTTPException(status_code=401, detail="API key necessaria")
 
     # Tenta Authorization header
     auth_header = request.headers.get("Authorization", "")

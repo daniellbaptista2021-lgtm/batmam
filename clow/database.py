@@ -13,11 +13,16 @@ from contextlib import contextmanager
 DB_PATH = Path(__file__).parent.parent / "data" / "clow.db"
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
+# Planos legados (mantidos para compatibilidade). Planos reais em billing.py
 PLANS = {
-    "free": {"label": "Free", "daily_tokens": 50_000},
-    "basic": {"label": "Basic", "daily_tokens": 200_000},
-    "pro": {"label": "Pro", "daily_tokens": 1_000_000},
-    "unlimited": {"label": "Unlimited", "daily_tokens": 0},  # 0 = sem limite
+    "free": {"label": "Free (BYOK)", "daily_tokens": 0},
+    "basic": {"label": "Basic (BYOK)", "daily_tokens": 0},
+    "byok_free": {"label": "BYOK Gratuito", "daily_tokens": 0},
+    "lite": {"label": "Lite", "daily_tokens": 250_000},
+    "starter": {"label": "Starter", "daily_tokens": 600_000},
+    "pro": {"label": "Pro", "daily_tokens": 1_200_000},
+    "business": {"label": "Business", "daily_tokens": 2_400_000},
+    "unlimited": {"label": "Admin", "daily_tokens": 0},
 }
 
 # Admin email via env var (not hardcoded)
