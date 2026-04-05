@@ -35,13 +35,13 @@ fbq('init','PIXEL_ID_AQUI');fbq('track','PageView');
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#050510;--bg2:#0F0F24;--bg3:#14142E;--bd:rgba(100,100,180,.12);--p:#9B59FC;--bl:#4A9EFF;--gp:linear-gradient(135deg,#9B59FC 0%,#4A9EFF 100%);--t1:#E8E8F0;--t2:#9898B8;--tm:#585878;--g:#34D399;--sans:'DM Sans',sans-serif;--mono:'JetBrains Mono',monospace}
-body{font-family:var(--sans);background:var(--bg);color:var(--t1);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+:root{--bg:#06050F;--bg2:#0D0B1A;--bg3:#141026;--bd:rgba(120,90,200,.1);--p:#9B59FC;--bl:#6C5CE7;--gp:linear-gradient(135deg,#9B59FC 0%,#6C5CE7 50%,#4A3ABA 100%);--t1:#E8E8F0;--t2:#9898B8;--tm:#585878;--g:#34D399;--sans:'DM Sans',sans-serif;--mono:'JetBrains Mono',monospace}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);overflow-x:hidden;-webkit-font-smoothing:antialiased;background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.02'/%3E%3C/svg%3E")}
 a{color:var(--p);text-decoration:none}
 
 /* ── HERO ── */
 .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 20px 80px;position:relative;overflow:hidden}
-.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(155,89,252,.12),transparent 50%),radial-gradient(ellipse at 20% 80%,rgba(74,158,255,.06),transparent 40%),radial-gradient(ellipse at 80% 70%,rgba(155,89,252,.05),transparent 40%)}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 20%,rgba(155,89,252,.14),transparent 45%),radial-gradient(ellipse at 20% 75%,rgba(108,92,231,.08),transparent 40%),radial-gradient(ellipse at 80% 65%,rgba(74,58,186,.06),transparent 35%),linear-gradient(180deg,transparent 60%,rgba(6,5,15,.9))}
 .hero>*{position:relative;z-index:1}
 .hero-logo{height:120px;margin-bottom:10px;filter:drop-shadow(0 0 50px rgba(155,89,252,.35)) drop-shadow(0 0 40px rgba(74,158,255,.2));animation:hf 4s ease-in-out infinite}
 @keyframes hf{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
@@ -155,10 +155,9 @@ a{color:var(--p);text-decoration:none}
   <img src="/static/brand/logo.png" alt="Clow" class="hero-logo">
   <div class="lens"></div>
   <h1>Crie apps completos pelo celular com IA &#8212; <span>sem pagar mensalidade</span></h1>
-  <p class="hero-sub">24 ferramentas, 108 habilidades, 5 agentes aut&#244;nomos. Voc&#234; s&#243; paga o que consumir da API.</p>
-  <div class="hero-badge">USO <em>100% GR&#193;TIS</em></div>
-  <a href="/onboarding" class="cta" onclick="typeof fbq!=='undefined'&&fbq('track','InitiateCheckout')">Come&#231;ar Agora &#8212; Primeira sess&#227;o em 2 minutos</a>
-  <p class="cta-hint">Sem cart&#227;o de cr&#233;dito &#8226; Setup em 30 segundos</p>
+  <p class="hero-sub">24 ferramentas, 108 habilidades, 5 agentes aut&#244;nomos. Voc&#234; s&#243; paga o que consumir.</p>
+  <a href="#planos" class="cta" onclick="typeof fbq!=='undefined'&&fbq('track','InitiateCheckout')">Escolher meu plano</a>
+  <p class="cta-hint">Plano gratuito dispon&#237;vel &#8226; Setup em 30 segundos</p>
 </section>
 
 <!-- ════ DEMO ════ -->
@@ -261,7 +260,7 @@ a{color:var(--p);text-decoration:none}
       <div class="price" style="font-size:2.2rem">R$ 115<span style="font-size:.9rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
       <div class="price-sub" style="font-size:.85rem">Sonnet + 8 fluxos n8n</div>
       <ul class="price-list" style="font-size:.85rem"><li>Claude Sonnet 4 incluso</li><li>500K + 100K tokens/dia</li><li>8 fluxos de automa&#231;&#227;o</li><li>Suporte WhatsApp</li></ul>
-      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('starter')">Testar 7 dias gr&aacute;tis</button>
+      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('starter')">Assinar Starter</button>
     </div></div>
 
     <!-- Pro -->
@@ -271,7 +270,7 @@ a{color:var(--p);text-decoration:none}
       <div class="price" style="font-size:2.2rem">R$ 189<span style="font-size:.9rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
       <div class="price-sub" style="font-size:.85rem">Tudo + 2.000 fluxos</div>
       <ul class="price-list" style="font-size:.85rem"><li>Tudo do Starter</li><li>1M + 200K tokens/dia</li><li>2.000 fluxos profissionais</li><li>Prioridade no suporte</li></ul>
-      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('pro')">Testar 7 dias gr&aacute;tis</button>
+      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('pro')">Assinar Pro</button>
     </div></div>
 
     <!-- Business -->
@@ -280,7 +279,7 @@ a{color:var(--p);text-decoration:none}
       <div class="price" style="font-size:2.2rem">R$ 229<span style="font-size:.9rem;-webkit-text-fill-color:var(--t2)">/m&#234;s</span></div>
       <div class="price-sub" style="font-size:.85rem">M&#225;ximo + consultoria</div>
       <ul class="price-list" style="font-size:.85rem"><li>Tudo do Pro</li><li>2M + 400K tokens/dia</li><li>3.000 fluxos profissionais</li><li>Suporte + consultoria</li></ul>
-      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('business')">Testar 7 dias gr&aacute;tis</button>
+      <button class="cta" style="width:100%;padding:12px;font-size:.9rem;margin-top:12px" onclick="checkout('business')">Assinar Business</button>
     </div></div>
   </div>
 </section>

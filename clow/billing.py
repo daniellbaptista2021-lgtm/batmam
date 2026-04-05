@@ -199,7 +199,7 @@ def create_checkout_session(user_id: str, email: str, plan_id: str, success_url:
             metadata={"user_id": user_id, "plan_id": plan_id},
             locale="pt-BR",
             allow_promotion_codes=True,
-            subscription_data={"trial_period_days": 7},
+            subscription_data={"trial_period_days": 7} if plan_id == "lite" else {},
         )
         log_action("billing_checkout", f"plan={plan_id} user={user_id}")
         return {"url": session.url, "session_id": session.id}
