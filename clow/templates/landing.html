@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-<script>fetch('/api/v1/analytics/pageview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({page:location.pathname,ref:document.referrer}),credentials:'same-origin'}).catch(()=>{})</script>
+<!-- analytics moved to landing.js -->
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -289,7 +289,7 @@ a{color:var(--p);text-decoration:none}
     <div class="hero-stat"><strong>108</strong><span>Habilidades</span></div>
     <div class="hero-stat"><strong>8</strong><span>Integra&#231;&#245;es</span></div>
   </div>
-  <a href="/onboarding" class="cta" onclick="typeof fbq!=='undefined'&&fbq('track','InitiateCheckout')">Come&#231;ar Gr&#225;tis</a>
+  <a href="/onboarding" class="cta">Come&#231;ar Gr&#225;tis</a>
   <p class="cta-hint">Plano gratuito dispon&#237;vel. Sem cart&#227;o de cr&#233;dito.</p>
 </section>
 
@@ -544,7 +544,7 @@ a{color:var(--p);text-decoration:none}
         <li>Funciona no celular</li>
         <li class="dim">Sem automa&#231;&#245;es n8n</li>
       </ul>
-      <button class="cta" style="width:100%;padding:10px;font-size:.82rem" onclick="checkout('lite')">Assinar Lite</button>
+      <button class="cta" style="width:100%;padding:10px;font-size:.82rem" data-plan="lite">Assinar Lite</button>
     </div></div>
 
     <!-- Starter -->
@@ -564,7 +564,7 @@ a{color:var(--p);text-decoration:none}
         <li>Cria sistemas e apps</li>
         <li class="wa-green">Suporte via WhatsApp</li>
       </ul>
-      <button class="cta" style="width:100%;padding:10px;font-size:.82rem" onclick="checkout('starter')">Assinar Starter</button>
+      <button class="cta" style="width:100%;padding:10px;font-size:.82rem" data-plan="starter">Assinar Starter</button>
     </div></div>
 
     <!-- Pro -->
@@ -585,7 +585,7 @@ a{color:var(--p);text-decoration:none}
         <li>IA que aprende com voc&#234;</li>
         <li>Prioridade no suporte</li>
       </ul>
-      <button class="cta" style="width:100%;padding:10px;font-size:.82rem" onclick="checkout('pro')">Assinar Pro</button>
+      <button class="cta" style="width:100%;padding:10px;font-size:.82rem" data-plan="pro">Assinar Pro</button>
     </div></div>
 
     <!-- Business -->
@@ -605,7 +605,7 @@ a{color:var(--p);text-decoration:none}
         <li>Sistemas sob medida</li>
         <li>IA avan&#231;ada com racioc&#237;nio</li>
       </ul>
-      <button class="cta" style="width:100%;padding:10px;font-size:.82rem" onclick="checkout('business')">Assinar Business</button>
+      <button class="cta" style="width:100%;padding:10px;font-size:.82rem" data-plan="business">Assinar Business</button>
     </div></div>
   </div>
 </section>
@@ -737,34 +737,6 @@ a{color:var(--p);text-decoration:none}
 
 <div class="sticky-cta" id="stickyCta"><a href="/onboarding">Come&#231;ar Gr&#225;tis</a></div>
 
-<script>
-// 3D tilt on cards
-document.querySelectorAll('.feat,.uc-card').forEach(c=>{c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;c.style.setProperty('--rx',(y-.5)*-10+'deg');c.style.setProperty('--ry',(x-.5)*10+'deg');c.style.setProperty('--mx',x*100+'%');c.style.setProperty('--my',y*100+'%')});c.addEventListener('mouseleave',()=>{c.style.setProperty('--rx','0deg');c.style.setProperty('--ry','0deg')})});
-
-// Scroll-in animation
-const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)'}})},{threshold:.1});
-document.querySelectorAll('.feat,.step,.uc-card,.flow-card,.price-wrap,.niche-item,.faq-item,.wf-item').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(30px)';el.style.transition='all .6s cubic-bezier(.25,.8,.25,1)';obs.observe(el)});
-
-// Checkout Stripe
-async function checkout(planId){
-  try{
-    const r=await fetch('/api/v1/billing/checkout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({plan_id:planId})});
-    const d=await r.json();
-    if(d.url){const a=document.createElement('a');a.href=d.url;a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove()}
-    else if(d.error){window.location='/onboarding?plan='+planId}
-  }catch(e){window.location='/onboarding?plan='+planId}
-}
-
-// Sticky CTA mobile
-const sticky=document.getElementById('stickyCta');
-const priceSection=document.querySelector('.price-wrap');
-if(sticky&&window.innerWidth<769){
-  window.addEventListener('scroll',()=>{
-    const show=window.scrollY>500;
-    const priceVisible=priceSection&&priceSection.getBoundingClientRect().top<window.innerHeight;
-    sticky.classList.toggle('show',show&&!priceVisible);
-  },{passive:true});
-}
-</script>
+<script src="/static/js/landing.js"></script>
 </body>
 </html>
