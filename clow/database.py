@@ -18,10 +18,10 @@ PLANS = {
     "free": {"label": "Free (BYOK)", "daily_tokens": 0},
     "basic": {"label": "Basic (BYOK)", "daily_tokens": 0},
     "byok_free": {"label": "BYOK Gratuito", "daily_tokens": 0},
-    "lite": {"label": "Lite", "daily_tokens": 250_000},
-    "starter": {"label": "Starter", "daily_tokens": 600_000},
-    "pro": {"label": "Pro", "daily_tokens": 1_200_000},
-    "business": {"label": "Business", "daily_tokens": 2_400_000},
+    "lite": {"label": "Lite", "daily_tokens": 169_000},
+    "starter": {"label": "Starter", "daily_tokens": 69_000},
+    "pro": {"label": "Pro", "daily_tokens": 119_000},
+    "business": {"label": "Business", "daily_tokens": 144_000},
     "unlimited": {"label": "Admin", "daily_tokens": 0},
 }
 

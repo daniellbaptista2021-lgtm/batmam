@@ -76,7 +76,12 @@ class TestQuotaChecking(unittest.TestCase):
             PLANS["pro"]["daily_input_tokens"],
             PLANS["starter"]["daily_input_tokens"],
         )
-        print("[OK] Pro tem mais franquia que Starter")
+        # Lite (Haiku) tem mais tokens pois Haiku e mais barato
+        self.assertGreater(
+            PLANS["lite"]["daily_input_tokens"],
+            PLANS["starter"]["daily_input_tokens"],
+        )
+        print("[OK] Franquias proporcionais ao custo do modelo")
 
 
 class TestCheckoutFlow(unittest.TestCase):
