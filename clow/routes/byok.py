@@ -626,8 +626,17 @@ async function signup(){
       return showMsg('msg1',d.error,'error');
     }
     token=d.token;userEmail=email;
-    // Plano pago nao precisa de API key — pula pro step 3
-    if(['lite','starter','pro','business'].includes(d.plan)){showStep(3)}else{showStep(2)}
+    // Se veio com ?plan= na URL, vai direto pro checkout Stripe
+    const urlPlan=new URLSearchParams(window.location.search).get('plan');
+    if(urlPlan&&['lite','starter','pro','business'].includes(urlPlan)){
+      // Redireciona pro Stripe checkout
+      try{
+        const cr=await fetch('/api/v1/billing/checkout',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({plan_id:urlPlan})});
+        const cd=await cr.json();
+        if(cd.url){window.open(cd.url,'_blank');showStep(3);return}
+      }catch(ex){}
+      showStep(3);
+    }else{showStep(2)}
   }catch(e){showMsg('msg1','Erro de rede. Tente novamente.','error')}
 }
 
