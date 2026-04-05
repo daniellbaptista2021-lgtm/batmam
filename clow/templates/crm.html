@@ -352,6 +352,7 @@ tr:hover td{background:rgba(124,92,252,.03)}
   <button class="tab" data-tab="campanhas">Campanhas</button>
   <button class="tab" data-tab="agendamentos">Agendamentos</button>
   <button class="tab" data-tab="dashboard">Dashboard</button>
+  <button class="tab" data-tab="config">Config</button>
 </div>
 
 <div class="main">
@@ -434,6 +435,71 @@ tr:hover td{background:rgba(124,92,252,.03)}
       </table>
     </div>
   </div>
+
+  <!-- CONFIG -->
+  <div class="tab-content" id="tc-config">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="configGrid">
+      <!-- Funil Automatico -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+        <h3 style="font-size:15px;margin-bottom:8px;display:flex;align-items:center;gap:6px">🤖 Funil Automatico</h3>
+        <p style="font-size:12px;color:var(--t2);margin-bottom:12px">A IA analisa conversas e move leads no pipeline automaticamente.</p>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <input type="checkbox" id="cfgFunnelEnabled" onchange="saveFunnelConfig()">
+          <label for="cfgFunnelEnabled" style="font-size:13px">Ativar funil automatico</label>
+        </div>
+        <div id="funnelRulesArea" style="font-size:12px;color:var(--t2)"></div>
+        <small style="color:var(--t2)">O arraste manual sempre tem prioridade sobre a IA.</small>
+      </div>
+      <!-- Follow-up -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+        <h3 style="font-size:15px;margin-bottom:8px;display:flex;align-items:center;gap:6px">🔄 Follow-up Automatico</h3>
+        <p style="font-size:12px;color:var(--t2);margin-bottom:12px">Envia mensagens para leads inativos automaticamente.</p>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <input type="checkbox" id="cfgFollowupEnabled" onchange="saveFollowupConfig()">
+          <label for="cfgFollowupEnabled" style="font-size:13px">Ativar follow-up</label>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+          <label style="font-size:12px;color:var(--t2)">Horario:</label>
+          <input type="time" id="cfgFollowupStart" value="08:00" style="font-size:12px;padding:4px" onchange="saveFollowupConfig()">
+          <span style="font-size:12px;color:var(--t2)">ate</span>
+          <input type="time" id="cfgFollowupEnd" value="20:00" style="font-size:12px;padding:4px" onchange="saveFollowupConfig()">
+        </div>
+      </div>
+      <!-- Relatorio Diario -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+        <h3 style="font-size:15px;margin-bottom:8px;display:flex;align-items:center;gap:6px">📊 Relatorio Diario</h3>
+        <p style="font-size:12px;color:var(--t2);margin-bottom:12px">Receba um resumo do dia no seu WhatsApp.</p>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <input type="checkbox" id="cfgReportEnabled" onchange="saveReportConfig()">
+          <label for="cfgReportEnabled" style="font-size:13px">Ativar relatorio</label>
+        </div>
+        <div style="margin-bottom:8px">
+          <label style="font-size:12px;color:var(--t2)">Horario de envio</label>
+          <input type="time" id="cfgReportTime" value="21:00" style="font-size:12px;padding:4px" onchange="saveReportConfig()">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--t2)">Seu numero WhatsApp</label>
+          <input type="tel" id="cfgReportPhone" placeholder="5521999999999" style="font-size:12px;padding:4px;width:100%" onchange="saveReportConfig()">
+        </div>
+        <button class="btn btn-sm btn-p" style="margin-top:8px" onclick="previewReport()">Preview</button>
+      </div>
+      <!-- A/B Testing -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px">
+        <h3 style="font-size:15px;margin-bottom:8px;display:flex;align-items:center;gap:6px">🧪 Teste A/B de Prompts</h3>
+        <p style="font-size:12px;color:var(--t2);margin-bottom:12px">Teste 2 versoes do prompt e descubra qual performa melhor.</p>
+        <div id="abTestArea">
+          <button class="btn btn-sm btn-p" onclick="openABTestModal()">Criar teste A/B</button>
+        </div>
+      </div>
+      <!-- Treinamento -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;grid-column:1/-1">
+        <h3 style="font-size:15px;margin-bottom:8px;display:flex;align-items:center;gap:6px">📚 Aprendizado do Agente</h3>
+        <p style="font-size:12px;color:var(--t2);margin-bottom:12px">Correcoes que voce fez nas conversas. O agente usa essas regras para melhorar.</p>
+        <div id="correctionsArea" style="font-size:13px;color:var(--t2)">Carregando...</div>
+        <button class="btn btn-sm" style="margin-top:8px" onclick="consolidateCorrections()">Consolidar correcoes em regras</button>
+      </div>
+    </div>
+  </div>
 </div>
 </div><!-- /crm-main -->
 </div><!-- /crm-layout -->
@@ -488,6 +554,7 @@ function loadTab(tab){
   else if(tab==='campanhas')loadCampaigns();
   else if(tab==='agendamentos'){loadSchedLinks();loadAppointments();}
   else if(tab==='dashboard')loadDashboard();
+  else if(tab==='config')loadConfig();
 }
 
 /* ── Modal helpers ── */
@@ -1213,6 +1280,84 @@ async function loadSuggestions(){
 async function execSuggestion(leadId,action){
   if(!leadId){toast('Lead ID ausente',false);return;}
   try{await api(`/suggestions/${leadId}/execute`,{method:'POST',body:{action}});toast('Sugestao executada');loadDashboard();}catch(e){toast('Erro: '+e.message,false);}
+}
+
+/* ══════════════════════════════════════════════
+   CONFIG TAB
+   ══════════════════════════════════════════════ */
+
+async function loadConfig(){
+  if(!currentInstanceId)return;
+  // Funil
+  try{
+    const f=await api(`/funnel/rules?instance_id=${currentInstanceId}`);
+    document.getElementById('cfgFunnelEnabled').checked=!!f.enabled;
+    const rules=f.rules||{};
+    document.getElementById('funnelRulesArea').innerHTML=Object.entries(rules).map(([k,v])=>`<div style="margin-bottom:4px"><strong>${esc(k)}</strong> → ${esc(v.move_to||'')}: <em>${esc(v.trigger||'')}</em></div>`).join('');
+  }catch(e){}
+  // Follow-up
+  try{
+    const fu=await api(`/followup/config?instance_id=${currentInstanceId}`);
+    const sch=fu.schedule||{};
+    document.getElementById('cfgFollowupEnabled').checked=!!sch.enabled;
+    if(sch.start_hour)document.getElementById('cfgFollowupStart').value=sch.start_hour;
+    if(sch.end_hour)document.getElementById('cfgFollowupEnd').value=sch.end_hour;
+  }catch(e){}
+  // Report
+  try{
+    const r=await api(`/report/config?instance_id=${currentInstanceId}`);
+    document.getElementById('cfgReportEnabled').checked=!!r.enabled;
+    if(r.time)document.getElementById('cfgReportTime').value=r.time;
+    if(r.phone)document.getElementById('cfgReportPhone').value=r.phone;
+  }catch(e){}
+  // A/B
+  try{
+    const ab=await fetch(`/api/v1/ab-test/${currentInstanceId}`,{credentials:'same-origin'}).then(r=>r.ok?r.json():null);
+    if(ab&&ab.status==='running'){
+      document.getElementById('abTestArea').innerHTML=`<div style="font-size:12px;color:var(--green)">Teste ativo: ${ab.variant_a?.conversations||0}+${ab.variant_b?.conversations||0}/${ab.sample_size} conversas<br>A: ${ab.variant_a?.conversion_rate||0}% | B: ${ab.variant_b?.conversion_rate||0}%</div><button class="btn btn-sm" style="margin-top:6px" onclick="endABTest()">Encerrar teste</button>`;
+    }
+  }catch(e){}
+  // Corrections
+  try{
+    const c=await api(`/training/corrections?instance_id=${currentInstanceId}`);
+    const list=c.corrections||[];
+    if(list.length===0){document.getElementById('correctionsArea').textContent='Nenhuma correcao registrada.';}
+    else{document.getElementById('correctionsArea').innerHTML=list.slice(-10).map(x=>`<div style="padding:6px 0;border-bottom:1px solid var(--border)"><div style="color:var(--red)">❌ ${esc(x.original_response?.substring(0,60)||'')}</div><div style="color:var(--green)">✅ ${esc(x.corrected_response?.substring(0,60)||'')}</div><div style="font-size:10px;color:var(--t2)">${fmtDate(x.timestamp)}</div></div>`).join('');}
+  }catch(e){document.getElementById('correctionsArea').textContent='Erro ao carregar.';}
+}
+
+async function saveFunnelConfig(){
+  if(!currentInstanceId)return;
+  try{await api('/funnel/rules',{method:'PUT',body:{instance_id:currentInstanceId,enabled:document.getElementById('cfgFunnelEnabled').checked}});toast('Funil atualizado');}catch(e){toast('Erro',false);}
+}
+async function saveFollowupConfig(){
+  if(!currentInstanceId)return;
+  try{await api('/followup/config',{method:'PUT',body:{instance_id:currentInstanceId,config:{schedule:{enabled:document.getElementById('cfgFollowupEnabled').checked,start_hour:document.getElementById('cfgFollowupStart').value,end_hour:document.getElementById('cfgFollowupEnd').value}}}});toast('Follow-up atualizado');}catch(e){toast('Erro',false);}
+}
+async function saveReportConfig(){
+  if(!currentInstanceId)return;
+  try{await api('/report/config',{method:'PUT',body:{instance_id:currentInstanceId,config:{enabled:document.getElementById('cfgReportEnabled').checked,time:document.getElementById('cfgReportTime').value,phone:document.getElementById('cfgReportPhone').value}}});toast('Relatorio atualizado');}catch(e){toast('Erro',false);}
+}
+async function previewReport(){
+  if(!currentInstanceId)return;
+  try{const r=await api('/report/preview',{method:'POST',body:{instance_id:currentInstanceId}});openModal(`<h2>Preview do Relatorio</h2><pre style="white-space:pre-wrap;font-size:12px;background:var(--bg);padding:12px;border-radius:8px">${esc(r.message||'')}</pre><div class="modal-actions"><button class="btn" onclick="closeModal()">Fechar</button></div>`,true);}catch(e){toast('Erro: '+e.message,false);}
+}
+async function consolidateCorrections(){
+  if(!currentInstanceId)return;
+  try{const r=await api('/training/consolidate',{method:'POST',body:{instance_id:currentInstanceId}});toast('Correcoes consolidadas');loadConfig();}catch(e){toast('Erro',false);}
+}
+function openABTestModal(){
+  openModal(`<h2>Teste A/B de Prompts</h2>
+    <div class="field"><label>Prompt A (atual)</label><textarea id="abPromptA" rows="5" style="font-size:12px"></textarea></div>
+    <div class="field"><label>Prompt B (novo)</label><textarea id="abPromptB" rows="5" style="font-size:12px" placeholder="Cole aqui a versao alternativa"></textarea></div>
+    <div class="field"><label>Amostra</label><select id="abSample"><option value="50">50</option><option value="100" selected>100</option><option value="200">200</option></select></div>
+    <div class="modal-actions"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn btn-p" onclick="startABTest()">Iniciar Teste</button></div>`,true);
+}
+async function startABTest(){
+  try{await fetch('/api/v1/ab-test/create',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({instance_id:currentInstanceId,prompt_a:document.getElementById('abPromptA').value,prompt_b:document.getElementById('abPromptB').value,sample_size:parseInt(document.getElementById('abSample').value)})});toast('Teste A/B iniciado');closeModal();loadConfig();}catch(e){toast('Erro',false);}
+}
+async function endABTest(){
+  try{await fetch(`/api/v1/ab-test/${currentInstanceId}/end`,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({apply_winner:true})});toast('Teste encerrado, vencedor aplicado');loadConfig();}catch(e){toast('Erro',false);}
 }
 
 /* ══════════════════════════════════════════════

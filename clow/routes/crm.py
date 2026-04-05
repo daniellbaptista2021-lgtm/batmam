@@ -25,6 +25,23 @@ def register_crm_routes(app) -> None:
     def _tenant(sess: dict) -> str:
         return sess["user_id"]
 
+    def _check_crm_access(sess: dict):
+        """Verifica se o plano do usuario inclui CRM."""
+        from ..database import get_user_by_id
+        from ..billing import PLANS
+        user = get_user_by_id(sess["user_id"])
+        plan_id = user.get("plan", "byok_free") if user else "byok_free"
+        if plan_id in ("free", "basic", "unlimited"):
+            plan_id = "byok_free"
+        plan = PLANS.get(plan_id, PLANS["byok_free"])
+        if not plan.get("crm_enabled", False) and not sess.get("is_admin"):
+            return _JR({
+                "error": "crm_not_available",
+                "message": "O CRM nao esta disponivel no plano gratuito. Faca upgrade a partir do plano Lite (R$ 97/mes).",
+                "upgrade_url": "/app/settings#plan",
+            }, status_code=403)
+        return None
+
     # Inicializa tabelas CRM no startup
     from ..crm_models import init_crm_tables
     try:
@@ -55,6 +72,9 @@ def register_crm_routes(app) -> None:
         sess = _auth(request)
         if not sess:
             return _JR({"error": "Nao autenticado"}, status_code=401)
+        blocked = _check_crm_access(sess)
+        if blocked:
+            return blocked
         from ..crm_models import list_leads, search_leads
         tid = _tenant(sess)
         instance_id = request.query_params.get("instance_id", "")

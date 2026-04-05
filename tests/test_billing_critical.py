@@ -20,10 +20,10 @@ class TestBillingPlans(unittest.TestCase):
     def test_plan_prices(self):
         from clow.billing import PLANS
         self.assertEqual(PLANS["byok_free"]["price_brl"], 0)
-        self.assertEqual(PLANS["lite"]["price_brl"], 89)
-        self.assertEqual(PLANS["starter"]["price_brl"], 115)
-        self.assertEqual(PLANS["pro"]["price_brl"], 189)
-        self.assertEqual(PLANS["business"]["price_brl"], 229)
+        self.assertEqual(PLANS["lite"]["price_brl"], 97)
+        self.assertEqual(PLANS["starter"]["price_brl"], 197)
+        self.assertEqual(PLANS["pro"]["price_brl"], 347)
+        self.assertEqual(PLANS["business"]["price_brl"], 497)
         print("[OK] Precos corretos")
 
     def test_plan_models(self):
@@ -76,12 +76,16 @@ class TestQuotaChecking(unittest.TestCase):
             PLANS["pro"]["daily_input_tokens"],
             PLANS["starter"]["daily_input_tokens"],
         )
-        # Lite (Haiku) tem mais tokens pois Haiku e mais barato
+        # Escala: Lite < Starter < Pro < Business
         self.assertGreater(
-            PLANS["lite"]["daily_input_tokens"],
             PLANS["starter"]["daily_input_tokens"],
+            PLANS["lite"]["daily_input_tokens"],
         )
-        print("[OK] Franquias proporcionais ao custo do modelo")
+        self.assertGreater(
+            PLANS["business"]["daily_input_tokens"],
+            PLANS["pro"]["daily_input_tokens"],
+        )
+        print("[OK] Franquias escalam corretamente entre planos")
 
 
 class TestCheckoutFlow(unittest.TestCase):
