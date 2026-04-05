@@ -106,15 +106,19 @@ a{color:var(--p);text-decoration:none}
 .step h3{font-size:1.15rem;font-weight:700;margin-bottom:8px}
 .step p{color:var(--t2);line-height:1.6;font-size:.95rem}
 
-/* Feature Cards 3D */
-.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;perspective:1200px}
-.feature{background:linear-gradient(145deg,var(--bg2),rgba(20,20,46,.85));border:1px solid var(--bd);border-radius:16px;padding:28px;position:relative;overflow:hidden;transition:all .4s cubic-bezier(.25,.8,.25,1);transform-style:preserve-3d}
-.feature::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gp);opacity:0;transition:opacity .3s}
-.feature::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(155,89,252,.06),transparent 60%);opacity:0;transition:opacity .3s;pointer-events:none}
-.feature:hover{border-color:rgba(155,89,252,.3);transform:perspective(800px) rotateX(var(--rx,0)) rotateY(var(--ry,0)) translateZ(10px);box-shadow:0 25px 50px rgba(0,0,0,.4),0 0 40px rgba(155,89,252,.06)}
-.feature:hover::before,.feature:hover::after{opacity:1}
-.feature h4{font-size:1rem;font-weight:700;margin-bottom:6px;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.feature p{color:var(--t2);font-size:.9rem;line-height:1.55}
+/* Feature Cards */
+.features{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.feat{display:flex;gap:14px;align-items:flex-start;padding:22px;background:linear-gradient(160deg,rgba(13,11,26,.9),rgba(20,16,38,.8));border:1px solid rgba(120,90,200,.1);border-radius:14px;transition:all .35s cubic-bezier(.25,.8,.25,1);position:relative;overflow:hidden;backdrop-filter:blur(8px)}
+.feat::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(155,89,252,.25),transparent);opacity:0;transition:opacity .3s}
+.feat:hover{border-color:rgba(155,89,252,.25);transform:translateY(-3px) scale(1.02);box-shadow:0 16px 40px rgba(0,0,0,.35),0 0 16px rgba(155,89,252,.06)}
+.feat:hover::before{opacity:1}
+.feat-icon{width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(155,89,252,.12),rgba(108,92,231,.08));border:1px solid rgba(155,89,252,.15);border-radius:11px;flex-shrink:0;color:var(--p);transition:all .3s}
+.feat-icon svg{width:20px;height:20px}
+.feat:hover .feat-icon{border-color:rgba(155,89,252,.4);box-shadow:0 0 12px rgba(155,89,252,.2);color:#fff}
+.feat-num{font-size:1.4rem;font-weight:900;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.feat h4{font-size:.88rem;font-weight:700;color:#fff;margin-bottom:4px;text-shadow:0 0 16px rgba(155,89,252,.1)}
+.feat p{font-size:.74rem;color:var(--t2);line-height:1.6}
+.feat-cat{font-size:.62rem;color:var(--p);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:6px;display:block}
 
 /* Pricing — Premium SaaS */
 .price-wrap{border-radius:16px;overflow:hidden;border:1px solid rgba(120,90,200,.12);background:linear-gradient(160deg,rgba(13,11,26,.95),rgba(20,16,38,.9));position:relative;transition:all .35s cubic-bezier(.25,.8,.25,1)}
@@ -235,18 +239,31 @@ a{color:var(--p);text-decoration:none}
   <h2>Uma plataforma <span>completa</span></h2>
   <p class="sub">24 ferramentas, 108 skills, 5 agentes, 16 integra&#231;&#245;es, 10 geradores. 6 interfaces.</p>
   <div class="features" id="fg">
-    <div class="feature"><h4>24 Ferramentas Nativas</h4><p>Bash, Read, Write, Edit, Glob, Grep, Web Search, Scraper, Image Gen, PDF, Spreadsheet, WhatsApp, Supabase, Docker, Git Advanced e mais.</p></div>
-    <div class="feature"><h4>108 Skills Prontos</h4><p>46 nativos + 62 importados: /commit, /review, /test, /deploy, /debug, /security, /perf, /docs, /migrate, /pr, /cotacao, /proposta e dezenas mais.</p></div>
-    <div class="feature"><h4>5 Tipos de Agente</h4><p><b>Agent</b> (principal), <b>Swarm</b> (paralelo git), <b>Teams</b> (task board), <b>Mission Engine</b> (aut&#244;nomo), <b>Background</b> (async).</p></div>
-    <div class="feature"><h4>16 Integra&#231;&#245;es</h4><p>GitHub, Meta Ads, Supabase, PostgreSQL, Redis, n8n, Docker, Vercel, Stripe, WhatsApp, Chatwoot, Playwright e mais.</p></div>
-    <div class="feature"><h4>10 Geradores</h4><p>Landing pages, apps web, Excel, PowerPoint, Word, PDF, imagens AI, copies de marketing, ideias de conte&#250;do.</p></div>
-    <div class="feature"><h4>GitHub Autopilot</h4><p>Label &#8220;clow&#8221; na issue &#8594; branch &#8594; implementa &#8594; testa &#8594; PR autom&#225;tico com &#8220;closes #N&#8221;.</p></div>
-    <div class="feature"><h4>Time Travel</h4><p>50 checkpoints por sess&#227;o. /undo reverte qualquer passo. /history mostra timeline. Diff visual.</p></div>
-    <div class="feature"><h4>Extended Thinking</h4><p>Budget de 10K tokens de pensamento. O modelo raciocina antes de agir em tarefas complexas.</p></div>
-    <div class="feature"><h4>6 Interfaces</h4><p>Terminal, Web, VS Code, PWA Android/iPhone, Chrome Extension, WebSocket. Teleport entre elas.</p></div>
-    <div class="feature"><h4>Self-Learning</h4><p>Aprende suas prefer&#234;ncias, detecta erros recorrentes, gera regras preventivas autom&#225;ticas.</p></div>
-    <div class="feature"><h4>Spectator Mode</h4><p>URL compartilh&#225;vel. Qualquer pessoa assiste ao vivo: tool calls, respostas, diffs. Controle remoto.</p></div>
-    <div class="feature"><h4>Automa&#231;&#245;es NL</h4><p>Diga em portugu&#234;s o que quer automatizar. O Clow interpreta e cria cron, webhook ou evento GitHub.</p></div>
+
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg></div><div><span class="feat-cat">Desenvolvimento</span><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px"><span class="feat-num">33</span><h4>Ferramentas nativas</h4></div><p>Bash, Read, Write, Edit, Glob, Grep<br>Web Search, Scraper, Image Gen<br>PDF, Spreadsheet, WhatsApp, Docker</p></div></div>
+
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg></div><div><span class="feat-cat">Produtividade</span><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px"><span class="feat-num">108</span><h4>Skills para uso imediato</h4></div><p>/commit, /review, /test, /deploy<br>/debug, /security, /perf, /docs<br>/migrate, /pr, /cotacao e dezenas mais</p></div></div>
+
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div><div><span class="feat-cat">Intelig&#234;ncia Artificial</span><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px"><span class="feat-num">5</span><h4>Tipos de agente</h4></div><p>Agent principal, Swarm paralelo<br>Teams com task board, Mission Engine<br>Background async</p></div></div>
+
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></div><div><span class="feat-cat">Integra&#231;&#245;es</span><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px"><span class="feat-num">16</span><h4>Integra&#231;&#245;es nativas</h4></div><p>GitHub, Meta Ads, Supabase, Redis<br>n8n, Docker, Vercel, Stripe<br>WhatsApp, Chatwoot, Playwright</p></div></div>
+
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><div><span class="feat-cat">Cria&#231;&#227;o</span><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px"><span class="feat-num">10</span><h4>Geradores de alto n&#237;vel</h4></div><p>Landing pages, apps web, Excel<br>PowerPoint, Word, PDF, imagens AI<br>Copies de marketing e conte&#250;do</p></div></div>
+
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 006 0v-1a10 10 0 10-3.92 7.94"/></svg></div><div><span class="feat-cat">Automa&#231;&#227;o</span><h4>GitHub Autopilot</h4><p>Label &#8220;clow&#8221; na issue &#8594; branch<br>&#8594; implementa &#8594; testa &#8594; PR<br>autom&#225;tico com &#8220;closes #N&#8221;</p></div></div>
+
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><div><span class="feat-cat">Seguran&#231;a</span><h4>Time Travel</h4><p>50 checkpoints por sess&#227;o<br>/undo reverte qualquer passo<br>/history com timeline e diff visual</p></div></div>
+
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9.66 2L4.23 12l5.43 3.13L20.77 2z"/><path d="M9.66 15.24v6.65l5.22-3.57"/></svg></div><div><span class="feat-cat">Intelig&#234;ncia Artificial</span><h4>Extended Thinking</h4><p>10K tokens de pensamento<br>O modelo raciocina antes de agir<br>em tarefas complexas de arquitetura</p></div></div>
+
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><div><span class="feat-cat">Multiplataforma</span><div style="display:flex;align-items:baseline;gap:6px;margin-bottom:4px"><span class="feat-num">6</span><h4>Interfaces dispon&#237;veis</h4></div><p>Terminal, Web, VS Code<br>PWA Android/iPhone, Chrome Ext<br>WebSocket + Teleport entre elas</p></div></div>
+
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div><span class="feat-cat">Intelig&#234;ncia Artificial</span><h4>Self-Learning</h4><p>Aprende suas prefer&#234;ncias<br>Detecta erros recorrentes<br>Gera regras preventivas autom&#225;ticas</p></div></div>
+
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div><div><span class="feat-cat">Colabora&#231;&#227;o</span><h4>Spectator Mode</h4><p>URL compartilh&#225;vel ao vivo<br>Tool calls, respostas, diffs<br>Controle remoto com aprova&#231;&#227;o</p></div></div>
+
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><div><span class="feat-cat">Automa&#231;&#227;o</span><h4>Automa&#231;&#245;es em portugu&#234;s</h4><p>Diga o que quer automatizar<br>O Clow interpreta e cria cron<br>webhook ou evento GitHub</p></div></div>
+
   </div>
 </section>
 
@@ -466,11 +483,11 @@ a{color:var(--p);text-decoration:none}
 
 <script>
 // 3D tilt on feature cards
-document.querySelectorAll('.feature').forEach(c=>{c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;c.style.setProperty('--rx',(y-.5)*-10+'deg');c.style.setProperty('--ry',(x-.5)*10+'deg');c.style.setProperty('--mx',x*100+'%');c.style.setProperty('--my',y*100+'%')});c.addEventListener('mouseleave',()=>{c.style.setProperty('--rx','0deg');c.style.setProperty('--ry','0deg')})});
+document.querySelectorAll('.feat').forEach(c=>{c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;c.style.setProperty('--rx',(y-.5)*-10+'deg');c.style.setProperty('--ry',(x-.5)*10+'deg');c.style.setProperty('--mx',x*100+'%');c.style.setProperty('--my',y*100+'%')});c.addEventListener('mouseleave',()=>{c.style.setProperty('--rx','0deg');c.style.setProperty('--ry','0deg')})});
 
 // Scroll-in animation
 const obs=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)'}})},{threshold:.1});
-document.querySelectorAll('.feature,.step,.testi,.hl,.flow-card,.price-wrap').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(30px)';el.style.transition='all .6s cubic-bezier(.25,.8,.25,1)';obs.observe(el)});
+document.querySelectorAll('.feat,.step,.testi,.hl,.flow-card,.price-wrap').forEach(el=>{el.style.opacity='0';el.style.transform='translateY(30px)';el.style.transition='all .6s cubic-bezier(.25,.8,.25,1)';obs.observe(el)});
 
 // Checkout Stripe
 async function checkout(planId){
