@@ -153,11 +153,10 @@ class TestAPIResponses(unittest.TestCase):
         self.assertIn("status", data)
         self.assertIn("version", data)
 
-    def test_openapi_docs_available(self):
+    def test_openapi_docs_protected(self):
+        """Swagger/OpenAPI e protegido — requer admin."""
         r = self.client.get("/openapi.json")
-        self.assertEqual(r.status_code, 200)
-        data = r.json()
-        self.assertIn("paths", data)
+        self.assertIn(r.status_code, (403, 401), "OpenAPI deve ser protegido")
 
 
 if __name__ == "__main__":
