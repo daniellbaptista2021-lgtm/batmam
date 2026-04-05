@@ -139,9 +139,9 @@
     <div class="hdr-menu">
       <button class="hdr-mbtn" onclick="togDrop()" aria-label="Menu de opções">&#x22EE;</button>
       <div class="hdr-drop" id="hdrDrop" role="menu">
-        <button onclick="sendCmd('/usage');clsDrop()">&#x1F4CA; Meu consumo</button>
-        <button onclick="sendCmd('/plan');clsDrop()">&#x1F4E6; Meu plano</button>
-        <button onclick="sendCmd('/memories');clsDrop()">Memórias</button>
+        <a href="/app/settings" onclick="clsDrop()">Configuracoes</a>
+        <a href="/usage" onclick="clsDrop()">Uso e Franquia</a>
+        <button onclick="sendCmd('/memories');clsDrop()">Memorias</button>
         <button onclick="sendCmd('/help');clsDrop()">Ajuda</button>
         <a href="/logout">Sair</a>
       </div>
