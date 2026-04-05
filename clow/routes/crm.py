@@ -1,12 +1,16 @@
-"""CRM routes — proxy reverso do Chatwoot embeddado no Clow."""
+"""CRM Routes — leads, campanhas, agendamentos, dashboard, webhook.
+
+Todos os endpoints filtram por tenant_id do usuario logado.
+"""
 
 from __future__ import annotations
+
+import json
+import time
 from pathlib import Path
-from urllib.request import urlopen, Request
-from urllib.error import URLError, HTTPError
 
 from fastapi import Request as _Req
-from fastapi.responses import JSONResponse as _JR, HTMLResponse as _HR, RedirectResponse, Response
+from fastapi.responses import JSONResponse as _JR, HTMLResponse as _HR, RedirectResponse
 
 _TPL_DIR = Path(__file__).resolve().parent.parent / "templates"
 
@@ -21,172 +25,463 @@ def register_crm_routes(app) -> None:
     def _tenant(sess: dict) -> str:
         return sess["user_id"]
 
-    # ── Page ──────────────────────────────────────────────────
+    # Inicializa tabelas CRM no startup
+    from ..crm_models import init_crm_tables
+    try:
+        init_crm_tables()
+    except Exception:
+        pass
 
-    @app.get("/app/crm", tags=["crm"])
-    async def crm_page(request: _Req):
+    # ══════════════════════════════════════════════════════════
+    # PAGINAS HTML
+    # ══════════════════════════════════════════════════════════
+
+    @app.get("/crm", tags=["crm"])
+    async def crm_dashboard_page(request: _Req):
         sess = _auth(request)
         if not sess:
             return RedirectResponse("/login")
         tpl = _TPL_DIR / "crm.html"
         if tpl.exists():
             return _HR(tpl.read_text(encoding="utf-8"))
-        return _HR("<h1>CRM template not found</h1>")
+        return _HR("<h1>CRM em construcao</h1>")
 
-    # ── Config ────────────────────────────────────────────────
+    # ══════════════════════════════════════════════════════════
+    # LEADS
+    # ══════════════════════════════════════════════════════════
 
-    @app.get("/api/v1/crm/config", tags=["crm"])
-    async def crm_get_config(request: _Req):
+    @app.get("/api/v1/crm/leads", tags=["crm"])
+    async def crm_list_leads(request: _Req):
         sess = _auth(request)
         if not sess:
             return _JR({"error": "Nao autenticado"}, status_code=401)
-        from ..chatwoot import get_crm_config
-        cfg = get_crm_config(_tenant(sess))
-        return _JR({
-            "url": cfg.chatwoot_url,
-            "configured": cfg.configured,
-            "account_id": cfg.chatwoot_account_id,
-            "token_full": cfg.chatwoot_api_token,
-        })
+        from ..crm_models import list_leads, search_leads
+        tid = _tenant(sess)
+        search = request.query_params.get("search", "")
+        if search:
+            leads = search_leads(tid, search)
+            return _JR({"leads": leads, "total": len(leads), "page": 1, "pages": 1})
+        status = request.query_params.get("status", "")
+        source = request.query_params.get("source", "")
+        page = int(request.query_params.get("page", "1"))
+        limit = int(request.query_params.get("limit", "50"))
+        return _JR(list_leads(tid, status=status, source=source, page=page, limit=limit))
 
-    @app.post("/api/v1/crm/config", tags=["crm"])
-    async def crm_save_config(request: _Req):
+    @app.post("/api/v1/crm/leads", tags=["crm"])
+    async def crm_create_lead(request: _Req):
         sess = _auth(request)
         if not sess:
             return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import create_lead
+        body = await request.json()
+        lead = create_lead(
+            tenant_id=_tenant(sess),
+            name=body.get("name", ""),
+            email=body.get("email", ""),
+            phone=body.get("phone", ""),
+            source=body.get("source", "manual"),
+            notes=body.get("notes", ""),
+            tags=body.get("tags"),
+            custom_fields=body.get("custom_fields"),
+        )
+        return _JR(lead)
+
+    @app.get("/api/v1/crm/leads/{lead_id}", tags=["crm"])
+    async def crm_get_lead(lead_id: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import get_lead, get_lead_timeline
+        tid = _tenant(sess)
+        lead = get_lead(lead_id, tid)
+        if not lead:
+            return _JR({"error": "Lead nao encontrado"}, status_code=404)
+        lead["timeline"] = get_lead_timeline(lead_id, tid)
+        return _JR(lead)
+
+    @app.put("/api/v1/crm/leads/{lead_id}", tags=["crm"])
+    async def crm_update_lead(lead_id: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import update_lead
+        body = await request.json()
+        lead = update_lead(lead_id, _tenant(sess), **body)
+        if not lead:
+            return _JR({"error": "Lead nao encontrado"}, status_code=404)
+        return _JR(lead)
+
+    @app.delete("/api/v1/crm/leads/{lead_id}", tags=["crm"])
+    async def crm_delete_lead(lead_id: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import delete_lead
+        ok = delete_lead(lead_id, _tenant(sess))
+        if not ok:
+            return _JR({"error": "Lead nao encontrado"}, status_code=404)
+        return _JR({"success": True})
+
+    @app.post("/api/v1/crm/leads/{lead_id}/activity", tags=["crm"])
+    async def crm_add_activity(lead_id: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import add_activity, get_lead
+        tid = _tenant(sess)
+        if not get_lead(lead_id, tid):
+            return _JR({"error": "Lead nao encontrado"}, status_code=404)
+        body = await request.json()
+        act_type = body.get("type", "note")
+        content = body.get("content", "")
+        aid = add_activity(lead_id, tid, act_type, content, body.get("metadata"))
+        return _JR({"success": True, "activity_id": aid})
+
+    @app.put("/api/v1/crm/leads/{lead_id}/status", tags=["crm"])
+    async def crm_change_status(lead_id: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import change_lead_status
+        body = await request.json()
+        new_status = body.get("status", "")
+        valid = {"novo", "contatado", "qualificado", "proposta", "ganho", "perdido"}
+        if new_status not in valid:
+            return _JR({"error": f"Status invalido. Use: {', '.join(sorted(valid))}"}, status_code=400)
+        lead = change_lead_status(lead_id, _tenant(sess), new_status)
+        if not lead:
+            return _JR({"error": "Lead nao encontrado"}, status_code=404)
+        return _JR(lead)
+
+    # ══════════════════════════════════════════════════════════
+    # EMAIL CAMPAIGNS
+    # ══════════════════════════════════════════════════════════
+
+    @app.get("/api/v1/crm/campaigns", tags=["crm"])
+    async def crm_list_campaigns(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import list_campaigns
+        status = request.query_params.get("status", "")
+        return _JR({"campaigns": list_campaigns(_tenant(sess), status)})
+
+    @app.post("/api/v1/crm/campaigns", tags=["crm"])
+    async def crm_create_campaign(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import create_campaign
+        body = await request.json()
+        name = body.get("name", "").strip()
+        subject = body.get("subject", "").strip()
+        body_html = body.get("body_html", "").strip()
+        if not name or not subject or not body_html:
+            return _JR({"error": "Nome, assunto e corpo sao obrigatorios"}, status_code=400)
+        campaign = create_campaign(_tenant(sess), name, subject, body_html,
+                                   body.get("recipient_filter"))
+        return _JR(campaign)
+
+    @app.get("/api/v1/crm/campaigns/{cid}", tags=["crm"])
+    async def crm_get_campaign(cid: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import get_campaign, get_campaign_sends
+        campaign = get_campaign(cid, _tenant(sess))
+        if not campaign:
+            return _JR({"error": "Campanha nao encontrada"}, status_code=404)
+        campaign["sends"] = get_campaign_sends(cid)
+        return _JR(campaign)
+
+    @app.put("/api/v1/crm/campaigns/{cid}", tags=["crm"])
+    async def crm_update_campaign(cid: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import update_campaign
+        body = await request.json()
+        campaign = update_campaign(cid, _tenant(sess), **body)
+        if not campaign:
+            return _JR({"error": "Campanha nao encontrada ou ja enviada"}, status_code=400)
+        return _JR(campaign)
+
+    @app.post("/api/v1/crm/campaigns/{cid}/send", tags=["crm"])
+    async def crm_send_campaign(cid: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import get_campaign
+        tid = _tenant(sess)
+        campaign = get_campaign(cid, tid)
+        if not campaign:
+            return _JR({"error": "Campanha nao encontrada"}, status_code=404)
+        if campaign["status"] not in ("draft", "scheduled"):
+            return _JR({"error": "Campanha ja foi enviada"}, status_code=400)
+        from ..integrations.email_sender import send_campaign
+        send_campaign(cid, tid)
+        return _JR({"success": True, "message": "Campanha sendo enviada em background"})
+
+    @app.post("/api/v1/crm/campaigns/{cid}/schedule", tags=["crm"])
+    async def crm_schedule_campaign(cid: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import update_campaign_status
+        body = await request.json()
+        scheduled_at = body.get("scheduled_at")
+        if not scheduled_at:
+            return _JR({"error": "scheduled_at e obrigatorio"}, status_code=400)
+        update_campaign_status(cid, _tenant(sess), "scheduled", scheduled_at=scheduled_at)
+        return _JR({"success": True})
+
+    @app.delete("/api/v1/crm/campaigns/{cid}", tags=["crm"])
+    async def crm_delete_campaign(cid: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import delete_campaign
+        ok = delete_campaign(cid, _tenant(sess))
+        if not ok:
+            return _JR({"error": "Campanha nao encontrada"}, status_code=404)
+        return _JR({"success": True})
+
+    # ══════════════════════════════════════════════════════════
+    # SCHEDULING LINKS
+    # ══════════════════════════════════════════════════════════
+
+    @app.get("/api/v1/crm/scheduling-links", tags=["crm"])
+    async def crm_list_slinks(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import list_scheduling_links
+        return _JR({"links": list_scheduling_links(_tenant(sess))})
+
+    @app.post("/api/v1/crm/scheduling-links", tags=["crm"])
+    async def crm_create_slink(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import create_scheduling_link
+        body = await request.json()
+        slug = body.get("slug", "").strip().lower().replace(" ", "-")
+        title = body.get("title", "").strip()
+        if not slug or not title:
+            return _JR({"error": "Slug e titulo sao obrigatorios"}, status_code=400)
+        link = create_scheduling_link(
+            tenant_id=_tenant(sess), slug=slug, title=title,
+            duration=body.get("duration_minutes", 30),
+            days=body.get("available_days", "1,2,3,4,5"),
+            start=body.get("available_start", "09:00"),
+            end=body.get("available_end", "18:00"),
+        )
+        return _JR(link)
+
+    @app.put("/api/v1/crm/scheduling-links/{slug}", tags=["crm"])
+    async def crm_update_slink(slug: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import update_scheduling_link
+        body = await request.json()
+        link = update_scheduling_link(slug, _tenant(sess), **body)
+        if not link:
+            return _JR({"error": "Link nao encontrado"}, status_code=404)
+        return _JR(link)
+
+    @app.delete("/api/v1/crm/scheduling-links/{slug}", tags=["crm"])
+    async def crm_delete_slink(slug: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import delete_scheduling_link
+        ok = delete_scheduling_link(slug, _tenant(sess))
+        if not ok:
+            return _JR({"error": "Link nao encontrado"}, status_code=404)
+        return _JR({"success": True})
+
+    # ══════════════════════════════════════════════════════════
+    # APPOINTMENTS
+    # ══════════════════════════════════════════════════════════
+
+    @app.get("/api/v1/crm/appointments", tags=["crm"])
+    async def crm_list_appointments(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import list_appointments
+        date = request.query_params.get("date", "")
+        status = request.query_params.get("status", "")
+        return _JR({"appointments": list_appointments(_tenant(sess), date, status)})
+
+    @app.put("/api/v1/crm/appointments/{apt_id}", tags=["crm"])
+    async def crm_update_appointment(apt_id: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import update_appointment
+        body = await request.json()
+        apt = update_appointment(apt_id, _tenant(sess), **body)
+        if not apt:
+            return _JR({"error": "Agendamento nao encontrado"}, status_code=404)
+        return _JR(apt)
+
+    # ══════════════════════════════════════════════════════════
+    # PAGINA PUBLICA DE AGENDAMENTO
+    # ══════════════════════════════════════════════════════════
+
+    @app.get("/agendar/{slug}", tags=["crm"])
+    async def crm_booking_page(slug: str, request: _Req):
+        from ..crm_models import get_scheduling_link
+        link = get_scheduling_link(slug)
+        if not link or not link["active"]:
+            return _HR("<h1 style='text-align:center;margin-top:80px;font-family:sans-serif'>Link de agendamento nao encontrado ou inativo.</h1>")
+        tpl = _TPL_DIR / "agendar.html"
+        if tpl.exists():
+            html = tpl.read_text(encoding="utf-8")
+            html = html.replace("{{SLUG}}", slug)
+            html = html.replace("{{TITLE}}", link["title"])
+            html = html.replace("{{DURATION}}", str(link["duration_minutes"]))
+            return _HR(html)
+        return _HR("<h1>Pagina de agendamento em construcao</h1>")
+
+    @app.get("/api/v1/crm/availability/{slug}", tags=["crm"])
+    async def crm_availability(slug: str, request: _Req):
+        """Retorna horarios disponiveis para uma data (publico)."""
+        from ..crm_models import get_available_slots
+        date = request.query_params.get("date", "")
+        if not date:
+            return _JR({"error": "Parametro date obrigatorio (YYYY-MM-DD)"}, status_code=400)
+        slots = get_available_slots(slug, date)
+        return _JR({"date": date, "slots": slots})
+
+    @app.post("/api/v1/crm/book/{slug}", tags=["crm"])
+    async def crm_book_appointment(slug: str, request: _Req):
+        """Cliente confirma agendamento (publico)."""
+        from ..crm_models import (
+            get_scheduling_link, get_available_slots, create_appointment,
+            get_lead_by_email, get_lead_by_phone, create_lead, add_activity,
+        )
+        link = get_scheduling_link(slug)
+        if not link or not link["active"]:
+            return _JR({"error": "Link inativo"}, status_code=404)
+
+        body = await request.json()
+        name = body.get("name", "").strip()
+        email = body.get("email", "").strip()
+        phone = body.get("phone", "").strip()
+        date = body.get("date", "").strip()
+        time_str = body.get("time", "").strip()
+        notes = body.get("notes", "")
+
+        if not name or not date or not time_str:
+            return _JR({"error": "Nome, data e horario sao obrigatorios"}, status_code=400)
+
+        # Verifica disponibilidade
+        slots = get_available_slots(slug, date)
+        if time_str not in slots:
+            return _JR({"error": "Horario indisponivel"}, status_code=400)
+
+        tid = link["tenant_id"]
+
+        # Busca ou cria lead
+        lead = None
+        if email:
+            lead = get_lead_by_email(tid, email)
+        if not lead and phone:
+            lead = get_lead_by_phone(tid, phone)
+        if not lead:
+            lead = create_lead(tid, name=name, email=email, phone=phone,
+                               source="agendamento")
+
+        # Cria agendamento
+        apt = create_appointment(
+            tenant_id=tid, name=name, email=email, phone=phone,
+            lead_id=lead["id"], date=date, time_str=time_str,
+            duration=link["duration_minutes"], notes=notes,
+        )
+
+        # Registra atividade no lead
+        add_activity(lead["id"], tid, "meeting",
+                     f"Agendamento: {date} {time_str} ({link['title']})")
+
+        return _JR({"success": True, "appointment": apt})
+
+    # ══════════════════════════════════════════════════════════
+    # DASHBOARD CRM
+    # ══════════════════════════════════════════════════════════
+
+    @app.get("/api/v1/crm/dashboard", tags=["crm"])
+    async def crm_dashboard(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_models import get_dashboard_stats, get_stale_leads
+        tid = _tenant(sess)
+        stats = get_dashboard_stats(tid)
+        stats["stale_leads"] = get_stale_leads(tid, days=3)
+        return _JR(stats)
+
+    # ══════════════════════════════════════════════════════════
+    # SUGESTOES IA
+    # ══════════════════════════════════════════════════════════
+
+    @app.get("/api/v1/crm/suggestions", tags=["crm"])
+    async def crm_suggestions(request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_intelligence import get_ai_suggestions
+        suggestions = get_ai_suggestions(_tenant(sess))
+        return _JR({"suggestions": suggestions})
+
+    @app.post("/api/v1/crm/suggestions/{lead_id}/execute", tags=["crm"])
+    async def crm_execute_suggestion(lead_id: str, request: _Req):
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..crm_intelligence import execute_suggestion
+        body = await request.json()
+        action = body.get("action", "")
+        result = execute_suggestion(lead_id, _tenant(sess), action)
+        return _JR(result)
+
+    # ══════════════════════════════════════════════════════════
+    # WEBHOOK PARA FORMULARIOS / LANDING PAGES
+    # ══════════════════════════════════════════════════════════
+
+    @app.post("/api/v1/crm/webhook/form/{tenant_id}", tags=["crm"])
+    async def crm_form_webhook(tenant_id: str, request: _Req):
+        """Recebe dados de formulario de landing pages (publico)."""
+        from ..crm_models import create_lead, get_lead_by_email, get_lead_by_phone
         try:
-            body = await request.json()
-            url = (body.get("url") or "").strip()
-            email = (body.get("email") or "").strip()
-            password = (body.get("password") or "").strip()
+            content_type = request.headers.get("content-type", "")
+            if "json" in content_type:
+                body = await request.json()
+            else:
+                form = await request.form()
+                body = dict(form)
 
-            if not url or not email or not password:
-                return _JR({"error": "Preencha URL, email e senha."}, status_code=400)
+            name = body.get("name", "").strip()
+            email = body.get("email", "").strip()
+            phone = body.get("phone", "").strip()
+            source = body.get("source", "landing_page")
 
-            if body.get("test_only"):
-                from ..chatwoot import chatwoot_login
-                result = chatwoot_login(url, email, password)
-                if result.get("success"):
-                    return _JR({"ok": True, "message": f"Conexao OK! Account: {result.get('account_id', 1)}"})
-                return _JR({"error": result.get("error", "Falha")}, status_code=400)
+            if not name and not email and not phone:
+                return _JR({"error": "Dados insuficientes"}, status_code=400)
 
-            from ..chatwoot import save_crm_config
-            result = save_crm_config(_tenant(sess), url, email, password)
-            if "error" in result:
-                return _JR(result, status_code=400)
-            return _JR(result)
-        except Exception as exc:
-            return _JR({"error": f"Erro: {exc}"}, status_code=500)
+            # Evita duplicatas
+            existing = None
+            if email:
+                existing = get_lead_by_email(tenant_id, email)
+            if not existing and phone:
+                existing = get_lead_by_phone(tenant_id, phone)
 
-    # ── Proxy reverso ─────────────────────────────────────────
-    # Serve o Chatwoot inteiro via proxy, removendo X-Frame-Options
+            if existing:
+                return _JR({"success": True, "lead_id": existing["id"], "message": "Lead ja existe"})
 
-    @app.api_route("/api/v1/crm/proxy/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"], tags=["crm"])
-    async def crm_proxy(path: str, request: _Req):
-        sess = _auth(request)
-        if not sess:
-            return _JR({"error": "Nao autenticado"}, status_code=401)
-
-        from ..chatwoot import get_crm_config
-        cfg = get_crm_config(_tenant(sess))
-        if not cfg.configured:
-            return _JR({"error": "CRM nao configurado"}, status_code=400)
-
-        # Build target URL
-        target = f"{cfg.chatwoot_url}/{path}"
-        qs = str(request.query_params)
-        if qs:
-            target += f"?{qs}"
-
-        # Forward request
-        try:
-            body = await request.body() if request.method != "GET" else None
-            headers = {
-                "api_access_token": cfg.chatwoot_api_token,
-                "Content-Type": request.headers.get("content-type", "application/json"),
-            }
-            # For browser requests (HTML pages), use cookie auth
-            cookie = request.headers.get("x-crm-cookie", "")
-            if cookie:
-                headers["Cookie"] = cookie
-
-            req = Request(
-                target,
-                data=body,
-                headers=headers,
-                method=request.method,
-            )
-            resp = urlopen(req, timeout=30)
-            content = resp.read()
-            content_type = resp.headers.get("Content-Type", "application/json")
-
-            # Remove X-Frame-Options to allow iframe
-            resp_headers = {
-                "Content-Type": content_type,
-                "Cache-Control": "no-cache",
-            }
-
-            return Response(content=content, headers=resp_headers, status_code=resp.status)
-        except HTTPError as e:
-            content = e.read() if e.fp else b""
-            return Response(content=content, status_code=e.code, headers={"Content-Type": "text/html"})
+            lead = create_lead(tenant_id, name=name, email=email, phone=phone, source=source)
+            return _JR({"success": True, "lead_id": lead["id"]})
         except Exception as e:
-            return _JR({"error": str(e)[:200]}, status_code=502)
-
-    @app.get("/api/v1/crm/proxy", tags=["crm"])
-    async def crm_proxy_root(request: _Req):
-        """Proxy da pagina principal do Chatwoot."""
-        sess = _auth(request)
-        if not sess:
-            return _JR({"error": "Nao autenticado"}, status_code=401)
-
-        from ..chatwoot import get_crm_config
-        cfg = get_crm_config(_tenant(sess))
-        if not cfg.configured:
-            return _HR("<h1>CRM nao configurado</h1>")
-
-        # Gera pagina que carrega o Chatwoot com token de autenticacao
-        account_id = cfg.chatwoot_account_id
-        chatwoot_url = cfg.chatwoot_url
-        token = cfg.chatwoot_api_token
-
-        # Injeta JS para fazer login automatico e redirecionar
-        html = f"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-body {{ margin:0; background:#1f2937; font-family:system-ui; }}
-.loading {{ display:flex; align-items:center; justify-content:center; height:100vh; color:#9ca3af; }}
-.spinner {{ width:30px; height:30px; border:3px solid #374151; border-top-color:#7c5cfc; border-radius:50%; animation:spin .8s linear infinite; margin-right:12px; }}
-@keyframes spin {{ to {{ transform:rotate(360deg) }} }}
-</style>
-</head>
-<body>
-<div class="loading"><div class="spinner"></div>Carregando CRM...</div>
-<script>
-// Login automatico no Chatwoot
-fetch("{chatwoot_url}/auth/sign_in", {{
-  method: "POST",
-  headers: {{"Content-Type": "application/json"}},
-  body: JSON.stringify({{email: "{cfg.chatwoot_email}", password: "{cfg.chatwoot_password}"}})
-}})
-.then(r => r.json())
-.then(data => {{
-  if (data.data && data.data.access_token) {{
-    // Seta cookies de autenticacao e redireciona
-    document.cookie = "access_token=" + data.data.access_token + ";path=/;SameSite=Lax";
-    document.cookie = "cw_d_session_info=%7B%22cs%22%3A%22" + data.data.access_token + "%22%7D;path=/;SameSite=Lax";
-    document.cookie = "user_id=" + data.data.id + ";path=/;SameSite=Lax";
-    window.location.href = "{chatwoot_url}/app/accounts/{account_id}/dashboard";
-  }} else {{
-    document.body.innerHTML = "<div style='color:#ef4444;padding:40px;text-align:center'>Falha no login. Verifique suas credenciais na configuracao do CRM.</div>";
-  }}
-}})
-.catch(e => {{
-  document.body.innerHTML = "<div style='color:#ef4444;padding:40px;text-align:center'>Erro de conexao: " + e.message + "</div>";
-}});
-</script>
-</body>
-</html>"""
-        return _HR(html)
+            return _JR({"error": str(e)[:200]}, status_code=500)

@@ -160,6 +160,107 @@ MIGRATIONS: list[tuple[int, str, str]] = [
         CREATE INDEX IF NOT EXISTS idx_rl_user ON rate_limit_events(user_id, created_at);
         """,
     ),
+    # ── v5: CRM tables (leads, activities, campaigns, appointments) ──
+    (
+        5,
+        "Create CRM tables: leads, lead_activities, email_campaigns, email_sends, appointments, scheduling_links",
+        """
+        CREATE TABLE IF NOT EXISTS leads (
+            id TEXT PRIMARY KEY,
+            tenant_id TEXT NOT NULL,
+            name TEXT,
+            email TEXT,
+            phone TEXT,
+            source TEXT DEFAULT 'manual',
+            status TEXT DEFAULT 'novo',
+            score INTEGER DEFAULT 0,
+            assigned_to TEXT,
+            notes TEXT,
+            tags TEXT,
+            custom_fields TEXT,
+            last_contact_at REAL,
+            next_followup_at REAL,
+            created_at REAL NOT NULL,
+            updated_at REAL NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_leads_tenant ON leads(tenant_id, status);
+        CREATE INDEX IF NOT EXISTS idx_leads_phone ON leads(phone);
+        CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email);
+
+        CREATE TABLE IF NOT EXISTS lead_activities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            lead_id TEXT NOT NULL,
+            tenant_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            content TEXT,
+            metadata TEXT,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (lead_id) REFERENCES leads(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_activities_lead ON lead_activities(lead_id, created_at);
+
+        CREATE TABLE IF NOT EXISTS email_campaigns (
+            id TEXT PRIMARY KEY,
+            tenant_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            body_html TEXT NOT NULL,
+            status TEXT DEFAULT 'draft',
+            recipient_filter TEXT,
+            total_recipients INTEGER DEFAULT 0,
+            sent_count INTEGER DEFAULT 0,
+            open_count INTEGER DEFAULT 0,
+            click_count INTEGER DEFAULT 0,
+            scheduled_at REAL,
+            sent_at REAL,
+            created_at REAL NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_campaigns_tenant ON email_campaigns(tenant_id, status);
+
+        CREATE TABLE IF NOT EXISTS email_sends (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            campaign_id TEXT NOT NULL,
+            lead_id TEXT NOT NULL,
+            email TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            sent_at REAL,
+            opened_at REAL,
+            FOREIGN KEY (campaign_id) REFERENCES email_campaigns(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_sends_campaign ON email_sends(campaign_id);
+
+        CREATE TABLE IF NOT EXISTS appointments (
+            id TEXT PRIMARY KEY,
+            tenant_id TEXT NOT NULL,
+            lead_id TEXT,
+            name TEXT NOT NULL,
+            email TEXT,
+            phone TEXT,
+            date TEXT NOT NULL,
+            time TEXT NOT NULL,
+            duration_minutes INTEGER DEFAULT 30,
+            status TEXT DEFAULT 'confirmado',
+            notes TEXT,
+            meeting_link TEXT,
+            created_at REAL NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_appointments_tenant ON appointments(tenant_id, date);
+
+        CREATE TABLE IF NOT EXISTS scheduling_links (
+            id TEXT PRIMARY KEY,
+            tenant_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            duration_minutes INTEGER DEFAULT 30,
+            available_days TEXT DEFAULT '1,2,3,4,5',
+            available_start TEXT DEFAULT '09:00',
+            available_end TEXT DEFAULT '18:00',
+            blocked_times TEXT,
+            active INTEGER DEFAULT 1,
+            created_at REAL NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_slinks_tenant ON scheduling_links(tenant_id);
+        """,
+    ),
 ]
 
 

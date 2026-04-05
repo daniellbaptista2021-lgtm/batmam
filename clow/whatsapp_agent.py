@@ -190,6 +190,20 @@ class WhatsAppAgentManager:
         if not quota["allowed"]:
             return "Ola! Nosso atendimento automatico esta temporariamente indisponivel. Por favor, tente novamente mais tarde ou aguarde que um atendente humano entrara em contato."
 
+        # ── CRM: busca/cria lead automaticamente ──
+        crm_lead_id = None
+        try:
+            from .crm_models import get_lead_by_phone, create_lead, add_activity
+            crm_lead = get_lead_by_phone(inst.tenant_id, sender_phone)
+            if not crm_lead:
+                crm_lead = create_lead(
+                    inst.tenant_id, phone=sender_phone,
+                    source="whatsapp", notes=f"Lead criado automaticamente via WhatsApp",
+                )
+            crm_lead_id = crm_lead["id"] if crm_lead else None
+        except Exception:
+            pass  # CRM e opcional, nao bloqueia o fluxo
+
         # Load conversation history
         history = self.get_conversation_history(inst, sender_phone)
 
@@ -242,6 +256,17 @@ class WhatsAppAgentManager:
         # Save to history
         self._save_message(inst, sender_phone, "user", message_text)
         self._save_message(inst, sender_phone, "assistant", reply)
+
+        # ── CRM: registra atividade na timeline do lead ──
+        if crm_lead_id:
+            try:
+                from .crm_models import add_activity
+                add_activity(crm_lead_id, inst.tenant_id, "whatsapp",
+                             f"Cliente: {message_text[:100]}")
+                add_activity(crm_lead_id, inst.tenant_id, "whatsapp",
+                             f"Bot: {reply[:100]}")
+            except Exception:
+                pass
 
         # Update stats
         inst.stats["messages_today"] = inst.stats.get("messages_today", 0) + 1

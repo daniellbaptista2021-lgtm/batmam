@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{TITLE}} — Clow</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050510;--bg2:#0a0a1a;--border:#1a1a2e;
+  --t1:#e4e4e7;--t2:#71717a;--p:#7c5cfc;
+  --green:#22c55e;--red:#ef4444;--radius:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+a{color:var(--p);text-decoration:none}
+.container{width:100%;max-width:480px}
+.logo{text-align:center;margin-bottom:24px}
+.logo img{height:36px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:32px;position:relative;overflow:hidden}
+.title{font-size:1.35rem;font-weight:700;text-align:center;margin-bottom:4px}
+.subtitle{font-size:.875rem;color:var(--t2);text-align:center;margin-bottom:28px}
+
+/* Steps */
+.step{display:none;animation:fadeIn .25s ease}
+.step.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Calendar */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.cal-nav button{background:none;border:1px solid var(--border);color:var(--t1);width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+.cal-nav button:hover{border-color:var(--p)}
+.cal-nav button:disabled{opacity:.3;cursor:default;border-color:var(--border)}
+.cal-month{font-size:.95rem;font-weight:600}
+.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+.cal-weekdays span{text-align:center;font-size:.7rem;color:var(--t2);text-transform:uppercase;padding:4px 0}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;font-size:.85rem;cursor:pointer;border:1px solid transparent;transition:all .15s;line-height:1.2}
+.cal-day .dn{font-weight:600}
+.cal-day .wd{font-size:.6rem;color:var(--t2)}
+.cal-day:hover:not(.disabled):not(.empty){border-color:var(--p);background:rgba(124,92,252,.08)}
+.cal-day.selected{background:var(--p);border-color:var(--p);color:#fff}
+.cal-day.selected .wd{color:rgba(255,255,255,.7)}
+.cal-day.today:not(.selected){border-color:var(--p)}
+.cal-day.disabled{opacity:.25;cursor:default;pointer-events:none}
+.cal-day.empty{cursor:default;pointer-events:none}
+
+/* Slots */
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:.85rem;color:var(--t2);margin-bottom:20px;cursor:pointer;transition:color .15s}
+.back-link:hover{color:var(--t1)}
+.selected-date{font-size:1.05rem;font-weight:600;margin-bottom:16px;text-align:center}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slot{padding:10px 0;text-align:center;border:1px solid var(--border);border-radius:8px;font-size:.9rem;cursor:pointer;transition:all .15s;background:transparent;color:var(--t1);font-weight:500}
+.slot:hover{border-color:var(--p);background:rgba(124,92,252,.08)}
+.slot.selected{background:var(--p);border-color:var(--p);color:#fff}
+.no-slots{text-align:center;color:var(--t2);padding:32px 0;font-size:.9rem}
+
+/* Form */
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:.8rem;color:var(--t2);margin-bottom:6px;font-weight:500}
+.form-group input,.form-group textarea{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--t1);font-size:.9rem;font-family:inherit;outline:none;transition:border-color .15s}
+.form-group input:focus,.form-group textarea:focus{border-color:var(--p)}
+.form-group textarea{resize:vertical;min-height:72px}
+.summary{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:.85rem}
+.summary-row{display:flex;justify-content:space-between;padding:4px 0}
+.summary-row .label{color:var(--t2)}
+
+/* Buttons */
+.btn{width:100%;padding:12px;border:none;border-radius:8px;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn-primary{background:var(--p);color:#fff}
+.btn-primary:hover{opacity:.9}
+.btn-primary:disabled{opacity:.5;cursor:default}
+
+/* Spinner */
+.spinner-wrap{display:flex;align-items:center;justify-content:center;padding:40px 0}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--p);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Success */
+.success-box{text-align:center;padding:16px 0}
+.success-icon{width:56px;height:56px;border-radius:50%;background:rgba(34,197,94,.12);display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px}
+.success-icon svg{width:28px;height:28px;color:var(--green)}
+.success-title{font-size:1.15rem;font-weight:700;margin-bottom:6px}
+.success-sub{font-size:.875rem;color:var(--t2);margin-bottom:20px}
+
+/* Error */
+.error-msg{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--red);border-radius:8px;padding:10px 14px;font-size:.85rem;margin-bottom:16px;display:none}
+
+/* Responsive */
+@media(max-width:400px){
+  .card{padding:24px 18px}
+  .slots{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo"><img src="/static/brand/logo-sidebar.png" alt="Clow"></div>
+  <div class="card">
+    <div class="title">{{TITLE}}</div>
+    <div class="subtitle">Duracao: {{DURATION}} minutos</div>
+
+    <!-- Step 1: Date -->
+    <div id="step1" class="step active">
+      <div class="cal-nav">
+        <button id="prevMonth" disabled>&#8249;</button>
+        <span class="cal-month" id="calMonth"></span>
+        <button id="nextMonth">&#8250;</button>
+      </div>
+      <div class="cal-weekdays">
+        <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sab</span>
+      </div>
+      <div class="cal-days" id="calDays"></div>
+    </div>
+
+    <!-- Step 2: Time -->
+    <div id="step2" class="step">
+      <div class="back-link" onclick="goStep(1)">&#8592; Voltar</div>
+      <div class="selected-date" id="selectedDateLabel"></div>
+      <div id="slotsContainer"></div>
+    </div>
+
+    <!-- Step 3: Confirm -->
+    <div id="step3" class="step">
+      <div class="back-link" onclick="goStep(2)">&#8592; Voltar</div>
+      <div class="error-msg" id="formError"></div>
+      <div class="summary" id="summaryBox"></div>
+      <form id="bookingForm" onsubmit="return submitBooking(event)">
+        <div class="form-group">
+          <label>Nome *</label>
+          <input type="text" id="fName" required placeholder="Seu nome completo">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="fEmail" placeholder="seu@email.com">
+        </div>
+        <div class="form-group">
+          <label>Telefone</label>
+          <input type="tel" id="fPhone" placeholder="(11) 99999-9999">
+        </div>
+        <div class="form-group">
+          <label>Observacoes</label>
+          <textarea id="fNotes" placeholder="Alguma informacao adicional..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" id="btnConfirm">Confirmar Agendamento</button>
+      </form>
+    </div>
+
+    <!-- Step 4: Success -->
+    <div id="step4" class="step">
+      <div class="success-box">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="success-title">Agendamento Confirmado!</div>
+        <div class="success-sub" id="successDetail"></div>
+        <div class="summary" id="successSummary"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const SLUG = '{{SLUG}}';
+  const DURATION = '{{DURATION}}';
+  const MONTHS = ['Janeiro','Fevereiro','Marco','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const WEEKDAYS_LONG = ['Domingo','Segunda','Terca','Quarta','Quinta','Sexta','Sabado'];
+  const WEEKDAYS_SHORT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  let viewYear = today.getFullYear();
+  let viewMonth = today.getMonth();
+  let selectedDate = null;
+  let selectedTime = null;
+
+  const maxDate = new Date(today);
+  maxDate.setDate(maxDate.getDate() + 30);
+
+  const $=id=>document.getElementById(id);
+
+  // Navigation
+  $('prevMonth').onclick = ()=>{ viewMonth--; if(viewMonth<0){viewMonth=11;viewYear--} renderCal(); updateNav(); };
+  $('nextMonth').onclick = ()=>{ viewMonth++; if(viewMonth>11){viewMonth=0;viewYear++} renderCal(); updateNav(); };
+
+  function updateNav(){
+    const minM = today.getMonth(), minY = today.getFullYear();
+    $('prevMonth').disabled = (viewYear < minY || (viewYear === minY && viewMonth <= minM));
+    const maxM = maxDate.getMonth(), maxY = maxDate.getFullYear();
+    $('nextMonth').disabled = (viewYear > maxY || (viewYear === maxY && viewMonth >= maxM));
+    $('calMonth').textContent = MONTHS[viewMonth] + ' ' + viewYear;
+  }
+
+  function renderCal(){
+    const first = new Date(viewYear, viewMonth, 1);
+    const startDay = first.getDay();
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    let html = '';
+
+    for(let i = 0; i < startDay; i++) html += '<div class="cal-day empty"></div>';
+
+    for(let d = 1; d <= daysInMonth; d++){
+      const dt = new Date(viewYear, viewMonth, d);
+      dt.setHours(0,0,0,0);
+      const isPast = dt < today;
+      const isBeyond = dt > maxDate;
+      const isToday = dt.getTime() === today.getTime();
+      const isSelected = selectedDate && dt.getTime() === selectedDate.getTime();
+      const dow = dt.getDay();
+
+      let cls = 'cal-day';
+      if(isPast || isBeyond) cls += ' disabled';
+      if(isToday) cls += ' today';
+      if(isSelected) cls += ' selected';
+
+      const ds = dt.toISOString().split('T')[0];
+      html += '<div class="'+cls+'" data-date="'+ds+'">' +
+        '<span class="dn">'+d+'</span>' +
+        '<span class="wd">'+WEEKDAYS_SHORT[dow]+'</span></div>';
+    }
+    $('calDays').innerHTML = html;
+
+    $('calDays').querySelectorAll('.cal-day:not(.disabled):not(.empty)').forEach(el=>{
+      el.onclick = ()=> pickDate(el.dataset.date);
+    });
+  }
+
+  function pickDate(ds){
+    const parts = ds.split('-');
+    selectedDate = new Date(+parts[0], +parts[1]-1, +parts[2]);
+    selectedDate.setHours(0,0,0,0);
+    selectedTime = null;
+    renderCal();
+    loadSlots(ds);
+    goStep(2);
+  }
+
+  function formatDateLong(d){
+    return WEEKDAYS_LONG[d.getDay()] + ', ' + d.getDate() + ' de ' + MONTHS[d.getMonth()];
+  }
+
+  function loadSlots(ds){
+    $('selectedDateLabel').textContent = formatDateLong(selectedDate);
+    $('slotsContainer').innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+
+    fetch('/api/v1/crm/availability/' + SLUG + '?date=' + ds)
+      .then(r => r.json())
+      .then(data => {
+        const slots = data.slots || data.available || [];
+        if(!slots.length){
+          $('slotsContainer').innerHTML = '<div class="no-slots">Nenhum horario disponivel para esta data</div>';
+          return;
+        }
+        let html = '<div class="slots">';
+        slots.forEach(s => {
+          const t = typeof s === 'string' ? s : s.time;
+          html += '<div class="slot" data-time="'+t+'">'+t+'</div>';
+        });
+        html += '</div>';
+        $('slotsContainer').innerHTML = html;
+        $('slotsContainer').querySelectorAll('.slot').forEach(el=>{
+          el.onclick = ()=> pickTime(el.dataset.time);
+        });
+      })
+      .catch(()=>{
+        $('slotsContainer').innerHTML = '<div class="no-slots">Erro ao carregar horarios. Tente novamente.</div>';
+      });
+  }
+
+  function pickTime(t){
+    selectedTime = t;
+    $('slotsContainer').querySelectorAll('.slot').forEach(el=>{
+      el.classList.toggle('selected', el.dataset.time === t);
+    });
+    showConfirm();
+    goStep(3);
+  }
+
+  function showConfirm(){
+    const ds = formatDateLong(selectedDate);
+    $('summaryBox').innerHTML =
+      '<div class="summary-row"><span class="label">Data</span><span>'+ds+'</span></div>' +
+      '<div class="summary-row"><span class="label">Horario</span><span>'+selectedTime+'</span></div>' +
+      '<div class="summary-row"><span class="label">Duracao</span><span>'+DURATION+' minutos</span></div>';
+    $('formError').style.display = 'none';
+  }
+
+  window.submitBooking = function(e){
+    e.preventDefault();
+    const name = $('fName').value.trim();
+    if(!name) return;
+
+    const btn = $('btnConfirm');
+    btn.disabled = true;
+    btn.textContent = 'Agendando...';
+    $('formError').style.display = 'none';
+
+    const dateStr = selectedDate.getFullYear() + '-' +
+      String(selectedDate.getMonth()+1).padStart(2,'0') + '-' +
+      String(selectedDate.getDate()).padStart(2,'0');
+
+    fetch('/api/v1/crm/book/' + SLUG, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name: name,
+        email: $('fEmail').value.trim(),
+        phone: $('fPhone').value.trim(),
+        date: dateStr,
+        time: selectedTime,
+        notes: $('fNotes').value.trim()
+      })
+    })
+    .then(r => {
+      if(!r.ok) return r.json().then(d => { throw new Error(d.detail || d.error || 'Erro ao agendar'); });
+      return r.json();
+    })
+    .then(()=>{
+      const ds = formatDateLong(selectedDate);
+      $('successDetail').textContent = 'Voce recebera uma confirmacao em breve.';
+      $('successSummary').innerHTML =
+        '<div class="summary-row"><span class="label">Data</span><span>'+ds+'</span></div>' +
+        '<div class="summary-row"><span class="label">Horario</span><span>'+selectedTime+'</span></div>' +
+        '<div class="summary-row"><span class="label">Duracao</span><span>'+DURATION+' minutos</span></div>' +
+        '<div class="summary-row"><span class="label">Nome</span><span>'+name+'</span></div>';
+      goStep(4);
+    })
+    .catch(err=>{
+      $('formError').textContent = err.message;
+      $('formError').style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Confirmar Agendamento';
+    });
+
+    return false;
+  };
+
+  window.goStep = function(n){
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    $('step'+n).classList.add('active');
+  };
+
+  // Init
+  renderCal();
+  updateNav();
+})();
+</script>
+</body>
+</html>
