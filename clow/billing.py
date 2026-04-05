@@ -1,11 +1,11 @@
 """Stripe Billing — planos, checkout, portal, webhook, franquia.
 
-Planos:
-- BYOK_FREE: R$0, user usa propria API key, sem WhatsApp incluso
-- LITE: R$89/mes, Haiku 4.5 (chat), sem WhatsApp incluso
-- STARTER: R$115/mes, Sonnet 4 (chat), Haiku 4.5 (WhatsApp), 2 instancias, 500K wa tokens/dia
-- PRO: R$189/mes, Sonnet 4 (chat), Haiku 4.5 (WhatsApp), 2 instancias, 750K wa tokens/dia
-- BUSINESS: R$229/mes, Sonnet 4 (chat), Haiku 4.5 (WhatsApp), 2 instancias, 1M wa tokens/dia
+Planos (todos com 2 instancias WhatsApp via Haiku):
+- BYOK_FREE: R$0, user usa propria API key, 2 WA (250K tokens/dia)
+- LITE: R$89/mes, Haiku 4.5 (chat), 2 WA (350K tokens/dia)
+- STARTER: R$115/mes, Sonnet 4 (chat), 2 WA (500K tokens/dia)
+- PRO: R$189/mes, Sonnet 4 (chat), 2 WA (750K tokens/dia)
+- BUSINESS: R$229/mes, Sonnet 4 (chat), 2 WA (1M tokens/dia)
 
 WhatsApp Agent SEMPRE usa Haiku (mais barato), independente do plano.
 Franquia de WhatsApp e separada da franquia do chat.
@@ -35,8 +35,8 @@ PLANS = {
         "n8n_flows": 0,
         "stripe_price_id": "",
         "wa_model": "claude-haiku-4-5-20251001",
-        "wa_daily_tokens": 0,
-        "wa_included_instances": 0,
+        "wa_daily_tokens": 250_000,
+        "wa_included_instances": 2,
     },
     "lite": {
         "name": "Lite",
@@ -50,8 +50,8 @@ PLANS = {
         "n8n_flows": 0,
         "stripe_price_id": config.STRIPE_LITE_PRICE_ID,
         "wa_model": "claude-haiku-4-5-20251001",
-        "wa_daily_tokens": 0,
-        "wa_included_instances": 0,
+        "wa_daily_tokens": 350_000,
+        "wa_included_instances": 2,
     },
     "starter": {
         "name": "Starter",

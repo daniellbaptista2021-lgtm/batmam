@@ -185,10 +185,10 @@ class WhatsAppAgentManager:
         if plan_id in ("free", "basic", "unlimited"):
             plan_id = "byok_free"
 
-        if plan_uses_server_key(plan_id):
-            quota = check_quota(inst.tenant_id, plan_id, source="whatsapp")
-            if not quota["allowed"]:
-                return "Ola! Nosso atendimento automatico esta temporariamente indisponivel. Por favor, tente novamente mais tarde ou aguarde que um atendente humano entrara em contato."
+        # Todos os planos tem franquia WhatsApp separada
+        quota = check_quota(inst.tenant_id, plan_id, source="whatsapp")
+        if not quota["allowed"]:
+            return "Ola! Nosso atendimento automatico esta temporariamente indisponivel. Por favor, tente novamente mais tarde ou aguarde que um atendente humano entrara em contato."
 
         # Load conversation history
         history = self.get_conversation_history(inst, sender_phone)
