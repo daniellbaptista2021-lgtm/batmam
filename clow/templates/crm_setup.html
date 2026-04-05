@@ -8,7 +8,8 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#050510;--bg2:#0a0a1a;--border:#1a1a2e;--t1:#e4e4e7;--t2:#71717a;--p:#7c5cfc;--green:#22c55e;--radius:12px}
-body{background:var(--bg);color:var(--t1);font-family:system-ui,-apple-system,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+body{background:var(--bg);color:var(--t1);font-family:system-ui,-apple-system,sans-serif;min-height:100vh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+@media(display-mode:standalone){body{padding-top:env(safe-area-inset-top,0)}.top{padding-top:calc(12px + env(safe-area-inset-top,0))}}
 a{color:var(--p);text-decoration:none}
 .top{display:flex;align-items:center;gap:10px;padding:12px 24px;border-bottom:1px solid var(--border);background:var(--bg2)}
 .top img{height:24px}
