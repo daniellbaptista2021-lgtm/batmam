@@ -267,10 +267,10 @@ async function loadPlan(){
 
   const plans=[
     {id:'byok_free',name:'Traga sua Key',price:'R$ 0',items:['Sua API key','WhatsApp incluso','Sem CRM']},
-    {id:'lite',name:'Lite',price:'R$ 97/mes',items:['Haiku 4.5 incluso','CRM completo','500K+150K/dia']},
-    {id:'starter',name:'Starter',price:'R$ 197/mes',items:['Sonnet 4','CRM + 8 fluxos n8n','1.5M+300K/dia']},
-    {id:'pro',name:'Pro',price:'R$ 347/mes',items:['Sonnet 4','2.000 fluxos','3M+600K/dia','5 usuarios']},
-    {id:'business',name:'Business',price:'R$ 497/mes',items:['Sonnet 4','3.000 fluxos','6M+1.2M/dia','10 usuarios']},
+    {id:'lite',name:'Lite',price:'R$ 169/mes',items:['Haiku 4.5 incluso','CRM + 8 fluxos n8n','1.5M+300K/dia']},
+    {id:'starter',name:'Starter',price:'R$ 298/mes',items:['Sonnet 4','CRM + 8 fluxos n8n','1.8M+350K/dia','3 usuarios']},
+    {id:'pro',name:'Pro',price:'R$ 487/mes',items:['Sonnet 4','2.000 fluxos','2.5M+500K/dia','5 usuarios']},
+    {id:'business',name:'Business',price:'R$ 667/mes',items:['Sonnet 4','3.000 fluxos','4M+800K/dia','10 usuarios']},
   ];
   $('plan-grid').innerHTML=plans.map(p=>{
     const cur=s.plan_id===p.id;

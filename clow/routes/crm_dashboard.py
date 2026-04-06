@@ -80,7 +80,7 @@ def register_crm_dashboard_routes(app) -> None:
             plan_id = "byok_free"
         plan = PLANS.get(plan_id, PLANS["byok_free"])
         if not plan.get("crm_enabled", False) and not sess.get("is_admin"):
-            return _HR("<html><head><meta charset='UTF-8'><title>CRM</title><style>body{background:#050510;color:#e4e4e7;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}a{color:#7c5cfc}</style></head><body><div><h2>CRM disponivel nos planos pagos</h2><p>A partir do plano Lite (R$ 97/mes)</p><a href='/app/settings'>Fazer upgrade</a> | <a href='/'>Voltar</a></div></body></html>")
+            return _HR("<html><head><meta charset='UTF-8'><title>CRM</title><style>body{background:#050510;color:#e4e4e7;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}a{color:#7c5cfc}</style></head><body><div><h2>CRM disponivel nos planos pagos</h2><p>A partir do plano Lite (R$ 169/mes)</p><a href='/app/settings'>Fazer upgrade</a> | <a href='/'>Voltar</a></div></body></html>")
 
         infra = _get_infra(_tenant(sess))
         if not infra or not infra.get("chatwoot_url"):

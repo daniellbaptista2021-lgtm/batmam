@@ -37,7 +37,7 @@ def register_crm_routes(app) -> None:
         if not plan.get("crm_enabled", False) and not sess.get("is_admin"):
             return _JR({
                 "error": "crm_not_available",
-                "message": "O CRM nao esta disponivel no plano gratuito. Faca upgrade a partir do plano Lite (R$ 97/mes).",
+                "message": "O CRM nao esta disponivel no plano gratuito. Faca upgrade a partir do plano Lite (R$ 169/mes).",
                 "upgrade_url": "/app/settings#plan",
             }, status_code=403)
         return None

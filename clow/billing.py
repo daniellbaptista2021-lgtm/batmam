@@ -2,10 +2,10 @@
 
 Planos:
 - BYOK: R$0, user usa propria API key, WhatsApp sim, CRM nao
-- LITE: R$97/mes, Haiku 4.5, CRM completo
-- STARTER: R$197/mes, Sonnet 4, CRM + n8n
-- PRO: R$347/mes, Sonnet 4, franquia 3x, 2000 fluxos n8n
-- BUSINESS: R$497/mes, Sonnet 4, franquia 6x, 3000 fluxos, 10 usuarios
+- LITE: R$169/mes, Haiku 4.5, CRM + 8 fluxos n8n
+- STARTER: R$298/mes, Sonnet 4, CRM + 8 fluxos n8n
+- PRO: R$487/mes, Sonnet 4, 2000 fluxos n8n, 5 usuarios
+- BUSINESS: R$667/mes, Sonnet 4, 3000 fluxos, 10 usuarios
 
 WhatsApp Agent SEMPRE usa Haiku. Franquia separada do chat.
 """
@@ -57,14 +57,14 @@ PLANS = {
     },
     "lite": {
         "name": "Lite",
-        "price_brl": 97,
+        "price_brl": 169,
         "model": "claude-haiku-4-5-20251001",
         "uses_server_key": True,
-        "daily_input_tokens": 500_000,
-        "daily_output_tokens": 150_000,
-        "weekly_input_tokens": 2_500_000,
-        "weekly_output_tokens": 750_000,
-        "n8n_flows": 0,
+        "daily_input_tokens": 1_500_000,
+        "daily_output_tokens": 300_000,
+        "weekly_input_tokens": 7_500_000,
+        "weekly_output_tokens": 1_500_000,
+        "n8n_flows": 8,
         "stripe_price_id": config.STRIPE_LITE_PRICE_ID,
         "wa_model": "claude-haiku-4-5-20251001",
         "wa_daily_tokens": 500_000,
@@ -74,13 +74,13 @@ PLANS = {
     },
     "starter": {
         "name": "Starter",
-        "price_brl": 197,
+        "price_brl": 298,
         "model": "claude-sonnet-4-20250514",
         "uses_server_key": True,
-        "daily_input_tokens": 1_500_000,
-        "daily_output_tokens": 300_000,
-        "weekly_input_tokens": 7_500_000,
-        "weekly_output_tokens": 1_500_000,
+        "daily_input_tokens": 1_800_000,
+        "daily_output_tokens": 350_000,
+        "weekly_input_tokens": 9_000_000,
+        "weekly_output_tokens": 1_750_000,
         "n8n_flows": 8,
         "stripe_price_id": config.STRIPE_STARTER_PRICE_ID,
         "wa_model": "claude-haiku-4-5-20251001",
@@ -91,13 +91,13 @@ PLANS = {
     },
     "pro": {
         "name": "Pro",
-        "price_brl": 347,
+        "price_brl": 487,
         "model": "claude-sonnet-4-20250514",
         "uses_server_key": True,
-        "daily_input_tokens": 3_000_000,
-        "daily_output_tokens": 600_000,
-        "weekly_input_tokens": 15_000_000,
-        "weekly_output_tokens": 3_000_000,
+        "daily_input_tokens": 2_500_000,
+        "daily_output_tokens": 500_000,
+        "weekly_input_tokens": 12_500_000,
+        "weekly_output_tokens": 2_500_000,
         "n8n_flows": 2000,
         "stripe_price_id": config.STRIPE_PRO_PRICE_ID,
         "wa_model": "claude-haiku-4-5-20251001",
@@ -108,13 +108,13 @@ PLANS = {
     },
     "business": {
         "name": "Business",
-        "price_brl": 497,
+        "price_brl": 667,
         "model": "claude-sonnet-4-20250514",
         "uses_server_key": True,
-        "daily_input_tokens": 6_000_000,
-        "daily_output_tokens": 1_200_000,
-        "weekly_input_tokens": 30_000_000,
-        "weekly_output_tokens": 6_000_000,
+        "daily_input_tokens": 4_000_000,
+        "daily_output_tokens": 800_000,
+        "weekly_input_tokens": 20_000_000,
+        "weekly_output_tokens": 4_000_000,
         "n8n_flows": 3000,
         "stripe_price_id": config.STRIPE_BUSINESS_PRICE_ID,
         "wa_model": "claude-haiku-4-5-20251001",

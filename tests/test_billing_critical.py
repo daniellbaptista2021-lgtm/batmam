@@ -20,10 +20,10 @@ class TestBillingPlans(unittest.TestCase):
     def test_plan_prices(self):
         from clow.billing import PLANS
         self.assertEqual(PLANS["byok_free"]["price_brl"], 0)
-        self.assertEqual(PLANS["lite"]["price_brl"], 97)
-        self.assertEqual(PLANS["starter"]["price_brl"], 197)
-        self.assertEqual(PLANS["pro"]["price_brl"], 347)
-        self.assertEqual(PLANS["business"]["price_brl"], 497)
+        self.assertEqual(PLANS["lite"]["price_brl"], 169)
+        self.assertEqual(PLANS["starter"]["price_brl"], 298)
+        self.assertEqual(PLANS["pro"]["price_brl"], 487)
+        self.assertEqual(PLANS["business"]["price_brl"], 667)
         print("[OK] Precos corretos")
 
     def test_plan_models(self):
