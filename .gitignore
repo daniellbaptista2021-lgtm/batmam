@@ -22,3 +22,20 @@ static/uploads/*
 !static/pages/.gitkeep
 !static/apps/.gitkeep
 !static/uploads/.gitkeep
+
+# Arquivos temporarios e de runtime
+deploy/deploy.log
+*.log
+*.xlsx
+*.xls
+workspace/
+app_temp.py
+
+# Arquivos de teste soltos na raiz
+test_*.py
+
+# Credenciais e sensiveis
+*.pem
+*.key
+*.p12
+*.pfx
