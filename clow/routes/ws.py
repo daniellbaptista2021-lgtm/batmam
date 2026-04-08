@@ -16,6 +16,7 @@ from .chat import _build_multimodal_message, _should_generate_image, _process_im
 from ..webapp import track_action
 from ..rate_limit import limiter as user_limiter
 from ..rag import get_context_for_prompt as _rag_context
+from ..database import check_message_limit
 
 
 def register_ws_routes(app: FastAPI) -> None:
@@ -119,6 +120,14 @@ def register_ws_routes(app: FastAPI) -> None:
                         await websocket.send_json({"type": "error", "content": "Rate limit atingido. Aguarde alguns minutos."})
                         await websocket.send_json({"type": "turn_complete"})
                         continue
+
+                    # Limite de mensagens diário/semanal (admins isentos)
+                    if ws_user_id and not ws_is_admin:
+                        msg_allowed, msg_reason = check_message_limit(ws_user_id)
+                        if not msg_allowed:
+                            await websocket.send_json({"type": "error", "content": msg_reason})
+                            await websocket.send_json({"type": "turn_complete"})
+                            continue
 
                     track_action("user_message", content[:60])
 

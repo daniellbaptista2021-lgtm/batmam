@@ -23,6 +23,7 @@ from ..webapp import track_action, _get_health_data
 from ..database import (
     authenticate_user,
     log_usage, get_user_usage_today, check_limit,
+    count_user_messages_today, count_user_messages_week,
     create_conversation, list_conversations, delete_conversation,
     save_message, get_messages, update_conversation_title, PLANS,
 )
@@ -422,13 +423,21 @@ def register_api_routes(app: FastAPI) -> None:
         sess = _get_user_session(request)
         if not sess:
             return JSONResponse({"error": "Nao autenticado"}, status_code=401)
-        usage = get_user_usage_today(sess["user_id"])
+        from .. import config
+        user_id = sess["user_id"]
+        usage = get_user_usage_today(user_id)
         plan = PLANS.get(sess.get("plan", "free"), PLANS["free"])
+        messages_today = count_user_messages_today(user_id)
+        messages_week = count_user_messages_week(user_id)
         return JSONResponse({
             "usage": usage,
             "plan": sess.get("plan", "free"),
             "plan_label": plan["label"],
-            "daily_limit": plan["daily_tokens"],
+            "daily_token_limit": plan["daily_tokens"],
+            "messages_today": messages_today,
+            "messages_week": messages_week,
+            "daily_message_limit": config.CLOW_DAILY_LIMIT,
+            "weekly_message_limit": config.CLOW_WEEKLY_LIMIT,
         })
 
     @app.get("/api/v1/me")

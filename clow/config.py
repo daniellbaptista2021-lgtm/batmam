@@ -49,6 +49,10 @@ CLOW_MODEL_HEAVY = os.getenv("CLOW_MODEL_HEAVY", "claude-sonnet-4-20250514")
 
 # ── Limites ─────────────────────────────────────────────────
 MAX_TOKENS = int(os.getenv("CLOW_MAX_TOKENS", "16384"))
+
+# Limites de mensagens por usuário (0 = sem limite)
+CLOW_DAILY_LIMIT = int(os.getenv("CLOW_DAILY_LIMIT", "50"))
+CLOW_WEEKLY_LIMIT = int(os.getenv("CLOW_WEEKLY_LIMIT", "200"))
 MAX_CONTEXT_MESSAGES = 200
 TEMPERATURE = 0.2
 MAX_RETRY_ATTEMPTS = 3

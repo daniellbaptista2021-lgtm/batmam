@@ -328,66 +328,18 @@ I.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefau
 I.addEventListener('input',()=>{I.style.height='auto';I.style.height=Math.min(I.scrollHeight,120)+'px';toggleInputBtns()});
 let lte=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lte<=300)e.preventDefault();lte=n},false);
 
-// ── FILE & AUDIO SUPPORT ──────────────────────────────────────
+// ── AUDIO SUPPORT ──────────────────────────────────────
 const MIC=document.getElementById('micBtn'),FP=document.getElementById('filePreview');
-let pendingFile=null,mediaRec=null,audioChunks=[],recStart=0,recTimer=null,audioBlob=null,audioUrl=null;
+let mediaRec=null,audioChunks=[],recStart=0,recTimer=null,audioBlob=null,audioUrl=null;
 let speechRec=null,audioTranscript='';
 const hasSpeechRec=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
-const fileInput=document.createElement('input');fileInput.type='file';fileInput.style.display='none';document.body.appendChild(fileInput);
 
 function toggleInputBtns(){
-  const has=I.value.trim().length>0||pendingFile||audioBlob;
+  const has=I.value.trim().length>0||audioBlob;
   SB.classList.toggle('vis',has);
   MIC.classList.toggle('hid',has);
   MIC.classList.toggle('vis',!has);
 }
-
-// ── Attach Menu ──
-function toggleAttachMenu(){
-  const m=document.getElementById('attachMenu');
-  m.style.display=m.style.display==='none'?'block':'none';
-}
-document.addEventListener('click',e=>{if(!e.target.closest('.attach-btn')&&!e.target.closest('.attach-menu'))document.getElementById('attachMenu').style.display='none'});
-
-function pickFile(accept,exts){
-  document.getElementById('attachMenu').style.display='none';
-  fileInput.accept=exts==='*'?'':exts;
-  fileInput.value='';
-  fileInput.onchange=()=>{if(fileInput.files[0])handleFile(fileInput.files[0])};
-  fileInput.click();
-}
-
-async function handleFile(f){
-  if(f.size>20*1024*1024){showToast('Arquivo muito grande. Maximo: 20MB','error');return}
-  const blocked=['.exe','.bat','.sh','.cmd','.com','.msi','.scr','.ps1'];
-  const ext='.'+f.name.split('.').pop().toLowerCase();
-  if(blocked.includes(ext)){showToast('Tipo de arquivo não permitido','error');return}
-  pendingFile={file:f,name:f.name,size:f.size,ext:ext};
-  showFilePreview(f);
-  toggleInputBtns();
-}
-
-function showFilePreview(f){
-  const ext='.'+f.name.split('.').pop().toLowerCase();
-  const isImg=['.jpg','.jpeg','.png','.gif','.webp'].includes(ext);
-  let iconHtml='&#x1F4C1;';
-  if(isImg)iconHtml='';
-  else if(ext==='.pdf')iconHtml='&#x1F4D5;';
-  else if(['.xlsx','.xls','.csv'].includes(ext))iconHtml='&#x1F4CA;';
-  else if(['.docx','.doc','.txt','.md'].includes(ext))iconHtml='&#x1F4C4;';
-  else if(['.py','.js','.ts','.html','.css','.json','.jsx','.tsx'].includes(ext))iconHtml='&#x1F4BB;';
-  const sz=f.size>1024*1024?(f.size/1024/1024).toFixed(1)+' MB':(f.size/1024).toFixed(1)+' KB';
-  let thumbHtml;
-  if(isImg){
-    const url=URL.createObjectURL(f);
-    thumbHtml='<div class="fp-thumb"><img src="'+url+'" alt="preview"></div>';
-  }else{
-    thumbHtml='<div class="fp-thumb">'+iconHtml+'</div>';
-  }
-  FP.innerHTML='<div class="file-preview">'+thumbHtml+'<div class="fp-info"><div class="fp-name">'+esc(f.name)+'</div><div class="fp-meta">'+sz+'</div></div><button class="fp-close" onclick="clearFile()">&times;</button></div>';
-}
-
-function clearFile(){pendingFile=null;FP.innerHTML='';toggleInputBtns()}
 
 // ── Audio Recording ──
 function toggleRec(){
@@ -459,19 +411,7 @@ function playPreviewAudio(){
 
 function clearAudio(){audioBlob=null;audioUrl=null;audioTranscript='';speechRec=null;FP.innerHTML='';if(previewAudio){previewAudio.pause();previewAudio=null}toggleInputBtns()}
 
-// ── Upload & Send ──
-async function uploadFile(f){
-  const fd=new FormData();
-  fd.append('file',f);
-  fd.append('message',I.value.trim());
-  try{
-    const r=await fetch('/api/v1/upload',{method:'POST',body:fd});
-    if(!r.ok){const e=await r.json().catch(()=>({error:'Erro no upload'}));showToast(e.error||'Erro','error');return null}
-    return await r.json();
-  }catch(e){showToast('Erro no upload: '+e.message,'error');return null}
-}
-
-// Override sendMessage to handle files/audio
+// Override sendMessage to handle audio
 const _origSendMessage=sendMessage;
 sendMessage=async function(){
   if(proc)return;
@@ -506,28 +446,6 @@ sendMessage=async function(){
     }else{hideThink();finishTurn()}
     return;
   }
-  // File pending?
-  if(pendingFile){
-    const text=I.value.trim();
-    const f=pendingFile;
-    const isImg=['.jpg','.jpeg','.png','.gif','.webp'].includes(f.ext);
-    const imgUrl=isImg?URL.createObjectURL(f.file):null;
-    const icons={'.pdf':'&#x1F4D5;','.xlsx':'&#x1F4CA;','.xls':'&#x1F4CA;','.csv':'&#x1F4CA;','.docx':'&#x1F4C4;','.doc':'&#x1F4C4;','.txt':'&#x1F4C4;','.md':'&#x1F4C4;'};
-    const icon=icons[f.ext]||'&#x1F4C1;';
-    addUserWithAttachment(text,isImg?'image':'file',icon,f.name,imgUrl);
-    I.value='';I.style.height='auto';proc=true;SB.disabled=true;
-    const theFile=f.file;
-    clearFile();
-    showThink();
-    const res=await uploadFile(theFile);
-    hideThink();
-    if(!res||!res.type){showErr('Erro no upload');finishTurn();return}
-    const fileData={...res};
-    if(http){await sendFileHTTP(text,fileData)}
-    else if(ws&&ws.readyState===1){ws.send(JSON.stringify({type:'message',content:text,file_data:fileData,model:selMod,conversation_id:cid}));proc=true;SB.disabled=true}
-    else{finishTurn()}
-    return;
-  }
   // Normal text
   _origSendMessage();
 };
@@ -543,7 +461,7 @@ function addUserWithAttachment(text,type,icon,name,imgUrl,audUrl,transcript){
     attachHtml='<div class="chat-audio"><button class="ca-play" onclick="playChatAudio(this,\''+esc(audUrl||'')+'\')">&#x25B6;</button><div class="ca-bar"><div class="ca-fill"></div></div><span class="ca-dur">0:00</span></div>';
     if(transcript)attachHtml+='<div class="chat-transcription">&#x1F3A4; '+esc(transcript)+'</div>';
   }else{
-    const sz=pendingFile?(pendingFile.size>1024*1024?(pendingFile.size/1024/1024).toFixed(1)+' MB':(pendingFile.size/1024).toFixed(1)+' KB'):'';
+    const sz='';
     attachHtml='<div class="chat-file-card"><span class="cfc-icon">'+icon+'</span><div class="cfc-info"><div class="cfc-name">'+esc(name)+'</div><div class="cfc-meta">'+sz+'</div></div></div>';
   }
   d.innerHTML='<div class="mh"><span class="mt">'+now()+'</span><span class="mn">você</span><div class="mav">'+(me?me.email[0].toUpperCase():'?')+'</div></div><div class="mb-wrap">'+attachHtml+(text?'<div class="mb">'+esc(text)+'</div>':'')+'</div>';
@@ -552,41 +470,6 @@ function addUserWithAttachment(text,type,icon,name,imgUrl,audUrl,transcript){
   if(!cid){fetch('/api/v1/conversations',{method:'POST'}).then(r=>r.json()).then(d=>{cid=d.id;autoTitle(text||name);loadConvs()})}
 }
 
-async function sendFileHTTP(text,fileData){
-  showThink();
-  try{
-    const content=text||'[arquivo enviado]';
-    const body={content:content,session_id:hSid,conversation_id:cid,model:selMod,file_data:fileData};
-    const r=await fetch('/api/v1/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    hideThink();
-    if(!r.ok){const e=await r.json().catch(()=>({error:'Erro'}));showErr(e.error||'Erro');finishTurn();return}
-    const d=await r.json();
-    hSid=d.session_id||hSid;
-    if(d.response){appendTxt(d.response);finishTxt()}
-    finishTurn();
-  }catch(e){hideThink();showErr('Erro: '+e.message);finishTurn()}
-}
-
-// ── Drag & Drop ──
-const mainEl=document.querySelector('.main');
-let dragCounter=0;
-mainEl.addEventListener('dragenter',e=>{e.preventDefault();dragCounter++;document.getElementById('dragOv').classList.add('show')});
-mainEl.addEventListener('dragleave',e=>{e.preventDefault();dragCounter--;if(dragCounter<=0){dragCounter=0;document.getElementById('dragOv').classList.remove('show')}});
-mainEl.addEventListener('dragover',e=>e.preventDefault());
-mainEl.addEventListener('drop',e=>{e.preventDefault();dragCounter=0;document.getElementById('dragOv').classList.remove('show');if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0])});
-
-// ── Ctrl+V Paste ──
-document.addEventListener('paste',e=>{
-  const items=e.clipboardData&&e.clipboardData.items;
-  if(!items)return;
-  for(let i=0;i<items.length;i++){
-    if(items[i].type.indexOf('image')!==-1){
-      const f=items[i].getAsFile();
-      if(f){e.preventDefault();handleFile(f)}
-      break;
-    }
-  }
-});
 
 // ── Lightbox ──
 function openLightbox(src){const lb=document.getElementById('lightbox');document.getElementById('lbImg').src=src;lb.classList.add('show')}

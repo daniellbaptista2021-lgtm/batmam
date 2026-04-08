@@ -152,17 +152,9 @@
       <h1>Como posso <span>ajudar</span>?</h1>
     </div>
   </div>
-  <div class="drag-overlay" id="dragOv"><div class="do-icon">&#x1F4CE;</div><div class="do-text">Solte o arquivo aqui</div></div>
   <div class="input-area">
     <div id="filePreview"></div>
     <div class="ibox">
-      <button class="attach-btn" id="attachBtn" onclick="toggleAttachMenu()" title="Anexar arquivo" aria-label="Anexar arquivo">&#x1F4CE;</button>
-      <div class="attach-menu" id="attachMenu" style="display:none" role="menu" aria-label="Tipo de arquivo">
-        <button class="am-item" onclick="pickFile('image/*','.jpg,.jpeg,.png,.gif,.webp')">Foto / Imagem</button>
-        <button class="am-item" onclick="pickFile('','.pdf,.docx,.doc,.txt,.md')">Documento</button>
-        <button class="am-item" onclick="pickFile('','.xlsx,.xls,.csv')">Planilha</button>
-        <button class="am-item" onclick="pickFile('','*')">Qualquer arquivo</button>
-      </div>
       <label for="inp" class="sr-only">Digite sua mensagem</label>
       <textarea id="inp" rows="1" placeholder="O que você precisa?" autofocus aria-label="Digite sua mensagem"></textarea>
       <div class="ibox-right">

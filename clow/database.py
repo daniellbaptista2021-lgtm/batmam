@@ -246,6 +246,64 @@ def get_user_usage_today(user_id: str) -> dict:
         return dict(row)
 
 
+def count_user_messages_today(user_id: str) -> int:
+    """Conta mensagens enviadas pelo usuario hoje (role='user' nas conversas dele)."""
+    start = time.time() - (time.time() % 86400)
+    with get_db() as db:
+        row = db.execute(
+            """SELECT COUNT(*) FROM messages m
+               JOIN conversations c ON m.conversation_id = c.id
+               WHERE c.user_id=? AND m.role='user' AND m.created_at>=?""",
+            (user_id, start),
+        ).fetchone()
+    return row[0] if row else 0
+
+
+def count_user_messages_week(user_id: str) -> int:
+    """Conta mensagens enviadas pelo usuario nos ultimos 7 dias."""
+    start = time.time() - 7 * 86400
+    with get_db() as db:
+        row = db.execute(
+            """SELECT COUNT(*) FROM messages m
+               JOIN conversations c ON m.conversation_id = c.id
+               WHERE c.user_id=? AND m.role='user' AND m.created_at>=?""",
+            (user_id, start),
+        ).fetchone()
+    return row[0] if row else 0
+
+
+def check_message_limit(user_id: str) -> tuple[bool, str]:
+    """Verifica limite diario e semanal de mensagens por usuario.
+
+    Retorna (permitido, motivo). Limites configurados via CLOW_DAILY_LIMIT
+    e CLOW_WEEKLY_LIMIT no .env. Valor 0 significa sem limite.
+    """
+    from . import config
+    daily_limit = config.CLOW_DAILY_LIMIT
+    weekly_limit = config.CLOW_WEEKLY_LIMIT
+
+    if daily_limit <= 0 and weekly_limit <= 0:
+        return True, ""
+
+    if daily_limit > 0:
+        daily_used = count_user_messages_today(user_id)
+        if daily_used >= daily_limit:
+            return False, (
+                f"Voce atingiu seu limite de {daily_limit} mensagens hoje. "
+                "Volte amanha para continuar!"
+            )
+
+    if weekly_limit > 0:
+        weekly_used = count_user_messages_week(user_id)
+        if weekly_used >= weekly_limit:
+            return False, (
+                f"Voce atingiu seu limite de {weekly_limit} mensagens esta semana. "
+                "Volte na proxima semana!"
+            )
+
+    return True, ""
+
+
 def check_limit(user_id: str) -> tuple[bool, float]:
     """Retorna (allowed, pct_used)."""
     user = get_user_by_id(user_id)

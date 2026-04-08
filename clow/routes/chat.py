@@ -17,7 +17,8 @@ from ..webapp import track_action
 from ..rate_limit import limiter as user_limiter
 from ..rag import get_context_for_prompt as _rag_context
 from ..database import (
-    check_limit, save_message, get_user_usage_today, PLANS,
+    check_limit, check_message_limit,
+    save_message, get_user_usage_today, PLANS,
 )
 
 
@@ -156,7 +157,7 @@ def register_chat_routes(app: FastAPI) -> None:
         if not sess:
             return JSONResponse({"error": "Nao autenticado"}, status_code=401)
 
-        # Checa limite de uso
+        # Checa limite de uso (tokens)
         allowed, pct = check_limit(sess["user_id"])
         if not allowed:
             return JSONResponse({
@@ -164,6 +165,16 @@ def register_chat_routes(app: FastAPI) -> None:
                 "response": "Voce atingiu seu limite diario de tokens. Volte amanha ou faca upgrade do seu plano.\n\nUse `/plan` para ver seu plano atual.",
                 "tools": [], "file": None,
             })
+
+        # Checa limite de mensagens diário/semanal (admins isentos)
+        if not sess.get("is_admin"):
+            msg_allowed, msg_reason = check_message_limit(sess["user_id"])
+            if not msg_allowed:
+                return JSONResponse({
+                    "session_id": "",
+                    "response": msg_reason,
+                    "tools": [], "file": None,
+                })
 
         from ..agent import Agent
         import uuid
@@ -443,12 +454,14 @@ def register_chat_routes(app: FastAPI) -> None:
             content = f"[CONTEXTO DE SKILLS ATIVAS - siga estas instrucoes]\n{skill_context}\n[FIM DO CONTEXTO]\n\nPedido do usuario: {content}"
 
         # ── Chat normal via Agent ──
-        session_key = f"{session_id}_{chosen_model}"
+        # session_key inclui user_id para garantir isolamento entre usuarios:
+        # dois usuarios com o mesmo session_id nunca compartilham o mesmo agente.
+        session_key = f"{user_id}_{session_id}_{chosen_model}"
         if session_id and session_key in _http_sessions:
             agent = _http_sessions[session_key]["agent"]
         else:
             session_id = str(uuid.uuid4())[:8]
-            session_key = f"{session_id}_{chosen_model}"
+            session_key = f"{user_id}_{session_id}_{chosen_model}"
             agent = Agent(cwd=os.getcwd(), model=model_id, api_key=user_api_key or None, auto_approve=True)
             _http_sessions[session_key] = {"agent": agent, "last_used": time.time()}
 

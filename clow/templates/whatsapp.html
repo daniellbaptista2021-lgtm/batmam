@@ -181,17 +181,7 @@ a{color:var(--p);text-decoration:none}
 
   <!-- Tab 2: Conhecimento -->
   <div class="tp" id="t2">
-    <div class="fg">
-      <label>Documentos PDF</label>
-      <div class="hint" style="margin-bottom:8px">Suba PDFs com informacoes do seu negocio (cardapio, tabela de precos, catalogo, FAQ). Maximo 5 PDFs, 10MB cada.</div>
-      <div id="pdf-upload-area" style="border:2px dashed var(--bd);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s" onclick="$('pdf-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--wa)'" ondragleave="this.style.borderColor=''" ondrop="event.preventDefault();this.style.borderColor='';handlePdfDrop(event)">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--tm)" stroke-width="2" style="margin-bottom:8px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15l3-3 3 3"/></svg>
-        <p style="color:var(--t2);font-size:.9rem">Arraste PDFs aqui ou clique para selecionar</p>
-        <input type="file" id="pdf-input" accept=".pdf" multiple hidden onchange="handlePdfSelect(this.files)">
-      </div>
-      <div id="pdf-list" style="margin-top:12px"></div>
-    </div>
-    <div class="fg" style="margin-top:20px"><label>Conhecimento em texto</label><textarea id="f-rag" style="min-height:200px" placeholder="Cole informacoes que o agente deve saber:&#10;&#10;Tabela de precos:&#10;- Pizza pequena: R$25,90&#10;- Pizza media: R$35,90&#10;&#10;Horario: Terca a domingo, 18h as 23h&#10;&#10;Formas de pagamento: PIX, cartao, dinheiro&#10;&#10;Taxa de entrega:&#10;Ate 3km: gratis&#10;3-5km: R$5,00"></textarea><div class="hint">Este texto sera usado pelo agente para responder perguntas dos seus clientes. Inclua precos, FAQ, regras, horarios.</div></div>
+    <div class="fg"><label>Conhecimento em texto</label><textarea id="f-rag" style="min-height:200px" placeholder="Cole informacoes que o agente deve saber:&#10;&#10;Tabela de precos:&#10;- Pizza pequena: R$25,90&#10;- Pizza media: R$35,90&#10;&#10;Horario: Terca a domingo, 18h as 23h&#10;&#10;Formas de pagamento: PIX, cartao, dinheiro&#10;&#10;Taxa de entrega:&#10;Ate 3km: gratis&#10;3-5km: R$5,00"></textarea><div class="hint">Este texto sera usado pelo agente para responder perguntas dos seus clientes. Inclua precos, FAQ, regras, horarios.</div></div>
     <button class="btn btn-primary" onclick="saveRag()">Salvar conhecimento</button>
     <div id="rag-result"></div>
   </div>
@@ -353,30 +343,6 @@ async function clearConv(){if(!confirm('Limpar historico com '+curPhone+'?'))ret
 
 async function loadStats(){/* stats already loaded from instance data */}
 
-// PDF Upload
-function handlePdfDrop(e){const files=e.dataTransfer.files;handlePdfSelect(files)}
-async function handlePdfSelect(files){
-  for(const file of files){
-    if(!file.name.endsWith('.pdf')){toast('Apenas arquivos PDF','err');continue}
-    if(file.size>10*1024*1024){toast('Arquivo muito grande (max 10MB)','err');continue}
-    // Read PDF text and append to RAG
-    toast('Processando '+file.name+'...','ok');
-    const reader=new FileReader();
-    reader.onload=function(e){
-      const text=$('f-rag').value;
-      $('f-rag').value=text+(text?'\n\n':'')+`[Documento: ${file.name}]\n(PDF importado — conteudo disponivel para o agente)`;
-      renderPdfList(file.name,file.size);
-      toast(file.name+' importado!','ok');
-    };
-    reader.readAsArrayBuffer(file);
-  }
-}
-const pdfFiles=[];
-function renderPdfList(name,size){
-  pdfFiles.push({name,size});
-  $('pdf-list').innerHTML=pdfFiles.map((f,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg3);border-radius:8px;margin-bottom:6px"><div style="display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="var(--r)"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg><span style="font-size:.85rem">${f.name}</span><span style="font-size:.72rem;color:var(--tm)">${(f.size/1024).toFixed(0)}KB</span></div><button class="btn btn-danger btn-sm" onclick="removePdf(${i})">Remover</button></div>`).join('');
-}
-function removePdf(i){pdfFiles.splice(i,1);$('pdf-list').innerHTML='';pdfFiles.forEach(f=>renderPdfList(f.name,f.size))}
 </script>
 </body>
 </html>
