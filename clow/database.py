@@ -269,6 +269,17 @@ def count_user_messages_week(user_id: str) -> int:
     return row[0] if row else 0
 
 
+# Ensure payment_status column exists
+def _ensure_payment_status():
+    try:
+        with get_db() as db:
+            db.execute("ALTER TABLE users ADD COLUMN payment_status TEXT DEFAULT 'ok'")
+    except Exception:
+        pass
+
+_ensure_payment_status()
+
+
 def check_message_limit(user_id: str) -> tuple[bool, str]:
     """Verifica limite diario e semanal de mensagens por usuario.
 

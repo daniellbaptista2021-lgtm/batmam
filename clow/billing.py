@@ -399,23 +399,81 @@ def _handle_subscription_updated(sub: dict) -> dict:
 
 
 def _handle_subscription_deleted(sub: dict) -> dict:
-    """Subscription cancelada — volta pra byok_free."""
+    """Subscription cancelada — bloqueia acesso e notifica admin."""
     from .database import get_db
 
     customer_id = sub.get("customer", "")
     if customer_id:
         with get_db() as db:
-            db.execute("UPDATE users SET plan='byok_free' WHERE stripe_customer_id=?", (customer_id,))
-        log_action("billing_cancelled", f"customer={customer_id}")
+            # Get user info before downgrade
+            row = db.execute("SELECT email, name, plan FROM users WHERE stripe_customer_id=?", (customer_id,)).fetchone()
+            user_email = row[0] if row else "desconhecido"
+            user_name = row[1] if row else ""
+            old_plan = row[2] if row else ""
+
+            # Downgrade to blocked
+            db.execute("UPDATE users SET plan='byok_free', payment_status='cancelled' WHERE stripe_customer_id=?", (customer_id,))
+
+        log_action("billing_cancelled", f"customer={customer_id} email={user_email}")
+
+        # Notify admin via WhatsApp
+        try:
+            import urllib.request, json as _json
+            zapi_url = "https://api.z-api.io/instances/3EF47A29C3407180CF13C22309410E11/token/3F58BF302142429BA7FAD499/send-text"
+            msg = f"🛑 *CLOW CANCELAMENTO*
+{user_name} ({user_email})
+Plano {old_plan} cancelado.
+Acesso bloqueado automaticamente."
+            data = _json.dumps({"phone": "5521990423520", "message": msg}).encode()
+            req = urllib.request.Request(zapi_url, data=data, headers={"Content-Type": "application/json", "Client-Token": "F986fce42e250445fb74cc9ec87593732S"})
+            urllib.request.urlopen(req, timeout=10)
+        except Exception:
+            pass
 
     return {"status": "cancelled"}
 
 
 def _handle_payment_failed(invoice: dict) -> dict:
-    """Pagamento falhou."""
+    """Pagamento falhou — marca usuario como inadimplente e notifica admin."""
+    from .database import get_db
+    import subprocess
+
     customer_id = invoice.get("customer", "")
-    log_action("billing_payment_failed", f"customer={customer_id}", level="warning")
-    return {"status": "payment_failed", "customer": customer_id}
+    attempt = invoice.get("attempt_count", 1)
+
+    if customer_id:
+        with get_db() as db:
+            # Add payment_status column if not exists
+            try:
+                db.execute("ALTER TABLE users ADD COLUMN payment_status TEXT DEFAULT 'ok'")
+            except Exception:
+                pass
+            # Mark as overdue
+            db.execute("UPDATE users SET payment_status='overdue' WHERE stripe_customer_id=?", (customer_id,))
+            # Get user info for alert
+            row = db.execute("SELECT email, name, plan FROM users WHERE stripe_customer_id=?", (customer_id,)).fetchone()
+            user_email = row[0] if row else "desconhecido"
+            user_name = row[1] if row else ""
+            user_plan = row[2] if row else ""
+
+    log_action("billing_payment_failed", f"customer={customer_id} attempt={attempt} email={user_email}", level="warning")
+
+    # Send WhatsApp alert to admin
+    try:
+        import urllib.request, json as _json
+        zapi_url = "https://api.z-api.io/instances/3EF47A29C3407180CF13C22309410E11/token/3F58BF302142429BA7FAD499/send-text"
+        msg = f"⚠️ *CLOW BILLING*
+Pagamento falhou!
+Cliente: {user_name} ({user_email})
+Plano: {user_plan}
+Tentativa: {attempt}"
+        data = _json.dumps({"phone": "5521990423520", "message": msg}).encode()
+        req = urllib.request.Request(zapi_url, data=data, headers={"Content-Type": "application/json", "Client-Token": "F986fce42e250445fb74cc9ec87593732S"})
+        urllib.request.urlopen(req, timeout=10)
+    except Exception:
+        pass
+
+    return {"status": "payment_failed", "customer": customer_id, "attempt": attempt}
 
 
 def get_billing_status(user_id: str) -> dict[str, Any]:

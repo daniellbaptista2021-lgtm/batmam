@@ -158,6 +158,16 @@ def register_chat_routes(app: FastAPI) -> None:
             return JSONResponse({"error": "Nao autenticado"}, status_code=401)
 
         # Checa limite de uso (tokens)
+        # Check payment status
+        from ..database import get_user_by_id as _get_user
+        _u = _get_user(sess["user_id"])
+        _pay_status = (_u or {}).get("payment_status", "ok")
+        if _pay_status == "cancelled":
+            await ws.send_json({"type":"error","content":"Sua assinatura foi cancelada. Renove seu plano para continuar usando o Clow."})
+            continue
+        if _pay_status == "overdue":
+            await ws.send_json({"type":"system","content":"⚠️ Aviso: seu pagamento esta pendente. Regularize para evitar bloqueio."})
+
         allowed, pct = check_limit(sess["user_id"])
         if not allowed:
             return JSONResponse({
