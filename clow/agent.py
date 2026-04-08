@@ -276,7 +276,7 @@ class Agent:
 
         turn = Turn(user_message=user_message)
         full_response_text = []
-        max_iterations = 30
+        max_iterations = 5
         iteration = 0
         auto_correct_attempts = 0
 
@@ -320,6 +320,12 @@ class Agent:
                             )
 
                 # Executa tool calls (com paralelismo para read-only)
+                # Detect duplicate tool calls (model stuck in loop)
+                _tc_key = str([(t["name"], t.get("arguments","")[:50]) for t in tool_calls_data])
+                if hasattr(self, "_last_tc_key") and self._last_tc_key == _tc_key:
+                    break  # Same tool call as last iteration — stop loop
+                self._last_tc_key = _tc_key
+
                 tool_results = self._execute_tool_calls(tool_calls_data, turn)
 
                 # Adiciona resultados ao historico

@@ -172,7 +172,7 @@ h1{{font-size:48px;font-weight:800;line-height:1.1;position:relative;z-index:1}}
         with open(fpath, "w", encoding="utf-8") as f:
             f.write(html)
 
-        url = f"/static/files/{fname}"
+        url = f"https://clow.pvcorretor01.com.br/static/files/{fname}"
         return (f"Design criado!\n\n"
                 f"Abrir: {url}\n\n"
                 f"Tipo: {dtype} ({w} x {h})\n"

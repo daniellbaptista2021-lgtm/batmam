@@ -107,7 +107,7 @@ class SpreadsheetTool(BaseTool):
                 wb.save(path)
             except Exception:
                 pass
-            url = f"/static/files/{fname}"
+            url = f"https://clow.pvcorretor01.com.br/static/files/{fname}"
             return f"Planilha criada com {len(rows)} linhas!\n\nBaixar: {url}\n\nAbrir no Google Sheets: copie o link, va em sheets.google.com > Arquivo > Importar"
 
         except ImportError:
@@ -134,7 +134,7 @@ class SpreadsheetTool(BaseTool):
                 if headers:
                     writer.writerow(headers)
                 writer.writerows(rows)
-        url = f"/static/files/{fname}"
+        url = f"https://clow.pvcorretor01.com.br/static/files/{fname}"
         return f"Planilha criada com {len(rows)} linhas!\n\nBaixar: {url}"
 
     def _read(self, path: str, sheet: str) -> str:
