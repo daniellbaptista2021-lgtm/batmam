@@ -42,7 +42,7 @@ PLANS = {
     "lite": {
         "name": "ONE",
         "price_brl": 129.90,  # R$129,90/mês
-        "model": "claude-haiku-4-5-20251001",
+        "model": "IA Clow",
         "uses_server_key": True,
         "daily_input_tokens": 1_500_000,
         "daily_output_tokens": 300_000,
@@ -60,7 +60,7 @@ PLANS = {
     "starter": {
         "name": "SMART",
         "price_brl": 297.00,  # R$297,00/mês
-        "model": "claude-sonnet-4-20250514",
+        "model": "IA Clow",
         "uses_server_key": True,
         "daily_input_tokens": 1_800_000,
         "daily_output_tokens": 350_000,
@@ -78,7 +78,7 @@ PLANS = {
     "pro": {
         "name": "PROFISSIONAL",
         "price_brl": 497.00,  # R$497,00/mês
-        "model": "claude-sonnet-4-20250514",
+        "model": "IA Clow",
         "uses_server_key": True,
         "daily_input_tokens": 2_500_000,
         "daily_output_tokens": 500_000,
@@ -96,7 +96,7 @@ PLANS = {
     "business": {
         "name": "BUSINESS",
         "price_brl": 897.00,  # R$897,00/mês
-        "model": "claude-sonnet-4-20250514",
+        "model": "IA Clow",
         "uses_server_key": True,
         "daily_input_tokens": 4_000_000,
         "daily_output_tokens": 800_000,
