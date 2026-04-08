@@ -89,7 +89,7 @@ CLOW_SWARM_MAX_AGENTS = int(os.getenv("CLOW_SWARM_MAX_AGENTS", "5"))
 CLOW_SELF_LEARN = os.getenv("CLOW_SELF_LEARN", "true").lower() in ("true", "1", "yes")
 
 # ── GitHub Issue Autopilot ────────────────────────────────
-CLOW_AUTOPILOT = os.getenv("CLOW_AUTOPILOT", "true").lower() in ("true", "1", "yes")
+CLOW_AUTOPILOT = False  # Desabilitado permanentemente — deploy via GitHub bloqueado
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET", "")
 

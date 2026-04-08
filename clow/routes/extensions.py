@@ -36,28 +36,16 @@ def register_extension_routes(app) -> None:
 
     from fastapi.responses import StreamingResponse
 
-    # ── GitHub Autopilot Webhook (protegido por signature) ────
+    # ── GitHub Autopilot Webhook — DESABILITADO POR SEGURANÇA ────
+    # Deploy automatico via GitHub e irreversivelmente bloqueado.
+    # Nenhum usuario, mesmo admin, pode disparar deploys remotamente.
 
     @app.post("/api/webhooks/github", tags=["autopilot"], include_in_schema=False)
     async def github_webhook(request: _FRequest):
-        from ..autopilot import handle_webhook, verify_webhook_signature
-
-        body = await request.body()
-        signature = request.headers.get("X-Hub-Signature-256", "")
-
-        if not verify_webhook_signature(body, signature):
-            return _FJSON({"error": "Invalid signature"}, status_code=401)
-
-        event_type = request.headers.get("X-GitHub-Event", "")
-        try:
-            payload = json.loads(body)
-        except json.JSONDecodeError:
-            return _FJSON({"error": "Invalid JSON"}, status_code=400)
-
-        from ..automations import get_automations_engine
-        get_automations_engine().handle_github_event(event_type, payload)
-
-        return _FJSON(handle_webhook(event_type, payload))
+        return _FJSON(
+            {"error": "Endpoint desabilitado. Deploy automatico nao permitido."},
+            status_code=403,
+        )
 
     # ── Admin Metrics ──────────────────────────────────────────
 

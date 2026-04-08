@@ -513,6 +513,56 @@ _DANGER_PATTERNS: list[_DangerPattern] = [
         "suspicious",
         "Piping wget output to shell",
     ),
+
+    # ── DEPLOY / REMOTE CODE EXECUTION (block always) ──
+    _DangerPattern(
+        "git clone remote",
+        re.compile(r"\bgit\s+clone\s+(https?://|git@|ssh://)"),
+        "catastrophic",
+        "Attempted to clone from remote repository — blocked for security",
+    ),
+    _DangerPattern(
+        "git pull remote",
+        re.compile(r"\bgit\s+pull\s+(?!origin\s+HEAD)"),
+        "catastrophic",
+        "Attempted git pull from remote — deploy via GitHub is blocked",
+    ),
+    _DangerPattern(
+        "deploy script",
+        re.compile(r"\b(bash|sh|\./).*deploy(\.sh)?\b"),
+        "catastrophic",
+        "Attempted to run deploy script — blocked for security",
+    ),
+    _DangerPattern(
+        "systemctl restart clow",
+        re.compile(r"\bsystemctl\s+(restart|start|stop|reload)\s+"),
+        "catastrophic",
+        "Attempted to control system services — blocked for security",
+    ),
+    _DangerPattern(
+        "pip install from url",
+        re.compile(r"\bpip\s+install\s+.*https?://"),
+        "catastrophic",
+        "Attempted pip install from URL — remote code execution risk",
+    ),
+    _DangerPattern(
+        "git fetch remote",
+        re.compile(r"\bgit\s+fetch\s+\S"),
+        "critical_path",
+        "Attempted git fetch from remote — blocked for security",
+    ),
+    _DangerPattern(
+        "wget github",
+        re.compile(r"\b(wget|curl)\b.*github\.com"),
+        "critical_path",
+        "Attempted to download from GitHub — blocked for security",
+    ),
+    _DangerPattern(
+        "python setup install",
+        re.compile(r"\bpython\b.*setup\.py\s+install"),
+        "critical_path",
+        "Attempted setup.py install — remote code execution risk",
+    ),
 ]
 # yapf: enable
 

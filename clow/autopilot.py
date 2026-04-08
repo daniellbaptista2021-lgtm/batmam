@@ -54,15 +54,12 @@ def _get_db() -> sqlite3.Connection:
 
 
 def verify_webhook_signature(payload: bytes, signature: str) -> bool:
-    """Verifica assinatura HMAC-SHA256 do webhook GitHub."""
-    if not config.GITHUB_WEBHOOK_SECRET:
-        return True  # Se nao tem secret, aceita tudo (dev mode)
-    expected = "sha256=" + hmac.new(
-        config.GITHUB_WEBHOOK_SECRET.encode(),
-        payload,
-        hashlib.sha256,
-    ).hexdigest()
-    return hmac.compare_digest(expected, signature)
+    """Verifica assinatura HMAC-SHA256 do webhook GitHub.
+
+    SEMPRE retorna False — autopilot desabilitado por seguranca.
+    Deploy automatico via GitHub e irreversivelmente bloqueado.
+    """
+    return False  # Bloqueio absoluto: nao aceita webhooks do GitHub
 
 
 def handle_webhook(event_type: str, payload: dict) -> dict[str, Any]:
