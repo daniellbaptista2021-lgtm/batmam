@@ -1,17 +1,23 @@
 {
   "name": "Clow — Inteligência Infinita",
   "short_name": "Clow",
-  "description": "Clow - AI Code Agent | Inteligência Infinita",
+  "description": "Atendimento com IA, CRM inteligente e automações para o seu negócio.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#050510",
-  "background_color": "#0a0a0a",
+  "background_color": "#050510",
   "icons": [
     {
       "src": "/static/brand/favicon.png",
       "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/brand/apple-touch-icon.png",
+      "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     },
@@ -28,5 +34,14 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["productivity", "developer tools"]
+  "shortcuts": [
+    {
+      "name": "Abrir Chat",
+      "short_name": "Chat",
+      "description": "Abre o chat com IA",
+      "url": "/chat",
+      "icons": [{ "src": "/static/brand/icon-maskable-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "categories": ["productivity", "business"]
 }
