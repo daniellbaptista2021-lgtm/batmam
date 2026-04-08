@@ -82,14 +82,27 @@ def register_ws_routes(app: FastAPI) -> None:
                 loop,
             )
 
-        agent = Agent(
-            cwd=os.getcwd(),
-            on_text_delta=on_text_delta,
-            on_text_done=on_text_done,
-            on_tool_call=on_tool_call,
-            on_tool_result=on_tool_result,
-            auto_approve=True,
-        )
+        if ws_is_admin:
+            # Admin tem acesso total
+            agent = Agent(
+                cwd=os.getcwd(),
+                on_text_delta=on_text_delta,
+                on_text_done=on_text_done,
+                on_tool_call=on_tool_call,
+                on_tool_result=on_tool_result,
+                auto_approve=True,
+            )
+        else:
+            # Nao-admin: ferramentas de escrita/bash SEMPRE negadas em hardware.
+            agent = Agent(
+                cwd=os.getcwd(),
+                on_text_delta=on_text_delta,
+                on_text_done=on_text_done,
+                on_tool_call=on_tool_call,
+                on_tool_result=on_tool_result,
+                auto_approve=False,
+                ask_confirmation=lambda _: False,
+            )
 
         # Task para enviar mensagens da fila para o WebSocket
         async def send_loop():
