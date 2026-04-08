@@ -66,7 +66,7 @@ def register_settings_routes(app) -> None:
             "id": user["id"],
             "name": user.get("name", ""),
             "email": user["email"],
-            "plan": user.get("plan", "byok_free"),
+            "plan": user.get("plan", "lite"),
             "created_at": user.get("created_at", 0),
             "is_admin": bool(user.get("is_admin")),
             "byok_enabled": bool(user.get("byok_enabled")),
@@ -98,10 +98,10 @@ def register_settings_routes(app) -> None:
         from ..billing import get_plan
 
         user = get_user_by_id(sess["user_id"])
-        plan_id = user.get("plan", "byok_free") if user else "byok_free"
+        plan_id = user.get("plan", "lite") if user else "byok_free"
         is_admin = bool(user.get("is_admin")) if user else False
-        if plan_id in ("free", "basic"):
-            plan_id = "byok_free"
+        if plan_id in ("free", "basic", "byok_free"):
+            plan_id = "lite"
         elif plan_id == "unlimited":
             plan_id = "business" if is_admin else "byok_free"
         plan = get_plan(plan_id)
@@ -240,7 +240,7 @@ def register_settings_routes(app) -> None:
         from ..database import get_user_by_id
         from ..billing import get_plan
         user = get_user_by_id(sess["user_id"])
-        plan_id = user.get("plan", "byok_free") if user else "byok_free"
+        plan_id = user.get("plan", "lite") if user else "byok_free"
         plan = get_plan(plan_id)
         flows_count = plan.get("n8n_flows", 0)
 

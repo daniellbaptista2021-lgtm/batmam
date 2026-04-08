@@ -30,10 +30,10 @@ def register_crm_routes(app) -> None:
         from ..database import get_user_by_id
         from ..billing import PLANS
         user = get_user_by_id(sess["user_id"])
-        plan_id = user.get("plan", "byok_free") if user else "byok_free"
-        if plan_id in ("free", "basic", "unlimited"):
-            plan_id = "byok_free"
-        plan = PLANS.get(plan_id, PLANS["byok_free"])
+        plan_id = user.get("plan", "lite") if user else "byok_free"
+        if plan_id in ("free", "basic", "byok_free", "unlimited"):
+            plan_id = "lite"
+        plan = PLANS.get(plan_id, PLANS["lite"])
         if not plan.get("crm_enabled", False) and not sess.get("is_admin"):
             return _JR({
                 "error": "crm_not_available",

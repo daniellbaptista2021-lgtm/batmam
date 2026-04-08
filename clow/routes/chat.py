@@ -191,7 +191,7 @@ def register_chat_routes(app: FastAPI) -> None:
 
         user_email = sess["email"]
         user_id = sess["user_id"]
-        user_plan = sess.get("plan", "free")
+        user_plan = sess.get("plan", "lite")
         is_admin = sess.get("is_admin", False)
 
         # Rate limit per user (based on plan)
@@ -204,29 +204,18 @@ def register_chat_routes(app: FastAPI) -> None:
                 "tools": [], "file": None,
             }, status_code=429)
 
-        # ── Billing: seleciona model e API key pelo plano ──
-        from ..billing import get_model_for_plan, plan_uses_server_key, check_quota
-        from ..database import get_user_api_key
+        # ── Billing: seleciona model pelo plano e verifica franquia ──
+        from ..billing import get_model_for_plan, check_quota
 
-        user_api_key = get_user_api_key(user_id)
+        user_api_key = None  # Sempre usa key do servidor
 
-        # Determina plano efetivo
-        effective_plan = user_plan
-        if effective_plan in ("free", "basic") and user_api_key:
-            effective_plan = "byok_free"
-        elif effective_plan in ("free", "basic") and not user_api_key:
-            effective_plan = "byok_free"
-        elif effective_plan == "unlimited":
-            effective_plan = "business" if is_admin else "byok_free"
-
-        # Admin: sempre Sonnet, sem limite de franquia, usa key do servidor
         if is_admin:
+            # Admin: Sonnet sem limite
             model_id = "claude-sonnet-4-20250514"
-            # Admin usa key do servidor se nao tem BYOK
-            if not user_api_key:
-                user_api_key = None  # Usa config.ANTHROPIC_API_KEY
-        elif plan_uses_server_key(effective_plan):
-            # Plano pago: checa franquia
+            effective_plan = "unlimited"
+        else:
+            effective_plan = user_plan if user_plan in ("lite", "starter", "pro", "business", "unlimited") else "lite"
+            # Verifica franquia do plano pago
             quota_check = check_quota(user_id, effective_plan)
             if not quota_check["allowed"]:
                 return JSONResponse({
@@ -234,12 +223,7 @@ def register_chat_routes(app: FastAPI) -> None:
                     "response": quota_check.get("reason", "Franquia atingida. Tente novamente mais tarde."),
                     "tools": [], "file": None,
                 })
-            user_api_key = None
             model_id = get_model_for_plan(effective_plan)
-        elif user_api_key:
-            model_id = "claude-sonnet-4-20250514"
-        else:
-            model_id = "claude-haiku-4-5-20251001"
         track_action("user_message_http", content[:60])
 
         # Salva mensagem do usuario no historico
@@ -336,7 +320,7 @@ def register_chat_routes(app: FastAPI) -> None:
                 )
             elif cmd_lower == "/usage":
                 usage = get_user_usage_today(user_id)
-                plan_info = PLANS.get(sess.get("plan", "free"), PLANS["free"])
+                plan_info = PLANS.get(sess.get("plan", "lite"), PLANS["lite"])
                 limit = plan_info["daily_tokens"]
                 used = usage["total_tokens"]
                 pct_str = f"{(used/limit*100):.0f}%" if limit > 0 else "ilimitado"
@@ -348,13 +332,12 @@ def register_chat_routes(app: FastAPI) -> None:
                     f"- Custo estimado: **${usage['total_cost']:.4f}**"
                 )
             elif cmd_lower == "/plan":
-                plan_info = PLANS.get(sess.get("plan", "free"), PLANS["free"])
+                plan_info = PLANS.get(sess.get("plan", "lite"), PLANS["lite"])
                 cmd_resp = (
                     f"## Seu Plano: {plan_info['label']}\n\n"
                     f"- Limite diario: **{plan_info['daily_tokens']:,} tokens**\n\n"
                     "**Planos disponiveis:**\n"
                     "| Plano | Tokens/dia |\n|-------|------------|\n"
-                    "| Free | 50.000 |\n| Basic | 200.000 |\n| Pro | 1.000.000 |\n| Unlimited | Sem limite |"
                 )
 
             if cmd_resp:

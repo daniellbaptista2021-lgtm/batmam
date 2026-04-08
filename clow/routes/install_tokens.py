@@ -123,7 +123,7 @@ def register_install_token_routes(app: FastAPI) -> None:
         if not sess:
             return JSONResponse({"error": "Login necessario"}, status_code=401)
 
-        plan = sess.get("plan", "byok_free")
+        plan = sess.get("plan", "lite")
         # Map legacy plans
         if plan in ("free", "basic"):
             plan = "byok_free"
@@ -311,7 +311,7 @@ echo ""
             return JSONResponse({"error": "Token invalido ou expirado"}, status_code=401)
 
         user_id = sess.get("user_id", "")
-        plan = sess.get("plan", "byok_free")
+        plan = sess.get("plan", "lite")
 
         # Check paid plan
         if plan not in PAID_PLANS and plan != "unlimited":

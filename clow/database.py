@@ -13,11 +13,8 @@ from contextlib import contextmanager
 DB_PATH = Path(__file__).parent.parent / "data" / "clow.db"
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-# Planos legados (mantidos para compatibilidade). Planos reais em billing.py
+# Planos pagos (sem plano gratuito). Planos reais em billing.py
 PLANS = {
-    "free": {"label": "Free (BYOK)", "daily_tokens": 0},
-    "basic": {"label": "Basic (BYOK)", "daily_tokens": 0},
-    "byok_free": {"label": "BYOK Gratuito", "daily_tokens": 0},
     "lite": {"label": "Lite — R$169", "daily_tokens": 1_800_000},
     "starter": {"label": "Starter — R$298", "daily_tokens": 2_150_000},
     "pro": {"label": "Pro — R$487", "daily_tokens": 3_000_000},
@@ -75,7 +72,7 @@ def create_user(email: str, password: str, name: str = "") -> dict | None:
     uid = str(uuid.uuid4())[:12]
     now = time.time()
     is_admin = 1 if email.lower() == ADMIN_EMAIL else 0
-    plan = "unlimited" if is_admin else "free"
+    plan = "unlimited" if is_admin else "lite"
     try:
         with get_db() as db:
             db.execute(

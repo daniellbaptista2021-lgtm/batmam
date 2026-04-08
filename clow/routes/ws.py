@@ -127,7 +127,7 @@ def register_ws_routes(app: FastAPI) -> None:
                         continue
 
                     # Rate limit per user
-                    ws_plan = ws_sess.get("plan", "free") if ws_sess else "free"
+                    ws_plan = ws_sess.get("plan", "lite") if ws_sess else "lite"
                     rl_ok, _ = user_limiter.check(client_ip, ws_user_id, "admin" if ws_is_admin else ws_plan)
                     if not rl_ok:
                         await websocket.send_json({"type": "error", "content": "Rate limit atingido. Aguarde alguns minutos."})

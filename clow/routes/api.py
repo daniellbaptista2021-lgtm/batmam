@@ -48,7 +48,7 @@ def register_api_routes(app: FastAPI) -> None:
         return JSONResponse({
             "token": token,
             "email": user["email"],
-            "plan": user.get("plan", "free"),
+            "plan": user.get("plan", "lite"),
             "is_admin": bool(user.get("is_admin")),
         })
 
@@ -62,7 +62,7 @@ def register_api_routes(app: FastAPI) -> None:
         sess = _validate_session(token)
         if not sess:
             return JSONResponse({"valid": False}, status_code=401)
-        return JSONResponse({"valid": True, "email": sess["email"], "plan": sess.get("plan", "free")})
+        return JSONResponse({"valid": True, "email": sess["email"], "plan": sess.get("plan", "lite")})
 
     # Feature #19: Health Check (publico — sem auth)
     @app.get("/health", dependencies=[Depends(_rate_limit_dependency)])
@@ -183,7 +183,7 @@ def register_api_routes(app: FastAPI) -> None:
     _ALLOWED_AUDIO_EXT = {".webm", ".mp3", ".ogg", ".wav", ".m4a"}
     _BLOCKED_EXT = {".exe", ".bat", ".sh", ".cmd", ".com", ".msi", ".scr", ".ps1"}
     _MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
-    _UPLOAD_LIMITS = {"free": 5, "basic": 20, "pro": 100, "unlimited": 0}
+    _UPLOAD_LIMITS = {"lite": 50, "starter": 100, "pro": 200, "business": 500, "unlimited": 0}
     _upload_counts: dict[str, dict] = {}  # user_id -> {"date": "YYYY-MM-DD", "count": N}
 
     def _check_upload_limit(user_id: str, plan: str) -> bool:
@@ -299,7 +299,7 @@ def register_api_routes(app: FastAPI) -> None:
             return JSONResponse({"error": "Nao autenticado"}, status_code=401)
 
         user_id = sess["user_id"]
-        user_plan = sess.get("plan", "free")
+        user_plan = sess.get("plan", "lite")
 
         if not _check_upload_limit(user_id, user_plan):
             limit = _UPLOAD_LIMITS.get(user_plan, 5)
@@ -426,12 +426,12 @@ def register_api_routes(app: FastAPI) -> None:
         from .. import config
         user_id = sess["user_id"]
         usage = get_user_usage_today(user_id)
-        plan = PLANS.get(sess.get("plan", "free"), PLANS["free"])
+        plan = PLANS.get(sess.get("plan", "lite"), PLANS["lite"])
         messages_today = count_user_messages_today(user_id)
         messages_week = count_user_messages_week(user_id)
         return JSONResponse({
             "usage": usage,
-            "plan": sess.get("plan", "free"),
+            "plan": sess.get("plan", "lite"),
             "plan_label": plan["label"],
             "daily_token_limit": plan["daily_tokens"],
             "messages_today": messages_today,
@@ -445,7 +445,7 @@ def register_api_routes(app: FastAPI) -> None:
         sess = _get_user_session(request)
         if not sess:
             return JSONResponse({"error": "Nao autenticado"}, status_code=401)
-        plan = sess.get("plan", "free")
+        plan = sess.get("plan", "lite")
         is_admin = sess.get("is_admin", False)
         if is_admin:
             models = ["claude-code"]

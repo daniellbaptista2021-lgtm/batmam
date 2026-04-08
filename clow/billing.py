@@ -1,13 +1,13 @@
 """Stripe Billing — planos, checkout, portal, webhook, franquia.
 
 Planos:
-- BYOK: R$0, user usa propria API key, WhatsApp sim, CRM nao
 - LITE: R$169/mes, Haiku 4.5, CRM + 8 fluxos n8n
 - STARTER: R$298/mes, Sonnet 4, CRM + 8 fluxos n8n
 - PRO: R$487/mes, Sonnet 4, 2000 fluxos n8n, 5 usuarios
 - BUSINESS: R$667/mes, Sonnet 4, 3000 fluxos, 10 usuarios
 
 WhatsApp Agent SEMPRE usa Haiku. Franquia separada do chat.
+Acesso apenas via assinatura paga — sem plano gratuito.
 """
 
 from __future__ import annotations
@@ -38,23 +38,6 @@ STRIPE_WEBHOOK_IPS = frozenset({
 # ── Plan Definitions ──────────────────────────────────────────
 
 PLANS = {
-    "byok_free": {
-        "name": "Traga sua Key",
-        "price_brl": 0,
-        "model": "claude-sonnet-4-20250514",
-        "uses_server_key": False,
-        "daily_input_tokens": 0,
-        "daily_output_tokens": 0,
-        "weekly_input_tokens": 0,
-        "weekly_output_tokens": 0,
-        "n8n_flows": 0,
-        "stripe_price_id": "",
-        "wa_model": "claude-haiku-4-5-20251001",
-        "wa_daily_tokens": 250_000,
-        "wa_included_instances": 2,
-        "crm_enabled": False,
-        "max_users": 2,
-    },
     "lite": {
         "name": "Lite",
         "price_brl": 169,
@@ -129,8 +112,8 @@ PRICE_ID_TO_PLAN = {v["stripe_price_id"]: k for k, v in PLANS.items() if v["stri
 
 
 def get_plan(plan_id: str) -> dict:
-    """Retorna config do plano. Default: byok_free."""
-    return PLANS.get(plan_id, PLANS["byok_free"])
+    """Retorna config do plano. Default: lite."""
+    return PLANS.get(plan_id, PLANS["lite"])
 
 
 def get_model_for_plan(plan_id: str) -> str:
@@ -177,9 +160,9 @@ def check_quota(user_id: str, plan_id: str, source: str = "chat") -> dict[str, A
             return {"allowed": False, "reason": "Franquia diaria do WhatsApp atingida.", "plan": plan_id}
         return {"allowed": True, "plan": plan_id, "wa_remaining": wa_daily - wa_used}
 
-    # BYOK nao tem limite nosso (chat)
+    # Plano sem key do servidor — acesso bloqueado
     if not plan["uses_server_key"]:
-        return {"allowed": True, "plan": plan_id}
+        return {"allowed": False, "reason": "Assine um plano para acessar o Clow.", "plan": plan_id}
 
     from .database import get_db
 

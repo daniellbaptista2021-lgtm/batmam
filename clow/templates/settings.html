@@ -117,7 +117,6 @@ th{color:var(--tm);font-weight:500;text-transform:uppercase;font-size:.72rem;let
   <div class="sb-item" onclick="show('plan')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>Meu Plano</div>
   <div class="sb-item" onclick="show('usage')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Uso e Franquia</div>
   <div class="sb-item" onclick="show('prefs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Preferencias</div>
-  <div class="sb-item" id="sb-apikey" onclick="show('apikey')" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>API Key</div>
   <div class="sb-item" onclick="show('flows')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Fluxos n8n</div>
   <div class="sb-item" onclick="show('billing')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>Faturamento</div>
   <a class="sb-back" href="/">&#8592; Voltar ao Clow</a>
@@ -173,16 +172,6 @@ th{color:var(--tm);font-weight:500;text-transform:uppercase;font-size:.72rem;let
   <div class="msg" id="msg-prefs"></div>
 </div>
 
-<!-- API Key -->
-<div class="panel" id="p-apikey">
-  <h2>API Key</h2><p class="desc">Gerencie sua chave da Anthropic.</p>
-  <div class="fg"><label>Chave atual</label><input id="f-key-display" class="mono" disabled value="Carregando..."></div>
-  <div class="fg"><label>Nova API Key</label><input id="f-key-new" class="mono" placeholder="sk-ant-api03-..."></div>
-  <button class="btn btn-primary" onclick="updateKey()">Validar e Salvar</button>
-  <div class="msg" id="msg-key"></div>
-  <p style="font-size:.82rem;color:var(--tm);margin-top:12px">Nao tem key? <a href="https://console.anthropic.com/settings/keys" target="_blank">Pegue em console.anthropic.com</a></p>
-</div>
-
 <!-- Flows -->
 <div class="panel" id="p-flows">
   <h2>Fluxos n8n</h2><p class="desc">Automacoes prontas incluidas no seu plano.</p>
@@ -209,7 +198,6 @@ function show(section){
   if(section==='usage')loadUsage();
   if(section==='plan')loadPlan();
   if(section==='prefs')loadPrefs();
-  if(section==='apikey')loadApiKey();
   if(section==='flows')loadFlows();
   if(section==='billing')loadBilling();
 }
@@ -247,9 +235,6 @@ async function init(){
   $('f-email').value=p.email;
   $('f-since').value=new Date(p.created_at*1000).toLocaleDateString('pt-BR');
   $('f-terms').value=p.accepted_terms_at?new Date(p.accepted_terms_at*1000).toLocaleString('pt-BR'):'Nao registrado';
-  // Show API key tab if BYOK
-  if(p.plan==='byok_free'||p.plan==='free'||p.plan==='basic'||p.plan==='unlimited'||p.byok_enabled)
-    $('sb-apikey').style.display='flex';
 }
 init();
 
@@ -266,7 +251,6 @@ async function loadPlan(){
   $('btn-portal').style.display=s.stripe_customer_id?'inline-block':'none';
 
   const plans=[
-    {id:'byok_free',name:'Traga sua Key',price:'R$ 0',items:['Sua API key','WhatsApp incluso','Sem CRM']},
     {id:'lite',name:'Lite',price:'R$ 169/mes',items:['Haiku 4.5 incluso','CRM + 8 fluxos n8n','1.5M+300K/dia']},
     {id:'starter',name:'Starter',price:'R$ 298/mes',items:['Sonnet 4','CRM + 8 fluxos n8n','1.8M+350K/dia','3 usuarios']},
     {id:'pro',name:'Pro',price:'R$ 487/mes',items:['Sonnet 4','2.000 fluxos','2.5M+500K/dia','5 usuarios']},
@@ -275,7 +259,7 @@ async function loadPlan(){
   $('plan-grid').innerHTML=plans.map(p=>{
     const cur=s.plan_id===p.id;
     const btnText='Assinar '+p.name;
-    return `<div class="plan-card ${cur?'current':''}"><h4>${p.name}</h4><div class="plan-price">${p.price}</div><ul>${p.items.map(i=>'<li>'+i+'</li>').join('')}</ul>${cur?'<button class="btn btn-secondary" disabled>Plano atual</button>':p.id==='byok_free'?'<a href="/onboarding" class="btn btn-secondary">Configurar</a>':`<button class="btn btn-primary" onclick="checkout('${p.id}')">${btnText}</button>`}</div>`;
+    return `<div class="plan-card ${cur?'current':''}"><h4>${p.name}</h4><div class="plan-price">${p.price}</div><ul>${p.items.map(i=>'<li>'+i+'</li>').join('')}</ul>${cur?'<button class="btn btn-secondary" disabled>Plano atual</button>':`<button class="btn btn-primary" onclick="checkout('${p.id}')">${btnText}</button>`}</div>`;
   }).join('');
 }
 
@@ -291,7 +275,6 @@ async function openPortal(){
 // Usage
 async function loadUsage(){
   const u=await api('/api/v1/user/usage');
-  const byok=u.limits.daily_input<=0;
 
   // Cards
   $('usage-cards').innerHTML=`
@@ -302,10 +285,7 @@ async function loadUsage(){
   `;
 
   // Bars
-  if(byok){
-    $('usage-bars').innerHTML='<p style="color:var(--t2);font-size:.9rem">Plano BYOK — sem limite de franquia. Uso livre.</p>';
-    $('usage-alert').innerHTML='';
-  }else{
+  {
     const bars=[
       {label:'Input tokens hoje',used:u.today.input,limit:u.limits.daily_input},
       {label:'Output tokens hoje',used:u.today.output,limit:u.limits.daily_output},
@@ -350,19 +330,6 @@ async function savePrefs(){
   const body={dark_mode:$('pref-dark').checked,notifications:$('pref-notif').checked,extended_thinking:$('pref-thinking').checked,language:$('pref-lang').value,agent_type:$('pref-agent').value,custom_instructions:$('pref-instructions').value};
   const r=await api('/api/v1/user/preferences',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   const m=$('msg-prefs');m.className=r.success?'msg ok':'msg err';m.textContent=r.success?'Preferencias salvas!':'Erro';
-}
-
-// API Key
-async function loadApiKey(){
-  const s=await api('/api/v1/me/api-key/status');
-  $('f-key-display').value=s.has_api_key?'sk-ant-••••••••••••••':'Nenhuma key configurada';
-}
-async function updateKey(){
-  const key=$('f-key-new').value.trim();
-  if(!key)return;
-  const r=await api('/api/v1/user/apikey',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({api_key:key})});
-  const m=$('msg-key');m.className=r.success?'msg ok':'msg err';m.textContent=r.success?'Key validada e salva!':r.error||'Erro';
-  if(r.success){$('f-key-display').value='sk-ant-••••••••'+key.slice(-4);$('f-key-new').value=''}
 }
 
 // Flows
