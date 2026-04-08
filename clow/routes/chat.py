@@ -163,10 +163,13 @@ def register_chat_routes(app: FastAPI) -> None:
         _u = _get_user(sess["user_id"])
         _pay_status = (_u or {}).get("payment_status", "ok")
         if _pay_status == "cancelled":
-            await ws.send_json({"type":"error","content":"Sua assinatura foi cancelada. Renove seu plano para continuar usando o Clow."})
-            continue
+            return JSONResponse({
+                "session_id": "",
+                "response": "Sua assinatura foi cancelada. Renove seu plano em Configuracoes > Meu Plano para continuar usando o Clow.",
+                "tools": [], "file": None,
+            }, status_code=403)
         if _pay_status == "overdue":
-            await ws.send_json({"type":"system","content":"⚠️ Aviso: seu pagamento esta pendente. Regularize para evitar bloqueio."})
+            pass  # Allow with warning - billing warning shown in UI
 
         allowed, pct = check_limit(sess["user_id"])
         if not allowed:
