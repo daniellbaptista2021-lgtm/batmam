@@ -420,10 +420,7 @@ def _handle_subscription_deleted(sub: dict) -> dict:
         try:
             import urllib.request, json as _json
             zapi_url = "https://api.z-api.io/instances/3EF47A29C3407180CF13C22309410E11/token/3F58BF302142429BA7FAD499/send-text"
-            msg = f"🛑 *CLOW CANCELAMENTO*
-{user_name} ({user_email})
-Plano {old_plan} cancelado.
-Acesso bloqueado automaticamente."
+            msg = f"CLOW CANCELAMENTO - {user_name} ({user_email}) - Plano {old_plan} cancelado. Acesso bloqueado."
             data = _json.dumps({"phone": "5521990423520", "message": msg}).encode()
             req = urllib.request.Request(zapi_url, data=data, headers={"Content-Type": "application/json", "Client-Token": "F986fce42e250445fb74cc9ec87593732S"})
             urllib.request.urlopen(req, timeout=10)
@@ -462,11 +459,7 @@ def _handle_payment_failed(invoice: dict) -> dict:
     try:
         import urllib.request, json as _json
         zapi_url = "https://api.z-api.io/instances/3EF47A29C3407180CF13C22309410E11/token/3F58BF302142429BA7FAD499/send-text"
-        msg = f"⚠️ *CLOW BILLING*
-Pagamento falhou!
-Cliente: {user_name} ({user_email})
-Plano: {user_plan}
-Tentativa: {attempt}"
+        msg = f"CLOW BILLING - Pagamento falhou! Cliente: {user_name} ({user_email}) Plano: {user_plan} Tentativa: {attempt}"
         data = _json.dumps({"phone": "5521990423520", "message": msg}).encode()
         req = urllib.request.Request(zapi_url, data=data, headers={"Content-Type": "application/json", "Client-Token": "F986fce42e250445fb74cc9ec87593732S"})
         urllib.request.urlopen(req, timeout=10)
