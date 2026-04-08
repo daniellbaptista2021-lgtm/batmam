@@ -1,292 +1,184 @@
-"""Canva Design Tools — cria e gerencia designs profissionais via Canva API."""
+"""Canva Design Tools v2 — sem API token, usa links de templates + gerador HTML."""
 
 from __future__ import annotations
 import json
 import urllib.request
-import urllib.error
+import urllib.parse
 from typing import Any
 from .base import BaseTool
 
-CANVA_API = "https://api.canva.com/rest/v1"
 
-
-def _canva_request(path: str, method: str = "GET", data: dict = None, token: str = "") -> dict:
-    """Request autenticado na Canva Connect API."""
-    from .. import config
-    api_token = token or getattr(config, "CANVA_API_TOKEN", "")
-    if not api_token:
-        return {"error": "CANVA_API_TOKEN nao configurado. Adicione no .env"}
-    url = f"{CANVA_API}/{path.lstrip('/')}"
-    headers = {
-        "Authorization": f"Bearer {api_token}",
-        "Content-Type": "application/json",
-    }
-    body = json.dumps(data).encode() if data else None
-    try:
-        req = urllib.request.Request(url, data=body, headers=headers, method=method)
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            return json.loads(resp.read().decode())
-    except urllib.error.HTTPError as e:
-        err_body = e.read().decode() if e.fp else str(e)
-        return {"error": f"Canva API {e.code}: {err_body[:200]}"}
-    except Exception as e:
-        return {"error": str(e)}
-
-
-# ═══════════════════════════════════════════════════
-# DESIGN CREATION
-# ═══════════════════════════════════════════════════
-
-class CanvaCreateDesignTool(BaseTool):
-    name = "canva_create_design"
-    description = "Cria um novo design no Canva a partir de um tipo (poster, presentation, social_media, etc)."
+class CanvaTemplateTool(BaseTool):
+    name = "canva_template"
+    description = "Gera link do Canva com templates prontos para o cliente personalizar. Nao precisa de token."
 
     def get_schema(self) -> dict:
         return {
             "type": "object",
             "properties": {
-                "title": {"type": "string", "description": "Titulo do design"},
+                "query": {"type": "string", "description": "O que o cliente precisa (ex: post pizzaria, logo barbearia, cartao advogado)"},
                 "design_type": {
                     "type": "string",
-                    "enum": ["doc", "whiteboard", "presentation", "instagram_post", "instagram_story",
-                             "facebook_post", "poster", "flyer", "logo", "business_card",
-                             "youtube_thumbnail", "twitter_post", "linkedin_post", "banner",
-                             "a4_document", "custom"],
+                    "enum": ["instagram_post", "instagram_story", "facebook_post", "logo",
+                             "business_card", "poster", "flyer", "youtube_thumbnail",
+                             "presentation", "banner", "menu", "convite", "curriculum"],
                     "description": "Tipo de design",
                 },
-                "width": {"type": "integer", "description": "Largura em px (apenas se custom)"},
-                "height": {"type": "integer", "description": "Altura em px (apenas se custom)"},
-            },
-            "required": ["title", "design_type"],
-        }
-
-    def execute(self, **kwargs: Any) -> str:
-        dt = kwargs["design_type"]
-        data = {"title": kwargs["title"]}
-        # Map friendly names to Canva design types
-        type_map = {
-            "instagram_post": {"width": 1080, "height": 1080},
-            "instagram_story": {"width": 1080, "height": 1920},
-            "facebook_post": {"width": 1200, "height": 630},
-            "poster": {"width": 1080, "height": 1520},
-            "flyer": {"width": 1080, "height": 1520},
-            "logo": {"width": 500, "height": 500},
-            "business_card": {"width": 1050, "height": 600},
-            "youtube_thumbnail": {"width": 1280, "height": 720},
-            "twitter_post": {"width": 1200, "height": 675},
-            "linkedin_post": {"width": 1200, "height": 627},
-            "banner": {"width": 1920, "height": 1080},
-            "a4_document": {"width": 595, "height": 842},
-            "custom": {"width": kwargs.get("width", 1080), "height": kwargs.get("height", 1080)},
-        }
-        if dt in type_map:
-            data["design_type"] = {"type": "custom", **type_map[dt]}
-        elif dt in ("doc", "whiteboard", "presentation"):
-            data["design_type"] = {"type": dt}
-        else:
-            data["design_type"] = {"type": "custom", "width": 1080, "height": 1080}
-
-        result = _canva_request("designs", method="POST", data=data)
-        if result.get("error"):
-            return f"Erro: {result['error']}"
-        design = result.get("design", result)
-        did = design.get("id", "?")
-        edit_url = design.get("urls", {}).get("edit_url", "")
-        view_url = design.get("urls", {}).get("view_url", "")
-        # Create shareable template link - client clicks and gets their own copy
-        share_url = f"https://www.canva.com/design/{did}/edit"
-        template_url = f"https://www.canva.com/design/{did}/remix"
-        return (f"Design criado!\n"
-                f"\nLink para o cliente (cria copia na conta dele):\n{template_url}\n"
-                f"\nLink de visualizacao:\n{view_url or share_url}\n"
-                f"\nID: {did}")
-
-
-class CanvaSearchTemplatesTool(BaseTool):
-    name = "canva_search_templates"
-    description = "Busca templates prontos no Canva por palavra-chave."
-
-    def get_schema(self) -> dict:
-        return {
-            "type": "object",
-            "properties": {
-                "query": {"type": "string", "description": "Termo de busca (ex: pizzaria, imobiliaria, fitness)"},
-                "limit": {"type": "integer", "description": "Quantidade (default: 5)"},
             },
             "required": ["query"],
         }
 
     def execute(self, **kwargs: Any) -> str:
-        limit = kwargs.get("limit", 5)
-        result = _canva_request(f"designs/search?query={kwargs['query']}&limit={limit}")
-        if result.get("error"):
-            return f"Erro: {result['error']}"
-        items = result.get("items", result.get("data", []))
-        if not items:
-            return "Nenhum template encontrado."
-        lines = []
-        for t in items[:limit]:
-            lines.append(f"- {t.get('title', '?')} (id: {t.get('id', '?')})")
-        return f"Templates ({len(lines)}):\n" + "\n".join(lines)
+        query = kwargs["query"]
+        dtype = kwargs.get("design_type", "")
 
-
-class CanvaGetDesignTool(BaseTool):
-    name = "canva_get_design"
-    description = "Obtem detalhes de um design pelo ID."
-
-    def get_schema(self) -> dict:
-        return {
-            "type": "object",
-            "properties": {
-                "design_id": {"type": "string", "description": "ID do design"},
-            },
-            "required": ["design_id"],
+        # Map design types to Canva search categories
+        type_map = {
+            "instagram_post": "instagram-posts",
+            "instagram_story": "instagram-stories",
+            "facebook_post": "facebook-posts",
+            "logo": "logos",
+            "business_card": "business-cards",
+            "poster": "posters",
+            "flyer": "flyers",
+            "youtube_thumbnail": "youtube-thumbnails",
+            "presentation": "presentations",
+            "banner": "banners",
+            "menu": "menus",
+            "convite": "invitations",
+            "curriculum": "resumes",
         }
 
-    def execute(self, **kwargs: Any) -> str:
-        result = _canva_request(f"designs/{kwargs['design_id']}")
-        if result.get("error"):
-            return f"Erro: {result['error']}"
-        d = result.get("design", result)
-        title = d.get("title", "?")
-        pages = d.get("page_count", "?")
-        url = d.get("urls", {}).get("edit_url", "")
-        view = d.get("urls", {}).get("view_url", "")
-        return f"Design: {title}\nPaginas: {pages}\nEditar: {url}\nVisualizar: {view}"
+        canva_cat = type_map.get(dtype, "")
+        encoded_q = urllib.parse.quote(query)
+
+        if canva_cat:
+            url = f"https://www.canva.com/templates/search/{canva_cat}/{encoded_q}/"
+            create_url = f"https://www.canva.com/create/{canva_cat.rstrip('s')}/"
+        else:
+            url = f"https://www.canva.com/templates/?query={encoded_q}"
+            create_url = f"https://www.canva.com/create/"
+
+        return (f"Aqui estao templates prontos do Canva para voce personalizar:\n\n"
+                f"Buscar templates: {url}\n\n"
+                f"Criar do zero: {create_url}\n\n"
+                f"Clique no link, escolha um template e personalize com suas cores, textos e fotos. "
+                f"E gratis e voce pode baixar como PNG ou PDF.")
 
 
-class CanvaExportDesignTool(BaseTool):
-    name = "canva_export_design"
-    description = "Exporta um design como PNG, PDF ou MP4."
+class DesignGeneratorTool(BaseTool):
+    name = "design_generate"
+    description = "Gera uma arte/design profissional como HTML. Cria posts, banners, cartoes, flyers como arquivo HTML estilizado que pode ser baixado como imagem."
 
     def get_schema(self) -> dict:
         return {
             "type": "object",
             "properties": {
-                "design_id": {"type": "string", "description": "ID do design"},
-                "format": {
+                "design_type": {
                     "type": "string",
-                    "enum": ["png", "jpg", "pdf", "mp4", "gif", "pptx"],
-                    "description": "Formato de exportacao",
+                    "enum": ["instagram_post", "instagram_story", "facebook_post",
+                             "banner", "business_card", "flyer", "menu", "poster"],
+                    "description": "Tipo de design",
                 },
-                "quality": {"type": "string", "enum": ["low", "medium", "high"], "description": "Qualidade (default: high)"},
+                "title": {"type": "string", "description": "Titulo/headline principal"},
+                "subtitle": {"type": "string", "description": "Subtitulo ou descricao"},
+                "business_name": {"type": "string", "description": "Nome do negocio"},
+                "phone": {"type": "string", "description": "Telefone (opcional)"},
+                "colors": {"type": "string", "description": "Cores principais (ex: #FF6B00, #1a1a2e). Opcional."},
+                "style": {
+                    "type": "string",
+                    "enum": ["moderno", "elegante", "minimalista", "bold", "tech", "organico", "luxo"],
+                    "description": "Estilo visual",
+                },
+                "items": {"type": "array", "items": {"type": "string"}, "description": "Lista de itens (ex: pratos do menu, servicos)"},
+                "cta": {"type": "string", "description": "Call to action (ex: Peca agora!, Saiba mais)"},
             },
-            "required": ["design_id", "format"],
+            "required": ["design_type", "title", "business_name"],
         }
 
     def execute(self, **kwargs: Any) -> str:
-        data = {
-            "design_id": kwargs["design_id"],
-            "format": {"type": kwargs["format"]},
+        import os, time, hashlib
+        dtype = kwargs["design_type"]
+        title = kwargs["title"]
+        subtitle = kwargs.get("subtitle", "")
+        biz = kwargs["business_name"]
+        phone = kwargs.get("phone", "")
+        colors = kwargs.get("colors", "").split(",") if kwargs.get("colors") else []
+        style = kwargs.get("style", "moderno")
+        items = kwargs.get("items", [])
+        cta = kwargs.get("cta", "")
+
+        # Size configs
+        sizes = {
+            "instagram_post": ("1080px", "1080px"),
+            "instagram_story": ("1080px", "1920px"),
+            "facebook_post": ("1200px", "630px"),
+            "banner": ("1920px", "600px"),
+            "business_card": ("1050px", "600px"),
+            "flyer": ("1080px", "1520px"),
+            "menu": ("1080px", "1520px"),
+            "poster": ("1080px", "1520px"),
         }
-        if kwargs.get("quality"):
-            data["format"]["quality"] = kwargs["quality"]
-        result = _canva_request("exports", method="POST", data=data)
-        if result.get("error"):
-            return f"Erro: {result['error']}"
-        export = result.get("export", result)
-        status = export.get("status", "?")
-        eid = export.get("id", "?")
-        if status == "completed":
-            urls = export.get("urls", [])
-            url_list = "\n".join([u.get("url", u) if isinstance(u, dict) else str(u) for u in urls])
-            return f"Exportado! Envie este link para o cliente:\n{url_list}"
-        return f"Exportacao em andamento (id: {eid}). Use canva_check_export para verificar."
+        w, h = sizes.get(dtype, ("1080px", "1080px"))
 
-
-class CanvaCheckExportTool(BaseTool):
-    name = "canva_check_export"
-    description = "Verifica status de uma exportacao do Canva."
-
-    def get_schema(self) -> dict:
-        return {
-            "type": "object",
-            "properties": {
-                "export_id": {"type": "string", "description": "ID da exportacao"},
-            },
-            "required": ["export_id"],
+        # Color schemes
+        schemes = {
+            "moderno": ("#6C5CE7", "#0D0D1A", "#FFFFFF", "#A29BFE"),
+            "elegante": ("#C9A84C", "#1A1A1A", "#FFFFFF", "#E8D9A0"),
+            "minimalista": ("#333333", "#FFFFFF", "#000000", "#999999"),
+            "bold": ("#FF6B35", "#1A1A2E", "#FFFFFF", "#FF9F1C"),
+            "tech": ("#00D2FF", "#0A0A1A", "#FFFFFF", "#7B2FF7"),
+            "organico": ("#2D6A4F", "#FEFAE0", "#1B4332", "#95D5B2"),
+            "luxo": ("#D4AF37", "#0D0D0D", "#FFFFFF", "#B8860B"),
         }
+        c1, c2, c3, c4 = schemes.get(style, schemes["moderno"])
+        if len(colors) >= 2:
+            c1, c2 = colors[0].strip(), colors[1].strip()
 
-    def execute(self, **kwargs: Any) -> str:
-        result = _canva_request(f"exports/{kwargs['export_id']}")
-        if result.get("error"):
-            return f"Erro: {result['error']}"
-        export = result.get("export", result)
-        status = export.get("status", "?")
-        if status == "completed":
-            urls = export.get("urls", [])
-            return f"Exportacao concluida! URLs:\n" + "\n".join([u.get("url", u) if isinstance(u, dict) else str(u) for u in urls])
-        return f"Status: {status}"
+        items_html = ""
+        if items:
+            items_html = "".join([f'<div style="padding:8px 0;border-bottom:1px solid {c1}33;font-size:18px">{it}</div>' for it in items])
 
+        phone_html = f'<div style="margin-top:12px;font-size:16px;opacity:.8">{phone}</div>' if phone else ""
+        cta_html = f'<div style="margin-top:20px;display:inline-block;padding:14px 32px;background:{c1};color:{c3};border-radius:30px;font-weight:700;font-size:18px">{cta}</div>' if cta else ""
+        sub_html = f'<div style="font-size:20px;opacity:.85;margin-top:8px;max-width:80%">{subtitle}</div>' if subtitle else ""
 
-class CanvaListBrandKitsTool(BaseTool):
-    name = "canva_list_brand_kits"
-    description = "Lista brand kits (cores, fontes, logos da marca) do usuario no Canva."
+        html = f"""<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{width:{w};height:{h};background:{c2};color:{c3};font-family:'Inter',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px;overflow:hidden;position:relative}}
+body::before{{content:'';position:absolute;top:-50%;right:-50%;width:100%;height:100%;background:radial-gradient(circle,{c1}22 0%,transparent 70%);pointer-events:none}}
+body::after{{content:'';position:absolute;bottom:-30%;left:-30%;width:80%;height:80%;background:radial-gradient(circle,{c4}15 0%,transparent 60%);pointer-events:none}}
+h1{{font-size:48px;font-weight:800;line-height:1.1;position:relative;z-index:1}}
+.biz{{font-size:14px;letter-spacing:4px;text-transform:uppercase;opacity:.6;margin-bottom:20px;position:relative;z-index:1}}
+.accent{{color:{c1}}}
+.items{{text-align:left;width:80%;margin:20px auto;position:relative;z-index:1}}
+</style></head><body>
+<div class="biz">{biz}</div>
+<h1>{title.replace(' ', ' <span class="accent">',1).replace(' ', '</span> ',1) if ' ' in title else f'<span class="accent">{title}</span>'}</h1>
+{sub_html}
+<div class="items">{items_html}</div>
+{cta_html}
+{phone_html}
+</body></html>"""
 
-    def get_schema(self) -> dict:
-        return {"type": "object", "properties": {}, "required": []}
+        # Save to static/files
+        static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "files")
+        os.makedirs(static_dir, exist_ok=True)
+        fname = f"design_{dtype}_{int(time.time())}.html"
+        fpath = os.path.join(static_dir, fname)
+        with open(fpath, "w", encoding="utf-8") as f:
+            f.write(html)
 
-    def execute(self, **kwargs: Any) -> str:
-        result = _canva_request("brand-templates")
-        if result.get("error"):
-            return f"Erro: {result['error']}"
-        items = result.get("items", result.get("data", []))
-        if not items:
-            return "Nenhum brand kit encontrado."
-        lines = [f"- {b.get('title', b.get('name', '?'))} (id: {b.get('id', '?')})" for b in items[:10]]
-        return f"Brand Kits ({len(lines)}):\n" + "\n".join(lines)
-
-
-class CanvaUploadAssetTool(BaseTool):
-    name = "canva_upload_asset"
-    description = "Faz upload de um asset (imagem, logo) para o Canva via URL."
-
-    def get_schema(self) -> dict:
-        return {
-            "type": "object",
-            "properties": {
-                "name": {"type": "string", "description": "Nome do asset"},
-                "url": {"type": "string", "description": "URL publica da imagem"},
-            },
-            "required": ["name", "url"],
-        }
-
-    def execute(self, **kwargs: Any) -> str:
-        data = {
-            "name": kwargs["name"],
-            "url": kwargs["url"],
-        }
-        result = _canva_request("assets/upload", method="POST", data=data)
-        if result.get("error"):
-            return f"Erro: {result['error']}"
-        asset = result.get("asset", result)
-        return f"Asset '{kwargs['name']}' enviado! ID: {asset.get('id', '?')}"
-
-
-class CanvaListDesignsTool(BaseTool):
-    name = "canva_list_designs"
-    description = "Lista designs recentes do usuario no Canva."
-
-    def get_schema(self) -> dict:
-        return {
-            "type": "object",
-            "properties": {
-                "limit": {"type": "integer", "description": "Quantidade (default: 10)"},
-            },
-            "required": [],
-        }
-
-    def execute(self, **kwargs: Any) -> str:
-        limit = kwargs.get("limit", 10)
-        result = _canva_request(f"designs?limit={limit}")
-        if result.get("error"):
-            return f"Erro: {result['error']}"
-        items = result.get("items", result.get("data", []))
-        if not items:
-            return "Nenhum design encontrado."
-        lines = []
-        for d in items[:limit]:
-            title = d.get("title", "Sem titulo")
-            did = d.get("id", "?")
-            lines.append(f"- {title} (id: {did})")
-        return f"Designs ({len(lines)}):\n" + "\n".join(lines)
+        url = f"/static/files/{fname}"
+        return (f"Design criado!\n\n"
+                f"Abrir: {url}\n\n"
+                f"Tipo: {dtype} ({w} x {h})\n"
+                f"Estilo: {style}\n\n"
+                f"Clique em 'Abrir' para visualizar. Para salvar como imagem:\n"
+                f"1. Abra o link\n"
+                f"2. Clique com botao direito > Salvar como imagem\n"
+                f"3. Ou use Print Screen / screenshot\n\n"
+                f"Quer que eu ajuste cores, textos ou crie mais materiais?")

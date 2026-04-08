@@ -127,7 +127,7 @@ def create_default_registry() -> ToolRegistry:
     registry.register(WhatsAppTestWebhookTool())
     registry.register(WhatsAppFullTestTool())
     registry.register(WhatsAppSendTestMessageTool())
-    # Chatwoot CRM tools (15)
+        # Chatwoot CRM tools (15)
     from .chatwoot_tools import (
         ChatwootSetupTool, ChatwootTestConnectionTool,
         ChatwootListLabelsTool, ChatwootCreateLabelTool,
@@ -153,18 +153,8 @@ def create_default_registry() -> ToolRegistry:
     registry.register(ChatwootCreateAutomationTool())
     registry.register(ChatwootListAutomationsTool())
     registry.register(ChatwootReportTool())
-    # Canva Design tools (9)
-    from .canva_tools import (
-        CanvaCreateDesignTool, CanvaSearchTemplatesTool, CanvaGetDesignTool,
-        CanvaExportDesignTool, CanvaCheckExportTool, CanvaListBrandKitsTool,
-        CanvaUploadAssetTool, CanvaListDesignsTool,
-    )
-    registry.register(CanvaCreateDesignTool())
-    registry.register(CanvaSearchTemplatesTool())
-    registry.register(CanvaGetDesignTool())
-    registry.register(CanvaExportDesignTool())
-    registry.register(CanvaCheckExportTool())
-    registry.register(CanvaListBrandKitsTool())
-    registry.register(CanvaUploadAssetTool())
-    registry.register(CanvaListDesignsTool())
+    # Canva + Design tools (2)
+    from .canva_tools import CanvaTemplateTool, DesignGeneratorTool
+    registry.register(CanvaTemplateTool())
+    registry.register(DesignGeneratorTool())
     return registry
