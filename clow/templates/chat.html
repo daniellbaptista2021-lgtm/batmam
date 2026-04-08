@@ -60,34 +60,41 @@
       <div class="sb-lbl open" onclick="this.classList.toggle('open')">Criar <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
         <button class="sb-btn" onclick="qa('Cria uma landing page de ')">Landing Page</button>
-        <button class="sb-btn" onclick="qa('Cria um site completo para ')">Site</button>
         <button class="sb-btn" onclick="qa('Gera uma planilha de ')">Planilha</button>
-        <button class="sb-btn" onclick="qa('Faz um contrato de ')">Contrato</button>
-        <button class="sb-btn" onclick="qa('Cria um post pro Instagram de ')">Post Instagram</button>
-        <button class="sb-btn" onclick="qa('Cria um banner para ')">Banner / Arte</button>
+        <button class="sb-btn" onclick="qa('Cria uma apresentação sobre ')">Apresentação</button>
+        <button class="sb-btn" onclick="qa('Faz um documento de ')">Documento</button>
+        <button class="sb-btn" onclick="qa('Me faz um app de ')">Web App</button>
       </div>
     </div>
     <div class="sb-sec">
-      <div class="sb-lbl" onclick="this.classList.toggle('open')">Vendas <span class="ar">&#9654;</span></div>
+      <div class="sb-lbl" onclick="this.classList.toggle('open')">Marketing <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="qa('Gera copy para anuncio de ')">Copy para Anuncio</button>
-        <button class="sb-btn" onclick="qa('Cria sequencia de follow-up para ')">Follow-up</button>
-        <button class="sb-btn" onclick="qa('Cria proposta comercial para ')">Proposta Comercial</button>
-        <button class="sb-btn" onclick="qa('Pesquisa sobre ')">Pesquisar na Web</button>
+        <button class="sb-btn" onclick="qa('Analise minha campanha de tráfego pago ')">Tráfego Pago</button>
+        <button class="sb-btn" onclick="qa('Gera copy para anúncio de ')">Copy</button>
+        <button class="sb-btn" onclick="qa('Cria conteúdo para instagram sobre ')">Redes Sociais</button>
+        <button class="sb-btn" onclick="qa('Cria sequência de emails para ')">Email Marketing</button>
+        <button class="sb-btn" onclick="qa('Faz auditoria SEO de ')">SEO</button>
+        <button class="sb-btn" onclick="qa('Define estratégia de precificação para ')">Pricing</button>
       </div>
     </div>
     <div class="sb-sec">
-      <div class="sb-lbl" onclick="this.classList.toggle('open')">CRM <span class="ar">&#9654;</span></div>
+      <div class="sb-lbl" onclick="this.classList.toggle('open')">Negócios <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
-        <button class="sb-btn" onclick="qa('Configura meu CRM Chatwoot')">Configurar CRM</button>
-        <button class="sb-btn" onclick="qa('Cria etiquetas no CRM: Lead Quente, Lead Frio, VIP')">Criar Etiquetas</button>
-        <button class="sb-btn" onclick="qa('Me da um relatorio do CRM')">Relatorio CRM</button>
-        <button class="sb-btn" onclick="qa('Lista minhas conversas abertas no CRM')">Conversas Abertas</button>
+        <button class="sb-btn" onclick="qa('Cria proposta comercial para ')">Proposta</button>
+        <button class="sb-btn" onclick="qa('Analise métricas SaaS: ')">Métricas SaaS</button>
+        <button class="sb-btn" onclick="qa('Cria contrato de ')">Contrato</button>
       </div>
     </div>
-    
+    <div class="sb-sec">
+      <div class="sb-lbl" onclick="this.classList.toggle('open')">Missões <span class="ar">&#9654;</span></div>
+      <div class="sb-ct">
+        <button class="sb-btn" onclick="qa('/mission Cria um site completo para ')">Site Completo</button>
+        <button class="sb-btn" onclick="qa('/mission Campanha de tráfego para ')">Campanha</button>
+        <button class="sb-btn" onclick="qa('/mission Setup digital completo para ')">Setup Digital</button>
+      </div>
+    </div>
     <div class="sb-sep"></div>
-    <div class="sb-sec" id="secConexoes" style="display:none">
+    <div class="sb-sec">
       <div class="sb-lbl" onclick="this.classList.toggle('open')">Conexões <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
         <button class="sb-btn" onclick="sendCmd('/connections')">Ver conexões</button>
@@ -95,7 +102,7 @@
       </div>
     </div>
     <div class="sb-sep"></div>
-    <div class="sb-sec" id="secAutomacao" style="display:none">
+    <div class="sb-sec">
       <div class="sb-lbl open" onclick="this.classList.toggle('open')">Automacao <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
         <a class="sb-btn" href="/app/whatsapp" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:inherit"><svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2a10 10 0 00-8.68 14.95L2 22l5.23-1.37A10 10 0 1012 2z"/></svg>WhatsApp Trigger</a>
@@ -150,8 +157,6 @@
   <div class="input-area">
     <div id="filePreview"></div>
     <div class="ibox">
-      <input type="file" id="fileInp" style="display:none" accept=".xlsx,.xls,.csv,.docx,.doc,.txt,.py,.js,.ts,.html,.css,.json,.md,.pdf" onchange="handleFileSelect(this)">
-      <button type="button" onclick="document.getElementById('fileInp').click()" style="background:none;border:none;cursor:pointer;padding:6px 4px 6px 8px;opacity:.5;transition:opacity .2s" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.5" title="Enviar arquivo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9B59FC" stroke-width="2" stroke-linecap="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg></button>
       <label for="inp" class="sr-only">Digite sua mensagem</label>
       <textarea id="inp" rows="1" placeholder="O que você precisa?" autofocus aria-label="Digite sua mensagem"></textarea>
       <div class="ibox-right">
@@ -189,6 +194,5 @@
   window.clsDrop=function(){if(drop)drop.classList.remove('show')};
 })();
 </script>
-<div id="dragOv" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(155,89,252,.12);z-index:9999;align-items:center;justify-content:center"><div style="padding:40px 60px;border:3px dashed rgba(155,89,252,.5);border-radius:20px;background:rgba(10,5,30,.85);color:#fff;font-size:1.1rem;font-weight:600">Solte o arquivo aqui</div></div>
 </body>
 </html>

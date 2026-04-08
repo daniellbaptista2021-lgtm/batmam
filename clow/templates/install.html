@@ -213,9 +213,9 @@ details p{color:var(--t2);font-size:.85rem;margin-top:8px}
       <div class="step">
         <div class="step-number">3</div>
         <div class="step-content">
-          <h4>Conecte ao Clow</h4>
+          <h4>Configure sua API Key</h4>
 
-          <!-- Plano pago: gera token de instalacao (IA inclusa no plano) -->
+          <!-- Plano pago: gera token de instalacao (API key nunca exposta) -->
           <div id="install-paid" style="display:none">
             <div class="config-option" style="border-color:var(--p)">
               <h5 class="paid-plan-title" style="color:var(--p)">Plano pago &mdash; Instalacao automatica</h5>
@@ -236,7 +236,7 @@ details p{color:var(--t2);font-size:.85rem;margin-top:8px}
                 <div style="margin-top:12px;font-size:.8rem;color:var(--tm);display:flex;flex-direction:column;gap:4px">
                   <span>&#x23F0; Este comando expira em 24 horas</span>
                   <span>&#x1F512; Uso unico &mdash; apos instalar, o comando e invalidado</span>
-                  <span>&#x1F511; IA inclusa no seu plano</span>
+                  <span>&#x1F511; Sua API key nunca e exposta</span>
                 </div>
               </div>
             </div>
@@ -245,11 +245,11 @@ details p{color:var(--t2);font-size:.85rem;margin-top:8px}
           <!-- Plano gratuito (BYOK): usuario usa propria key -->
           <div id="install-free">
             <div class="config-option">
-              <h5>Plano com IA inclusa:</h5>
-              <p>A IA ja esta configurada. Basta instalar e usar:</p>
+              <h5>Plano gratuito (Traga sua Key):</h5>
+              <p>Pegue sua key em <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> e cole:</p>
               <div class="code-block">
-                <code>mkdir -p ~/.clow/app && echo "# Configuracao automatica
-# IA ja inclusa - nenhuma chave necessaria
+                <code>mkdir -p ~/.clow/app && echo "CLOW_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-SUA_KEY_AQUI
 CLOW_MODEL=claude-sonnet-4-20250514" > ~/.clow/app/.env</code>
                 <button class="copy-btn">&#x1F4CB;</button>
               </div>
@@ -347,7 +347,7 @@ CLOW_MODEL=claude-sonnet-4-20250514" > ~/.clow/app/.env</code>
       <div class="step">
         <div class="step-number">3</div>
         <div class="step-content">
-          <h4>Conecte ao Clow</h4>
+          <h4>Configure a API Key</h4>
           <div class="step3-paid" style="display:none">
             <div class="config-option" style="border-color:var(--p)">
               <h5 style="color:var(--p)">Seu plano ja inclui IA</h5>
@@ -356,18 +356,18 @@ CLOW_MODEL=claude-sonnet-4-20250514" > ~/.clow/app/.env</code>
               <div class="generated-unix" style="display:none;margin-top:12px">
                 <p style="font-size:.85rem;color:var(--t2);margin-bottom:8px">Copie e cole no terminal:</p>
                 <div class="code-block"><code class="cmd-unix-output"></code><button class="copy-btn">&#x1F4CB;</button></div>
-                <div style="margin-top:8px;font-size:.78rem;color:var(--tm)">&#x23F0; Expira em 24h &mdash; &#x1F512; Uso unico &mdash; &#x1F511; IA inclusa no plano</div>
+                <div style="margin-top:8px;font-size:.78rem;color:var(--tm)">&#x23F0; Expira em 24h &mdash; &#x1F512; Uso unico &mdash; &#x1F511; API key nunca exposta</div>
               </div>
             </div>
           </div>
           <div class="step3-free">
             <div class="config-option">
-              <h5>Plano com IA inclusa:</h5>
-              <p>A IA ja esta configurada. Basta instalar e usar:</p>
+              <h5>Plano gratuito (Traga sua Key):</h5>
+              <p>Pegue sua key em <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> e cole:</p>
               <div class="code-block">
                 <code>mkdir -p ~/.clow/app && cat > ~/.clow/app/.env << 'EOF'
-# Configuracao automatica
-# IA ja inclusa - nenhuma chave necessaria
+CLOW_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-SUA_KEY_AQUI
 CLOW_MODEL=claude-sonnet-4-20250514
 EOF</code>
                 <button class="copy-btn">&#x1F4CB;</button>
@@ -448,7 +448,7 @@ EOF</code>
       <div class="step">
         <div class="step-number">3</div>
         <div class="step-content">
-          <h4>Conecte ao Clow</h4>
+          <h4>Configure a API Key</h4>
           <div class="step3-paid" style="display:none">
             <div class="config-option" style="border-color:var(--p)">
               <h5 style="color:var(--p)">Seu plano ja inclui IA</h5>
@@ -457,18 +457,18 @@ EOF</code>
               <div class="generated-unix" style="display:none;margin-top:12px">
                 <p style="font-size:.85rem;color:var(--t2);margin-bottom:8px">Copie e cole no terminal:</p>
                 <div class="code-block"><code class="cmd-unix-output"></code><button class="copy-btn">&#x1F4CB;</button></div>
-                <div style="margin-top:8px;font-size:.78rem;color:var(--tm)">&#x23F0; Expira em 24h &mdash; &#x1F512; Uso unico &mdash; &#x1F511; IA inclusa no plano</div>
+                <div style="margin-top:8px;font-size:.78rem;color:var(--tm)">&#x23F0; Expira em 24h &mdash; &#x1F512; Uso unico &mdash; &#x1F511; API key nunca exposta</div>
               </div>
             </div>
           </div>
           <div class="step3-free">
             <div class="config-option">
-              <h5>Plano com IA inclusa:</h5>
-              <p>A IA ja esta configurada. Basta instalar e usar:</p>
+              <h5>Plano gratuito (Traga sua Key):</h5>
+              <p>Pegue sua key em <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> e cole:</p>
               <div class="code-block">
                 <code>mkdir -p ~/.clow/app && cat > ~/.clow/app/.env << 'EOF'
-# Configuracao automatica
-# IA ja inclusa - nenhuma chave necessaria
+CLOW_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-SUA_KEY_AQUI
 CLOW_MODEL=claude-sonnet-4-20250514
 EOF</code>
                 <button class="copy-btn">&#x1F4CB;</button>
@@ -550,7 +550,7 @@ EOF</code>
       <div class="step">
         <div class="step-number">3</div>
         <div class="step-content">
-          <h4>Conecte ao Clow</h4>
+          <h4>Configure a API Key</h4>
           <div class="step3-paid" style="display:none">
             <div class="config-option" style="border-color:var(--p)">
               <h5 style="color:var(--p)">Seu plano ja inclui IA</h5>
@@ -559,18 +559,18 @@ EOF</code>
               <div class="generated-unix" style="display:none;margin-top:12px">
                 <p style="font-size:.85rem;color:var(--t2);margin-bottom:8px">Copie e cole no terminal:</p>
                 <div class="code-block"><code class="cmd-unix-output"></code><button class="copy-btn">&#x1F4CB;</button></div>
-                <div style="margin-top:8px;font-size:.78rem;color:var(--tm)">&#x23F0; Expira em 24h &mdash; &#x1F512; Uso unico &mdash; &#x1F511; IA inclusa no plano</div>
+                <div style="margin-top:8px;font-size:.78rem;color:var(--tm)">&#x23F0; Expira em 24h &mdash; &#x1F512; Uso unico &mdash; &#x1F511; API key nunca exposta</div>
               </div>
             </div>
           </div>
           <div class="step3-free">
             <div class="config-option">
-              <h5>Plano com IA inclusa:</h5>
-              <p>A IA ja esta configurada. Basta instalar e usar:</p>
+              <h5>Plano gratuito (Traga sua Key):</h5>
+              <p>Pegue sua key em <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> e cole:</p>
               <div class="code-block">
                 <code>mkdir -p ~/.clow/app && cat > ~/.clow/app/.env << 'EOF'
-# Configuracao automatica
-# IA ja inclusa - nenhuma chave necessaria
+CLOW_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-SUA_KEY_AQUI
 CLOW_MODEL=claude-sonnet-4-20250514
 EOF</code>
                 <button class="copy-btn">&#x1F4CB;</button>
