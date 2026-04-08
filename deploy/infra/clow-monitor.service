@@ -1,0 +1,15 @@
+[Unit]
+Description=Clow vLLM Monitor + Auto-Fallback
+After=network.target clow.service nginx.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/clow-monitor.sh
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=clow-monitor
+
+[Install]
+WantedBy=multi-user.target
