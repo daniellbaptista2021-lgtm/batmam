@@ -148,6 +148,45 @@ _http_sessions: dict[str, Any] = {}
 
 
 def register_chat_routes(app: FastAPI) -> None:
+
+    # ── Audio Transcription (Whisper) ──
+    _whisper_model = None
+
+    def _get_whisper():
+        nonlocal _whisper_model
+        if _whisper_model is None:
+            from faster_whisper import WhisperModel
+            _whisper_model = WhisperModel("base", device="cpu", compute_type="int8")
+        return _whisper_model
+
+    @app.post("/api/v1/transcribe", tags=["chat"])
+    async def transcribe_audio(request: Request):
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        import tempfile, os
+        form = await request.form()
+        audio_file = form.get("audio")
+        if not audio_file:
+            return JSONResponse({"error": "audio file required"}, status_code=400)
+        # Save temp file
+        suffix = ".webm"
+        if hasattr(audio_file, "filename") and audio_file.filename:
+            suffix = "." + audio_file.filename.rsplit(".", 1)[-1] if "." in audio_file.filename else ".webm"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            content = await audio_file.read()
+            tmp.write(content)
+            tmp_path = tmp.name
+        try:
+            model = _get_whisper()
+            segments, info = model.transcribe(tmp_path, language="pt", beam_size=5)
+            text = " ".join(seg.text.strip() for seg in segments)
+            return JSONResponse({"transcription": text, "language": info.language})
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
+        finally:
+            os.unlink(tmp_path)
+
     """Register the main chat API endpoint."""
 
     @app.post("/api/v1/chat", dependencies=[Depends(_rate_limit_dependency)])

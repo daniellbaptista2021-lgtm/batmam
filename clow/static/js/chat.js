@@ -351,7 +351,7 @@ function toggleRec(){
 }
 
 async function startRec(){
-  if(!hasSpeechRec){showToast('Seu navegador não suporta transcrição de áudio. Digite sua mensagem.','error');return}
+  // Whisper server-side — sempre disponivel
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     const mimeTypes=['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'];
@@ -359,17 +359,11 @@ async function startRec(){
     mediaRec=new MediaRecorder(stream,mime?{mimeType:mime}:{});
     audioChunks=[];audioTranscript='';
     mediaRec.ondataavailable=e=>{if(e.data.size>0)audioChunks.push(e.data)};
-    mediaRec.onstop=()=>{stream.getTracks().forEach(t=>t.stop());audioBlob=new Blob(audioChunks,{type:mediaRec.mimeType||'audio/webm'});audioUrl=URL.createObjectURL(audioBlob);showAudioPreview()};
+    mediaRec.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());audioBlob=new Blob(audioChunks,{type:mediaRec.mimeType||'audio/webm'});audioUrl=URL.createObjectURL(audioBlob);try{const fd=new FormData();fd.append('audio',audioBlob,'audio.webm');const r=await fetch('/api/v1/transcribe',{method:'POST',body:fd});const d=await r.json();if(d.transcription)audioTranscript=d.transcription}catch(e){console.warn('Whisper transcription failed',e)}showAudioPreview()};
     mediaRec.start();
-    // Web Speech API — transcricao em tempo real
+    // Server-side Whisper transcription (Web Speech API disabled)
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    speechRec=new SR();
-    speechRec.lang='pt-BR';
-    speechRec.continuous=true;
-    speechRec.interimResults=false;
-    speechRec.onresult=(ev)=>{audioTranscript=Array.from(ev.results).map(r=>r[0].transcript).join(' ')};
-    speechRec.onerror=()=>{};
-    speechRec.start();
+    // Whisper server-side — transcricao acontece no onstop
     MIC.classList.add('recording');
     recStart=Date.now();
     recTimer=setInterval(()=>{
