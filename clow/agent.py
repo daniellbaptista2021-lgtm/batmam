@@ -1418,11 +1418,33 @@ class Agent:
     @staticmethod
     def _parse_arguments(arguments: str | dict) -> dict:
         if isinstance(arguments, dict):
-            return arguments
-        try:
-            return json.loads(arguments)
-        except (json.JSONDecodeError, TypeError):
-            return {"raw": arguments}
+            result = arguments
+        else:
+            try:
+                result = json.loads(arguments)
+            except (json.JSONDecodeError, TypeError):
+                # Try fixing Python-style strings (single quotes)
+                try:
+                    import ast
+                    result = ast.literal_eval(arguments)
+                    if not isinstance(result, dict):
+                        result = {"raw": arguments}
+                except Exception:
+                    result = {"raw": arguments}
+        # Fix string values that look like Python lists/dicts
+        for k, v in list(result.items()):
+            if isinstance(v, str):
+                v_stripped = v.strip()
+                if (v_stripped.startswith("[") and v_stripped.endswith("]")) or (v_stripped.startswith("{") and v_stripped.endswith("}")):
+                    try:
+                        import ast
+                        result[k] = ast.literal_eval(v_stripped)
+                    except Exception:
+                        try:
+                            result[k] = json.loads(v_stripped.replace("'", '"'))
+                        except Exception:
+                            pass
+        return result
 
 
 class SubAgent:

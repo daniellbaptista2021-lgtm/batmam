@@ -93,8 +93,22 @@ class SpreadsheetTool(BaseTool):
                 max_len = max(len(str(cell.value or "")) for cell in col)
                 ws.column_dimensions[col[0].column_letter].width = min(max_len + 2, 50)
 
-            wb.save(path)
-            return f"Planilha criada: {path} ({len(rows)} linhas, aba '{sheet}')"
+            # Save to static/files for web download
+            import time as _t
+            static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "files")
+            os.makedirs(static_dir, exist_ok=True)
+            fname = os.path.basename(path)
+            if not fname.endswith(".xlsx"):
+                fname = fname.rsplit(".", 1)[0] + ".xlsx" if "." in fname else fname + ".xlsx"
+            fpath = os.path.join(static_dir, fname)
+            wb.save(fpath)
+            # Also save to requested path
+            try:
+                wb.save(path)
+            except Exception:
+                pass
+            url = f"/static/files/{fname}"
+            return f"Planilha criada com {len(rows)} linhas!\n\nBaixar: {url}\n\nAbrir no Google Sheets: copie o link, va em sheets.google.com > Arquivo > Importar"
 
         except ImportError:
             return self._create_csv(path.replace(".xlsx", ".csv"), headers, rows)
@@ -105,7 +119,23 @@ class SpreadsheetTool(BaseTool):
             if headers:
                 writer.writerow(headers)
             writer.writerows(rows)
-        return f"CSV criado: {path} ({len(rows)} linhas)"
+        # Also save to static/files for web
+        import time as _t
+        static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "files")
+        os.makedirs(static_dir, exist_ok=True)
+        fname = os.path.basename(path)
+        web_path = os.path.join(static_dir, fname)
+        try:
+            import shutil
+            shutil.copy2(path, web_path)
+        except Exception:
+            with open(web_path, "w", newline="", encoding="utf-8") as wf:
+                writer = csv.writer(wf)
+                if headers:
+                    writer.writerow(headers)
+                writer.writerows(rows)
+        url = f"/static/files/{fname}"
+        return f"Planilha criada com {len(rows)} linhas!\n\nBaixar: {url}"
 
     def _read(self, path: str, sheet: str) -> str:
         if path.endswith(".csv"):
