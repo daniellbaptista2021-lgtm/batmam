@@ -674,6 +674,10 @@ class Agent:
     }
 
     PRUNING_KEYWORDS: dict[str, list[str]] = {
+        "core": ["planilha", "excel", "xlsx", "csv", "site", "landing", "pagina",
+                 "contrato", "proposta", "documento", "arquivo", "cria", "gera",
+                 "faz um", "faz uma", "me faz", "criar", "gerar", "escreve",
+                 "pesquisa", "busca", "buscar"],
         "whatsapp": ["whatsapp", "zap", "whats", "instancia", "webhook", "z-api",
                      "zapi", "atendimento", "bot", "automatico", "mensagem"],
         "crm": ["crm", "chatwoot", "etiqueta", "label", "lead", "contato", "conversa",
@@ -709,7 +713,7 @@ class Agent:
             return tools
 
         # Determina categorias ativas
-        active_categories = {"core"}  # Sempre incluido
+        active_categories = set()  # So inclui se keywords baterem
         for category, keywords in self.PRUNING_KEYWORDS.items():
             if any(kw in last_user_msg for kw in keywords):
                 active_categories.add(category)
@@ -730,7 +734,7 @@ class Agent:
             session_id=self.session.id,
         )
 
-        return pruned if pruned else tools  # Fallback: envia tudo se nenhuma sobrou
+        return pruned  # Se nenhuma keyword bateu, zero tools = conversa pura
 
     @staticmethod
     def _tool_name_from(tool_item) -> str:
