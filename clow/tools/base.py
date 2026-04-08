@@ -61,25 +61,58 @@ class ToolRegistry:
 
 
 def create_default_registry() -> ToolRegistry:
-    """Registro de tools focado: WhatsApp + CRM + Sites + Design."""
-    from .write import WriteTool
+    """Cria registro com todas as 33 ferramentas."""
+    from .bash import BashTool
     from .read import ReadTool
+    from .write import WriteTool
+    from .edit import EditTool
+    from .glob_tool import GlobTool
+    from .grep import GrepTool
+    from .agent_tool import AgentTool
     from .web_search import WebSearchTool
     from .web_fetch import WebFetchTool
+    from .notebook import NotebookEditTool
+    from .task_tool import TaskCreateTool, TaskUpdateTool, TaskListTool, TaskGetTool
+    from .whatsapp import WhatsAppSendTool
+    from .http_request import HttpRequestTool
+    from .supabase_query import SupabaseQueryTool
+    from .n8n_workflow import N8nWorkflowTool
+    from .docker_manage import DockerManageTool
+    from .git_advanced import GitAdvancedTool
+    from .scraper import ScraperTool
+    from .image_gen import ImageGenTool
+    from .pdf_tool import PdfTool
     from .spreadsheet import SpreadsheetTool
 
     registry = ToolRegistry()
-
-    # Core (3) — minimo necessario
-    registry.register(WriteTool())
+    # Core tools (10 originais)
+    registry.register(BashTool())
     registry.register(ReadTool())
-    registry.register(SpreadsheetTool())
-
-    # Web (2) — pesquisa para criar conteudo
+    registry.register(WriteTool())
+    registry.register(EditTool())
+    registry.register(GlobTool())
+    registry.register(GrepTool())
+    registry.register(AgentTool())
     registry.register(WebSearchTool())
     registry.register(WebFetchTool())
-
-    # WhatsApp (9) — automacao de atendimento
+    registry.register(NotebookEditTool())
+    # Task tools (4)
+    registry.register(TaskCreateTool())
+    registry.register(TaskUpdateTool())
+    registry.register(TaskListTool())
+    registry.register(TaskGetTool())
+    # Novas tools (10)
+    registry.register(WhatsAppSendTool())
+    registry.register(HttpRequestTool())
+    registry.register(SupabaseQueryTool())
+    registry.register(N8nWorkflowTool())
+    registry.register(DockerManageTool())
+    registry.register(GitAdvancedTool())
+    registry.register(ScraperTool())
+    registry.register(ImageGenTool())
+    registry.register(PdfTool())
+    registry.register(SpreadsheetTool())
+    # WhatsApp Agent tools (9)
     from .whatsapp_agent_tools import (
         WhatsAppListInstancesTool, WhatsAppCreateInstanceTool, WhatsAppConnectTestTool,
         WhatsAppSavePromptTool, WhatsAppSaveRagTextTool, WhatsAppSetupWebhookTool,
@@ -94,37 +127,4 @@ def create_default_registry() -> ToolRegistry:
     registry.register(WhatsAppTestWebhookTool())
     registry.register(WhatsAppFullTestTool())
     registry.register(WhatsAppSendTestMessageTool())
-
-    # CRM Chatwoot (15) — gerenciar leads e conversas
-    from .chatwoot_tools import (
-        ChatwootSetupTool, ChatwootTestConnectionTool,
-        ChatwootListLabelsTool, ChatwootCreateLabelTool,
-        ChatwootSearchContactTool, ChatwootCreateContactTool,
-        ChatwootListConversationsTool, ChatwootAssignConversationTool,
-        ChatwootAddLabelToConversationTool,
-        ChatwootListInboxesTool, ChatwootListAgentsTool,
-        ChatwootCreateTeamTool, ChatwootCreateAutomationTool,
-        ChatwootListAutomationsTool, ChatwootReportTool,
-    )
-    registry.register(ChatwootSetupTool())
-    registry.register(ChatwootTestConnectionTool())
-    registry.register(ChatwootListLabelsTool())
-    registry.register(ChatwootCreateLabelTool())
-    registry.register(ChatwootSearchContactTool())
-    registry.register(ChatwootCreateContactTool())
-    registry.register(ChatwootListConversationsTool())
-    registry.register(ChatwootAssignConversationTool())
-    registry.register(ChatwootAddLabelToConversationTool())
-    registry.register(ChatwootListInboxesTool())
-    registry.register(ChatwootListAgentsTool())
-    registry.register(ChatwootCreateTeamTool())
-    registry.register(ChatwootCreateAutomationTool())
-    registry.register(ChatwootListAutomationsTool())
-    registry.register(ChatwootReportTool())
-
-    # Design (2) — criar artes e templates
-    from .canva_tools import CanvaTemplateTool, DesignGeneratorTool
-    registry.register(CanvaTemplateTool())
-    registry.register(DesignGeneratorTool())
-
     return registry

@@ -39,7 +39,6 @@ CLOW_PROVIDER = os.getenv("CLOW_PROVIDER", "anthropic").lower()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
-CANVA_API_TOKEN = os.getenv("CANVA_API_TOKEN", "")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 
 # Modelo principal (configuravel via env)
@@ -54,7 +53,7 @@ MAX_TOKENS = int(os.getenv("CLOW_MAX_TOKENS", "16384"))
 # Limites de mensagens por usuário (0 = sem limite)
 CLOW_DAILY_LIMIT = int(os.getenv("CLOW_DAILY_LIMIT", "50"))
 CLOW_WEEKLY_LIMIT = int(os.getenv("CLOW_WEEKLY_LIMIT", "200"))
-MAX_CONTEXT_MESSAGES = 30
+MAX_CONTEXT_MESSAGES = 200
 TEMPERATURE = 0.2
 MAX_RETRY_ATTEMPTS = 3
 MAX_TOOL_RESULT_CHARS = 5000

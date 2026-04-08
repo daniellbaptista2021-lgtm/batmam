@@ -276,7 +276,7 @@ class Agent:
 
         turn = Turn(user_message=user_message)
         full_response_text = []
-        max_iterations = 5
+        max_iterations = 30
         iteration = 0
         auto_correct_attempts = 0
 
@@ -320,12 +320,6 @@ class Agent:
                             )
 
                 # Executa tool calls (com paralelismo para read-only)
-                # Detect duplicate tool calls (model stuck in loop)
-                _tc_key = str([(t["name"], t.get("arguments","")[:50]) for t in tool_calls_data])
-                if hasattr(self, "_last_tc_key") and self._last_tc_key == _tc_key:
-                    break  # Same tool call as last iteration — stop loop
-                self._last_tc_key = _tc_key
-
                 tool_results = self._execute_tool_calls(tool_calls_data, turn)
 
                 # Adiciona resultados ao historico
@@ -610,7 +604,7 @@ class Agent:
             kwargs["stream_options"] = {"include_usage": True}
 
         # Desabilita tools quando usando proxy LiteLLM sem suporte a tool calling
-        if True:  # vLLM suporta tool calling
+        if not config.OPENAI_BASE_URL:
             tools = self._prune_tools(self.registry.openai_tools())
             if tools:
                 kwargs["tools"] = tools
@@ -660,31 +654,25 @@ class Agent:
     # ── Tool Pruning Dinâmico ─────────────────────────────────
 
     TOOL_CATEGORIES = {
-        "core": {"read", "write", "spreadsheet", "web_search", "web_fetch"},
-        "whatsapp": {"whatsapp_list_instances", "whatsapp_create_instance", "whatsapp_connect_test",
-                     "whatsapp_save_prompt", "whatsapp_save_rag_text", "whatsapp_setup_webhook",
-                     "whatsapp_test_webhook", "whatsapp_full_test", "whatsapp_send_test_message"},
-        "crm": {"chatwoot_setup", "chatwoot_test_connection", "chatwoot_list_labels",
-                "chatwoot_create_label", "chatwoot_search_contact", "chatwoot_create_contact",
-                "chatwoot_list_conversations", "chatwoot_assign_conversation",
-                "chatwoot_label_conversation", "chatwoot_list_inboxes", "chatwoot_list_agents",
-                "chatwoot_create_team", "chatwoot_create_automation", "chatwoot_list_automations",
-                "chatwoot_report"},
-        "creative": {"design_generate", "canva_template"},
+        "core": {"read", "glob", "grep", "write", "edit", "bash", "agent"},
+        "task": {"task_create", "task_update", "task_list", "task_get"},
+        "web": {"web_search", "web_fetch", "scraper"},
+        "integration": {"whatsapp", "n8n_workflow", "supabase_query", "docker_manage",
+                        "http_request", "git_advanced"},
+        "creative": {"image_gen", "pdf_tool", "spreadsheet", "notebook_edit"},
     }
 
     PRUNING_KEYWORDS: dict[str, list[str]] = {
-        "core": ["planilha", "excel", "xlsx", "csv", "site", "landing", "pagina",
-                 "contrato", "proposta", "documento", "arquivo", "cria", "gera",
-                 "faz um", "faz uma", "me faz", "criar", "gerar", "escreve",
-                 "pesquisa", "busca", "buscar"],
-        "whatsapp": ["whatsapp", "zap", "whats", "instancia", "webhook", "z-api",
-                     "zapi", "atendimento", "bot", "automatico", "mensagem"],
-        "crm": ["crm", "chatwoot", "etiqueta", "label", "lead", "contato", "conversa",
-                "inbox", "agente", "equipe", "automacao", "pipeline", "funil"],
-        "creative": ["planilha", "excel", "xlsx", "csv", "site", "landing", "pagina",
-                     "design", "canva", "arte", "post", "banner", "logo", "cartao",
-                     "flyer", "menu", "contrato", "proposta", "documento"],
+        "task": ["task", "tarefa", "todo", "lista", "progresso", "pendente"],
+        "web": ["busca", "buscar", "pesquisa", "pesquisar", "search", "url", "site",
+                "pagina", "web", "fetch", "scrape", "scraping", "crawler"],
+        "integration": ["whatsapp", "zap", "mensagem", "enviar", "n8n", "workflow",
+                        "supabase", "banco", "database", "docker", "container",
+                        "api", "endpoint", "http", "request", "git", "branch",
+                        "merge", "deploy"],
+        "creative": ["imagem", "image", "foto", "gerar", "pdf", "planilha",
+                     "excel", "xlsx", "spreadsheet", "notebook", "jupyter",
+                     "apresentacao", "pptx", "documento", "docx"],
     }
 
     def _prune_tools(self, tools: list) -> list:
@@ -713,7 +701,7 @@ class Agent:
             return tools
 
         # Determina categorias ativas
-        active_categories = set()  # So inclui se keywords baterem
+        active_categories = {"core"}  # Sempre incluido
         for category, keywords in self.PRUNING_KEYWORDS.items():
             if any(kw in last_user_msg for kw in keywords):
                 active_categories.add(category)
@@ -734,7 +722,7 @@ class Agent:
             session_id=self.session.id,
         )
 
-        return pruned  # Se nenhuma keyword bateu, zero tools = conversa pura
+        return pruned if pruned else tools  # Fallback: envia tudo se nenhuma sobrou
 
     @staticmethod
     def _tool_name_from(tool_item) -> str:
@@ -1430,33 +1418,11 @@ class Agent:
     @staticmethod
     def _parse_arguments(arguments: str | dict) -> dict:
         if isinstance(arguments, dict):
-            result = arguments
-        else:
-            try:
-                result = json.loads(arguments)
-            except (json.JSONDecodeError, TypeError):
-                # Try fixing Python-style strings (single quotes)
-                try:
-                    import ast
-                    result = ast.literal_eval(arguments)
-                    if not isinstance(result, dict):
-                        result = {"raw": arguments}
-                except Exception:
-                    result = {"raw": arguments}
-        # Fix string values that look like Python lists/dicts
-        for k, v in list(result.items()):
-            if isinstance(v, str):
-                v_stripped = v.strip()
-                if (v_stripped.startswith("[") and v_stripped.endswith("]")) or (v_stripped.startswith("{") and v_stripped.endswith("}")):
-                    try:
-                        import ast
-                        result[k] = ast.literal_eval(v_stripped)
-                    except Exception:
-                        try:
-                            result[k] = json.loads(v_stripped.replace("'", '"'))
-                        except Exception:
-                            pass
-        return result
+            return arguments
+        try:
+            return json.loads(arguments)
+        except (json.JSONDecodeError, TypeError):
+            return {"raw": arguments}
 
 
 class SubAgent:
