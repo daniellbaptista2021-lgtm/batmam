@@ -158,9 +158,11 @@ class Agent:
     # ── System Messages ────────────────────────────────────────
 
     def _build_system_messages(self) -> None:
-        """Constroi system prompt separando base (cacheavel) de dinamico."""
-        # Base: prompt principal (raramente muda, ideal para cache)
+        """System prompt enxuto para Qwen 72B."""
         self._system_base = get_system_prompt(self.cwd)
+        self._system_dynamic = ""
+        self.session.messages = [{"role": "system", "content": self._system_base}]
+        return  # Skip all dynamic injection
 
         # Dinamico: contexto que muda entre sessoes
         dynamic_parts = []
@@ -177,7 +179,7 @@ class Agent:
 
         # Self-Learning: injeta learned.md
         if not self.is_subagent and config.CLOW_SELF_LEARN:
-            learned_ctx = load_learned_context()
+            learned_ctx = ""
             if learned_ctx:
                 dynamic_parts.append(f"\n# [Aprendizado Automatico]\n{learned_ctx}")
 
@@ -187,7 +189,7 @@ class Agent:
             if memory_ctx:
                 dynamic_parts.append(f"\n# Memoria\n{memory_ctx}")
 
-        self._system_dynamic = "\n\n".join(dynamic_parts) if dynamic_parts else ""
+        self._system_dynamic = ""
 
         # Monta mensagem completa para historico (usado por OpenAI/Ollama)
         full_system = self._system_base
