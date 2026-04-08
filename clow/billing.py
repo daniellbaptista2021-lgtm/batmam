@@ -1,12 +1,12 @@
 """Stripe Billing — planos, checkout, portal, webhook, franquia.
 
 Planos:
-- LITE: R$169/mes, Haiku 4.5, CRM + 8 fluxos n8n
-- STARTER: R$298/mes, Sonnet 4, CRM + 8 fluxos n8n
-- PRO: R$487/mes, Sonnet 4, 2000 fluxos n8n, 5 usuarios
-- BUSINESS: R$667/mes, Sonnet 4, 3000 fluxos, 10 usuarios
+- ONE (lite):          R$129,90/mes — 1 WhatsApp, IA inclusa
+- SMART (starter):     R$297,00/mes — 2 WhatsApp, CRM, 8 fluxos n8n
+- PROFISSIONAL (pro):  R$497,00/mes — 3 WhatsApp, 5 usuarios, 2000 fluxos
+- BUSINESS (business): R$897,00/mes — 5 WhatsApp, 10 usuarios, 3000 fluxos, API publica
 
-WhatsApp Agent SEMPRE usa Haiku. Franquia separada do chat.
+WhatsApp Agent SEMPRE usa IA inclusa. Franquia separada do chat.
 Acesso apenas via assinatura paga — sem plano gratuito.
 """
 
@@ -38,26 +38,28 @@ STRIPE_WEBHOOK_IPS = frozenset({
 # ── Plan Definitions ──────────────────────────────────────────
 
 PLANS = {
+    # ONE — plano entrada (mapeado ao checkout data-plan="lite")
     "lite": {
-        "name": "Lite",
-        "price_brl": 169,
+        "name": "ONE",
+        "price_brl": 129.90,  # R$129,90/mês
         "model": "claude-haiku-4-5-20251001",
         "uses_server_key": True,
         "daily_input_tokens": 1_500_000,
         "daily_output_tokens": 300_000,
         "weekly_input_tokens": 7_500_000,
         "weekly_output_tokens": 1_500_000,
-        "n8n_flows": 8,
-        "stripe_price_id": config.STRIPE_LITE_PRICE_ID,
+        "n8n_flows": 0,
+        "stripe_price_id": config.STRIPE_PRICE_ONE,
         "wa_model": "claude-haiku-4-5-20251001",
         "wa_daily_tokens": 500_000,
-        "wa_included_instances": 2,
-        "crm_enabled": True,
-        "max_users": 2,
+        "wa_included_instances": 1,
+        "crm_enabled": False,
+        "max_users": 1,
     },
+    # SMART — plano negócios (mapeado ao checkout data-plan="starter")
     "starter": {
-        "name": "Starter",
-        "price_brl": 298,
+        "name": "SMART",
+        "price_brl": 297.00,  # R$297,00/mês
         "model": "claude-sonnet-4-20250514",
         "uses_server_key": True,
         "daily_input_tokens": 1_800_000,
@@ -65,16 +67,17 @@ PLANS = {
         "weekly_input_tokens": 9_000_000,
         "weekly_output_tokens": 1_750_000,
         "n8n_flows": 8,
-        "stripe_price_id": config.STRIPE_STARTER_PRICE_ID,
+        "stripe_price_id": config.STRIPE_PRICE_SMART,
         "wa_model": "claude-haiku-4-5-20251001",
         "wa_daily_tokens": 750_000,
         "wa_included_instances": 2,
         "crm_enabled": True,
         "max_users": 3,
     },
+    # PROFISSIONAL — plano escala (mapeado ao checkout data-plan="pro")
     "pro": {
-        "name": "Pro",
-        "price_brl": 487,
+        "name": "PROFISSIONAL",
+        "price_brl": 497.00,  # R$497,00/mês
         "model": "claude-sonnet-4-20250514",
         "uses_server_key": True,
         "daily_input_tokens": 2_500_000,
@@ -82,16 +85,17 @@ PLANS = {
         "weekly_input_tokens": 12_500_000,
         "weekly_output_tokens": 2_500_000,
         "n8n_flows": 2000,
-        "stripe_price_id": config.STRIPE_PRO_PRICE_ID,
+        "stripe_price_id": config.STRIPE_PRICE_PROFISSIONAL,
         "wa_model": "claude-haiku-4-5-20251001",
         "wa_daily_tokens": 1_000_000,
-        "wa_included_instances": 2,
+        "wa_included_instances": 3,
         "crm_enabled": True,
         "max_users": 5,
     },
+    # BUSINESS — plano empresarial (mapeado ao checkout data-plan="business")
     "business": {
-        "name": "Business",
-        "price_brl": 667,
+        "name": "BUSINESS",
+        "price_brl": 897.00,  # R$897,00/mês
         "model": "claude-sonnet-4-20250514",
         "uses_server_key": True,
         "daily_input_tokens": 4_000_000,
@@ -99,10 +103,10 @@ PLANS = {
         "weekly_input_tokens": 20_000_000,
         "weekly_output_tokens": 4_000_000,
         "n8n_flows": 3000,
-        "stripe_price_id": config.STRIPE_BUSINESS_PRICE_ID,
+        "stripe_price_id": config.STRIPE_PRICE_BUSINESS,
         "wa_model": "claude-haiku-4-5-20251001",
         "wa_daily_tokens": 1_500_000,
-        "wa_included_instances": 2,
+        "wa_included_instances": 5,
         "crm_enabled": True,
         "max_users": 10,
     },
