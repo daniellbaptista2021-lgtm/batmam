@@ -119,7 +119,7 @@ th{color:var(--tm);font-weight:500;text-transform:uppercase;font-size:.72rem;let
   <div class="sb-item" onclick="show('plan')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>Meu Plano</div>
   <div class="sb-item" onclick="show('usage')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Uso e Franquia</div>
   <div class="sb-item" onclick="show('prefs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Preferencias</div>
-  <div class="sb-item" onclick="show('flows')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Fluxos n8n</div>
+  <div class="sb-item" id="tabFlows" onclick="show('flows')" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Fluxos n8n</div>
   <div class="sb-item" onclick="show('billing')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>Faturamento</div>
   <a class="sb-back" href="/">&#8592; Voltar ao Clow</a>
 </div>
@@ -239,6 +239,17 @@ async function init(){
   $('f-terms').value=p.accepted_terms_at?new Date(p.accepted_terms_at*1000).toLocaleString('pt-BR'):'Nao registrado';
 }
 init();
+// Plan-based UI gating for settings
+(async function(){
+  try{
+    const s=await(await fetch('/api/v1/billing/status')).json();
+    const p=s.plan_id||'lite';
+    const starterPlus=['starter','pro','business','unlimited','admin'];
+    if(starterPlus.indexOf(p)>=0){
+      var tf=document.getElementById('tabFlows');if(tf)tf.style.display='';
+    }
+  }catch(e){}
+})();
 
 async function saveProfile(){
   const r=await api('/api/v1/user/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('f-name').value})});
@@ -253,10 +264,10 @@ async function loadPlan(){
   $('btn-portal').style.display=s.stripe_customer_id?'inline-block':'none';
 
   const plans=[
-    {id:'lite',name:'Lite',price:'R$ 169/mes',items:['Haiku 4.5 incluso','CRM + 8 fluxos n8n','1.5M+300K/dia']},
-    {id:'starter',name:'Starter',price:'R$ 298/mes',items:['Sonnet 4','CRM + 8 fluxos n8n','1.8M+350K/dia','3 usuarios']},
-    {id:'pro',name:'Pro',price:'R$ 487/mes',items:['Sonnet 4','2.000 fluxos','2.5M+500K/dia','5 usuarios']},
-    {id:'business',name:'Business',price:'R$ 667/mes',items:['Sonnet 4','3.000 fluxos','4M+800K/dia','10 usuarios']},
+    {id:'lite',name:'ONE',price:'R$ 129,90/mes',items:['IA Llama 70B dedicada','1.8M tokens/dia','60 req/hora','WhatsApp com IA']},
+    {id:'starter',name:'SMART',price:'R$ 297/mes',items:['IA Llama 70B dedicada','2.15M tokens/dia','120 req/hora','CRM + 8 fluxos n8n']},
+    {id:'pro',name:'PROFISSIONAL',price:'R$ 497/mes',items:['3M tokens/dia','200 req/hora','2.000 fluxos n8n','5 usuarios']},
+    {id:'business',name:'BUSINESS',price:'R$ 897/mes',items:['4.8M tokens/dia','400 req/hora','3.000 fluxos','10 usuarios','SLA 99.5%']},
   ];
   $('plan-grid').innerHTML=plans.map(p=>{
     const cur=s.plan_id===p.id;
