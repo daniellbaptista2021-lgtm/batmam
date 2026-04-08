@@ -273,7 +273,7 @@ function openModal(d){
   $('s-today').textContent=d.stats?.messages_today||0;
   $('s-total').textContent=d.stats?.messages_total||0;
   // Model badge
-  api('/api/v1/billing/status').then(s=>{$('model-badge').textContent=s.model?.includes('haiku')?'Haiku 4.5 (Plano Lite)':'Sonnet 4 (Plano '+((s.plan_name)||'')+')'}).catch(()=>{});
+  api('/api/v1/billing/status').then(s=>{$('model-badge').textContent='IA Clow (Plano '+((s.plan_name)||'')+')'}).catch(()=>{});
   loadConvs();stab(0);
   $('ov').classList.add('show');
 }
