@@ -156,7 +156,7 @@ def register_chat_routes(app: FastAPI) -> None:
         nonlocal _whisper_model
         if _whisper_model is None:
             from faster_whisper import WhisperModel
-            _whisper_model = WhisperModel("base", device="cpu", compute_type="int8")
+            _whisper_model = WhisperModel("medium", device="cpu", compute_type="int8")
         return _whisper_model
 
     @app.post("/api/v1/transcribe", tags=["chat"])
