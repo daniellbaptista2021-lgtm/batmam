@@ -1,0 +1,97 @@
+/* ═══════════════════════════════════════════════════════════════
+   Clow — Global Premium Tech Background
+   Camadas (fundo → frente):
+   1. html background    : gradiente base (roxo + azul profundo)
+   2. html::before       : tech grid 64px animado
+   3. html::after        : orb pulsante central
+   4. canvas#clow-bg     : partículas (injetado via bg.js)
+   5. body + conteúdo    : toda a UI
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 1 ── Base gradient no html (fica visível porque body é transparente) */
+html {
+  min-height: 100%;
+  background:
+    radial-gradient(ellipse 90% 60% at 50% -8%,  rgba(120,70,255,.14)  0%, transparent 65%),
+    radial-gradient(ellipse 60% 50% at  6% 80%,  rgba(60,110,255,.09)  0%, transparent 60%),
+    radial-gradient(ellipse 50% 45% at 94% 65%,  rgba(155,89,252,.10)  0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 70% 15%,  rgba(80,150,255,.05)  0%, transparent 50%),
+    #050510;
+}
+
+/* Remove background sólido do body para deixar o html aparecer */
+body {
+  background-color: transparent !important;
+}
+
+/* 2 ── Tech grid — linhas ultra-sutis com drift lento */
+html::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  background-image:
+    linear-gradient(rgba(100,80,180,.038) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(100,80,180,.038) 1px, transparent 1px);
+  background-size: 64px 64px;
+
+  /* noise sutil via SVG */
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.018'/%3E%3C/svg%3E"),
+    linear-gradient(rgba(100,80,180,.038) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(100,80,180,.038) 1px, transparent 1px);
+  background-size: 400px 400px, 64px 64px, 64px 64px;
+
+  animation: clowGridDrift 36s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* 3 ── Orb central pulsante */
+html::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  background:
+    radial-gradient(ellipse 75% 55% at 50% 22%,  rgba(140,80,255,.07) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 38% at 18% 75%,  rgba(70,130,255,.05) 0%, transparent 55%),
+    radial-gradient(ellipse 35% 28% at 82% 58%,  rgba(155,89,252,.05) 0%, transparent 50%);
+
+  animation: clowOrbFloat 16s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+/* ── Keyframes ── */
+@keyframes clowGridDrift {
+  0%,  100% { transform: translate(0,     0); }
+  20%        { transform: translate( 3px, -8px); }
+  40%        { transform: translate(-5px,-14px); }
+  60%        { transform: translate( 4px,-10px); }
+  80%        { transform: translate(-2px, -5px); }
+}
+
+@keyframes clowOrbFloat {
+  0%   { opacity: .7;  transform: translateY(0)     scale(1); }
+  50%  { opacity: .95; transform: translateY(-12px) scale(1.04); }
+  100% { opacity: .8;  transform: translateY(-6px)  scale(1.01); }
+}
+
+/* ── Cursor glow (via JS — fallback safe) ── */
+#clow-cursor-glow {
+  position: fixed;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(155,89,252,.07) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+  transform: translate(-50%, -50%);
+  transition: opacity .4s ease;
+  opacity: 0;
+  will-change: transform;
+}
+body:hover #clow-cursor-glow { opacity: 1; }

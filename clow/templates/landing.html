@@ -20,7 +20,8 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#050510;--bg2:#0A0A1A;--bg3:#10101F;--bd:rgba(100,80,180,.07);--p:#9B59FC;--bl:#6C5CE7;--gp:linear-gradient(135deg,#9B59FC 0%,#7C4DFF 50%,#5C3BBF 100%);--t1:#F0F0F8;--t2:#8888A8;--tm:#505068;--g:#34D399;--sans:'DM Sans',sans-serif;--mono:'JetBrains Mono',monospace}
-body{font-family:var(--sans);background:var(--bg);color:var(--t1);overflow-x:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+body{font-family:var(--sans);background-color:transparent;color:var(--t1);overflow-x:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  /* noise sutil mantido; background-color vem do html via bg.css */
   background-image:url("data:image/svg+xml,%3Csvg width='80' height='80' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.55' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.012'/%3E%3C/svg%3E")}
 a{color:var(--p);text-decoration:none}
 
@@ -345,6 +346,8 @@ a{color:var(--p);text-decoration:none}
   .price{font-size:1.9rem}
 }
 </style>
+<link rel="stylesheet" href="/static/css/bg.css">
+<script defer src="/static/js/bg.js"></script>
 </head>
 <body>
 
