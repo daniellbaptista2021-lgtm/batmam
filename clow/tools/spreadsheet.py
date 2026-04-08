@@ -95,7 +95,7 @@ class SpreadsheetTool(BaseTool):
 
             # Save to static/files for web download
             import time as _t
-            static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "files")
+            static_dir = "/root/clow/static/files"
             os.makedirs(static_dir, exist_ok=True)
             fname = os.path.basename(path)
             if not fname.endswith(".xlsx"):
@@ -121,7 +121,7 @@ class SpreadsheetTool(BaseTool):
             writer.writerows(rows)
         # Also save to static/files for web
         import time as _t
-        static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "files")
+        static_dir = "/root/clow/static/files"
         os.makedirs(static_dir, exist_ok=True)
         fname = os.path.basename(path)
         web_path = os.path.join(static_dir, fname)

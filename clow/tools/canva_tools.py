@@ -165,7 +165,7 @@ h1{{font-size:48px;font-weight:800;line-height:1.1;position:relative;z-index:1}}
 </body></html>"""
 
         # Save to static/files
-        static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "files")
+        static_dir = "/root/clow/static/files"
         os.makedirs(static_dir, exist_ok=True)
         fname = f"design_{dtype}_{int(time.time())}.html"
         fpath = os.path.join(static_dir, fname)
