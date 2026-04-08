@@ -7,6 +7,9 @@ async function init(){
     document.getElementById('sbEm').textContent=me.email;
     document.getElementById('sbPl').textContent=me.plan;
     if(me.is_admin)document.getElementById('admSec').style.display='block';
+    var _p=me.plan||'lite',_s=['starter','pro','business','unlimited','admin'],_pr=['pro','business','unlimited','admin'];
+    if(_s.indexOf(_p)>=0||me.is_admin){var _a=document.getElementById('secAutomacao');if(_a)_a.style.display='';var _c=document.getElementById('secConexoes');if(_c)_c.style.display='';}
+    if(_pr.indexOf(_p)>=0||me.is_admin){var _m=document.getElementById('secMissoes');if(_m)_m.style.display='';}
     initMod(me.plan,me.is_admin);
     _loadPlanBadge();
   }catch(e){}

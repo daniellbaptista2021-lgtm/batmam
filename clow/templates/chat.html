@@ -85,7 +85,7 @@
         <button class="sb-btn" onclick="qa('Cria contrato de ')">Contrato</button>
       </div>
     </div>
-    <div class="sb-sec">
+    <div class="sb-sec" id="secMissoes" style="display:none">
       <div class="sb-lbl" onclick="this.classList.toggle('open')">Missões <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
         <button class="sb-btn" onclick="qa('/mission Cria um site completo para ')">Site Completo</button>
@@ -94,7 +94,7 @@
       </div>
     </div>
     <div class="sb-sep"></div>
-    <div class="sb-sec">
+    <div class="sb-sec" id="secConexoes" style="display:none">
       <div class="sb-lbl" onclick="this.classList.toggle('open')">Conexões <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
         <button class="sb-btn" onclick="sendCmd('/connections')">Ver conexões</button>
@@ -102,7 +102,7 @@
       </div>
     </div>
     <div class="sb-sep"></div>
-    <div class="sb-sec">
+    <div class="sb-sec" id="secAutomacao" style="display:none">
       <div class="sb-lbl open" onclick="this.classList.toggle('open')">Automacao <span class="ar">&#9654;</span></div>
       <div class="sb-ct">
         <a class="sb-btn" href="/app/whatsapp" style="display:flex;align-items:center;gap:6px;text-decoration:none;color:inherit"><svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366"><path d="M12 2a10 10 0 00-8.68 14.95L2 22l5.23-1.37A10 10 0 1012 2z"/></svg>WhatsApp Trigger</a>
