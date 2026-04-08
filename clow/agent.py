@@ -114,7 +114,13 @@ class Agent:
                 raise RuntimeError("OPENAI_API_KEY nao configurada.")
             from openai import OpenAI
             self._anthropic = None
-            self._client = OpenAI(api_key=config.OPENAI_API_KEY)
+            client_kwargs = {"api_key": config.OPENAI_API_KEY}
+            if config.OPENAI_BASE_URL:
+                base = config.OPENAI_BASE_URL.rstrip("/")
+                if not base.endswith("/v1"):
+                    base += "/v1"
+                client_kwargs["base_url"] = base
+            self._client = OpenAI(**client_kwargs)
 
         # Plan mode — bloqueia ferramentas de escrita quando ativo
         self.plan_mode = False
@@ -597,10 +603,12 @@ class Agent:
             kwargs["max_tokens"] = config.MAX_TOKENS
             kwargs["stream_options"] = {"include_usage": True}
 
-        tools = self._prune_tools(self.registry.openai_tools())
-        if tools:
-            kwargs["tools"] = tools
-            kwargs["tool_choice"] = "auto"
+        # Desabilita tools quando usando proxy LiteLLM sem suporte a tool calling
+        if not config.OPENAI_BASE_URL:
+            tools = self._prune_tools(self.registry.openai_tools())
+            if tools:
+                kwargs["tools"] = tools
+                kwargs["tool_choice"] = "auto"
 
         stream = self._client.chat.completions.create(**kwargs)
 

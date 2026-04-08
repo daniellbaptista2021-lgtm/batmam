@@ -38,6 +38,7 @@ MEMORY_DIR.mkdir(parents=True, exist_ok=True)
 CLOW_PROVIDER = os.getenv("CLOW_PROVIDER", "anthropic").lower()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 
 # Modelo principal (configuravel via env)
@@ -47,7 +48,7 @@ CLOW_MODEL = os.getenv("CLOW_MODEL", "claude-sonnet-4-20250514")
 CLOW_MODEL_HEAVY = os.getenv("CLOW_MODEL_HEAVY", "claude-sonnet-4-20250514")
 
 # ── Limites ─────────────────────────────────────────────────
-MAX_TOKENS = 16384
+MAX_TOKENS = int(os.getenv("CLOW_MAX_TOKENS", "16384"))
 MAX_CONTEXT_MESSAGES = 200
 TEMPERATURE = 0.2
 MAX_RETRY_ATTEMPTS = 3
