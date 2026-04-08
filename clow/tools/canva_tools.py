@@ -91,8 +91,15 @@ class CanvaCreateDesignTool(BaseTool):
             return f"Erro: {result['error']}"
         design = result.get("design", result)
         did = design.get("id", "?")
-        url = design.get("urls", {}).get("edit_url", "")
-        return f"Design criado! ID: {did}\nEditar: {url}"
+        edit_url = design.get("urls", {}).get("edit_url", "")
+        view_url = design.get("urls", {}).get("view_url", "")
+        # Create shareable template link - client clicks and gets their own copy
+        share_url = f"https://www.canva.com/design/{did}/edit"
+        template_url = f"https://www.canva.com/design/{did}/remix"
+        return (f"Design criado!\n"
+                f"\nLink para o cliente (cria copia na conta dele):\n{template_url}\n"
+                f"\nLink de visualizacao:\n{view_url or share_url}\n"
+                f"\nID: {did}")
 
 
 class CanvaSearchTemplatesTool(BaseTool):
@@ -182,8 +189,9 @@ class CanvaExportDesignTool(BaseTool):
         eid = export.get("id", "?")
         if status == "completed":
             urls = export.get("urls", [])
-            return f"Exportado! URLs:\n" + "\n".join(urls)
-        return f"Exportacao iniciada (id: {eid}, status: {status}). Use canva_check_export para verificar."
+            url_list = "\n".join([u.get("url", u) if isinstance(u, dict) else str(u) for u in urls])
+            return f"Exportado! Envie este link para o cliente:\n{url_list}"
+        return f"Exportacao em andamento (id: {eid}). Use canva_check_export para verificar."
 
 
 class CanvaCheckExportTool(BaseTool):
