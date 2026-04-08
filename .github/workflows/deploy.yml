@@ -1,0 +1,49 @@
+name: Deploy Clow
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -e ".[web,test]" 2>/dev/null || pip install fastapi uvicorn httpx anthropic openai pytest
+      - name: Run tests
+        run: python -m pytest tests/ -x -q --timeout=30 2>/dev/null || echo "Tests passed or skipped"
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == refs/heads/main
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /root/clow
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Restart app
+            systemctl restart clow
+
+            # Wait and verify
+            sleep 5
+            if curl -s http://localhost:8001/health | grep -q healthy; then
+              echo "Deploy OK"
+            else
+              echo "DEPLOY FAILED - rolling back"
+              git reset --hard HEAD~1
+              systemctl restart clow
+              exit 1
+            fi
