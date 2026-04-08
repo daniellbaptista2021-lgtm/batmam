@@ -604,7 +604,7 @@ class Agent:
             kwargs["stream_options"] = {"include_usage": True}
 
         # Desabilita tools quando usando proxy LiteLLM sem suporte a tool calling
-        if not config.OPENAI_BASE_URL:
+        if True:  # vLLM suporta tool calling
             tools = self._prune_tools(self.registry.openai_tools())
             if tools:
                 kwargs["tools"] = tools
