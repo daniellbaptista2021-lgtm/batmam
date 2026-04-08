@@ -660,41 +660,27 @@ class Agent:
     # ── Tool Pruning Dinâmico ─────────────────────────────────
 
     TOOL_CATEGORIES = {
-        "core": {"read", "glob", "grep", "write", "edit", "bash"},
-        "task": {"task_create", "task_update", "task_list", "task_get"},
-        "web": {"web_search", "web_fetch", "scraper", "http_request"},
+        "core": {"read", "write", "spreadsheet", "web_search", "web_fetch"},
         "whatsapp": {"whatsapp_list_instances", "whatsapp_create_instance", "whatsapp_connect_test",
                      "whatsapp_save_prompt", "whatsapp_save_rag_text", "whatsapp_setup_webhook",
-                     "whatsapp_test_webhook", "whatsapp_full_test", "whatsapp_send_test_message",
-                     "whatsapp"},
+                     "whatsapp_test_webhook", "whatsapp_full_test", "whatsapp_send_test_message"},
         "crm": {"chatwoot_setup", "chatwoot_test_connection", "chatwoot_list_labels",
                 "chatwoot_create_label", "chatwoot_search_contact", "chatwoot_create_contact",
                 "chatwoot_list_conversations", "chatwoot_assign_conversation",
                 "chatwoot_label_conversation", "chatwoot_list_inboxes", "chatwoot_list_agents",
                 "chatwoot_create_team", "chatwoot_create_automation", "chatwoot_list_automations",
                 "chatwoot_report"},
-        "creative": {"image_gen", "pdf_tool", "spreadsheet", "notebook_edit",
-                     "canva_template", "design_generate"},
-        "devops": {"n8n_workflow", "supabase_query", "docker_manage", "git_advanced", "agent"},
+        "creative": {"design_generate", "canva_template"},
     }
 
     PRUNING_KEYWORDS: dict[str, list[str]] = {
-        "task": ["task", "tarefa", "todo", "lista de tarefas", "progresso", "pendente"],
-        "web": ["busca", "buscar", "pesquisa", "pesquisar", "search", "url", "site",
-                "pagina", "web", "fetch", "scrape", "crawler"],
         "whatsapp": ["whatsapp", "zap", "whats", "instancia", "webhook", "z-api",
-                     "zapi", "atendimento automatico", "bot whatsapp"],
+                     "zapi", "atendimento", "bot", "automatico", "mensagem"],
         "crm": ["crm", "chatwoot", "etiqueta", "label", "lead", "contato", "conversa",
-                "inbox", "agente", "equipe", "team", "automacao crm", "pipeline",
-                "funil", "atendimento"],
-        "creative": ["planilha", "excel", "xlsx", "csv", "spreadsheet",
-                     "pdf", "documento", "docx", "contrato", "proposta",
-                     "imagem", "image", "foto", "design", "canva", "arte",
-                     "post", "banner", "logo", "cartao", "flyer", "menu",
-                     "apresentacao", "pptx", "slide"],
-        "devops": ["n8n", "workflow", "fluxo", "automacao", "docker", "container",
-                   "supabase", "banco", "database", "git", "branch", "deploy",
-                   "api", "endpoint", "http"],
+                "inbox", "agente", "equipe", "automacao", "pipeline", "funil"],
+        "creative": ["planilha", "excel", "xlsx", "csv", "site", "landing", "pagina",
+                     "design", "canva", "arte", "post", "banner", "logo", "cartao",
+                     "flyer", "menu", "contrato", "proposta", "documento"],
     }
 
     def _prune_tools(self, tools: list) -> list:
