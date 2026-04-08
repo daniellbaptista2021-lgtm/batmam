@@ -127,7 +127,6 @@ def create_default_registry() -> ToolRegistry:
     registry.register(WhatsAppTestWebhookTool())
     registry.register(WhatsAppFullTestTool())
     registry.register(WhatsAppSendTestMessageTool())
-# Chatwoot CRM tools (15)    from .chatwoot_tools import (        ChatwootSetupTool, ChatwootTestConnectionTool,        ChatwootListLabelsTool, ChatwootCreateLabelTool,        ChatwootSearchContactTool, ChatwootCreateContactTool,        ChatwootListConversationsTool, ChatwootAssignConversationTool,        ChatwootAddLabelToConversationTool,        ChatwootListInboxesTool, ChatwootListAgentsTool,        ChatwootCreateTeamTool, ChatwootCreateAutomationTool,        ChatwootListAutomationsTool, ChatwootReportTool,    )    registry.register(ChatwootSetupTool())    registry.register(ChatwootTestConnectionTool())    registry.register(ChatwootListLabelsTool())    registry.register(ChatwootCreateLabelTool())    registry.register(ChatwootSearchContactTool())    registry.register(ChatwootCreateContactTool())    registry.register(ChatwootListConversationsTool())    registry.register(ChatwootAssignConversationTool())    registry.register(ChatwootAddLabelToConversationTool())    registry.register(ChatwootListInboxesTool())    registry.register(ChatwootListAgentsTool())    registry.register(ChatwootCreateTeamTool())    registry.register(ChatwootCreateAutomationTool())    registry.register(ChatwootListAutomationsTool())    registry.register(ChatwootReportTool())
     # Chatwoot CRM tools (15)
     from .chatwoot_tools import (
         ChatwootSetupTool, ChatwootTestConnectionTool,
@@ -154,4 +153,18 @@ def create_default_registry() -> ToolRegistry:
     registry.register(ChatwootCreateAutomationTool())
     registry.register(ChatwootListAutomationsTool())
     registry.register(ChatwootReportTool())
+    # Canva Design tools (9)
+    from .canva_tools import (
+        CanvaCreateDesignTool, CanvaSearchTemplatesTool, CanvaGetDesignTool,
+        CanvaExportDesignTool, CanvaCheckExportTool, CanvaListBrandKitsTool,
+        CanvaUploadAssetTool, CanvaListDesignsTool,
+    )
+    registry.register(CanvaCreateDesignTool())
+    registry.register(CanvaSearchTemplatesTool())
+    registry.register(CanvaGetDesignTool())
+    registry.register(CanvaExportDesignTool())
+    registry.register(CanvaCheckExportTool())
+    registry.register(CanvaListBrandKitsTool())
+    registry.register(CanvaUploadAssetTool())
+    registry.register(CanvaListDesignsTool())
     return registry

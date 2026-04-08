@@ -39,6 +39,7 @@ CLOW_PROVIDER = os.getenv("CLOW_PROVIDER", "anthropic").lower()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
+CANVA_API_TOKEN = os.getenv("CANVA_API_TOKEN", "")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 
 # Modelo principal (configuravel via env)
