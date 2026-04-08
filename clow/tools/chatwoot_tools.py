@@ -37,7 +37,8 @@ def _get_cw_config(tenant_id: str) -> dict | None:
 class ChatwootSetupTool(BaseTool):
     name = "chatwoot_setup"
     description = "Configura conexao com Chatwoot CRM. Forneca URL, email e senha do admin."
-    input_schema = {
+    def get_schema(self) -> dict:
+        return {
         "type": "object",
         "properties": {
             "chatwoot_url": {"type": "string", "description": "URL do Chatwoot (ex: https://app.chatwoot.com)"},
@@ -47,7 +48,9 @@ class ChatwootSetupTool(BaseTool):
         "required": ["chatwoot_url", "email", "password"],
     }
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         from ..chatwoot import save_crm_config
         result = save_crm_config(
             tenant_id=tenant_id,
@@ -63,9 +66,12 @@ class ChatwootSetupTool(BaseTool):
 class ChatwootTestConnectionTool(BaseTool):
     name = "chatwoot_test_connection"
     description = "Testa se a conexao com Chatwoot esta funcionando."
-    input_schema = {"type": "object", "properties": {}, "required": []}
+    def get_schema(self) -> dict:
+        return {"type": "object", "properties": {}, "required": []}
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         cfg = _get_cw_config(tenant_id)
         if not cfg:
             return "CRM nao configurado. Use chatwoot_setup primeiro."
@@ -84,9 +90,12 @@ class ChatwootTestConnectionTool(BaseTool):
 class ChatwootListLabelsTool(BaseTool):
     name = "chatwoot_list_labels"
     description = "Lista todas as etiquetas/labels do CRM Chatwoot."
-    input_schema = {"type": "object", "properties": {}, "required": []}
+    def get_schema(self) -> dict:
+        return {"type": "object", "properties": {}, "required": []}
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         cfg = _get_cw_config(tenant_id)
         if not cfg:
             return "CRM nao configurado."
@@ -104,7 +113,8 @@ class ChatwootListLabelsTool(BaseTool):
 class ChatwootCreateLabelTool(BaseTool):
     name = "chatwoot_create_label"
     description = "Cria uma nova etiqueta/label no CRM."
-    input_schema = {
+    def get_schema(self) -> dict:
+        return {
         "type": "object",
         "properties": {
             "title": {"type": "string", "description": "Nome da etiqueta"},
@@ -115,7 +125,9 @@ class ChatwootCreateLabelTool(BaseTool):
         "required": ["title"],
     }
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         cfg = _get_cw_config(tenant_id)
         if not cfg:
             return "CRM nao configurado."
@@ -139,7 +151,8 @@ class ChatwootCreateLabelTool(BaseTool):
 class ChatwootSearchContactTool(BaseTool):
     name = "chatwoot_search_contact"
     description = "Busca contatos no CRM por nome, email ou telefone."
-    input_schema = {
+    def get_schema(self) -> dict:
+        return {
         "type": "object",
         "properties": {
             "query": {"type": "string", "description": "Termo de busca (nome, email ou telefone)"},
@@ -147,7 +160,9 @@ class ChatwootSearchContactTool(BaseTool):
         "required": ["query"],
     }
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         cfg = _get_cw_config(tenant_id)
         if not cfg:
             return "CRM nao configurado."
@@ -173,7 +188,8 @@ class ChatwootSearchContactTool(BaseTool):
 class ChatwootCreateContactTool(BaseTool):
     name = "chatwoot_create_contact"
     description = "Cria um novo contato no CRM."
-    input_schema = {
+    def get_schema(self) -> dict:
+        return {
         "type": "object",
         "properties": {
             "name": {"type": "string", "description": "Nome do contato"},
@@ -183,7 +199,9 @@ class ChatwootCreateContactTool(BaseTool):
         "required": ["name"],
     }
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         cfg = _get_cw_config(tenant_id)
         if not cfg:
             return "CRM nao configurado."
@@ -206,7 +224,8 @@ class ChatwootCreateContactTool(BaseTool):
 class ChatwootListConversationsTool(BaseTool):
     name = "chatwoot_list_conversations"
     description = "Lista conversas do CRM por status (open, resolved, pending)."
-    input_schema = {
+    def get_schema(self) -> dict:
+        return {
         "type": "object",
         "properties": {
             "status": {"type": "string", "enum": ["open", "resolved", "pending"], "description": "Filtro por status"},
@@ -215,7 +234,9 @@ class ChatwootListConversationsTool(BaseTool):
         "required": [],
     }
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         cfg = _get_cw_config(tenant_id)
         if not cfg:
             return "CRM nao configurado."
@@ -244,7 +265,8 @@ class ChatwootListConversationsTool(BaseTool):
 class ChatwootAssignConversationTool(BaseTool):
     name = "chatwoot_assign_conversation"
     description = "Atribui uma conversa a um agente."
-    input_schema = {
+    def get_schema(self) -> dict:
+        return {
         "type": "object",
         "properties": {
             "conversation_id": {"type": "integer", "description": "ID da conversa"},
@@ -253,7 +275,9 @@ class ChatwootAssignConversationTool(BaseTool):
         "required": ["conversation_id", "agent_id"],
     }
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         cfg = _get_cw_config(tenant_id)
         if not cfg:
             return "CRM nao configurado."
@@ -269,7 +293,8 @@ class ChatwootAssignConversationTool(BaseTool):
 class ChatwootAddLabelToConversationTool(BaseTool):
     name = "chatwoot_label_conversation"
     description = "Adiciona etiquetas a uma conversa."
-    input_schema = {
+    def get_schema(self) -> dict:
+        return {
         "type": "object",
         "properties": {
             "conversation_id": {"type": "integer", "description": "ID da conversa"},
@@ -278,7 +303,9 @@ class ChatwootAddLabelToConversationTool(BaseTool):
         "required": ["conversation_id", "labels"],
     }
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         cfg = _get_cw_config(tenant_id)
         if not cfg:
             return "CRM nao configurado."
@@ -298,9 +325,12 @@ class ChatwootAddLabelToConversationTool(BaseTool):
 class ChatwootListInboxesTool(BaseTool):
     name = "chatwoot_list_inboxes"
     description = "Lista todos os canais de atendimento (inboxes) do CRM."
-    input_schema = {"type": "object", "properties": {}, "required": []}
+    def get_schema(self) -> dict:
+        return {"type": "object", "properties": {}, "required": []}
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         cfg = _get_cw_config(tenant_id)
         if not cfg:
             return "CRM nao configurado."
@@ -321,9 +351,12 @@ class ChatwootListInboxesTool(BaseTool):
 class ChatwootListAgentsTool(BaseTool):
     name = "chatwoot_list_agents"
     description = "Lista todos os agentes/atendentes do CRM."
-    input_schema = {"type": "object", "properties": {}, "required": []}
+    def get_schema(self) -> dict:
+        return {"type": "object", "properties": {}, "required": []}
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         cfg = _get_cw_config(tenant_id)
         if not cfg:
             return "CRM nao configurado."
@@ -340,7 +373,8 @@ class ChatwootListAgentsTool(BaseTool):
 class ChatwootCreateTeamTool(BaseTool):
     name = "chatwoot_create_team"
     description = "Cria uma equipe no CRM."
-    input_schema = {
+    def get_schema(self) -> dict:
+        return {
         "type": "object",
         "properties": {
             "name": {"type": "string", "description": "Nome da equipe"},
@@ -349,7 +383,9 @@ class ChatwootCreateTeamTool(BaseTool):
         "required": ["name"],
     }
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         cfg = _get_cw_config(tenant_id)
         if not cfg:
             return "CRM nao configurado."
@@ -370,7 +406,8 @@ class ChatwootCreateTeamTool(BaseTool):
 class ChatwootCreateAutomationTool(BaseTool):
     name = "chatwoot_create_automation"
     description = "Cria uma automacao no CRM (ex: atribuir agente automaticamente, adicionar etiqueta, enviar webhook)."
-    input_schema = {
+    def get_schema(self) -> dict:
+        return {
         "type": "object",
         "properties": {
             "name": {"type": "string", "description": "Nome da automacao"},
@@ -382,7 +419,9 @@ class ChatwootCreateAutomationTool(BaseTool):
         "required": ["name", "event_name", "actions"],
     }
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         cfg = _get_cw_config(tenant_id)
         if not cfg:
             return "CRM nao configurado."
@@ -405,9 +444,12 @@ class ChatwootCreateAutomationTool(BaseTool):
 class ChatwootListAutomationsTool(BaseTool):
     name = "chatwoot_list_automations"
     description = "Lista todas as automacoes do CRM."
-    input_schema = {"type": "object", "properties": {}, "required": []}
+    def get_schema(self) -> dict:
+        return {"type": "object", "properties": {}, "required": []}
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         cfg = _get_cw_config(tenant_id)
         if not cfg:
             return "CRM nao configurado."
@@ -429,9 +471,12 @@ class ChatwootListAutomationsTool(BaseTool):
 class ChatwootReportTool(BaseTool):
     name = "chatwoot_report"
     description = "Gera relatorio resumido do CRM: conversas abertas, contatos, agentes, inboxes."
-    input_schema = {"type": "object", "properties": {}, "required": []}
+    def get_schema(self) -> dict:
+        return {"type": "object", "properties": {}, "required": []}
 
-    def run(self, tenant_id: str = "", **kwargs) -> str:
+    def execute(self, **kwargs) -> str:
+        import os
+        tenant_id = kwargs.pop("tenant_id", os.getenv("CLOW_TENANT_ID", "cli-user"))
         cfg = _get_cw_config(tenant_id)
         if not cfg:
             return "CRM nao configurado."
