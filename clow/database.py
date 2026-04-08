@@ -20,6 +20,9 @@ PLANS = {
     "pro": {"label": "Pro — R$487", "daily_tokens": 3_000_000},
     "business": {"label": "Business — R$667", "daily_tokens": 4_800_000},
     "unlimited": {"label": "Admin", "daily_tokens": 0},
+    "free": {"label": "Gratuito", "daily_tokens": 500_000},
+    "byok_free": {"label": "Gratuito", "daily_tokens": 500_000},
+    "basic": {"label": "Basico", "daily_tokens": 500_000},
 }
 
 # Admin email via env var (not hardcoded)
@@ -317,7 +320,7 @@ def check_limit(user_id: str) -> tuple[bool, float]:
     user = get_user_by_id(user_id)
     if not user:
         return False, 1.0
-    plan = PLANS.get(user["plan"], PLANS["free"])
+    plan = PLANS.get(user.get("plan", "lite"), PLANS.get("lite", {"daily_tokens": 500000}))
     limit = plan["daily_tokens"]
     if limit == 0:
         return True, 0.0
