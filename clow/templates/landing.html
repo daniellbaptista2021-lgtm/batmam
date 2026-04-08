@@ -141,28 +141,33 @@ a{color:var(--p);text-decoration:none}
 .feat-cat{font-size:.62rem;color:var(--p);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:6px;display:block}
 
 /* Pricing */
-.price-wrap{border-radius:14px;overflow:visible;border:1px solid rgba(100,80,180,.08);background:linear-gradient(160deg,rgba(10,10,26,.95),rgba(17,17,38,.9));position:relative;transition:all .3s ease}
-.price-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(155,89,252,.3),transparent);transition:opacity .3s}
+.price-wrap{border-radius:14px;overflow:hidden;border:1px solid rgba(100,80,180,.08);background:linear-gradient(160deg,rgba(10,10,26,.95),rgba(17,17,38,.9));position:relative;transition:all .3s ease;display:flex;flex-direction:column}
+.price-wrap::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(155,89,252,.3),transparent);transition:background .3s;pointer-events:none}
 .price-wrap:hover{border-color:rgba(155,89,252,.25);transform:translateY(-4px) scale(1.01);box-shadow:0 24px 48px rgba(0,0,0,.4),0 0 20px rgba(155,89,252,.05)}
-.price-wrap:hover::before{background:var(--gp)}
-.price-wrap.popular{border-color:rgba(155,89,252,.25);box-shadow:0 0 20px rgba(155,89,252,.06)}
-.price-inner{padding:28px 24px}
-.plan-label{font-size:.68rem;color:var(--tm);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;font-weight:600;text-align:center}
-.plan-title{font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:2px;text-shadow:0 0 20px rgba(155,89,252,.15);display:flex;align-items:center;justify-content:center;gap:6px}
+.price-wrap:hover::after{background:var(--gp)}
+.price-wrap.popular{border-color:rgba(155,89,252,.3);box-shadow:0 0 24px rgba(155,89,252,.08)}
+/* Badge — full-width top strip, inside card flow (não absolute) */
+.popular-badge{display:block;background:var(--gp);color:#fff;font-size:.6rem;font-weight:700;padding:7px 12px;text-align:center;letter-spacing:1.8px;text-transform:uppercase;flex-shrink:0}
+/* Card body */
+.price-inner{padding:22px 22px 24px;display:flex;flex-direction:column;flex:1}
+.plan-label{font-size:.65rem;color:var(--tm);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:5px;font-weight:600;text-align:center}
+.plan-title{font-size:1.1rem;font-weight:800;color:#fff;margin-bottom:10px;text-shadow:0 0 20px rgba(155,89,252,.15);display:flex;align-items:center;justify-content:center;gap:6px}
 .claude-icon{width:18px;height:18px;flex-shrink:0}
 .wa-icon{width:18px;height:18px;flex-shrink:0;fill:#25D366}
 .wa-green{color:#25D366;font-weight:600}
 .n8n-icon{width:18px;height:18px;flex-shrink:0}
-.price{font-size:2.2rem;font-weight:900;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2}
-.price small{font-size:.8rem;-webkit-text-fill-color:var(--tm);font-weight:500}
-.price-sub{color:var(--t2);font-size:.78rem;margin:4px 0 8px;line-height:1.5}
-.price-value{color:rgba(155,89,252,.5);font-size:.7rem;margin-bottom:14px;line-height:1.5;font-style:italic}
-.price-list{text-align:left;list-style:none;margin:0 0 16px}
+/* Preço padronizado — mesmo tamanho em todos os cards */
+.price{font-size:2.1rem;font-weight:900;background:var(--gp);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.15;display:block;text-align:center;letter-spacing:-.02em}
+.price small{font-size:.72rem;-webkit-text-fill-color:var(--tm);font-weight:500;letter-spacing:0}
+/* Centavos do plano ONE (,90) — mesmo gradiente, tamanho reduzido */
+.price-dec{font-size:.52em;vertical-align:.12em;font-weight:900}
+.price-sub{color:var(--t2);font-size:.76rem;margin:6px 0 6px;line-height:1.5;text-align:center}
+.price-value{color:rgba(155,89,252,.5);font-size:.68rem;margin-bottom:14px;line-height:1.5;font-style:italic;text-align:center}
+.price-list{text-align:left;list-style:none;margin:0 0 16px;flex:1}
 .price-list li{padding:5px 0;font-size:.74rem;display:flex;align-items:center;gap:8px;color:var(--t2);line-height:1.5;font-weight:400;border:none}
 .price-list li::before{content:'';width:6px;height:6px;background:var(--gp);border-radius:50%;flex-shrink:0;box-shadow:0 0 4px rgba(155,89,252,.3),inset 0 1px 0 rgba(255,255,255,.2)}
 .price-list li.dim{color:var(--tm);opacity:.7}
 .price-list li.dim::before{background:var(--tm);box-shadow:none}
-.popular-badge{position:absolute;top:8px;right:8px;background:var(--gp);color:#fff;font-size:.55rem;font-weight:600;padding:2px 8px;border-radius:4px;letter-spacing:.6px;text-transform:uppercase;z-index:2}
 
 /* Flow Cards */
 .flow-card{display:flex;align-items:flex-start;gap:14px;padding:20px;background:linear-gradient(160deg,rgba(13,11,26,.9),rgba(20,16,38,.8));border:1px solid rgba(120,90,200,.1);border-radius:14px;transition:all .35s cubic-bezier(.25,.8,.25,1);position:relative;overflow:hidden;backdrop-filter:blur(8px)}
@@ -272,6 +277,11 @@ a{color:var(--p);text-decoration:none}
   .niches-grid{grid-template-columns:1fr 1fr}
   .everything-cols{grid-template-columns:1fr 1fr}
   .wpp-mockup{max-width:100%}
+  /* Pricing mobile: 1 coluna */
+  #planos .section>div,
+  #planos~* .price-wrap{max-width:100%}
+  .price-inner{padding:18px 18px 22px}
+  .price{font-size:1.9rem}
 }
 </style>
 </head>
@@ -513,7 +523,7 @@ a{color:var(--p);text-decoration:none}
     <div class="price-wrap"><div class="price-inner">
       <div class="plan-label">Pra come&#231;ar</div>
       <div class="plan-title"><svg class="wa-icon" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> ONE</div>
-      <div class="price">R$ 129<small style="font-size:.7em">,90/m&#234;s</small></div>
+      <div class="price">R$&nbsp;129<span class="price-dec">,90</span><small>/m&#234;s</small></div>
       <div class="price-sub">1 WhatsApp com IA + plataforma</div>
       <div class="price-value">Ideal pra aut&#244;nomos e pequenos neg&#243;cios.</div>
       <ul class="price-list">
@@ -529,8 +539,9 @@ a{color:var(--p);text-decoration:none}
     </div></div>
 
     <!-- SMART -->
-    <div class="price-wrap popular"><div class="price-inner" style="position:relative">
-      <div class="popular-badge">Mais Popular</div>
+    <div class="price-wrap popular">
+      <div class="popular-badge">&#9733; Mais Popular</div>
+      <div class="price-inner">
       <div class="plan-label">Pra neg&#243;cios</div>
       <div class="plan-title"><svg class="wa-icon" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg><img class="n8n-icon" src="/static/brand/n8n-logo.png" alt=""> SMART</div>
       <div class="price">R$ 297<small>/m&#234;s</small></div>
