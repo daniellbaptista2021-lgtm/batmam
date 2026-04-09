@@ -45,6 +45,33 @@ def _chatwoot_get(base_url: str, token: str, path: str, account_id: int = 1) -> 
 
 def register_crm_dashboard_routes(app) -> None:
 
+    @app.get("/api/v1/crm/sidebar-stats", tags=["crm"])
+    async def crm_sidebar_stats(request: _Req):
+        """CRM stats for sidebar - proxies to Chatwoot."""
+        import urllib.request, json as _json
+        CW_URL = "http://localhost:3000"
+        CW_TOKEN = "5PaLRMqS6WZinwQD6dhSZyB4"
+        ACCT = 1
+        def _get(path):
+            try:
+                req = urllib.request.Request(f"{CW_URL}/api/v1/accounts/{ACCT}/{path}", headers={"api_access_token": CW_TOKEN})
+                with urllib.request.urlopen(req, timeout=5) as r:
+                    return _json.loads(r.read())
+            except:
+                return None
+        o = _get("conversations?status=open&page=1")
+        c = _get("contacts?page=1")
+        p = _get("conversations?status=pending&page=1")
+        r = _get("conversations?status=resolved&page=1")
+        return _JR({
+            "ok": True,
+            "open": o["data"]["meta"]["all_count"] if o and "data" in o else 0,
+            "contacts": c["meta"]["count"] if c and "meta" in c else 0,
+            "pending": p["data"]["meta"]["all_count"] if p and "data" in p else 0,
+            "resolved": r["data"]["meta"]["all_count"] if r and "data" in r else 0,
+        })
+
+
     from .auth import _get_user_session
 
     def _auth(request: _Req):

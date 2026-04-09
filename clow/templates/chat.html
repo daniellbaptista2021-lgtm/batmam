@@ -171,29 +171,17 @@
 })();
 </script>
 <script>
-// CRM Metrics Polling
+// CRM Metrics Polling via Clow proxy
 (function(){
-  var CW_URL='http://localhost:3000';
-  var CW_TOKEN='5PaLRMqS6WZinwQD6dhSZyB4';
-  var ACCT=1;
   function fetchCRM(){
-    var h={'api_access_token':CW_TOKEN};
-    Promise.all([
-      fetch(CW_URL+'/api/v1/accounts/'+ACCT+'/conversations?status=open&page=1',{headers:h}).then(r=>r.json()).catch(()=>null),
-      fetch(CW_URL+'/api/v1/accounts/'+ACCT+'/contacts?page=1',{headers:h}).then(r=>r.json()).catch(()=>null),
-      fetch(CW_URL+'/api/v1/accounts/'+ACCT+'/conversations?status=pending&page=1',{headers:h}).then(r=>r.json()).catch(()=>null),
-      fetch(CW_URL+'/api/v1/accounts/'+ACCT+'/conversations?status=resolved&page=1',{headers:h}).then(r=>r.json()).catch(()=>null)
-    ]).then(function(r){
-      var open=r[0]&&r[0].data?r[0].data.meta.all_count:0;
-      var contacts=r[1]&&r[1].meta?r[1].meta.count:0;
-      var pending=r[2]&&r[2].data?r[2].data.meta.all_count:0;
-      var resolved=r[3]&&r[3].data?r[3].data.meta.all_count:0;
-      document.getElementById('crmOpen').textContent=open;
-      document.getElementById('crmContacts').textContent=contacts;
-      document.getElementById('crmPending').textContent=pending;
-      document.getElementById('crmResolved').textContent=resolved;
-      document.getElementById('crmOpen').style.color=open>0?'#FBBF24':'var(--t1)';
-      document.getElementById('crmPending').style.color=pending>0?'#F87171':'var(--t1)';
+    fetch('/api/v1/crm/sidebar-stats').then(function(r){return r.json()}).then(function(d){
+      if(!d.ok)throw new Error();
+      document.getElementById('crmOpen').textContent=d.open||0;
+      document.getElementById('crmContacts').textContent=d.contacts||0;
+      document.getElementById('crmPending').textContent=d.pending||0;
+      document.getElementById('crmResolved').textContent=d.resolved||0;
+      document.getElementById('crmOpen').style.color=(d.open>0)?'#FBBF24':'var(--t1)';
+      document.getElementById('crmPending').style.color=(d.pending>0)?'#F87171':'var(--t1)';
       document.getElementById('crmStatus').style.background='#4ADE80';
     }).catch(function(){
       document.getElementById('crmStatus').style.background='#F87171';
