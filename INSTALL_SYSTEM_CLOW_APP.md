@@ -2,7 +2,7 @@
 
 ## URL para Acessar
 ```
-http://145.223.30.216:8001/pwa
+http://SEU-IP-VPS:8001/pwa
 ```
 
 ## Passo a Passo (iPhone)
@@ -42,7 +42,7 @@ Se a porta 8001 estiver bloqueada pelo seu ISP, você pode:
 
 1. **Usar um domínio**
    - Compre um domínio (ex: systemclow.com)
-   - Aponte para seu IP da VPS (145.223.30.216)
+   - Aponte para seu IP da VPS (SEU-IP-VPS)
    - Acesse via HTTPS
 
 2. **Usar proxy reverso**
