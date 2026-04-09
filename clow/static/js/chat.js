@@ -7,6 +7,7 @@ async function init(){
     document.getElementById('sbEm').textContent=me.email;
     document.getElementById('sbPl').textContent=me.plan;
     if(me.is_admin)document.getElementById('admSec').style.display='block';
+    var _scP=['starter','pro','business','unlimited','admin'];if(_scP.indexOf(me.plan)>=0||me.is_admin){var _scb=document.getElementById('systemCodeBtn');if(_scb)_scb.style.display='block';}
     initMod(me.plan,me.is_admin);
     _loadPlanBadge();
   }catch(e){}
