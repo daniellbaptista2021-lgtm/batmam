@@ -831,7 +831,7 @@ a{color:var(--p);text-decoration:none}
 document.querySelectorAll('[data-plan]').forEach(function(btn){
   btn.addEventListener('click', function(){
     var plan = this.getAttribute('data-plan');
-    window.location.href = '/login?plan=' + plan;
+    window.location.href = '/checkout/' + plan;
   });
 });
 </script>

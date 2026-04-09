@@ -9,6 +9,23 @@ def register_billing_routes(app) -> None:
 
     from .auth import _get_user_session
 
+    @app.get("/checkout/{plan_id}", tags=["billing"])
+    async def public_checkout(plan_id: str, request: _Req):
+        """Checkout publico - nao precisa de login. Stripe coleta email."""
+        if plan_id not in ("lite", "starter", "pro", "business"):
+            return _JR({"error": "Plano invalido"}, status_code=400)
+
+        from ..billing import create_public_checkout
+        result = create_public_checkout(
+            plan_id=plan_id,
+            success_url="https://clow.pvcorretor01.com.br/signup?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url="https://clow.pvcorretor01.com.br/landing",
+        )
+        if result.get("url"):
+            from starlette.responses import RedirectResponse
+            return RedirectResponse(result["url"])
+        return _JR(result, status_code=400)
+
     @app.post("/api/v1/billing/checkout", tags=["billing"])
     async def billing_checkout(request: _Req):
         sess = _get_user_session(request)

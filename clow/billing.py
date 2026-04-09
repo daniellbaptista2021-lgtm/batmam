@@ -234,6 +234,32 @@ def _get_stripe():
         return None
 
 
+
+def create_public_checkout(plan_id: str, success_url: str = "", cancel_url: str = "") -> dict:
+    """Cria Stripe Checkout Session sem usuario logado."""
+    stripe = _get_stripe()
+    if not stripe:
+        return {"error": "Stripe nao configurado"}
+
+    plan = get_plan(plan_id)
+    price_id = plan.get("stripe_price_id", "")
+    if not price_id:
+        return {"error": f"Plano {plan_id} sem price_id configurado"}
+
+    try:
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            payment_method_types=["card"],
+            line_items=[{"price": price_id, "quantity": 1}],
+            success_url=success_url or "https://clow.pvcorretor01.com.br/login",
+            cancel_url=cancel_url or "https://clow.pvcorretor01.com.br/landing",
+            metadata={"plan_id": plan_id},
+            allow_promotion_codes=True,
+        )
+        return {"url": session.url, "session_id": session.id}
+    except Exception as e:
+        return {"error": str(e)}
+
 def create_checkout_session(user_id: str, email: str, plan_id: str, success_url: str, cancel_url: str) -> dict[str, Any]:
     """Cria Stripe Checkout Session. Retorna URL."""
     stripe = _get_stripe()
