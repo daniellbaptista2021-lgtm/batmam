@@ -208,7 +208,18 @@ def register_chat_routes(app: FastAPI) -> None:
                 "tools": [], "file": None,
             }, status_code=403)
         if _pay_status == "overdue":
-            pass  # Allow with warning - billing warning shown in UI
+            import time as _time
+            _overdue_since = (_u or {}).get("payment_overdue_since", 0)
+            try:
+                _overdue_since = float(_overdue_since)
+            except (ValueError, TypeError):
+                _overdue_since = 0
+            if _overdue_since and (_time.time() - _overdue_since) > 604800:  # 7 days
+                return JSONResponse({
+                    "session_id": "",
+                    "response": "Seu pagamento esta pendente ha mais de 7 dias. O acesso foi bloqueado. Regularize sua assinatura para continuar.",
+                    "tools": [], "file": None,
+                }, status_code=403)
 
         allowed, pct = check_limit(sess["user_id"])
         if not allowed:
