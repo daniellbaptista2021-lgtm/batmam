@@ -59,7 +59,7 @@ PLANS = {
     # SMART — plano negócios (mapeado ao checkout data-plan="starter")
     "starter": {
         "name": "SMART",
-        "price_brl": 127.90.00,  # R$297,00/mês
+        "price_brl": 127.90,  # R$297,00/mês
         "model": "IA Clow",
         "uses_server_key": True,
         "daily_input_tokens": 1_800_000,
@@ -77,7 +77,7 @@ PLANS = {
     # PROFISSIONAL — plano escala (mapeado ao checkout data-plan="pro")
     "pro": {
         "name": "PROFISSIONAL",
-        "price_brl": 239.90.00,  # R$497,00/mês
+        "price_brl": 239.90,  # R$497,00/mês
         "model": "IA Clow",
         "uses_server_key": True,
         "daily_input_tokens": 2_500_000,
@@ -95,7 +95,7 @@ PLANS = {
     # BUSINESS — plano empresarial (mapeado ao checkout data-plan="business")
     "business": {
         "name": "BUSINESS",
-        "price_brl": 317.90.00,  # R$897,00/mês
+        "price_brl": 317.90,  # R$897,00/mês
         "model": "IA Clow",
         "uses_server_key": True,
         "daily_input_tokens": 4_000_000,
