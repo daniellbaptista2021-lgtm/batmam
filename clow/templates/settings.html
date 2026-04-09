@@ -253,10 +253,10 @@ async function loadPlan(){
   $('btn-portal').style.display=s.stripe_customer_id?'inline-block':'none';
 
   const plans=[
-    {id:'lite',name:'Lite',price:'R$ 169/mes',items:['Haiku 4.5 incluso','CRM + 8 fluxos n8n','1.5M+300K/dia']},
-    {id:'starter',name:'Starter',price:'R$ 298/mes',items:['Sonnet 4','CRM + 8 fluxos n8n','1.8M+350K/dia','3 usuarios']},
-    {id:'pro',name:'Pro',price:'R$ 487/mes',items:['Sonnet 4','2.000 fluxos','2.5M+500K/dia','5 usuarios']},
-    {id:'business',name:'Business',price:'R$ 667/mes',items:['Sonnet 4','3.000 fluxos','4M+800K/dia','10 usuarios']},
+    {id:'lite',name:'Lite',price:'R$ 89,90/mes',items:['Haiku 4.5 incluso','CRM + 8 fluxos n8n','1.5M+300K/dia']},
+    {id:'starter',name:'Starter',price:'R$ 127,90/mes',items:['Sonnet 4','CRM + 8 fluxos n8n','1.8M+350K/dia','3 usuarios']},
+    {id:'pro',name:'Pro',price:'R$ 239,90/mes',items:['Sonnet 4','2.000 fluxos','2.5M+500K/dia','5 usuarios']},
+    {id:'business',name:'Business',price:'R$ 317,90/mes',items:['Sonnet 4','3.000 fluxos','4M+800K/dia','10 usuarios']},
   ];
   $('plan-grid').innerHTML=plans.map(p=>{
     const cur=s.plan_id===p.id;

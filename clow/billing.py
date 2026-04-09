@@ -1,10 +1,10 @@
 """Stripe Billing — planos, checkout, portal, webhook, franquia.
 
 Planos:
-- ONE (lite):          R$129,90/mes — 1 WhatsApp, IA inclusa
-- SMART (starter):     R$297,00/mes — 2 WhatsApp, CRM, 8 fluxos n8n
-- PROFISSIONAL (pro):  R$497,00/mes — 3 WhatsApp, 5 usuarios, 2000 fluxos
-- BUSINESS (business): R$897,00/mes — 5 WhatsApp, 10 usuarios, 3000 fluxos, API publica
+- ONE (lite):          R$89,90/mes — 1 WhatsApp, IA inclusa
+- SMART (starter):     R$127,90/mes — 2 WhatsApp, CRM, 8 fluxos n8n
+- PROFISSIONAL (pro):  R$239,90/mes — 3 WhatsApp, 5 usuarios, 2000 fluxos
+- BUSINESS (business): R$317,90/mes — 5 WhatsApp, 10 usuarios, 3000 fluxos, API publica
 
 WhatsApp Agent SEMPRE usa IA inclusa. Franquia separada do chat.
 Acesso apenas via assinatura paga — sem plano gratuito.
@@ -41,7 +41,7 @@ PLANS = {
     # ONE — plano entrada (mapeado ao checkout data-plan="lite")
     "lite": {
         "name": "ONE",
-        "price_brl": 129.90,  # R$129,90/mês
+        "price_brl": 89.90,  # R$129,90/mês
         "model": "IA Clow",
         "uses_server_key": True,
         "daily_input_tokens": 1_500_000,
@@ -59,7 +59,7 @@ PLANS = {
     # SMART — plano negócios (mapeado ao checkout data-plan="starter")
     "starter": {
         "name": "SMART",
-        "price_brl": 297.00,  # R$297,00/mês
+        "price_brl": 127.90.00,  # R$297,00/mês
         "model": "IA Clow",
         "uses_server_key": True,
         "daily_input_tokens": 1_800_000,
@@ -77,7 +77,7 @@ PLANS = {
     # PROFISSIONAL — plano escala (mapeado ao checkout data-plan="pro")
     "pro": {
         "name": "PROFISSIONAL",
-        "price_brl": 497.00,  # R$497,00/mês
+        "price_brl": 239.90.00,  # R$497,00/mês
         "model": "IA Clow",
         "uses_server_key": True,
         "daily_input_tokens": 2_500_000,
@@ -95,7 +95,7 @@ PLANS = {
     # BUSINESS — plano empresarial (mapeado ao checkout data-plan="business")
     "business": {
         "name": "BUSINESS",
-        "price_brl": 897.00,  # R$897,00/mês
+        "price_brl": 317.90.00,  # R$897,00/mês
         "model": "IA Clow",
         "uses_server_key": True,
         "daily_input_tokens": 4_000_000,
