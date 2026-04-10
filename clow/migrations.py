@@ -414,6 +414,106 @@ MIGRATIONS: list[tuple[int, str, str]] = [
         CREATE INDEX IF NOT EXISTS idx_top_users_tw ON top_users_weekly(tenant_id, week);
         """,
     ),
+
+    # -- v10: WhatsApp connections, bot config, message logs, knowledge base, onboarding --
+    (
+        10,
+        "Create WhatsApp connections, bot_configs, wa_message_logs, wa_knowledge_base, onboarding_status tables and add user columns",
+        """
+        -- WhatsApp connections tracking
+        CREATE TABLE IF NOT EXISTS whatsapp_connections (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            plan_slot INTEGER DEFAULT 1,
+            instance_id TEXT NOT NULL,
+            token TEXT NOT NULL,
+            name TEXT DEFAULT 'Meu WhatsApp',
+            status TEXT DEFAULT 'disconnected',
+            webhook_url TEXT DEFAULT '',
+            last_seen REAL DEFAULT 0,
+            last_health_check REAL DEFAULT 0,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+
+        -- Bot configuration per connection
+        CREATE TABLE IF NOT EXISTS bot_configs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            connection_id TEXT NOT NULL,
+            prompt TEXT DEFAULT '',
+            personality_name TEXT DEFAULT 'Assistente',
+            personality_tone TEXT DEFAULT 'casual',
+            language TEXT DEFAULT 'pt-BR',
+            business_hours_enabled INTEGER DEFAULT 0,
+            business_hours_start TEXT DEFAULT '08:00',
+            business_hours_end TEXT DEFAULT '18:00',
+            business_days TEXT DEFAULT '1,2,3,4,5',
+            out_of_hours_message TEXT DEFAULT 'Estamos fora do horario de atendimento. Retornaremos em breve!',
+            welcome_enabled INTEGER DEFAULT 1,
+            welcome_message TEXT DEFAULT 'Ola! Como posso ajudar?',
+            welcome_delay_seconds INTEGER DEFAULT 2,
+            handoff_enabled INTEGER DEFAULT 0,
+            handoff_keywords TEXT DEFAULT 'humano,atendente,gerente',
+            handoff_number TEXT DEFAULT '',
+            handoff_message TEXT DEFAULT 'Transferindo para um atendente humano...',
+            quick_replies TEXT DEFAULT '[]',
+            typing_delay_ms INTEGER DEFAULT 1500,
+            anti_spam_seconds INTEGER DEFAULT 3,
+            model TEXT DEFAULT 'deepseek-chat',
+            temperature REAL DEFAULT 0.3,
+            max_tokens INTEGER DEFAULT 1024,
+            FOREIGN KEY (connection_id) REFERENCES whatsapp_connections(id)
+        );
+
+        -- Message logs
+        CREATE TABLE IF NOT EXISTS wa_message_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            connection_id TEXT NOT NULL,
+            phone TEXT NOT NULL,
+            direction TEXT NOT NULL CHECK (direction IN ('incoming', 'outgoing')),
+            content TEXT NOT NULL,
+            tokens_used INTEGER DEFAULT 0,
+            resolved_by_ai INTEGER DEFAULT 1,
+            transferred_to_human INTEGER DEFAULT 0,
+            response_time_ms INTEGER DEFAULT 0,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (connection_id) REFERENCES whatsapp_connections(id)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_wa_logs_connection ON wa_message_logs(connection_id);
+        CREATE INDEX IF NOT EXISTS idx_wa_logs_phone ON wa_message_logs(phone);
+        CREATE INDEX IF NOT EXISTS idx_wa_logs_date ON wa_message_logs(created_at);
+
+        -- Knowledge base documents
+        CREATE TABLE IF NOT EXISTS wa_knowledge_base (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            connection_id TEXT NOT NULL,
+            filename TEXT NOT NULL,
+            content TEXT NOT NULL,
+            file_size INTEGER DEFAULT 0,
+            processed_at REAL,
+            created_at REAL NOT NULL,
+            FOREIGN KEY (connection_id) REFERENCES whatsapp_connections(id)
+        );
+
+        -- Onboarding status
+        CREATE TABLE IF NOT EXISTS onboarding_status (
+            user_id TEXT PRIMARY KEY,
+            completed INTEGER DEFAULT 0,
+            step_reached INTEGER DEFAULT 0,
+            whatsapp_done INTEGER DEFAULT 0,
+            chatwoot_done INTEGER DEFAULT 0,
+            skipped INTEGER DEFAULT 0,
+            created_at REAL NOT NULL,
+            updated_at REAL NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        );
+
+        -- Add first_login column to users if not exists
+        ALTER TABLE users ADD COLUMN first_login INTEGER DEFAULT 1;
+        ALTER TABLE users ADD COLUMN onboarding_completed INTEGER DEFAULT 0;
+        """,
+    ),
 ]
 
 

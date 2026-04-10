@@ -224,6 +224,30 @@ def register_whatsapp_agent_routes(app) -> None:
 
     # ── Test Connection (existing instance) ───────────────────
 
+    @app.post("/api/v1/whatsapp/instances/test", tags=["whatsapp"])
+    async def test_wa_connection(request: _Req):
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        iid = body.get("instance_id", "").strip()
+        tok = body.get("token", "").strip()
+        if not iid or not tok:
+            return _JR({"success": False, "error": "Instance ID e Token obrigatorios"}, status_code=400)
+        import urllib.request, urllib.error, json as _json
+        try:
+            url = f"https://api.z-api.io/instances/{iid}/token/{tok}/status"
+            req = urllib.request.Request(url)
+            req.add_header("Content-Type", "application/json")
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = _json.loads(resp.read().decode())
+                ok = data.get("connected", False) or data.get("smartphoneConnected", False)
+                return _JR({"success": True, "connected": ok, "message": "Conexao OK!" if ok else "Z-API acessivel mas WhatsApp nao conectado."})
+        except urllib.error.HTTPError as e:
+            return _JR({"success": False, "error": f"Erro Z-API: {e.code}"}, status_code=400)
+        except Exception as e:
+            return _JR({"success": False, "error": str(e)}, status_code=500)
+
     @app.post("/api/v1/whatsapp/instances/{instance_id}/test", tags=["whatsapp"])
     async def test_instance(instance_id: str, request: _Req):
         sess = _get_user_session(request)
