@@ -597,43 +597,117 @@ tr.expanded-row td{background:var(--bg-elevated);padding:16px;white-space:pre-wr
       <button class="close-btn" onclick="closeConnectModal()">&times;</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
-        <label>Nome da instancia</label>
-        <input id="connectName" placeholder="Ex: Atendimento Loja, Suporte, Vendas">
-      </div>
-      <div class="form-group">
-        <label>Instance ID da Z-API</label>
-        <input id="connectInstanceId" placeholder="Ex: 3EF2493A894633F5816A8E378C15AB7A" style="font-family:var(--font-mono)">
-        <div class="hint">Encontre em painel.z-api.io &rarr; sua instancia &rarr; ID</div>
-      </div>
-      <div class="form-group">
-        <label>Token da Z-API</label>
-        <div style="display:flex;gap:8px">
-          <input id="connectToken" type="password" placeholder="Ex: D06D384EC55FD76DD0EEA2E8" style="flex:1;font-family:var(--font-mono)">
-          <button class="btn btn-secondary btn-sm" onclick="var el=document.getElementById('connectToken');el.type=el.type==='password'?'text':'password'">Revelar</button>
+      <!-- Provider Selection -->
+      <div id="providerSelect" style="display:block">
+        <h3 style="font-size:1rem;font-weight:600;margin-bottom:16px;color:var(--text-primary)">Escolha o Provedor</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0">
+          <div onclick="selectProvider('zapi')" style="cursor:pointer;background:var(--bg-elevated);border:2px solid var(--border);border-radius:12px;padding:20px;text-align:center;transition:all .2s" onmouseover="this.style.borderColor='#9B59FC'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:28px;margin-bottom:8px">&#128241;</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-primary)">Z-API</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">Conexao rapida</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px">Sem aprovacao necessaria</div>
+            <div style="font-size:10px;color:#9B59FC;margin-top:8px;font-weight:600">Recomendado pra comecar</div>
+          </div>
+          <div onclick="selectProvider('meta')" style="cursor:pointer;background:var(--bg-elevated);border:2px solid var(--border);border-radius:12px;padding:20px;text-align:center;transition:all .2s" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:28px;margin-bottom:8px">&#9989;</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-primary)">Meta API Oficial</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">WhatsApp Business oficial</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px">Zero risco de ban</div>
+            <div style="font-size:10px;color:#25D366;margin-top:8px;font-weight:600">Recomendado pra escala</div>
+          </div>
         </div>
-        <div class="hint">Encontre em painel.z-api.io &rarr; sua instancia &rarr; Token</div>
       </div>
-      <button class="btn btn-wa" onclick="testConnection()" id="btnTestConn">Testar Conexao</button>
-      <div id="connectResult" style="margin-top:12px"></div>
 
-      <div class="webhook-box" id="connectWebhook" style="display:none">
-        <label style="font-size:.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block">URL do Webhook (cole na Z-API)</label>
-        <code id="connectWebhookUrl">-</code>
-        <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('connectWebhookUrl').textContent);toast('URL copiada!','ok')">Copiar URL</button>
-        <div class="steps" style="margin-top:12px">
-          <b>Como configurar:</b><br>
-          1. Acesse painel.z-api.io<br>
-          2. Clique na sua instancia<br>
-          3. Va em "Webhooks"<br>
-          4. Cole a URL acima no campo "URL de recebimento"<br>
-          5. Salve
+      <!-- Z-API Form (existing, now wrapped) -->
+      <div id="zapiForm" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+          <button class="btn btn-secondary btn-sm" onclick="selectProvider(null)" style="padding:4px 10px">&#8592;</button>
+          <h3 style="font-size:1rem;font-weight:600;color:var(--text-primary)">Conectar via Z-API</h3>
+        </div>
+        <div class="form-group">
+          <label>Nome da instancia</label>
+          <input id="connectName" placeholder="Ex: Atendimento Loja, Suporte, Vendas">
+        </div>
+        <div class="form-group">
+          <label>Instance ID da Z-API</label>
+          <input id="connectInstanceId" placeholder="Ex: 3EF2493A894633F5816A8E378C15AB7A" style="font-family:var(--font-mono)">
+          <div class="hint">Encontre em painel.z-api.io &rarr; sua instancia &rarr; ID</div>
+        </div>
+        <div class="form-group">
+          <label>Token da Z-API</label>
+          <div style="display:flex;gap:8px">
+            <input id="connectToken" type="password" placeholder="Ex: D06D384EC55FD76DD0EEA2E8" style="flex:1;font-family:var(--font-mono)">
+            <button class="btn btn-secondary btn-sm" onclick="var el=document.getElementById('connectToken');el.type=el.type==='password'?'text':'password'">Revelar</button>
+          </div>
+          <div class="hint">Encontre em painel.z-api.io &rarr; sua instancia &rarr; Token</div>
+        </div>
+        <button class="btn btn-wa" onclick="testConnection()" id="btnTestConn">Testar Conexao</button>
+        <div id="connectResult" style="margin-top:12px"></div>
+
+        <div class="webhook-box" id="connectWebhook" style="display:none">
+          <label style="font-size:.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block">URL do Webhook (cole na Z-API)</label>
+          <code id="connectWebhookUrl">-</code>
+          <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('connectWebhookUrl').textContent);toast('URL copiada!','ok')">Copiar URL</button>
+          <div class="steps" style="margin-top:12px">
+            <b>Como configurar:</b><br>
+            1. Acesse painel.z-api.io<br>
+            2. Clique na sua instancia<br>
+            3. Va em "Webhooks"<br>
+            4. Cole a URL acima no campo "URL de recebimento"<br>
+            5. Salve
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px">
+          <button class="btn btn-secondary" onclick="closeConnectModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveNewInstance()" id="btnSaveInstance">Salvar e Conectar</button>
         </div>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeConnectModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveNewInstance()" id="btnSaveInstance">Salvar e Conectar</button>
+
+      <!-- Meta API Form -->
+      <div id="metaForm" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+          <button class="btn btn-secondary btn-sm" onclick="selectProvider(null)" style="padding:4px 10px">&#8592;</button>
+          <h3 style="font-size:1rem;font-weight:600;color:var(--text-primary)">Conectar Meta API Oficial</h3>
+        </div>
+        <div class="form-group">
+          <label>Nome da instancia</label>
+          <input id="metaName" placeholder="Ex: Atendimento Principal, Vendas Meta">
+        </div>
+        <div class="form-group">
+          <label>Access Token</label>
+          <div style="display:flex;gap:8px">
+            <input id="metaToken" type="password" placeholder="Token permanente do Meta Business" style="flex:1;font-family:var(--font-mono)">
+            <button class="btn btn-secondary btn-sm" onclick="var el=document.getElementById('metaToken');el.type=el.type==='password'?'text':'password'">Revelar</button>
+          </div>
+          <div class="hint"><a href="https://developers.facebook.com/docs/whatsapp/business-management-api/get-started" target="_blank" style="font-size:.75rem;color:var(--blue)">Como gerar token permanente?</a></div>
+        </div>
+        <div class="form-group">
+          <label>Phone Number ID</label>
+          <input id="metaPhoneId" placeholder="Ex: 123456789012345" style="font-family:var(--font-mono)">
+          <div class="hint">Encontre em Meta Business Suite &rarr; WhatsApp &rarr; Configuracoes &rarr; Phone Number ID</div>
+        </div>
+        <div class="form-group">
+          <label>WABA ID (WhatsApp Business Account ID)</label>
+          <input id="metaWabaId" placeholder="Ex: 987654321098765" style="font-family:var(--font-mono)">
+        </div>
+        <div class="form-group" style="margin-bottom:16px">
+          <label>Webhook URL (copie para o Meta)</label>
+          <div id="metaWebhookUrl" style="background:var(--bg-elevated);padding:10px 14px;border-radius:8px;font-family:var(--font-mono);font-size:.82rem;color:var(--wa);word-break:break-all;border:1px solid var(--border)">Sera gerada apos salvar</div>
+          <div style="margin-top:8px">
+            <label>Verify Token</label>
+            <input id="metaVerifyToken" placeholder="Token de verificacao" style="font-family:var(--font-mono)">
+            <div class="hint">Este token sera usado para validar o webhook do Meta. Copie-o para a configuracao do webhook no Meta.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-wa" onclick="testMetaConnection()" id="metaTestBtn">Testar Conexao</button>
+        </div>
+        <div id="metaTestResult" style="margin-top:10px"></div>
+        <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px">
+          <button class="btn btn-secondary" onclick="closeConnectModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveMetaConnection()" id="metaSaveBtn">Salvar e Conectar</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -799,10 +873,13 @@ function renderSlots(maxSlots){
           <span class="status-dot ${statusClass}"></span>
           <input value="${inst.name}" onblur="renamInstance('${inst.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
         </div>
-        <span class="status-badge ${badgeClass}">${badgeText}</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:.65rem;padding:2px 8px;border-radius:10px;font-weight:600;${inst.provider==='meta'?'background:rgba(37,211,102,.12);color:#25D366':'background:rgba(155,89,252,.12);color:#9B59FC'}">${inst.provider==='meta'?'Meta Oficial':'Z-API'}</span>
+          <span class="status-badge ${badgeClass}">${badgeText}</span>
+        </div>
       </div>
       <div class="slot-card-info">
-        ID: <span class="mono">${maskId(inst.zapi_instance_id)}</span><br>
+        ${inst.provider==='meta'?'Phone ID':'Z-API ID'}: <span class="mono">${inst.provider==='meta'?maskId(inst.meta_phone_number_id):maskId(inst.zapi_instance_id)}</span><br>
         Ultima atividade: ${lastSeen}<br>
         Hoje: ${msgsToday} msgs &bull; Total: ${msgsTotal} msgs
       </div>
@@ -923,6 +1000,18 @@ function openConnectModal(){
   $('connectToken').value='';
   $('connectResult').innerHTML='';
   $('connectWebhook').style.display='none';
+  // Reset to provider selection
+  $('providerSelect').style.display='block';
+  $('zapiForm').style.display='none';
+  $('metaForm').style.display='none';
+  // Reset meta fields
+  $('metaName').value='';
+  $('metaToken').value='';
+  $('metaPhoneId').value='';
+  $('metaWabaId').value='';
+  $('metaVerifyToken').value='';
+  $('metaTestResult').innerHTML='';
+  $('metaWebhookUrl').textContent='Sera gerada apos salvar';
   $('connectOverlay').classList.add('show');
 }
 
@@ -991,6 +1080,98 @@ async function saveNewInstance(){
 
   $('btnSaveInstance').disabled=false;
   $('btnSaveInstance').textContent='Salvar e Conectar';
+}
+
+/* ═══════════════════════════════════════════════════════
+   PROVIDER SELECTION & META API
+   ═══════════════════════════════════════════════════════ */
+
+function selectProvider(p){
+  $('providerSelect').style.display=p?'none':'block';
+  $('zapiForm').style.display=p==='zapi'?'block':'none';
+  $('metaForm').style.display=p==='meta'?'block':'none';
+  if(p==='meta'){
+    // Generate verify token and webhook URL hint
+    var vt='clow_'+Math.random().toString(36).substr(2,12);
+    $('metaVerifyToken').value=vt;
+    $('metaWebhookUrl').textContent='https://clow.pvcorretor01.com.br/api/v1/whatsapp/meta/webhook/{ID_GERADO_APOS_SALVAR}';
+  }
+}
+
+async function testMetaConnection(){
+  var token=$('metaToken').value.trim();
+  var phoneId=$('metaPhoneId').value.trim();
+  if(!token||!phoneId){
+    $('metaTestResult').innerHTML='<div class="pill pill-err">Preencha Access Token e Phone Number ID</div>';
+    return;
+  }
+  var btn=$('metaTestBtn');
+  btn.disabled=true;btn.textContent='Testando...';
+  $('metaTestResult').innerHTML='<div class="pill pill-wait">Testando conexao com Meta API...</div>';
+  try{
+    var r=await api('/api/v1/whatsapp/instances/test-meta',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({access_token:token,phone_number_id:phoneId})
+    });
+    if(r.success){
+      $('metaTestResult').innerHTML='<div class="pill pill-ok">&#10003; Conectado! Numero: '+(r.phone||'')+(r.name?' ('+r.name+')':'')+'</div>';
+    }else{
+      $('metaTestResult').innerHTML='<div class="pill pill-err">&#10007; '+(r.error||'Erro ao conectar')+'</div>';
+    }
+  }catch(e){
+    $('metaTestResult').innerHTML='<div class="pill pill-err">&#10007; Erro: '+e.message+'</div>';
+  }
+  btn.disabled=false;btn.textContent='Testar Conexao';
+}
+
+async function saveMetaConnection(){
+  var name=$('metaName').value.trim()||'WhatsApp Meta';
+  var token=$('metaToken').value.trim();
+  var phoneId=$('metaPhoneId').value.trim();
+  var wabaId=$('metaWabaId').value.trim();
+  var verifyToken=$('metaVerifyToken').value.trim();
+
+  if(!token||!phoneId){
+    toast('Preencha Access Token e Phone Number ID','err');
+    return;
+  }
+
+  $('metaSaveBtn').disabled=true;
+  $('metaSaveBtn').textContent='Salvando...';
+
+  try{
+    var r=await api('/api/v1/whatsapp/instances',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name:name,
+        provider:'meta',
+        meta_access_token:token,
+        meta_phone_number_id:phoneId,
+        meta_waba_id:wabaId,
+        meta_verify_token:verifyToken,
+        zapi_instance_id:'meta-'+phoneId,
+        zapi_token:'meta'
+      })
+    });
+
+    if(r.success&&r.instance){
+      // Show webhook URL with actual ID
+      var webhookUrl='https://clow.pvcorretor01.com.br/api/v1/whatsapp/meta/webhook/'+r.instance.id;
+      $('metaWebhookUrl').textContent=webhookUrl;
+      toast('Instancia Meta criada! Configure o webhook URL no Meta Business.','ok');
+      // Show copy button hint
+      $('metaTestResult').innerHTML='<div class="pill pill-ok">Instancia criada! Copie a Webhook URL acima e configure no Meta Business Suite.</div><button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="navigator.clipboard.writeText(\''+webhookUrl+'\');toast(\'URL copiada!\',\'ok\')">Copiar Webhook URL</button>';
+    }else{
+      toast(r.error||'Erro ao criar instancia','err');
+    }
+  }catch(e){
+    toast('Erro: '+e.message,'err');
+  }
+
+  $('metaSaveBtn').disabled=false;
+  $('metaSaveBtn').textContent='Salvar e Conectar';
 }
 
 /* ═══════════════════════════════════════════════════════

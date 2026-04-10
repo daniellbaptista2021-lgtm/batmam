@@ -514,6 +514,18 @@ MIGRATIONS: list[tuple[int, str, str]] = [
         ALTER TABLE users ADD COLUMN onboarding_completed INTEGER DEFAULT 0;
         """,
     ),
+    # ── v11: Meta WhatsApp Business API provider fields ──────
+    (
+        11,
+        "Add Meta WhatsApp Business API provider fields to whatsapp_connections",
+        """
+        ALTER TABLE whatsapp_connections ADD COLUMN provider TEXT DEFAULT 'zapi';
+        ALTER TABLE whatsapp_connections ADD COLUMN meta_phone_number_id TEXT DEFAULT '';
+        ALTER TABLE whatsapp_connections ADD COLUMN meta_waba_id TEXT DEFAULT '';
+        ALTER TABLE whatsapp_connections ADD COLUMN meta_access_token TEXT DEFAULT '';
+        ALTER TABLE whatsapp_connections ADD COLUMN meta_verify_token TEXT DEFAULT '';
+        """,
+    ),
 ]
 
 

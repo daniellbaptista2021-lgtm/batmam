@@ -61,6 +61,11 @@ def register_whatsapp_agent_routes(app) -> None:
             zapi_instance_id=body.get("zapi_instance_id", ""),
             zapi_token=body.get("zapi_token", ""),
             system_prompt=body.get("system_prompt", ""),
+            provider=body.get("provider", "zapi"),
+            meta_phone_number_id=body.get("meta_phone_number_id", ""),
+            meta_waba_id=body.get("meta_waba_id", ""),
+            meta_access_token=body.get("meta_access_token", ""),
+            meta_verify_token=body.get("meta_verify_token", ""),
         )
         return _JR(result, status_code=201 if result.get("success") else 400)
 
@@ -78,6 +83,8 @@ def register_whatsapp_agent_routes(app) -> None:
         d["zapi_token_full"] = inst.zapi_token
         d["system_prompt_full"] = inst.system_prompt
         d["rag_text_full"] = inst.rag_text
+        d["meta_access_token_full"] = inst.meta_access_token
+        d["provider"] = inst.provider
         return _JR(d)
 
     @app.put("/api/v1/whatsapp/instances/{instance_id}", tags=["whatsapp"])
@@ -87,7 +94,7 @@ def register_whatsapp_agent_routes(app) -> None:
             return _JR({"error": "Nao autenticado"}, status_code=401)
         body = await request.json()
         from ..whatsapp_agent import get_wa_manager
-        allowed = {"name", "zapi_instance_id", "zapi_token", "system_prompt", "rag_text", "active", "context_size", "handoff_enabled", "handoff_keyword"}
+        allowed = {"name", "zapi_instance_id", "zapi_token", "system_prompt", "rag_text", "active", "context_size", "handoff_enabled", "handoff_keyword", "provider", "meta_phone_number_id", "meta_waba_id", "meta_access_token", "meta_verify_token"}
         updates = {k: v for k, v in body.items() if k in allowed}
         result = get_wa_manager().update_instance(instance_id, sess["user_id"], **updates)
         return _JR(result)
@@ -261,6 +268,114 @@ def register_whatsapp_agent_routes(app) -> None:
         if not inst:
             return _JR({"error": "Nao encontrada"}, status_code=404)
         return _JR(get_wa_manager().test_connection(inst.zapi_instance_id, inst.zapi_token))
+
+    # ── Meta API Webhook - Verification (GET) ────────────────
+
+    @app.get("/api/v1/whatsapp/meta/webhook/{connection_id}", tags=["whatsapp"], include_in_schema=False)
+    async def meta_webhook_verify(connection_id: str, request: _Req):
+        """Meta webhook verification challenge."""
+        params = request.query_params
+        mode = params.get("hub.mode", "")
+        token = params.get("hub.verify_token", "")
+        challenge = params.get("hub.challenge", "")
+
+        if mode == "subscribe":
+            from ..whatsapp_agent import get_wa_manager
+            inst = get_wa_manager().get_instance(connection_id)
+            if inst and inst.meta_verify_token == token:
+                from fastapi.responses import PlainTextResponse
+                return PlainTextResponse(challenge)
+
+        return _JR({"error": "Verification failed"}, status_code=403)
+
+    # ── Meta API Webhook - Receive messages (POST) ────────────
+
+    @app.post("/api/v1/whatsapp/meta/webhook/{connection_id}", tags=["whatsapp"], include_in_schema=False)
+    async def meta_webhook_receive(connection_id: str, request: _Req):
+        """Receive messages from Meta WhatsApp Business API."""
+        try:
+            body = await request.json()
+        except Exception:
+            return _JR({"status": "invalid"}, status_code=400)
+
+        # Parse Meta webhook payload
+        try:
+            entry = body.get("entry", [{}])[0]
+            changes = entry.get("changes", [{}])[0]
+            value = changes.get("value", {})
+            messages = value.get("messages", [])
+
+            if not messages:
+                return _JR({"status": "no_messages"})
+
+            from ..whatsapp_agent import get_wa_manager
+            inst = get_wa_manager().get_instance(connection_id)
+            if not inst or not inst.active or inst.provider != "meta":
+                return _JR({"status": "inactive"})
+
+            for msg in messages:
+                phone = msg.get("from", "")
+                msg_type = msg.get("type", "")
+
+                if msg_type == "text":
+                    text = msg.get("text", {}).get("body", "")
+                elif msg_type in ("image", "audio", "video", "document"):
+                    text = f"[{msg_type} recebido]"
+                else:
+                    continue
+
+                if not phone or not text:
+                    continue
+
+                # Use same debounce mechanism as Z-API
+                key = f"{connection_id}:{phone}"
+                with _debounce_lock:
+                    if key not in _debounce_buffers:
+                        _debounce_buffers[key] = []
+                    _debounce_buffers[key].append(text)
+
+                    if key in _debounce_timers:
+                        _debounce_timers[key].cancel()
+
+                    iid = connection_id
+                    p = phone
+                    def flush(k=key, i=iid, ph=p):
+                        with _debounce_lock:
+                            msgs = _debounce_buffers.pop(k, [])
+                            _debounce_timers.pop(k, None)
+                        if msgs:
+                            combined = " ".join(msgs)
+                            try:
+                                _process_with_chatwoot(i, ph, combined)
+                            except Exception as e:
+                                logger.error(f"Meta process error: {e}")
+
+                    timer = threading.Timer(DEBOUNCE_SECONDS, flush)
+                    timer.daemon = True
+                    _debounce_timers[key] = timer
+                    timer.start()
+
+            return _JR({"status": "ok"})
+        except Exception as e:
+            logger.error(f"Meta webhook error: {e}")
+            return _JR({"status": "error"})
+
+    # ── Test Meta Connection ──────────────────────────────────
+
+    @app.post("/api/v1/whatsapp/instances/test-meta", tags=["whatsapp"])
+    async def test_meta_connection(request: _Req):
+        """Test Meta WhatsApp Business API connection."""
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        token = body.get("access_token", "").strip()
+        phone_id = body.get("phone_number_id", "").strip()
+        if not token or not phone_id:
+            return _JR({"success": False, "error": "Access Token e Phone Number ID obrigatorios"}, status_code=400)
+        from ..whatsapp_agent import get_wa_manager
+        result = get_wa_manager().test_meta_connection(token, phone_id)
+        return _JR({"success": result.get("connected", False), **result})
 
     # ── Webhook (public — Z-API calls this) ───────────────────
 

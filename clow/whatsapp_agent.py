@@ -46,6 +46,11 @@ class WhatsAppInstance:
     handoff_keyword: str = "humano"
     created_at: float = field(default_factory=time.time)
     stats: dict = field(default_factory=lambda: {"messages_today": 0, "messages_total": 0, "last_message_at": 0})
+    provider: str = "zapi"  # "zapi" or "meta"
+    meta_phone_number_id: str = ""
+    meta_waba_id: str = ""
+    meta_access_token: str = ""
+    meta_verify_token: str = ""
 
     @property
     def webhook_url(self) -> str:
@@ -68,6 +73,11 @@ class WhatsAppInstance:
             "active": self.active, "context_size": self.context_size,
             "handoff_enabled": self.handoff_enabled, "handoff_keyword": self.handoff_keyword,
             "webhook_url": self.webhook_url, "created_at": self.created_at, "stats": self.stats,
+            "provider": self.provider,
+            "meta_phone_number_id": self.meta_phone_number_id,
+            "meta_waba_id": self.meta_waba_id,
+            "meta_access_token": self.meta_access_token[:8] + "..." if self.meta_access_token else "",
+            "meta_verify_token": self.meta_verify_token,
         }
 
     def save(self) -> None:
@@ -79,6 +89,11 @@ class WhatsAppInstance:
             "rag_documents": self.rag_documents, "active": self.active,
             "context_size": self.context_size, "handoff_enabled": self.handoff_enabled,
             "handoff_keyword": self.handoff_keyword, "created_at": self.created_at, "stats": self.stats,
+            "provider": self.provider,
+            "meta_phone_number_id": self.meta_phone_number_id,
+            "meta_waba_id": self.meta_waba_id,
+            "meta_access_token": self.meta_access_token,
+            "meta_verify_token": self.meta_verify_token,
         }
         cfg.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -96,7 +111,9 @@ class WhatsAppInstance:
 
 class WhatsAppAgentManager:
 
-    def create_instance(self, tenant_id: str, name: str, zapi_instance_id: str, zapi_token: str, system_prompt: str = "") -> dict:
+    def create_instance(self, tenant_id: str, name: str, zapi_instance_id: str, zapi_token: str, system_prompt: str = "",
+                        provider: str = "zapi", meta_phone_number_id: str = "", meta_waba_id: str = "",
+                        meta_access_token: str = "", meta_verify_token: str = "") -> dict:
         can, msg = self.can_add_instance(tenant_id)
         if not can:
             return {"error": msg}
@@ -104,6 +121,11 @@ class WhatsAppAgentManager:
             id=uuid.uuid4().hex[:12], tenant_id=tenant_id, name=name,
             zapi_instance_id=zapi_instance_id, zapi_token=zapi_token,
             system_prompt=system_prompt,
+            provider=provider,
+            meta_phone_number_id=meta_phone_number_id,
+            meta_waba_id=meta_waba_id,
+            meta_access_token=meta_access_token,
+            meta_verify_token=meta_verify_token,
         )
         inst.save()
         log_action("whatsapp_instance_created", f"{inst.id} for {tenant_id}")
@@ -327,8 +349,11 @@ class WhatsAppAgentManager:
         inst.stats["last_message_at"] = time.time()
         inst.save()
 
-        # Send via Z-API
-        self._send_zapi(inst, sender_phone, reply)
+        # Send via provider (Meta or Z-API)
+        if inst.provider == "meta":
+            self._send_meta(inst, sender_phone, reply)
+        else:
+            self._send_zapi(inst, sender_phone, reply)
 
         log_action("whatsapp_msg_processed", f"inst={instance_id} phone={sender_phone[-4:]}")
         return reply
@@ -405,6 +430,37 @@ class WhatsAppAgentManager:
         except Exception as e:
             log_action("whatsapp_send_error", str(e)[:100], level="error")
             return False
+
+    def _send_meta(self, inst: WhatsAppInstance, phone: str, message: str) -> bool:
+        """Send message via Meta WhatsApp Business API."""
+        try:
+            url = f"https://graph.facebook.com/v18.0/{inst.meta_phone_number_id}/messages"
+            data = json.dumps({
+                "messaging_product": "whatsapp",
+                "to": phone.lstrip("+"),
+                "type": "text",
+                "text": {"body": message}
+            }).encode()
+            req = Request(url, data=data, headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {inst.meta_access_token}",
+            }, method="POST")
+            urlopen(req, timeout=30)
+            return True
+        except Exception as e:
+            log_action("meta_send_error", str(e)[:100], level="error")
+            return False
+
+    def test_meta_connection(self, access_token: str, phone_number_id: str) -> dict:
+        """Test Meta WhatsApp Business API connection."""
+        try:
+            url = f"https://graph.facebook.com/v18.0/{phone_number_id}"
+            req = Request(url, headers={"Authorization": f"Bearer {access_token}"})
+            resp = urlopen(req, timeout=15)
+            data = json.loads(resp.read().decode())
+            return {"connected": True, "phone": data.get("display_phone_number", ""), "name": data.get("verified_name", "")}
+        except Exception as e:
+            return {"connected": False, "error": str(e)[:150]}
 
     def test_connection(self, zapi_instance_id: str, zapi_token: str) -> dict:
         try:
