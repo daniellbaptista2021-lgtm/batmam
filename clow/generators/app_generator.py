@@ -26,7 +26,7 @@ Regras tecnicas:
 - Textos em portugues brasileiro
 - Retorne APENAS o codigo HTML, sem explicacoes, sem markdown, sem ```"""
 
-    model = "claude-sonnet-4-20250514"
+    model = "deepseek-chat"
     html = ask_ai(prompt, system=system, model=model, max_tokens=4096)
 
     if html.startswith("```"):

@@ -79,16 +79,18 @@ def register_onboarding_routes(app) -> None:
         if not message:
             return _JR({"error": "Mensagem obrigatoria"}, status_code=400)
         try:
-            from anthropic import Anthropic
+            from openai import OpenAI
             from .. import config as _cfg
-            client = Anthropic(api_key=_cfg.ANTHROPIC_API_KEY)
-            response = client.messages.create(
-                model="claude-haiku-4-5-20251001",
-                system=prompt or "Voce e um atendente virtual. Seja simpatico e objetivo.",
-                messages=[{"role": "user", "content": message}],
+            client = OpenAI(**_cfg.get_deepseek_client_kwargs())
+            response = client.chat.completions.create(
+                model=_cfg.CLOW_MODEL,
+                messages=[
+                    {"role": "system", "content": prompt or "Voce e um atendente virtual. Seja simpatico e objetivo."},
+                    {"role": "user", "content": message},
+                ],
                 max_tokens=300,
             )
-            reply = response.content[0].text.strip() if response.content else "Desculpe, nao consegui responder."
+            reply = (response.choices[0].message.content or "").strip() if response.choices else "Desculpe, nao consegui responder."
             return _JR({"reply": reply})
         except Exception as e:
             return _JR({"reply": f"Erro no teste: {str(e)[:100]}"})

@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 authors = [
     {name = "Daniel"},
 ]
-keywords = ["ai", "agent", "code", "cli", "assistant", "openai", "clow"]
+keywords = ["ai", "agent", "code", "cli", "assistant", "deepseek", "clow"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
@@ -26,7 +26,6 @@ classifiers = [
     "Topic :: Software Development",
 ]
 dependencies = [
-    "anthropic>=0.80.0",
     "openai>=1.30.0",
     "python-dotenv>=1.0.0",
     "rich>=13.0.0",

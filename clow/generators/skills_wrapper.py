@@ -5,7 +5,7 @@ import logging
 log = logging.getLogger("clow.skills")
 
 
-def generate_with_fallback(prompt: str, skill_type: str, model: str = "claude-haiku-4-5-20251001", user_id: str = "") -> dict:
+def generate_with_fallback(prompt: str, skill_type: str, model: str = "deepseek-chat", user_id: str = "") -> dict:
     """Tenta Skills API, se falhar usa generator manual.
 
     skill_type: xlsx, docx, pptx, pdf

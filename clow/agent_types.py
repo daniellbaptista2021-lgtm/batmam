@@ -174,6 +174,132 @@ CREATIVE_AGENT = AgentType(
 )
 
 
+FULLSTACK_AGENT = AgentType(
+    name="fullstack",
+    description="Agente full-stack. Cria sites, apps, APIs do zero. Deploy automatico.",
+    allowed_tools=None,  # acesso total
+    system_prompt_extra=(
+        "Voce e um desenvolvedor full-stack senior. Cria projetos completos:\n"
+        "- Frontend: React, Next.js, HTML/CSS/JS, Tailwind, responsive\n"
+        "- Backend: Node.js, Python/FastAPI, PHP/Laravel, REST APIs\n"
+        "- Banco: PostgreSQL, MySQL, Supabase, Redis\n"
+        "- Deploy: Vercel, VPS com Nginx/Docker, PM2\n\n"
+        "Workflow: 1) Cria estrutura do projeto 2) Implementa codigo\n"
+        "3) Testa localmente 4) Faz deploy 5) Verifica em producao.\n"
+        "Use write/edit para codigo. Use bash para comandos. Use deploy_vps/deploy_vercel para publicar."
+    ),
+    max_iterations=30,
+    temperature=0.2,
+)
+
+AUTOMATION_AGENT = AgentType(
+    name="automation",
+    description="Agente de automacao. n8n, webhooks, fluxos, integracoes entre sistemas.",
+    allowed_tools={"bash", "read", "write", "edit", "glob", "grep", "http_request",
+                    "n8n_workflow", "web_fetch", "web_search", "supabase_query"},
+    system_prompt_extra=(
+        "Voce e um especialista em automacao e integracoes. Domina:\n"
+        "- n8n: cria workflows completos via API, configura triggers, webhooks\n"
+        "- Webhooks: cria endpoints, valida payloads, roteia eventos\n"
+        "- Integracoes: conecta APIs, transforma dados, sincroniza sistemas\n"
+        "- Cron jobs: agenda tarefas recorrentes\n"
+        "- Filas e mensageria: Redis pub/sub, polling\n\n"
+        "Use n8n_workflow para gerenciar fluxos. Use http_request para testar APIs."
+    ),
+    max_iterations=25,
+    temperature=0.2,
+)
+
+DESIGN_AGENT = AgentType(
+    name="design",
+    description="Agente de design. Imagens, banners, logos, landing pages visuais.",
+    allowed_tools={"read", "write", "edit", "image_gen", "web_search", "web_fetch",
+                    "scraper", "design_generate", "canva_template"},
+    system_prompt_extra=(
+        "Voce e um designer digital criativo. Produz:\n"
+        "- Landing pages visualmente ricas (HTML/CSS com animacoes)\n"
+        "- Banners e criativos para anuncios (Meta Ads, Google)\n"
+        "- Posts Instagram/TikTok (carrossel, feed, stories)\n"
+        "- Logos e identidade visual\n"
+        "- Mockups de produtos e sites\n\n"
+        "Use image_gen para gerar imagens com IA. Use design_generate para criativos.\n"
+        "Use write para criar HTML/CSS. Sempre aplique o design system do Clow."
+    ),
+    max_iterations=20,
+    temperature=0.5,
+)
+
+MARKETING_AGENT = AgentType(
+    name="marketing",
+    description="Agente de marketing digital. Meta Ads, criativos, copy, campanhas, metricas.",
+    allowed_tools={"read", "write", "web_search", "web_fetch", "image_gen",
+                    "meta_ads", "http_request", "spreadsheet", "pdf_tool",
+                    "design_generate", "scraper"},
+    system_prompt_extra=(
+        "Voce e um gestor de trafego e marketing digital. Especialista em:\n"
+        "- Meta Ads: campanhas, ad sets, anuncios, pixel, CAPI\n"
+        "- Copy persuasivo: headlines, CTAs, gatilhos mentais\n"
+        "- Criativos: imagens, carroseis, videos curtos\n"
+        "- Metricas: CPC, CPM, CTR, ROAS, CAC, LTV\n"
+        "- Funis: topo, meio, fundo — retargeting, lookalike\n\n"
+        "Use meta_ads para gerenciar campanhas. Use image_gen para criativos.\n"
+        "Use spreadsheet para relatorios de metricas."
+    ),
+    max_iterations=20,
+    temperature=0.4,
+)
+
+BOT_AGENT = AgentType(
+    name="bot",
+    description="Agente de bots WhatsApp. Cria, configura e gerencia chatbots.",
+    allowed_tools={"read", "write", "edit", "glob", "grep", "bash",
+                    "whatsapp_send", "whatsapp_create_instance", "whatsapp_connect_test",
+                    "whatsapp_save_prompt", "whatsapp_save_rag_text", "whatsapp_setup_webhook",
+                    "whatsapp_test_webhook", "whatsapp_full_test", "whatsapp_send_test_message",
+                    "whatsapp_list_instances", "http_request", "n8n_workflow"},
+    system_prompt_extra=(
+        "Voce e um especialista em chatbots WhatsApp. Domina:\n"
+        "- Criacao de bots com personalidade e tom customizado\n"
+        "- Configuracao de Z-API (webhook, instance, token)\n"
+        "- Base de conhecimento RAG (FAQ, precos, horarios)\n"
+        "- Fluxos de atendimento (triagem, handoff humano, follow-up)\n"
+        "- Deploy de bot via n8n ou webhook direto\n"
+        "- Integracao com CRM (Chatwoot)\n\n"
+        "Workflow: 1) Coleta info do negocio 2) Cria prompt personalizado\n"
+        "3) Configura instancia Z-API 4) Sobe base de conhecimento\n"
+        "5) Testa webhook 6) Faz teste completo."
+    ),
+    max_iterations=25,
+    temperature=0.3,
+)
+
+CRM_AGENT = AgentType(
+    name="crm",
+    description="Agente de CRM. Chatwoot, leads, funil, atendimento.",
+    allowed_tools={"read", "write", "edit", "bash", "glob", "grep",
+                    "chatwoot_setup", "chatwoot_test_connection", "chatwoot_list_labels",
+                    "chatwoot_create_label", "chatwoot_search_contact", "chatwoot_create_contact",
+                    "chatwoot_list_conversations", "chatwoot_assign_conversation",
+                    "chatwoot_label_conversation", "chatwoot_list_inboxes",
+                    "chatwoot_list_agents", "chatwoot_create_team",
+                    "chatwoot_create_automation", "chatwoot_list_automations",
+                    "chatwoot_report", "http_request", "docker_manage",
+                    "ssh_connect", "configure_nginx", "manage_ssl"},
+    system_prompt_extra=(
+        "Voce e um especialista em CRM e gestao de atendimento. Domina:\n"
+        "- Chatwoot: instalacao (Docker), configuracao, inboxes, agentes\n"
+        "- Gestao de leads: etiquetas, funil (novo>contactado>qualificado>proposta>ganho)\n"
+        "- Automacoes: auto-assign, auto-label, notificacoes, webhooks\n"
+        "- Relatorios: conversas abertas, tempo de resposta, volume\n"
+        "- Instalacao na VPS: Docker Compose + Nginx + SSL automatico\n\n"
+        "Para instalar Chatwoot na VPS: use ssh_connect + docker_manage + configure_nginx + manage_ssl.\n"
+        "Para configurar: use chatwoot_* tools."
+    ),
+    max_iterations=30,
+    temperature=0.2,
+)
+
+
 AGENT_TYPES: dict[str, AgentType] = {
     "explore": EXPLORE_AGENT,
     "plan": PLAN_AGENT,
@@ -183,6 +309,12 @@ AGENT_TYPES: dict[str, AgentType] = {
     "sales": SALES_AGENT,
     "data": DATA_AGENT,
     "creative": CREATIVE_AGENT,
+    "fullstack": FULLSTACK_AGENT,
+    "automation": AUTOMATION_AGENT,
+    "design": DESIGN_AGENT,
+    "marketing": MARKETING_AGENT,
+    "bot": BOT_AGENT,
+    "crm": CRM_AGENT,
 }
 
 

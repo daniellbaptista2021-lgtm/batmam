@@ -1,7 +1,7 @@
-"""Client OpenAI com suporte a tool use / function calling."""
+"""Client DeepSeek via OpenAI SDK com suporte a tool use / function calling."""
 
 from __future__ import annotations
-from typing import Any, Generator
+from typing import Any
 from openai import OpenAI
 from . import config
 
@@ -10,15 +10,15 @@ _client: OpenAI | None = None
 
 
 def get_client() -> OpenAI:
-    """Retorna singleton do client OpenAI."""
+    """Retorna singleton do client DeepSeek."""
     global _client
     if _client is None:
-        if not config.OPENAI_API_KEY:
+        if not config.DEEPSEEK_API_KEY:
             raise RuntimeError(
-                "OPENAI_API_KEY não configurada. "
-                "Defina em ~/.clow/.env ou exporte a variável."
+                "DEEPSEEK_API_KEY nao configurada. "
+                "Defina no .env ou exporte a variavel."
             )
-        _client = OpenAI(api_key=config.OPENAI_API_KEY)
+        _client = OpenAI(**config.get_deepseek_client_kwargs())
     return _client
 
 
@@ -80,7 +80,6 @@ def _stream_completion(kwargs: dict) -> dict[str, Any]:
 
     for chunk in stream:
         if not chunk.choices:
-            # Pode ser chunk de usage
             if hasattr(chunk, "usage") and chunk.usage:
                 usage_data["prompt_tokens"] = chunk.usage.prompt_tokens or 0
                 usage_data["completion_tokens"] = chunk.usage.completion_tokens or 0
@@ -90,11 +89,9 @@ def _stream_completion(kwargs: dict) -> dict[str, Any]:
         if chunk.choices[0].finish_reason:
             finish_reason = chunk.choices[0].finish_reason
 
-        # Conteúdo de texto
         if delta.content:
             collected_content.append(delta.content)
 
-        # Tool calls em streaming
         if delta.tool_calls:
             for tc in delta.tool_calls:
                 idx = tc.index
@@ -112,7 +109,6 @@ def _stream_completion(kwargs: dict) -> dict[str, Any]:
                     if tc.function.arguments:
                         collected_tool_calls[idx]["function"]["arguments"] += tc.function.arguments
 
-    # Monta objeto de mensagem compatível
     from types import SimpleNamespace
 
     tool_calls_list = None

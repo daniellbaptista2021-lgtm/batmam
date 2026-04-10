@@ -366,28 +366,17 @@ Exemplos:
 - "a cada 1h verifica se o site esta no ar" -> cron 1h + health check prompt"""
 
     try:
-        if config.CLOW_PROVIDER == "anthropic":
-            from anthropic import Anthropic
-            client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
-            response = client.messages.create(
-                model="claude-haiku-4-5-20251001",
-                system=system_prompt,
-                messages=[{"role": "user", "content": text}],
-                max_tokens=1000,
-            )
-            raw = response.content[0].text.strip()
-        else:
-            from openai import OpenAI
-            client = OpenAI(api_key=config.OPENAI_API_KEY)
-            response = client.chat.completions.create(
-                model="gpt-4.1-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": text},
-                ],
-                max_tokens=1000,
-            )
-            raw = response.choices[0].message.content.strip()
+        from openai import OpenAI
+        client = OpenAI(**config.get_deepseek_client_kwargs())
+        response = client.chat.completions.create(
+            model=config.CLOW_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": text},
+            ],
+            max_tokens=1000,
+        )
+        raw = response.choices[0].message.content.strip()
 
         # Parse JSON
         if raw.startswith("```"):

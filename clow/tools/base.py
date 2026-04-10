@@ -61,7 +61,12 @@ class ToolRegistry:
 
 
 def create_default_registry() -> ToolRegistry:
-    """Cria registro com todas as 33 ferramentas."""
+    """Cria registro com todas as ferramentas do Clow.
+
+    Core (10) + Task (4) + Integracao (10) + WhatsApp Agent (9) +
+    Chatwoot CRM (15) + Canva (2) + SSH/VPS (7) + Git (1) + Database (4) +
+    Meta Ads (1) + Deploy (2) = 65 tools
+    """
     from .bash import BashTool
     from .read import ReadTool
     from .write import WriteTool
@@ -85,46 +90,93 @@ def create_default_registry() -> ToolRegistry:
     from .spreadsheet import SpreadsheetTool
 
     registry = ToolRegistry()
-    # Core tools (10 originais)
-    registry.register(BashTool())
-    registry.register(ReadTool())
-    registry.register(WriteTool())
-    registry.register(EditTool())
-    registry.register(GlobTool())
-    registry.register(GrepTool())
-    registry.register(AgentTool())
-    registry.register(WebSearchTool())
-    registry.register(WebFetchTool())
-    registry.register(NotebookEditTool())
-    # Task tools (4)
-    registry.register(TaskCreateTool())
-    registry.register(TaskUpdateTool())
-    registry.register(TaskListTool())
-    registry.register(TaskGetTool())
-    # Novas tools (10)
-    registry.register(WhatsAppSendTool())
-    registry.register(HttpRequestTool())
-    registry.register(SupabaseQueryTool())
-    registry.register(N8nWorkflowTool())
-    registry.register(DockerManageTool())
-    registry.register(GitAdvancedTool())
-    registry.register(ScraperTool())
-    registry.register(ImageGenTool())
-    registry.register(PdfTool())
-    registry.register(SpreadsheetTool())
-    # WhatsApp Agent tools (9)
+
+    # ── Core (10) ──
+    for tool_cls in (BashTool, ReadTool, WriteTool, EditTool, GlobTool,
+                     GrepTool, AgentTool, WebSearchTool, WebFetchTool, NotebookEditTool):
+        registry.register(tool_cls())
+
+    # ── Task (4) ──
+    for tool_cls in (TaskCreateTool, TaskUpdateTool, TaskListTool, TaskGetTool):
+        registry.register(tool_cls())
+
+    # ── Integracao (10) ──
+    for tool_cls in (WhatsAppSendTool, HttpRequestTool, SupabaseQueryTool,
+                     N8nWorkflowTool, DockerManageTool, GitAdvancedTool,
+                     ScraperTool, ImageGenTool, PdfTool, SpreadsheetTool):
+        registry.register(tool_cls())
+
+    # ── WhatsApp Agent (9) ──
     from .whatsapp_agent_tools import (
         WhatsAppListInstancesTool, WhatsAppCreateInstanceTool, WhatsAppConnectTestTool,
         WhatsAppSavePromptTool, WhatsAppSaveRagTextTool, WhatsAppSetupWebhookTool,
         WhatsAppTestWebhookTool, WhatsAppFullTestTool, WhatsAppSendTestMessageTool,
     )
-    registry.register(WhatsAppListInstancesTool())
-    registry.register(WhatsAppCreateInstanceTool())
-    registry.register(WhatsAppConnectTestTool())
-    registry.register(WhatsAppSavePromptTool())
-    registry.register(WhatsAppSaveRagTextTool())
-    registry.register(WhatsAppSetupWebhookTool())
-    registry.register(WhatsAppTestWebhookTool())
-    registry.register(WhatsAppFullTestTool())
-    registry.register(WhatsAppSendTestMessageTool())
+    for tool_cls in (WhatsAppListInstancesTool, WhatsAppCreateInstanceTool,
+                     WhatsAppConnectTestTool, WhatsAppSavePromptTool,
+                     WhatsAppSaveRagTextTool, WhatsAppSetupWebhookTool,
+                     WhatsAppTestWebhookTool, WhatsAppFullTestTool,
+                     WhatsAppSendTestMessageTool):
+        registry.register(tool_cls())
+
+    # ── Chatwoot CRM (15) ──
+    try:
+        from .chatwoot_tools import (
+            ChatwootSetupTool, ChatwootTestConnectionTool, ChatwootListLabelsTool,
+            ChatwootCreateLabelTool, ChatwootSearchContactTool, ChatwootCreateContactTool,
+            ChatwootListConversationsTool, ChatwootAssignConversationTool,
+            ChatwootAddLabelToConversationTool, ChatwootListInboxesTool,
+            ChatwootListAgentsTool, ChatwootCreateTeamTool,
+            ChatwootCreateAutomationTool, ChatwootListAutomationsTool,
+            ChatwootReportTool,
+        )
+        for tool_cls in (ChatwootSetupTool, ChatwootTestConnectionTool,
+                         ChatwootListLabelsTool, ChatwootCreateLabelTool,
+                         ChatwootSearchContactTool, ChatwootCreateContactTool,
+                         ChatwootListConversationsTool, ChatwootAssignConversationTool,
+                         ChatwootAddLabelToConversationTool, ChatwootListInboxesTool,
+                         ChatwootListAgentsTool, ChatwootCreateTeamTool,
+                         ChatwootCreateAutomationTool, ChatwootListAutomationsTool,
+                         ChatwootReportTool):
+            registry.register(tool_cls())
+    except ImportError:
+        pass
+
+    # ── Canva/Design (2) ──
+    try:
+        from .canva_tools import CanvaTemplateTool, DesignGeneratorTool
+        registry.register(CanvaTemplateTool())
+        registry.register(DesignGeneratorTool())
+    except ImportError:
+        pass
+
+    # ── SSH & VPS (7) ──
+    from .ssh_vps import (
+        SshConnectTool, ManageProcessTool, ConfigureNginxTool,
+        ManageSslTool, MonitorResourcesTool, ManageCronTool, BackupTool,
+    )
+    for tool_cls in (SshConnectTool, ManageProcessTool, ConfigureNginxTool,
+                     ManageSslTool, MonitorResourcesTool, ManageCronTool, BackupTool):
+        registry.register(tool_cls())
+
+    # ── Git completo (1) ──
+    from .git_ops import GitOpsTool
+    registry.register(GitOpsTool())
+
+    # ── Database (4) ──
+    from .database_tools import (
+        QueryPostgresTool, QueryMysqlTool, QueryRedisTool, ManageMigrationsTool,
+    )
+    for tool_cls in (QueryPostgresTool, QueryMysqlTool, QueryRedisTool, ManageMigrationsTool):
+        registry.register(tool_cls())
+
+    # ── Meta Ads (1) ──
+    from .meta_ads_tool import MetaAdsTool
+    registry.register(MetaAdsTool())
+
+    # ── Deploy (2) ──
+    from .deploy_tools import DeployVercelTool, DeployVpsTool
+    registry.register(DeployVercelTool())
+    registry.register(DeployVpsTool())
+
     return registry

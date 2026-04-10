@@ -29,7 +29,7 @@ Formato EXATO (sem markdown, sem explicacao):
 - Conteudo profissional em portugues brasileiro
 - Retorne APENAS o JSON valido"""
 
-    model = "claude-sonnet-4-20250514"
+    model = "deepseek-chat"
     raw = ask_ai(prompt, system=system, model=model, max_tokens=4096)
 
     text = raw.strip()

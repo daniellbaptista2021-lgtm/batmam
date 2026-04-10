@@ -36,7 +36,7 @@ class ChatRequest(BaseModel):
     content: str = Field(description="Message content", example="Crie uma landing page")
     conversation_id: str = Field(default="", description="Conversation ID for context continuity")
     session_id: str = Field(default="", description="Session tracking ID (server generates one if empty)")
-    model: str = Field(default="haiku", description="Model selector: haiku, sonnet, or claude-code (admin only)")
+    model: str = Field(default="deepseek-chat", description="Model selector: deepseek-chat or deepseek-reasoner")
     file_data: Optional[dict] = Field(default=None, description="Attached file data from /api/v1/upload")
 
 
@@ -98,7 +98,7 @@ class UserResponse(BaseModel):
     user_id: str = Field(example="abc123")
     is_admin: bool = Field(default=False)
     plan: str = Field(example="free", description="Current plan: free, basic, pro, unlimited")
-    available_models: list[str] = Field(default_factory=lambda: ["haiku"])
+    available_models: list[str] = Field(default_factory=lambda: ["deepseek-chat"])
 
 
 # ── Usage ──────────────────────────────────────────────────────────
@@ -161,7 +161,7 @@ class WSClientMessage(BaseModel):
 
     type: str = Field(description="Message type: 'message'", example="message")
     content: str = Field(default="", description="User message text")
-    model: str = Field(default="haiku", description="Model selector")
+    model: str = Field(default="deepseek-chat", description="Model selector")
     conversation_id: str = Field(default="", description="Conversation ID")
     file_data: Optional[dict] = Field(default=None, description="Attached file data")
 

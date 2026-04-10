@@ -92,7 +92,7 @@ def _check_python_version() -> CheckResult:
 
 
 def _check_required_packages() -> CheckResult:
-    required = ["anthropic", "fastapi", "uvicorn", "dotenv"]
+    required = ["openai", "fastapi", "uvicorn", "dotenv"]
     missing = []
     for pkg in required:
         pkg_import = "dotenv" if pkg == "dotenv" else pkg
@@ -109,18 +109,11 @@ def _check_required_packages() -> CheckResult:
 
 def _check_api_key() -> CheckResult:
     from . import config
-    key = config.ANTHROPIC_API_KEY
+    key = config.DEEPSEEK_API_KEY
     if not key:
-        openai = config.OPENAI_API_KEY
-        if openai:
-            return CheckResult("API Key", "pass", "OpenAI configurada")
         return CheckResult("API Key", "fail", "Nenhuma API key configurada",
-                           "Defina ANTHROPIC_API_KEY no .env")
-
-    if key.startswith("sk-ant-"):
-        return CheckResult("API Key", "pass", "Anthropic configurada (sk-ant-...)")
-    return CheckResult("API Key", "warn", "API key com formato incomum",
-                       f"Comeca com: {key[:8]}...")
+                           "Defina DEEPSEEK_API_KEY no .env")
+    return CheckResult("API Key", "pass", f"DeepSeek configurada ({key[:8]}...)")
 
 
 def _check_database() -> CheckResult:

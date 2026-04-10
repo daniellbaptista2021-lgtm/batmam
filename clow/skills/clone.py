@@ -121,21 +121,18 @@ def clone_site(url: str, output_dir: str = "") -> dict:
 
 
 def _generate_html_from_screenshot(screenshot_path: str, url: str, assets: dict, output_dir: str) -> str:
-    """Use Claude Vision to generate HTML from screenshot."""
+    """Use DeepSeek Vision to generate HTML from screenshot."""
     import base64
 
     try:
-        from anthropic import Anthropic
+        from openai import OpenAI
         from .. import config
     except ImportError:
-        logger.error("anthropic package not installed")
+        logger.error("openai package not installed")
         return ""
 
-    api_key = config.ANTHROPIC_API_KEY
-    if not api_key:
-        api_key = os.getenv("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        logger.error("No API key for Claude Vision")
+    if not config.DEEPSEEK_API_KEY:
+        logger.error("No DEEPSEEK_API_KEY configured")
         return ""
 
     # Read screenshot
@@ -164,20 +161,20 @@ Requisitos:
 
 Retorne APENAS o HTML completo, sem explicacoes."""
 
-    client = Anthropic(api_key=api_key)
+    client = OpenAI(**config.get_deepseek_client_kwargs())
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+        response = client.chat.completions.create(
+            model=config.CLOW_MODEL,
             max_tokens=16000,
             messages=[{
                 "role": "user",
                 "content": [
-                    {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": img_b64}},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_b64}"}},
                     {"type": "text", "text": prompt},
                 ],
             }],
         )
-        html = response.content[0].text
+        html = response.choices[0].message.content or ""
 
         # Clean — extract HTML if wrapped in code block
         if "```html" in html:

@@ -5,9 +5,9 @@ Fluxo para assinantes pagos:
 2. Servidor gera token unico (24h, uso unico)
 3. Usuario copia comando com token embutido
 4. curl baixa script que configura CLI com auth_token (sem expor API key)
-5. CLI usa modo proxy: chama servidor Clow, que chama Anthropic com SUA key
+5. CLI usa modo proxy: chama servidor Clow, que chama DeepSeek com SUA key
 
-A ANTHROPIC_API_KEY NUNCA e exposta ao assinante.
+A DEEPSEEK_API_KEY NUNCA e exposta ao assinante.
 """
 
 from __future__ import annotations
@@ -30,10 +30,10 @@ TOKEN_TTL = 86400
 
 # Plan → model mapping
 PLAN_MODELS = {
-    "lite": "claude-haiku-4-5-20251001",
-    "starter": "claude-sonnet-4-20250514",
-    "pro": "claude-sonnet-4-20250514",
-    "business": "claude-sonnet-4-20250514",
+    "lite": "deepseek-chat",
+    "starter": "deepseek-chat",
+    "pro": "deepseek-chat",
+    "business": "deepseek-reasoner",
 }
 
 PAID_PLANS = {"lite", "starter", "pro", "business"}
@@ -61,7 +61,7 @@ def _generate_token(user_id: str, tenant_id: str, plan: str) -> dict:
     token = f"clow_install_{secrets.token_urlsafe(32)}"
     now = time.time()
     expires_at = now + TOKEN_TTL
-    model = PLAN_MODELS.get(plan, "claude-sonnet-4-20250514")
+    model = PLAN_MODELS.get(plan, "deepseek-chat")
 
     with get_db() as db:
         db.execute(
@@ -217,11 +217,10 @@ echo "  [3/4] Dependencias instaladas"
 # 4. Configura .env com MODO PROXY (sem API key exposta)
 mkdir -p "$HOME/.clow/app"
 cat > "$HOME/.clow/app/.env" << 'ENVEOF'
-CLOW_PROVIDER=anthropic
 CLOW_SERVER_URL={server_url}
 CLOW_AUTH_TOKEN={auth_token}
 CLOW_MODEL={model}
-# Modo proxy: o CLI chama o servidor Clow, que chama a Anthropic.
+# Modo proxy: o CLI chama o servidor Clow, que chama a DeepSeek.
 # Sua API key NUNCA fica no seu computador.
 ENVEOF
 chmod 600 "$HOME/.clow/app/.env"
@@ -342,38 +341,41 @@ echo ""
         tools = body.get("tools", [])
 
         # Force model by plan (ignore client request)
-        model = PLAN_MODELS.get(plan, "claude-sonnet-4-20250514")
+        model = PLAN_MODELS.get(plan, "deepseek-chat")
 
-        # Call Anthropic with SERVER key
+        # Call DeepSeek with SERVER key
         from .. import config
-        if not config.ANTHROPIC_API_KEY:
+        if not config.DEEPSEEK_API_KEY:
             return JSONResponse({"error": "Servidor nao configurado"}, status_code=500)
 
         try:
-            from anthropic import Anthropic
-            client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
+            from openai import OpenAI
+            client = OpenAI(**config.get_deepseek_client_kwargs())
+
+            oai_msgs = []
+            if system_prompt:
+                oai_msgs.append({"role": "system", "content": system_prompt})
+            oai_msgs.extend(messages)
 
             kwargs: dict[str, Any] = {
                 "model": model,
-                "messages": messages,
+                "messages": oai_msgs,
                 "max_tokens": min(max_tokens, 16384),
             }
-            if system_prompt:
-                kwargs["system"] = system_prompt
             if tools:
                 kwargs["tools"] = tools
+                kwargs["tool_choice"] = "auto"
 
             start = time.time()
-            response = client.messages.create(**kwargs)
+            response = client.chat.completions.create(**kwargs)
             latency = (time.time() - start) * 1000
 
             # Log usage
-            inp = response.usage.input_tokens if response.usage else 0
-            out = response.usage.output_tokens if response.usage else 0
+            inp = response.usage.prompt_tokens if response.usage else 0
+            out = response.usage.completion_tokens if response.usage else 0
 
             from ..database import log_usage
-            cost = (inp / 1_000_000 * 3.0) + (out / 1_000_000 * 15.0) if "sonnet" in model else \
-                   (inp / 1_000_000 * 1.0) + (out / 1_000_000 * 5.0)
+            cost = (inp * config.DEEPSEEK_INPUT_PRICE_PER_MTOK + out * config.DEEPSEEK_OUTPUT_PRICE_PER_MTOK) / 1_000_000
             log_usage(user_id, model, inp, out, cost, action="proxy")
 
             # Stats aggregator
@@ -384,15 +386,16 @@ echo ""
             except Exception:
                 pass
 
-            # Return Anthropic-compatible response
+            choice = response.choices[0] if response.choices else None
+            content_text = choice.message.content if choice else ""
             return JSONResponse({
                 "id": response.id,
                 "type": "message",
                 "role": "assistant",
-                "content": [{"type": b.type, "text": getattr(b, "text", "")} for b in response.content],
+                "content": [{"type": "text", "text": content_text}],
                 "model": response.model,
                 "usage": {"input_tokens": inp, "output_tokens": out},
-                "stop_reason": response.stop_reason,
+                "stop_reason": choice.finish_reason if choice else "stop",
             })
 
         except Exception as e:

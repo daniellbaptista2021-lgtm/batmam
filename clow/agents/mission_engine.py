@@ -16,10 +16,10 @@ MAX_RETRIES = 3
 
 # Modelos por complexidade
 MODELS = {
-    "plan": "claude-sonnet-4-20250514",
-    "simple": "claude-haiku-4-5-20251001",
-    "medium": "claude-sonnet-4-20250514",
-    "complex": "claude-sonnet-4-20250514",
+    "plan": "deepseek-chat",
+    "simple": "deepseek-chat",
+    "medium": "deepseek-chat",
+    "complex": "deepseek-reasoner",
 }
 
 

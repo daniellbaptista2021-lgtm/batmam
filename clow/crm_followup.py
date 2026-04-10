@@ -136,14 +136,14 @@ Regras:
 Responda APENAS com a mensagem, sem aspas nem explicacao."""
 
     try:
-        from anthropic import Anthropic
-        client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+        from openai import OpenAI
+        client = OpenAI(**config.get_deepseek_client_kwargs())
+        response = client.chat.completions.create(
+            model=config.CLOW_MODEL,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=150,
         )
-        return response.content[0].text.strip() if response.content else ""
+        return response.choices[0].message.content.strip() if response.choices else ""
     except Exception as e:
         log_action("followup_gen_error", str(e)[:200], level="error")
         return f"Oi {lead_name}! Tudo bem? Vi que conversamos recentemente, posso ajudar com mais alguma coisa?"

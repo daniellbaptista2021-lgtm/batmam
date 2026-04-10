@@ -145,37 +145,20 @@ class SwarmCoordinator:
     def _decompose_task(self, task: str) -> list[str]:
         """Usa LLM para decompor task em subtasks paralelas."""
         try:
-            if config.CLOW_PROVIDER == "anthropic":
-                from anthropic import Anthropic
-                client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
-                response = client.messages.create(
-                    model="claude-haiku-4-5-20251001",
-                    system=(
-                        "Voce decompoe tasks de desenvolvimento em subtasks que podem "
-                        "ser executadas em paralelo por agentes independentes. "
-                        "Retorne APENAS um JSON array de strings, cada string e uma subtask. "
-                        "Maximo 5 subtasks. Cada subtask deve ser auto-contida e independente. "
-                        "Responda somente o JSON, sem markdown nem explicacao."
-                    ),
-                    messages=[{"role": "user", "content": task}],
-                    max_tokens=1000,
-                )
-                raw = response.content[0].text.strip()
-            else:
-                from openai import OpenAI
-                client = OpenAI(api_key=config.OPENAI_API_KEY)
-                response = client.chat.completions.create(
-                    model="gpt-4.1-mini",
-                    messages=[
-                        {"role": "system", "content": (
-                            "Decompoe tasks em subtasks paralelas. "
-                            "Retorne APENAS JSON array de strings. Max 5 subtasks."
-                        )},
-                        {"role": "user", "content": task},
-                    ],
-                    max_tokens=1000,
-                )
-                raw = response.choices[0].message.content.strip()
+            from openai import OpenAI
+            client = OpenAI(**config.get_deepseek_client_kwargs())
+            response = client.chat.completions.create(
+                model=config.CLOW_MODEL,
+                messages=[
+                    {"role": "system", "content": (
+                        "Decompoe tasks em subtasks paralelas. "
+                        "Retorne APENAS JSON array de strings. Max 5 subtasks."
+                    )},
+                    {"role": "user", "content": task},
+                ],
+                max_tokens=1000,
+            )
+            raw = response.choices[0].message.content.strip()
 
             # Parse JSON
             if raw.startswith("```"):

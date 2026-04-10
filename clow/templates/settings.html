@@ -283,7 +283,7 @@ async function loadUsage(){
     <div class="card"><div class="card-label">Tokens hoje</div><div class="card-value purple">${fmt(u.today.input+u.today.output)}</div></div>
     <div class="card"><div class="card-label">Requisicoes</div><div class="card-value">${u.today.requests}</div></div>
     <div class="card"><div class="card-label">Renova em</div><div class="card-value green">${u.renews_in_hours}h</div></div>
-    <div class="card"><div class="card-label">Modelo</div><div class="card-value" style="font-size:1rem">${u.model.includes('haiku')?'Haiku 4.5':'Sonnet 4'}</div></div>
+    <div class="card"><div class="card-label">Modelo</div><div class="card-value" style="font-size:1rem">${u.model.includes('reasoner')?'DeepSeek Reasoner':'DeepSeek Chat'}</div></div>
   `;
 
   // Bars

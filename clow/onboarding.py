@@ -129,14 +129,15 @@ O prompt deve:
 Responda APENAS com o prompt, sem aspas nem explicacao."""
 
     try:
-        from anthropic import Anthropic
-        client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+        from openai import OpenAI
+        client = OpenAI(**config.get_deepseek_client_kwargs())
+        response = client.chat.completions.create(
+            model=config.CLOW_MODEL,
             messages=[{"role": "user", "content": prompt_request}],
             max_tokens=500,
         )
-        return response.content[0].text.strip() if response.content else _fallback_prompt(bname, products, hours, rules, tone_desc)
+        text = response.choices[0].message.content.strip() if response.choices else ""
+        return text or _fallback_prompt(bname, products, hours, rules, tone_desc)
     except Exception:
         return _fallback_prompt(bname, products, hours, rules, tone_desc)
 

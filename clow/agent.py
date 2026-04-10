@@ -31,6 +31,9 @@ from .plugins import PluginManager
 from .logging import log_action
 from .checkpoints import save_checkpoint, extract_target_files, is_write_tool_call
 from .learner import load_learned_context
+from .orchestrator import (
+    orchestrate, MASTER_SYSTEM_PROMPT, FallbackTracker, should_compress,
+)
 from . import config
 
 # Tools que sao read-only e podem rodar em paralelo
@@ -92,35 +95,14 @@ class Agent:
         self.auto_approve = auto_approve
         self.is_subagent = is_subagent
 
-        # Client — suporta Anthropic, OpenAI e Ollama
-        # BYOK: api_key per-user tem prioridade sobre config global
-        self._provider = config.CLOW_PROVIDER
-        effective_key = api_key or config.ANTHROPIC_API_KEY
-        if self._provider == "anthropic":
-            if not effective_key:
-                raise RuntimeError("ANTHROPIC_API_KEY nao configurada.")
-            from anthropic import Anthropic
-            self._anthropic = Anthropic(api_key=effective_key)
-            self._client = None
-        elif self._provider == "ollama":
-            from openai import OpenAI
-            self._anthropic = None
-            self._client = OpenAI(
-                base_url=config.OLLAMA_BASE_URL,
-                api_key="ollama",  # Ollama nao precisa de key real
-            )
-        else:
-            if not config.OPENAI_API_KEY:
-                raise RuntimeError("OPENAI_API_KEY nao configurada.")
-            from openai import OpenAI
-            self._anthropic = None
-            client_kwargs = {"api_key": config.OPENAI_API_KEY}
-            if config.OPENAI_BASE_URL:
-                base = config.OPENAI_BASE_URL.rstrip("/")
-                if not base.endswith("/v1"):
-                    base += "/v1"
-                client_kwargs["base_url"] = base
-            self._client = OpenAI(**client_kwargs)
+        # Client — DeepSeek via OpenAI SDK
+        if not config.DEEPSEEK_API_KEY:
+            raise RuntimeError("DEEPSEEK_API_KEY nao configurada.")
+        from openai import OpenAI
+        self._client = OpenAI(**config.get_deepseek_client_kwargs())
+
+        # Orchestrator: fallback tracker
+        self._fallback = FallbackTracker()
 
         # Plan mode — bloqueia ferramentas de escrita quando ativo
         self.plan_mode = False
@@ -158,13 +140,11 @@ class Agent:
     # ── System Messages ────────────────────────────────────────
 
     def _build_system_messages(self) -> None:
-        """System prompt enxuto para Qwen 72B."""
-        self._system_base = get_system_prompt(self.cwd)
-        self._system_dynamic = ""
-        self.session.messages = [{"role": "system", "content": self._system_base}]
-        return  # Skip all dynamic injection
+        """System prompt com prompt mestre do orquestrador + contexto dinamico."""
+        business_prompt = get_system_prompt(self.cwd)
+        self._system_base = f"{MASTER_SYSTEM_PROMPT}\n\n{business_prompt}"
 
-        # Dinamico: contexto que muda entre sessoes
+        # Contexto dinamico
         dynamic_parts = []
 
         # CLOW.md do projeto
@@ -177,21 +157,14 @@ class Agent:
         if instructions:
             dynamic_parts.append(f"\n# [Instrucoes do Projeto]\n{instructions}")
 
-        # Self-Learning: injeta learned.md
-        if not self.is_subagent and config.CLOW_SELF_LEARN:
-            learned_ctx = ""
-            if learned_ctx:
-                dynamic_parts.append(f"\n# [Aprendizado Automatico]\n{learned_ctx}")
-
         # Memoria persistente
         if not self.is_subagent:
             memory_ctx = load_memory_context()
             if memory_ctx:
                 dynamic_parts.append(f"\n# Memoria\n{memory_ctx}")
 
-        self._system_dynamic = ""
+        self._system_dynamic = "\n".join(dynamic_parts) if dynamic_parts else ""
 
-        # Monta mensagem completa para historico (usado por OpenAI/Ollama)
         full_system = self._system_base
         if self._system_dynamic:
             full_system += "\n\n" + self._system_dynamic
@@ -260,14 +233,33 @@ class Agent:
             if hr.blocked:
                 return f"[Hook bloqueou execucao] {hr.feedback}"
 
-        # Smart routing: troca modelo se tarefa pesada
+        # Orquestrador: roteamento inteligente de modelo, agente e tools
+        self._orchestration = None
+        self._original_model = None
         if not self.is_subagent and isinstance(user_message, str):
-            if self._should_use_heavy_model(user_message):
+            self._orchestration = orchestrate(
+                user_message,
+                context_messages=self.session.messages,
+                has_error_context=self._has_recent_errors(),
+                session_id=self.session.id,
+            )
+            chosen_model = self._orchestration["model"]
+            if chosen_model != self.model:
                 self._original_model = self.model
-                self.model = config.CLOW_MODEL_HEAVY
-                log_action("smart_routing", f"Modelo pesado: {self.model}", session_id=self.session.id)
-            else:
-                self._original_model = None
+                self.model = chosen_model
+
+            # Comprime contexto se necessario (>80K tokens)
+            if self._orchestration["needs_compression"]:
+                self._maybe_compact()
+
+            # Injeta contexto do agente especializado no prompt
+            agent_ctx = self._orchestration.get("agent_context", "")
+            if agent_ctx:
+                # Adiciona como system message temporario
+                self.session.messages.append({
+                    "role": "system",
+                    "content": agent_ctx,
+                })
 
         self.session.messages.append({"role": "user", "content": user_message})
         log_action("turn_start", msg_text[:80], session_id=self.session.id)
@@ -300,8 +292,31 @@ class Agent:
                 assistant_msg = self._build_assistant_message(text_content, tool_calls_data)
                 self.session.messages.append(assistant_msg)
 
-                # Se nao tem tool calls, acabou
+                # Se nao tem tool calls, verifica se precisa fallback
                 if not tool_calls_data:
+                    # Fallback: se resposta insuficiente com chat, tenta reasoner
+                    if (
+                        self._orchestration
+                        and self.model != config.DEEPSEEK_REASONER_MODEL
+                        and self._fallback.should_fallback(
+                            text_content,
+                            self.model,
+                            had_tool_errors=auto_correct_attempts > 0,
+                        )
+                    ):
+                        self._fallback.log_fallback(
+                            "insufficient-response", self.model, self.session.id
+                        )
+                        self.model = config.DEEPSEEK_REASONER_MODEL
+                        # Remove resposta insuficiente e tenta de novo
+                        self.session.messages.pop()  # remove assistant msg
+                        log_action(
+                            "fallback_retry",
+                            f"promovendo para {self.model}",
+                            session_id=self.session.id,
+                        )
+                        full_response_text.pop() if full_response_text else None
+                        continue
                     break
 
                 # ── Time Travel: checkpoint antes de tools de escrita ──
@@ -388,33 +403,18 @@ class Agent:
         return turn.assistant_message
 
 
-    # ── Smart Routing ──────────────────────────────────────────
-    HEAVY_TRIGGERS = {
-        "skills": ["/refactor", "/plan", "/review", "/fix", "/init", "/simplify"],
-        "patterns": [
-            r"(?:refator|arquitetur|migra|redesign|reescrev)",
-            r"(?:analise?\s+completa|analise?\s+profunda|analise?\s+geral)",
-            r"(?:crie?\s+(?:um|o)\s+projeto|criar?\s+sistema|implementar?\s+do\s+zero)",
-            r"(?:debug|depurar|diagnosticar|investigar)",
-            r"(?:otimiz|melhorar?\s+performance|performance)",
-            r"(?:explique?\s+tudo|explique?\s+o\s+(?:projeto|codebase|sistema))",
-        ],
-        "min_tokens_for_heavy": 2000,
-    }
+    # ── Helpers ──────────────────────────────────────────
 
-    def _should_use_heavy_model(self, user_message: str) -> bool:
-        import re as _re
-        msg = user_message.lower().strip() if isinstance(user_message, str) else ""
-        if not msg:
-            return False
-        for skill in self.HEAVY_TRIGGERS["skills"]:
-            if msg.startswith(skill):
-                return True
-        for pattern in self.HEAVY_TRIGGERS["patterns"]:
-            if _re.search(pattern, msg, _re.IGNORECASE):
-                return True
-        if len(msg) > self.HEAVY_TRIGGERS["min_tokens_for_heavy"]:
-            return True
+    def _has_recent_errors(self) -> bool:
+        """Verifica se ha erros nas ultimas mensagens do contexto."""
+        for msg in self.session.messages[-5:]:
+            if msg.get("role") == "tool":
+                content = msg.get("content", "")
+                if isinstance(content, str) and any(
+                    kw in content.lower()
+                    for kw in ("error", "traceback", "failed", "errno")
+                ):
+                    return True
         return False
 
     # ── Streaming Call ─────────────────────────────────────────
@@ -425,8 +425,6 @@ class Agent:
 
         for attempt in range(max_retries):
             try:
-                if self._provider == "anthropic":
-                    return self._stream_call_anthropic()
                 return self._stream_call_openai()
             except Exception as e:
                 err_str = str(e).lower()
@@ -452,147 +450,8 @@ class Agent:
             "Tente novamente em alguns minutos."
         )
 
-    def _stream_call_anthropic(self) -> tuple[str, list[dict], dict]:
-        """Streaming via Anthropic Messages API."""
-        messages = self._get_messages()
-
-        # Separa system prompt das mensagens (Anthropic usa param separado)
-        system_prompt = ""
-        chat_messages = []
-        for msg in messages:
-            if msg["role"] == "system":
-                system_prompt += msg.get("content", "") + "\n"
-            else:
-                chat_messages.append(msg)
-
-        # Converte tool_results do formato OpenAI para Anthropic
-        chat_messages = self._convert_messages_to_anthropic(chat_messages)
-
-        # Tools no formato Anthropic (com pruning dinamico)
-        tools = self._prune_tools(self._get_anthropic_tools())
-
-        kwargs: dict[str, Any] = {
-            "model": self.model,
-            "messages": chat_messages,
-            "max_tokens": config.MAX_TOKENS,
-        }
-
-        # ── Prompt Caching: base (cacheavel) + dinamico (nao cacheavel) ──
-        if system_prompt.strip():
-            system_blocks = []
-            # Bloco base: cacheavel (muda raramente — prompt principal ~10K tokens)
-            base = getattr(self, "_system_base", system_prompt.strip())
-            if base:
-                system_blocks.append({
-                    "type": "text",
-                    "text": base,
-                    "cache_control": {"type": "ephemeral"},
-                })
-            # Bloco dinamico: nao cacheavel (memoria, learned, CLOW.md — muda por sessao)
-            dynamic = getattr(self, "_system_dynamic", "")
-            if dynamic:
-                system_blocks.append({
-                    "type": "text",
-                    "text": dynamic,
-                })
-            if system_blocks:
-                kwargs["system"] = system_blocks
-
-        if tools:
-            kwargs["tools"] = tools
-
-        # ── Extended Thinking: ativa para Sonnet/Opus ──
-        thinking_enabled = False
-        if config.CLOW_EXTENDED_THINKING:
-            model_lower = self.model.lower()
-            if "sonnet" in model_lower or "opus" in model_lower:
-                thinking_enabled = True
-                kwargs["thinking"] = {
-                    "type": "enabled",
-                    "budget_tokens": config.CLOW_THINKING_BUDGET,
-                }
-                # Anthropic exige max_tokens >= budget_tokens quando thinking ativo
-                # e nao permite max_tokens sozinho — usa budget_tokens no thinking
-                kwargs["max_tokens"] = config.MAX_TOKENS + config.CLOW_THINKING_BUDGET
-
-        collected_text = []
-        collected_thinking = []
-        collected_tool_calls: dict[int, dict] = {}
-        usage_data = {
-            "prompt_tokens": 0,
-            "completion_tokens": 0,
-            "cache_creation_input_tokens": 0,
-            "cache_read_input_tokens": 0,
-        }
-        current_tool_idx = -1
-
-        with self._anthropic.messages.stream(**kwargs) as stream:
-            for event in stream:
-                event_type = event.type
-
-                if event_type == "message_start":
-                    if hasattr(event, "message") and hasattr(event.message, "usage"):
-                        u = event.message.usage
-                        usage_data["prompt_tokens"] = u.input_tokens or 0
-                        # ── Prompt Caching: captura metricas de cache ──
-                        if hasattr(u, "cache_creation_input_tokens"):
-                            usage_data["cache_creation_input_tokens"] = u.cache_creation_input_tokens or 0
-                        if hasattr(u, "cache_read_input_tokens"):
-                            usage_data["cache_read_input_tokens"] = u.cache_read_input_tokens or 0
-
-                elif event_type == "message_delta":
-                    if hasattr(event, "usage") and event.usage:
-                        usage_data["completion_tokens"] = event.usage.output_tokens or 0
-
-                elif event_type == "content_block_start":
-                    block = event.content_block
-                    if block.type == "tool_use":
-                        current_tool_idx += 1
-                        collected_tool_calls[current_tool_idx] = {
-                            "id": block.id,
-                            "name": block.name,
-                            "arguments": "",
-                        }
-                    elif block.type == "thinking":
-                        pass  # Thinking block iniciado, processa nos deltas
-
-                elif event_type == "content_block_delta":
-                    delta = event.delta
-                    if delta.type == "text_delta":
-                        collected_text.append(delta.text)
-                        self.on_text_delta(delta.text)
-                    elif delta.type == "input_json_delta":
-                        if current_tool_idx in collected_tool_calls:
-                            collected_tool_calls[current_tool_idx]["arguments"] += delta.partial_json
-                    elif delta.type == "thinking_delta":
-                        # Extended Thinking: processa internamente, nao envia pro usuario
-                        collected_thinking.append(delta.thinking)
-
-        # ── Prompt Caching: loga metricas de cache ──
-        cache_created = usage_data.get("cache_creation_input_tokens", 0)
-        cache_read = usage_data.get("cache_read_input_tokens", 0)
-        if cache_created or cache_read:
-            log_action(
-                "prompt_cache",
-                f"cache_created={cache_created} cache_read={cache_read}",
-                session_id=self.session.id,
-            )
-
-        # Extended Thinking: loga internamente se houve pensamento
-        if collected_thinking:
-            thinking_chars = sum(len(t) for t in collected_thinking)
-            log_action(
-                "extended_thinking",
-                f"thinking_chars={thinking_chars}",
-                session_id=self.session.id,
-            )
-
-        text = "".join(collected_text)
-        tool_calls = [collected_tool_calls[k] for k in sorted(collected_tool_calls)]
-        return text, tool_calls, usage_data
-
     def _stream_call_openai(self) -> tuple[str, list[dict], dict]:
-        """Streaming via OpenAI/Ollama API."""
+        """Streaming via DeepSeek (OpenAI-compatible API)."""
         kwargs: dict[str, Any] = {
             "model": self.model,
             "messages": self._get_messages(),
@@ -600,17 +459,13 @@ class Agent:
             "stream": True,
         }
 
-        # Ollama nao suporta todos os parametros do OpenAI
-        if self._provider != "ollama":
-            kwargs["max_tokens"] = config.MAX_TOKENS
-            kwargs["stream_options"] = {"include_usage": True}
+        kwargs["max_tokens"] = config.MAX_TOKENS
+        kwargs["stream_options"] = {"include_usage": True}
 
-        # Desabilita tools quando usando proxy LiteLLM sem suporte a tool calling
-        if not config.OPENAI_BASE_URL:
-            tools = self._prune_tools(self.registry.openai_tools())
-            if tools:
-                kwargs["tools"] = tools
-                kwargs["tool_choice"] = "auto"
+        tools = self._prune_tools(self.registry.openai_tools())
+        if tools:
+            kwargs["tools"] = tools
+            kwargs["tool_choice"] = "auto"
 
         stream = self._client.chat.completions.create(**kwargs)
 
@@ -738,106 +593,6 @@ class Agent:
             return func.get("name", "")
         # BaseTool object
         return getattr(tool_item, "name", "")
-
-    # ── Anthropic Helpers ─────────────────────────────────────
-
-    def _get_anthropic_tools(self) -> list[dict]:
-        """Converte tools para formato Anthropic."""
-        tools = []
-        for tool in self.registry.all_tools():
-            tools.append({
-                "name": tool.name,
-                "description": tool.description,
-                "input_schema": tool.get_schema(),
-            })
-        return tools
-
-    def _convert_messages_to_anthropic(self, messages: list[dict]) -> list[dict]:
-        """Converte mensagens do formato OpenAI para formato Anthropic."""
-        result = []
-        for msg in messages:
-            role = msg.get("role", "")
-
-            # tool results -> user message com tool_result content
-            if role == "tool":
-                # Agrupa tool results consecutivos
-                if result and result[-1]["role"] == "user" and isinstance(result[-1]["content"], list):
-                    result[-1]["content"].append({
-                        "type": "tool_result",
-                        "tool_use_id": msg.get("tool_call_id", ""),
-                        "content": msg.get("content", ""),
-                    })
-                else:
-                    result.append({
-                        "role": "user",
-                        "content": [{
-                            "type": "tool_result",
-                            "tool_use_id": msg.get("tool_call_id", ""),
-                            "content": msg.get("content", ""),
-                        }],
-                    })
-                continue
-
-            # assistant message com tool_calls -> content blocks
-            if role == "assistant":
-                content_blocks = []
-                text = msg.get("content", "")
-                if text:
-                    content_blocks.append({"type": "text", "text": text})
-
-                for tc in msg.get("tool_calls", []):
-                    func = tc.get("function", {})
-                    args_str = func.get("arguments", "{}")
-                    try:
-                        args = json.loads(args_str) if isinstance(args_str, str) else args_str
-                    except (json.JSONDecodeError, TypeError):
-                        args = {"raw": args_str}
-                    content_blocks.append({
-                        "type": "tool_use",
-                        "id": tc.get("id", ""),
-                        "name": func.get("name", ""),
-                        "input": args,
-                    })
-
-                if content_blocks:
-                    result.append({"role": "assistant", "content": content_blocks})
-                continue
-
-            # user e system messages normais
-            if role == "user":
-                content = msg.get("content", "")
-                if isinstance(content, str):
-                    result.append({"role": "user", "content": content})
-                else:
-                    result.append({"role": "user", "content": content})
-                continue
-
-        # Garante alternância user/assistant (Anthropic exige)
-        cleaned = []
-        for msg in result:
-            if cleaned and cleaned[-1]["role"] == msg["role"]:
-                # Merge mensagens do mesmo role
-                if msg["role"] == "user":
-                    prev = cleaned[-1]["content"]
-                    curr = msg["content"]
-                    if isinstance(prev, str) and isinstance(curr, str):
-                        cleaned[-1]["content"] = prev + "\n" + curr
-                    elif isinstance(prev, list) and isinstance(curr, list):
-                        cleaned[-1]["content"] = prev + curr
-                    elif isinstance(prev, str) and isinstance(curr, list):
-                        cleaned[-1]["content"] = [{"type": "text", "text": prev}] + curr
-                    elif isinstance(prev, list) and isinstance(curr, str):
-                        cleaned[-1]["content"] = prev + [{"type": "text", "text": curr}]
-                else:
-                    # assistant: merge content blocks
-                    prev = cleaned[-1].get("content", [])
-                    curr = msg.get("content", [])
-                    if isinstance(prev, list) and isinstance(curr, list):
-                        cleaned[-1]["content"] = prev + curr
-            else:
-                cleaned.append(msg)
-
-        return cleaned
 
     # ── Tool Execution (parallel + sequential) ─────────────────
 
@@ -1159,8 +914,11 @@ class Agent:
         return truncated
 
     def _maybe_compact(self) -> None:
-        """Compacta contexto com resumo LLM se muito grande."""
-        if len(self.session.messages) <= config.MAX_CONTEXT_MESSAGES + 30:
+        """Compacta contexto com resumo LLM se muito grande (>80K tokens ou msgs)."""
+        if (
+            len(self.session.messages) <= config.MAX_CONTEXT_MESSAGES + 30
+            and not should_compress(self.session.messages)
+        ):
             return
 
         system = self.session.messages[0]
@@ -1168,7 +926,7 @@ class Agent:
         old_messages = self.session.messages[1:-half]
         recent = self.session.messages[-half:]
 
-        # Tenta resumir via LLM (gpt-4.1-mini)
+        # Tenta resumir via LLM
         summary = self._summarize_messages(old_messages)
         if summary:
             summary_msg = {
@@ -1254,25 +1012,16 @@ class Agent:
                 "Foque em: o que foi feito, o que ficou pendente, e decisoes tecnicas."
             )
 
-            if self._provider == "anthropic":
-                response = self._anthropic.messages.create(
-                    model="claude-haiku-4-5-20251001",
-                    system=summary_prompt,
-                    messages=[{"role": "user", "content": conversation_text[:4000]}],
-                    max_tokens=600,
-                )
-                llm_summary = response.content[0].text if response.content else ""
-            else:
-                response = self._client.chat.completions.create(
-                    model="gpt-4.1-mini",
-                    messages=[
-                        {"role": "system", "content": summary_prompt},
-                        {"role": "user", "content": conversation_text[:4000]},
-                    ],
-                    max_tokens=600,
-                    temperature=0.1,
-                )
-                llm_summary = response.choices[0].message.content or ""
+            response = self._client.chat.completions.create(
+                model=config.CLOW_MODEL,
+                messages=[
+                    {"role": "system", "content": summary_prompt},
+                    {"role": "user", "content": conversation_text[:4000]},
+                ],
+                max_tokens=600,
+                temperature=0.1,
+            )
+            llm_summary = response.choices[0].message.content or ""
 
             # Fase 3: Monta resumo estruturado
             parts = []

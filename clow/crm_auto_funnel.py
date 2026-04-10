@@ -153,14 +153,14 @@ Responda APENAS com este JSON (sem explicacao, sem markdown):
 {{"should_move": true/false, "confidence": 0.0 a 1.0, "reason": "motivo em 1 frase curta"}}"""
 
     try:
-        from anthropic import Anthropic
-        client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+        from openai import OpenAI
+        client = OpenAI(**config.get_deepseek_client_kwargs())
+        response = client.chat.completions.create(
+            model=config.CLOW_MODEL,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=100,
         )
-        text = response.content[0].text.strip() if response.content else ""
+        text = response.choices[0].message.content.strip() if response.choices else ""
 
         # Parse JSON (tolerante)
         if "{" in text:

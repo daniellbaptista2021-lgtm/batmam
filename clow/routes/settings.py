@@ -198,12 +198,7 @@ def register_settings_routes(app) -> None:
             return _JR({"error": "Nao autenticado"}, status_code=401)
         body = await request.json()
         key = body.get("api_key", "").strip()
-        if not key.startswith("sk-ant-"):
-            return _JR({"error": "Formato invalido"}, status_code=400)
-        from ..database import validate_anthropic_key, set_user_api_key
-        v = validate_anthropic_key(key)
-        if not v.get("valid"):
-            return _JR({"error": v.get("error", "Key invalida")}, status_code=400)
+        from ..database import set_user_api_key
         set_user_api_key(sess["user_id"], key)
         return _JR({"success": True, "valid": True})
 

@@ -207,25 +207,25 @@ class TeamCoordinator:
     def _decompose_task(self, task: str) -> list[dict]:
         """Usa LLM pra decompor task em subtasks com roles."""
         try:
-            if config.CLOW_PROVIDER == "anthropic":
-                from anthropic import Anthropic
-                client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
-                roles_desc = ", ".join(f"{k}: {v.description}" for k, v in self.agents.items())
-                response = client.messages.create(
-                    model="claude-haiku-4-5-20251001",
-                    system=(
+            from openai import OpenAI
+            client = OpenAI(**config.get_deepseek_client_kwargs())
+            roles_desc = ", ".join(f"{k}: {v.description}" for k, v in self.agents.items())
+            response = client.chat.completions.create(
+                model=config.CLOW_MODEL,
+                messages=[
+                    {"role": "system", "content": (
                         f"Decompoe tasks em subtasks para um time com roles: {roles_desc}. "
                         "Retorne JSON array com objetos: {{\"title\": str, \"description\": str, \"role\": str}}. "
                         "Max 6 subtasks. Somente o JSON."
-                    ),
-                    messages=[{"role": "user", "content": task}],
-                    max_tokens=1000,
-                )
-                raw = response.content[0].text.strip()
-                if raw.startswith("```"):
-                    raw = raw.split("```")[1].lstrip("json\n")
-                return json.loads(raw)[:6]
-            return [{"title": task, "description": "", "role": "developer"}]
+                    )},
+                    {"role": "user", "content": task},
+                ],
+                max_tokens=1000,
+            )
+            raw = response.choices[0].message.content.strip()
+            if raw.startswith("```"):
+                raw = raw.split("```")[1].lstrip("json\n")
+            return json.loads(raw)[:6]
         except Exception:
             return [{"title": task, "description": "", "role": "developer"}]
 

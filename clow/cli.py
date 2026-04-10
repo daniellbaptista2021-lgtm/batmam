@@ -97,33 +97,14 @@ _BADGE_RESET = "\033[0m"
 def _format_model_name(model: str) -> str:
     """Formata nome do modelo para exibicao elegante.
 
-    'claude-sonnet-4-20250514'  -> 'Claude Sonnet'
-    'claude-haiku-4-5-20251001' -> 'Claude Haiku'
-    'gpt-4.1'                   -> 'GPT-4.1'
-    'gpt-4.1-mini'              -> 'GPT-4.1 Mini'
+    'deepseek-chat'     -> 'DeepSeek Chat'
+    'deepseek-reasoner' -> 'DeepSeek Reasoner'
     """
     m = model.lower()
-
-    # Claude models
-    if "claude" in m:
-        if "sonnet" in m:
-            return "Claude Sonnet"
-        elif "haiku" in m:
-            return "Claude Haiku"
-        return "Claude"
-
-    # OpenAI models
-    if m.startswith("gpt-"):
-        # gpt-4.1 -> GPT-4.1, gpt-4.1-mini -> GPT-4.1 Mini
-        rest = model[4:]  # Remove "gpt-"
-        parts = rest.split("-")
-        version = parts[0]  # "4.1"
-        suffix = " ".join(p.capitalize() for p in parts[1:] if p)
-        return f"GPT-{version}" + (f" {suffix}" if suffix else "")
-
-    if m.startswith("o") and (len(m) <= 2 or m[1:].replace("-", "").replace(".", "").isalnum()):
-        return model.upper()
-
+    if "deepseek" in m:
+        if "reasoner" in m:
+            return "DeepSeek Reasoner"
+        return "DeepSeek Chat"
     return model
 
 
@@ -769,11 +750,8 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
             config.CLOW_MODEL = arg.strip()
             console.print(f"  [info]Model: {agent.model}[/]")
         else:
-            console.print(f"  [info]Model: {agent.model}  ·  Provider: {config.CLOW_PROVIDER}[/]")
-            if config.CLOW_PROVIDER == "anthropic":
-                console.print("  [muted]claude-sonnet-4-20250514, claude-haiku-4-5-20251001[/]")
-            else:
-                console.print("  [muted]gpt-4.1, gpt-4.1-mini, o3, o4-mini[/]")
+            console.print(f"  [info]Model: {agent.model}  ·  Provider: DeepSeek[/]")
+            console.print("  [muted]deepseek-chat, deepseek-reasoner[/]")
         return True
 
     elif command == "/tokens":
@@ -940,21 +918,45 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
         return True
 
     elif command == "/tools":
-        tools = agent.registry.names()
-        console.print(f"\n  [purple]Tools ({len(tools)}):[/]")
-        for name in tools:
-            tool = agent.registry.get(name)
-            desc = tool.description[:60] if tool else ""
-            console.print(f"    [info]{name}[/]  [muted]{desc}[/]")
+        all_tools = agent.registry.all_tools()
+        # Agrupa por prefixo
+        categories = {
+            "Core": ["bash", "read", "write", "edit", "glob", "grep", "agent", "web_search", "web_fetch", "notebook_edit"],
+            "Task": ["task_create", "task_update", "task_list", "task_get"],
+            "Git": ["git_ops", "git_advanced"],
+            "Database": ["query_postgres", "query_mysql", "query_redis", "supabase_query", "manage_migrations"],
+            "VPS/SSH": ["ssh_connect", "manage_process", "configure_nginx", "manage_ssl", "monitor_resources", "manage_cron", "backup_create"],
+            "Deploy": ["deploy_vercel", "deploy_vps"],
+            "WhatsApp": [n for n in agent.registry.names() if n.startswith("whatsapp_")],
+            "Chatwoot": [n for n in agent.registry.names() if n.startswith("chatwoot_")],
+            "Meta Ads": ["meta_ads"],
+            "Design/Docs": ["image_gen", "design_generate", "canva_template", "pdf_tool", "spreadsheet"],
+            "Integracao": ["http_request", "n8n_workflow", "docker_manage", "scraper"],
+        }
+        console.print(f"\n  [purple bold]Tools ({len(all_tools)}):[/]")
+        for cat, names in categories.items():
+            present = [n for n in names if agent.registry.get(n)]
+            if present:
+                console.print(f"\n  [bold]{cat}[/] [muted]({len(present)})[/]")
+                for name in present:
+                    tool = agent.registry.get(name)
+                    desc = tool.description[:55] if tool else ""
+                    confirm = " [yellow]![/]" if tool and tool.requires_confirmation else ""
+                    console.print(f"    [info]{name:28s}[/] [muted]{desc}[/]{confirm}")
         return True
 
     elif command == "/agents":
         types = list_agent_types()
-        console.print(f"\n  [purple]Agent Types ({len(types)}):[/]")
+        console.print(f"\n  [purple bold]Agentes Especializados ({len(types)}):[/]\n")
         for at in types:
-            tools_str = ", ".join(sorted(at.allowed_tools)[:6]) if at.allowed_tools else "all"
-            console.print(f"    [info]{at.name}[/]  [muted]{at.description[:60]}[/]")
-            console.print(f"      [muted]Tools: {tools_str}[/]")
+            if at.allowed_tools:
+                tools_str = ", ".join(sorted(at.allowed_tools)[:5])
+                if len(at.allowed_tools) > 5:
+                    tools_str += f" +{len(at.allowed_tools)-5}"
+            else:
+                tools_str = "[bold]all tools[/]"
+            console.print(f"  [info]{at.name:14s}[/] [muted]{at.description[:65]}[/]")
+            console.print(f"  {'':14s} [dim]Tools: {tools_str}[/]")
         return True
 
     elif command == "/stale":
@@ -1295,7 +1297,7 @@ def _show_help() -> None:
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 def _print_banner() -> None:
-    provider = config.CLOW_PROVIDER.capitalize()
+    provider = "DeepSeek"
     model_parts = config.CLOW_MODEL.split("-")
     model_display = "-".join(model_parts[:2]) if len(model_parts) >= 2 else config.CLOW_MODEL
 

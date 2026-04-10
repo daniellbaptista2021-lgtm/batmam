@@ -1,6 +1,6 @@
 const INF='<svg viewBox="0 0 32 32" style="width:16px;height:16px"><path d="M8 16c0-3 2-6 5-6s5 3 8 6c3 3 5 6 8 6s5-3 5-6-2-6-5-6-5 3-8 6c-3 3-5 6-8 6s-5-3-5-6z" transform="translate(-5,0) scale(.95)" fill="none" stroke="var(--p)" stroke-width="3" stroke-linecap="round"/></svg>';
 const T=document.getElementById('term'),I=document.getElementById('inp'),SB=document.getElementById('sBtn');
-let ws=null,proc=false,curMsg=null,curBody=null,curTool=null,tStart=0,tTimer=null,rA=0,http=false,hSid='',raw='',me=null,cid='',selMod='sonnet';
+let ws=null,proc=false,curMsg=null,curBody=null,curTool=null,tStart=0,tTimer=null,rA=0,http=false,hSid='',raw='',me=null,cid='',selMod='deepseek-chat';
 async function init(){
   try{const r=await fetch('/api/v1/me');me=await r.json();
     document.getElementById('sbAv').textContent=me.email[0].toUpperCase();
@@ -20,7 +20,7 @@ async function _loadPlanBadge(){
     b.style.display='block';
     const names={'byok_free':'BYOK Gratuito','lite':'Lite','starter':'Starter','pro':'Pro','business':'Business','free':'Gratuito','unlimited':'Admin'};
     document.getElementById('planName').textContent=names[u.plan_id]||u.plan_name||u.plan_id;
-    document.getElementById('planModel').textContent=u.model&&u.model.includes('haiku')?'Haiku 4.5':'Sonnet 4';
+    document.getElementById('planModel').textContent=u.model&&u.model.includes('reasoner')?'DeepSeek Reasoner':'DeepSeek Chat';
     if(u.limits.daily_input>0){
       const used=u.today.input+u.today.output;
       const limit=u.limits.daily_input+u.limits.daily_output;
@@ -50,7 +50,7 @@ async function _loadPlanBadge(){
     }
   }catch(e){}
 }
-function initMod(plan,adm){const s=document.getElementById('modSel');selMod='sonnet';if(s)s.style.display='none'}
+function initMod(plan,adm){const s=document.getElementById('modSel');selMod='deepseek-chat';if(s)s.style.display='none'}
 function onMod(){}
 function toggleSB(){document.getElementById('sb').classList.toggle('open');document.getElementById('sbOv').classList.toggle('show')}
 function togDrop(){document.getElementById('hdrDrop').classList.toggle('show')}

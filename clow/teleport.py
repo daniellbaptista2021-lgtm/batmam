@@ -56,7 +56,7 @@ def export_session(session_id: str) -> dict[str, Any]:
         "config_snapshot": {
             "model": config.CLOW_MODEL,
             "model_heavy": config.CLOW_MODEL_HEAVY,
-            "provider": config.CLOW_PROVIDER,
+            "provider": "deepseek",
             "max_tokens": config.MAX_TOKENS,
             "temperature": config.TEMPERATURE,
         },

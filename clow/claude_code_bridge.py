@@ -29,11 +29,9 @@ _static_files.mkdir(parents=True, exist_ok=True)
 
 def _get_claude_env():
     """Build environment for Claude Code CLI subprocess.
-    Removes ANTHROPIC_API_KEY so CLI uses OAuth instead of API key.
     Reads OAuth token dynamically from ~/.claude/.credentials.json.
     """
     env = os.environ.copy()
-    env.pop("ANTHROPIC_API_KEY", None)
     env.pop("CLAUDE_CODE_OAUTH_TOKEN", None)
     creds_path = os.path.expanduser("~/.claude/.credentials.json")
     try:

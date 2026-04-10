@@ -34,18 +34,17 @@ SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 MEMORY_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── API ──────────────────────────────���──────────────────────
-# Provider: "anthropic", "openai" ou "ollama"
-CLOW_PROVIDER = os.getenv("CLOW_PROVIDER", "anthropic").lower()
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+# ── DeepSeek (unico provider — compativel com OpenAI SDK) ────
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
+DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
+DEEPSEEK_REASONER_MODEL = os.getenv("DEEPSEEK_REASONER_MODEL", "deepseek-reasoner")
 
-# Modelo principal (configuravel via env)
-CLOW_MODEL = os.getenv("CLOW_MODEL", "claude-sonnet-4-20250514")
+# Modelo principal (deepseek-chat padrao, deepseek-reasoner para tasks complexas)
+CLOW_MODEL = os.getenv("CLOW_MODEL", DEEPSEEK_MODEL)
 
-# Modelo pesado (configuravel via env)
-CLOW_MODEL_HEAVY = os.getenv("CLOW_MODEL_HEAVY", "claude-sonnet-4-20250514")
+# Modelo pesado (deepseek-reasoner para tasks complexas)
+CLOW_MODEL_HEAVY = os.getenv("CLOW_MODEL_HEAVY", DEEPSEEK_REASONER_MODEL)
 
 # ── Limites ─────────────────────────────────────────────────
 MAX_TOKENS = int(os.getenv("CLOW_MAX_TOKENS", "2048"))
@@ -126,11 +125,11 @@ STRIPE_BUSINESS_PRICE_ID = STRIPE_PRICE_BUSINESS or os.getenv("STRIPE_BUSINESS_P
 STRIPE_PAYMENT_METHODS = os.getenv("STRIPE_PAYMENT_METHODS", "card,pix").split(",")
 STRIPE_WHATSAPP_ADDON_PRICE_ID = os.getenv("STRIPE_WHATSAPP_ADDON_PRICE_ID", "")
 
-# Precos de referencia por 1M tokens (USD)
-HAIKU_INPUT_PRICE_PER_MTOK = 1.0
-HAIKU_OUTPUT_PRICE_PER_MTOK = 5.0
-SONNET_INPUT_PRICE_PER_MTOK = 3.0
-SONNET_OUTPUT_PRICE_PER_MTOK = 15.0
+# Precos de referencia por 1M tokens (USD) — DeepSeek
+DEEPSEEK_INPUT_PRICE_PER_MTOK = 0.27
+DEEPSEEK_OUTPUT_PRICE_PER_MTOK = 1.10
+DEEPSEEK_REASONER_INPUT_PRICE_PER_MTOK = 0.55
+DEEPSEEK_REASONER_OUTPUT_PRICE_PER_MTOK = 2.19
 
 DANGEROUS_COMMANDS = [
     "rm -rf", "rm -r /", "mkfs", "dd if=", ":(){:|:&};:",
@@ -219,3 +218,11 @@ def save_project_settings(settings: dict) -> None:
     project_file = project_dir / "settings.json"
     with open(project_file, "w") as f:
         json.dump(settings, f, indent=2)
+
+
+def get_deepseek_client_kwargs() -> dict:
+    """Retorna kwargs para OpenAI() apontando pro DeepSeek."""
+    base = DEEPSEEK_BASE_URL.rstrip("/")
+    if not base.endswith("/v1"):
+        base += "/v1"
+    return {"api_key": DEEPSEEK_API_KEY, "base_url": base}

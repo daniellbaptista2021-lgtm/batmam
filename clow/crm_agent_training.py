@@ -126,14 +126,14 @@ Correcoes:
 Responda APENAS com as regras, sem introducao nem conclusao."""
 
     try:
-        from anthropic import Anthropic
-        client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+        from openai import OpenAI
+        client = OpenAI(**config.get_deepseek_client_kwargs())
+        response = client.chat.completions.create(
+            model=config.CLOW_MODEL,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=500,
         )
-        rules = response.content[0].text.strip() if response.content else ""
+        rules = response.choices[0].message.content.strip() if response.choices else ""
         if rules:
             rules_path = _TRAINING_DIR / tenant_id / instance_id / "consolidated_rules.txt"
             rules_path.parent.mkdir(parents=True, exist_ok=True)

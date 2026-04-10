@@ -113,7 +113,7 @@ async def _process_image_request(content: str, agent) -> tuple[str | None, str |
 
     # Step 1: Otimiza prompt
     try:
-        optimized_prompt = optimize_prompt_for_image(content, agent._anthropic)
+        optimized_prompt = optimize_prompt_for_image(content, agent._client)
         if not optimized_prompt:
             optimized_prompt = content
     except Exception as e:
@@ -246,7 +246,7 @@ def register_chat_routes(app: FastAPI) -> None:
         content = body.get("content", "").strip()
         conv_id = body.get("conversation_id", "")
         session_id = body.get("session_id", "")
-        chosen_model = body.get("model", "haiku")  # haiku ou sonnet
+        chosen_model = body.get("model", "deepseek-chat")
         file_data = body.get("file_data")
 
         if not content and not file_data:
@@ -274,7 +274,7 @@ def register_chat_routes(app: FastAPI) -> None:
 
         if is_admin:
             # Admin: Sonnet sem limite
-            model_id = "claude-sonnet-4-20250514"
+            model_id = config.CLOW_MODEL
             effective_plan = "unlimited"
         else:
             effective_plan = user_plan if user_plan in ("lite", "starter", "pro", "business", "unlimited") else "lite"

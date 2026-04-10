@@ -1,16 +1,11 @@
-"""Clow Skills Engine — gera documentos via Code Execution API beta."""
+"""Clow Skills Engine — gera documentos via DeepSeek."""
 from __future__ import annotations
 import base64
 import time
 from pathlib import Path
-from anthropic import Anthropic
+from openai import OpenAI
 
 from .generators.base import STATIC_DIR, file_url, slugify
-
-BETA_FLAGS = [
-    "code-execution-2025-08-25",
-    "files-api-2025-04-14",
-]
 
 SKILL_MAP = {
     "xlsx": {"lib": "openpyxl", "label": "Planilha Excel", "ext": ".xlsx"},
@@ -33,19 +28,21 @@ Aplique esta identidade visual do Clow:
 """
 
 
-def _get_client() -> Anthropic:
-    from .config import ANTHROPIC_API_KEY
-    return Anthropic(api_key=ANTHROPIC_API_KEY)
+def _get_client() -> OpenAI:
+    from .config import get_deepseek_client_kwargs
+    return OpenAI(**get_deepseek_client_kwargs())
 
 
 def generate_with_skills(
     prompt: str,
     skill_type: str,
-    model: str = "claude-haiku-4-5-20251001",
+    model: str = "",
     user_id: str = "",
 ) -> dict:
-    """Gera documento via Code Execution beta. Claude escreve e executa codigo no sandbox."""
+    """Gera documento via DeepSeek. Pede script Python que gera o arquivo e retorna base64."""
+    from . import config
     client = _get_client()
+    model = model or config.CLOW_MODEL
     skill_info = SKILL_MAP.get(skill_type)
     if not skill_info:
         raise ValueError(f"Skill '{skill_type}' nao reconhecida")
@@ -61,85 +58,56 @@ Instrucoes:
 4. Use: import base64; data = open('/tmp/output/result{ext}', 'rb').read(); print(f'<FILE_B64>{{base64.b64encode(data).decode()}}</FILE_B64>')
 5. Gere conteudo profissional, detalhado, com dados de exemplo realistas
 {CLOW_BRAND}
-IMPORTANTE: Sempre termine com o print do base64 entre as tags FILE_B64."""
+Retorne APENAS o script Python completo, sem explicacao."""
 
     full_prompt = f"Crie o seguinte arquivo {ext}: {prompt}"
 
-    response = client.beta.messages.create(
+    response = client.chat.completions.create(
         model=model,
         max_tokens=16000,
-        betas=BETA_FLAGS,
-        system=system_prompt,
-        tools=[{"type": "code_execution_20250825", "name": "code_execution"}],
-        messages=[{"role": "user", "content": full_prompt}],
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": full_prompt},
+        ],
     )
 
     # Log usage
     if user_id and response.usage:
         try:
             from .database import log_usage
-            inp = response.usage.input_tokens
-            out = response.usage.output_tokens
-            cost = (inp * 0.25 + out * 1.25) / 1_000_000 if "haiku" in model else (inp * 3.0 + out * 15.0) / 1_000_000
+            inp = response.usage.prompt_tokens or 0
+            out = response.usage.completion_tokens or 0
+            cost = (inp * config.DEEPSEEK_INPUT_PRICE_PER_MTOK + out * config.DEEPSEEK_OUTPUT_PRICE_PER_MTOK) / 1_000_000
             log_usage(user_id, model, inp, out, cost, f"skills_{skill_type}")
         except Exception:
             pass
 
-    # Extrair base64 do output
-    b64_data = _extract_b64(response)
-    text_parts = _extract_text(response)
+    # Executa script Python retornado pelo modelo
+    script = response.choices[0].message.content or ""
+    if script.startswith("```"):
+        script = script.split("```")[1]
+        if script.startswith("python"):
+            script = script[6:]
+        script = script.rsplit("```", 1)[0]
+
+    import subprocess, os
+    os.makedirs("/tmp/output", exist_ok=True)
+    result = subprocess.run(
+        ["python3", "-c", script],
+        capture_output=True, text=True, timeout=60,
+    )
+
+    b64_data = None
+    output = result.stdout
+    if "<FILE_B64>" in output:
+        start = output.index("<FILE_B64>") + 10
+        end = output.index("</FILE_B64>")
+        b64_data = output[start:end].strip()
 
     if b64_data:
         return _save_file(b64_data, skill_type, prompt)
 
-    # Se nao extraiu base64, tenta fallback
-    raise RuntimeError(f"Code execution nao retornou arquivo. Texto: {' '.join(text_parts)[:200]}")
-
-
-def _extract_b64(response) -> str | None:
-    """Extrai base64 do output do code execution."""
-    for block in response.content:
-        # Check bash results
-        if hasattr(block, "content"):
-            content = block.content
-            if isinstance(content, dict):
-                stdout = content.get("stdout", "")
-                if "<FILE_B64>" in stdout:
-                    start = stdout.index("<FILE_B64>") + 10
-                    end = stdout.index("</FILE_B64>")
-                    return stdout[start:end].strip()
-            elif isinstance(content, list):
-                for sub in content:
-                    if hasattr(sub, "type"):
-                        sub_dict = sub.model_dump() if hasattr(sub, "model_dump") else {}
-                        stdout = sub_dict.get("stdout", "")
-                        if isinstance(stdout, str) and "<FILE_B64>" in stdout:
-                            start = stdout.index("<FILE_B64>") + 10
-                            end = stdout.index("</FILE_B64>")
-                            return stdout[start:end].strip()
-            elif hasattr(content, "stdout"):
-                stdout = content.stdout or ""
-                if "<FILE_B64>" in stdout:
-                    start = stdout.index("<FILE_B64>") + 10
-                    end = stdout.index("</FILE_B64>")
-                    return stdout[start:end].strip()
-
-        # Direct text blocks sometimes contain it
-        if hasattr(block, "text") and "<FILE_B64>" in (block.text or ""):
-            text = block.text
-            start = text.index("<FILE_B64>") + 10
-            end = text.index("</FILE_B64>")
-            return text[start:end].strip()
-
-    return None
-
-
-def _extract_text(response) -> list[str]:
-    parts = []
-    for block in response.content:
-        if hasattr(block, "text") and block.text:
-            parts.append(block.text)
-    return parts
+    raise RuntimeError(f"Script nao retornou arquivo. stdout={output[:200]} stderr={result.stderr[:200]}")
 
 
 def _save_file(b64_data: str, skill_type: str, prompt: str) -> dict:

@@ -24,11 +24,8 @@ def register_byok_routes(app) -> None:
         if not api_key:
             return _JR({"valid": False, "error": "API key vazia"}, status_code=400)
 
-        if not api_key.startswith("sk-ant-"):
-            return _JR({"valid": False, "error": "Formato invalido. A key deve comecar com sk-ant-"}, status_code=400)
-
-        from ..database import validate_anthropic_key
-        result = validate_anthropic_key(api_key)
+        from ..database import validate_deepseek_key
+        result = validate_deepseek_key(api_key)
         return _JR(result)
 
     @app.post("/api/v1/me/api-key", tags=["byok"])
@@ -44,20 +41,17 @@ def register_byok_routes(app) -> None:
         if not api_key:
             return _JR({"error": "API key vazia"}, status_code=400)
 
-        if not api_key.startswith("sk-ant-"):
-            return _JR({"error": "Formato invalido"}, status_code=400)
-
         # Valida antes de salvar
-        from ..database import validate_anthropic_key, set_user_api_key
-        validation = validate_anthropic_key(api_key)
+        from ..database import validate_deepseek_key, set_user_api_key
+        validation = validate_deepseek_key(api_key)
         if not validation.get("valid"):
             return _JR({"error": validation.get("error", "Key invalida")}, status_code=400)
 
         set_user_api_key(sess["user_id"], api_key)
         return _JR({
             "success": True,
-            "message": "API key configurada. Voce agora usa Claude Sonnet com sua propria key.",
-            "model": "claude-sonnet-4-20250514",
+            "message": "API key configurada. Voce agora usa DeepSeek com sua propria key.",
+            "model": "deepseek-chat",
         })
 
     @app.delete("/api/v1/me/api-key", tags=["byok"])
@@ -85,7 +79,7 @@ def register_byok_routes(app) -> None:
         return _JR({
             "has_api_key": has_key,
             "byok_enabled": bool(user.get("byok_enabled")) if user else False,
-            "model": "claude-sonnet-4-20250514" if has_key else "claude-haiku-4-5-20251001",
+            "model": "deepseek-chat",
             "api_key_set_at": user.get("api_key_set_at", 0) if user else 0,
         })
 
@@ -157,9 +151,9 @@ def register_byok_routes(app) -> None:
                 for d in daily
             ],
             "pricing": {
-                "model": "claude-sonnet-4-20250514",
-                "input_per_mtok": 3.0,
-                "output_per_mtok": 15.0,
+                "model": "deepseek-chat",
+                "input_per_mtok": 0.27,
+                "output_per_mtok": 1.10,
                 "currency": "USD",
             },
         })
@@ -363,7 +357,7 @@ a{color:var(--p);text-decoration:none}
   <h2>Como <span>funciona</span></h2>
   <div class="steps">
     <div class="step"><div class="step-num">1</div><h3>Crie sua conta</h3><p>Email e senha. Sem cart&atilde;o de cr&eacute;dito. 30 segundos.</p></div>
-    <div class="step"><div class="step-num">2</div><h3>Cole sua API Key</h3><p>Pegue sua key em <strong>console.anthropic.com</strong>. O Clow valida na hora.</p></div>
+    <div class="step"><div class="step-num">2</div><h3>Cole sua API Key</h3><p>Pegue sua key em <strong>platform.deepseek.com</strong>. O Clow valida na hora.</p></div>
     <div class="step"><div class="step-num">3</div><h3>Use sem limites</h3><p>33 tools, auto-correction, extended thinking, agent teams, e muito mais. Voc&ecirc; paga direto pra Anthropic.</p></div>
   </div>
 </section>
@@ -395,7 +389,7 @@ a{color:var(--p);text-decoration:none}
         <li>Sem limite de sess&otilde;es</li>
         <li>Dashboard de uso com custo estimado em USD</li>
         <li>Custo m&eacute;dio: ~$0.01 a $0.05 por mensagem</li>
-        <li>Voc&ecirc; controla tudo no console.anthropic.com</li>
+        <li>Voc&ecirc; controla tudo no platform.deepseek.com</li>
       </ul>
       <a href="/onboarding" class="btn btn-primary" style="margin-top:24px;width:100%">Criar Conta Gr&aacute;tis</a>
     </div>
@@ -516,12 +510,12 @@ h1{font-size:1.4rem;font-weight:700;text-align:center;margin-bottom:4px}
 
   <div class="step" id="step2">
     <p class="sub">Cole sua API key da Anthropic</p>
-    <div class="fg"><label>API Key da Anthropic</label><input id="apikey" class="mono" placeholder="sk-ant-api03-..." required></div>
+    <div class="fg"><label>API Key da DeepSeek</label><input id="apikey" class="mono" placeholder="sk-..." required></div>
     <div style="font-size:.8rem;color:var(--t2);margin-bottom:16px;line-height:1.6">
       <p style="margin-bottom:8px"><strong style="color:var(--t1)">Como conseguir sua key:</strong></p>
-      <p>1. Acesse <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--p)">console.anthropic.com/settings/keys</a></p>
+      <p>1. Acesse <a href="https://platform.deepseek.com/settings/keys" target="_blank" style="color:var(--p)">platform.deepseek.com/settings/keys</a></p>
       <p>2. Clique em <strong>Create Key</strong> e copie</p>
-      <p>3. Em <a href="https://console.anthropic.com/settings/billing" target="_blank" style="color:var(--p)">Billing</a>, adicione saldo m&iacute;nimo de <strong style="color:var(--g)">$5 USD</strong></p>
+      <p>3. Em <a href="https://platform.deepseek.com/settings/billing" target="_blank" style="color:var(--p)">Billing</a>, adicione saldo m&iacute;nimo de <strong style="color:var(--g)">$5 USD</strong></p>
       <p style="margin-top:8px;color:var(--tm);font-size:.75rem">Sua key fica salva apenas no Clow. N&atilde;o &eacute; compartilhada com terceiros.</p>
     </div>
     <button class="btn btn-primary" id="btn-key">Validar e Salvar</button>

@@ -22,7 +22,7 @@ _SETUP_DIR.mkdir(parents=True, exist_ok=True)
 
 # Chave para encode/decode do connection code (nao e criptografia forte,
 # e ofuscacao — o token real e o api_token do Chatwoot que so o cliente tem)
-_ENCODE_KEY = (config.ANTHROPIC_API_KEY or "clow-default-key")[:32]
+_ENCODE_KEY = (config.DEEPSEEK_API_KEY or "clow-default-key")[:32]
 
 
 # ══════════════════════════════════════════════════════════════

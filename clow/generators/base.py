@@ -6,15 +6,15 @@ import time
 import unicodedata
 from pathlib import Path
 
-import anthropic
+from openai import OpenAI
 
 STATIC_DIR = Path(__file__).parent.parent.parent / "static"
 DOMAIN = os.getenv("CLOW_DOMAIN", "clow.pvcorretor01.com.br")
 
 
-def get_client() -> anthropic.Anthropic:
-    from ..config import ANTHROPIC_API_KEY
-    return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+def get_client() -> OpenAI:
+    from ..config import get_deepseek_client_kwargs
+    return OpenAI(**get_deepseek_client_kwargs())
 
 
 def slugify(text: str) -> str:
@@ -35,47 +35,35 @@ def file_url(relative_path: str) -> str:
 
 
 MODELS = {
-    "haiku": "claude-haiku-4-5-20251001",
-    "sonnet": "claude-sonnet-4-20250514",
+    "default": "deepseek-chat",
+    "reasoner": "deepseek-reasoner",
 }
 
 
-def ask_ai(prompt: str, system: str = "", model: str = "claude-haiku-4-5-20251001", max_tokens: int = 4096, user_id: str = "") -> str:
+def ask_ai(prompt: str, system: str = "", model: str = "", max_tokens: int = 4096, user_id: str = "") -> str:
+    from .. import config
     client = get_client()
-    msgs = [{"role": "user", "content": prompt}]
-
-    # Prompt caching: system com cache_control
+    model = model or config.CLOW_MODEL
     sys_text = system or "Voce e um assistente especializado. Responda em portugues brasileiro."
-    sys_block = [{"type": "text", "text": sys_text, "cache_control": {"type": "ephemeral"}}]
 
-    resp = client.messages.create(
+    resp = client.chat.completions.create(
         model=model,
         max_tokens=max_tokens,
-        system=sys_block,
-        messages=msgs,
+        messages=[
+            {"role": "system", "content": sys_text},
+            {"role": "user", "content": prompt},
+        ],
     )
 
     # Log usage se tiver user_id
     if user_id and resp.usage:
         try:
             from ..database import log_usage
-            inp = resp.usage.input_tokens
-            out = resp.usage.output_tokens
-            cache_read = getattr(resp.usage, 'cache_read_input_tokens', 0) or 0
-            # Custo estimado (haiku ~$0.25/1M input, sonnet ~$3/1M input)
-            if "haiku" in model:
-                cost = (inp * 0.25 + out * 1.25) / 1_000_000
-            else:
-                cost = (inp * 3.0 + out * 15.0) / 1_000_000
-            # Cache read custa 10% do input normal
-            if cache_read > 0:
-                saved = cache_read * 0.9
-                if "haiku" in model:
-                    cost -= saved * 0.25 / 1_000_000
-                else:
-                    cost -= saved * 3.0 / 1_000_000
+            inp = resp.usage.prompt_tokens or 0
+            out = resp.usage.completion_tokens or 0
+            cost = (inp * config.DEEPSEEK_INPUT_PRICE_PER_MTOK + out * config.DEEPSEEK_OUTPUT_PRICE_PER_MTOK) / 1_000_000
             log_usage(user_id, model, inp, out, max(cost, 0), "chat")
         except Exception:
             pass
 
-    return resp.content[0].text
+    return resp.choices[0].message.content or ""

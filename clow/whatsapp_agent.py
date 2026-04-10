@@ -254,7 +254,7 @@ class WhatsAppAgentManager:
         # Call LLM — WhatsApp SEMPRE usa Haiku (wa_model)
         try:
             plan = get_plan(plan_id)
-            wa_model = plan.get("wa_model", "claude-haiku-4-5-20251001")
+            wa_model = plan.get("wa_model", "deepseek-chat")
             api_key = None
             if not plan_uses_server_key(plan_id):
                 api_key = get_user_api_key(inst.tenant_id)
@@ -264,35 +264,16 @@ class WhatsAppAgentManager:
             llm_msgs = [{"role": "system", "content": system_prompt}]
             llm_msgs.extend([m for m in messages if m["role"] != "system"])
 
-            if config.CLOW_PROVIDER == "openai":
-                from openai import OpenAI
-                ckw = {"api_key": config.OPENAI_API_KEY}
-                if config.OPENAI_BASE_URL:
-                    b = config.OPENAI_BASE_URL.rstrip("/")
-                    if not b.endswith("/v1"):
-                        b += "/v1"
-                    ckw["base_url"] = b
-                client = OpenAI(**ckw)
-                response = client.chat.completions.create(
-                    model=config.CLOW_MODEL,
-                    messages=llm_msgs,
-                    max_tokens=1024,
-                )
-                reply = response.choices[0].message.content if response.choices else ""
-                inp_tokens = response.usage.prompt_tokens if response.usage else 0
-                out_tokens = response.usage.completion_tokens if response.usage else 0
-            else:
-                from anthropic import Anthropic
-                client = Anthropic(api_key=api_key or config.ANTHROPIC_API_KEY)
-                response = client.messages.create(
-                    model=wa_model,
-                    system=system_prompt,
-                    messages=[m for m in messages if m["role"] != "system"],
-                    max_tokens=1024,
-                )
-                reply = response.content[0].text if response.content else ""
-                inp_tokens = response.usage.input_tokens if response.usage else 0
-                out_tokens = response.usage.output_tokens if response.usage else 0
+            from openai import OpenAI
+            client = OpenAI(**config.get_deepseek_client_kwargs())
+            response = client.chat.completions.create(
+                model=config.CLOW_MODEL,
+                messages=llm_msgs,
+                max_tokens=1024,
+            )
+            reply = response.choices[0].message.content if response.choices else ""
+            inp_tokens = response.usage.prompt_tokens if response.usage else 0
+            out_tokens = response.usage.completion_tokens if response.usage else 0
             from .metrics_collector import record_request
             record_request(inst.tenant_id, plan_id, inp_tokens, out_tokens, source="whatsapp")
 
@@ -300,7 +281,7 @@ class WhatsAppAgentManager:
             if crm_lead_id:
                 try:
                     from .crm_models import update_lead
-                    token_cost = 0.0 if config.CLOW_PROVIDER == 'openai' else (inp_tokens * config.HAIKU_INPUT_PRICE_PER_MTOK + out_tokens * config.HAIKU_OUTPUT_PRICE_PER_MTOK) / 1_000_000
+                    token_cost = (inp_tokens * config.DEEPSEEK_INPUT_PRICE_PER_MTOK + out_tokens * config.DEEPSEEK_OUTPUT_PRICE_PER_MTOK) / 1_000_000
                     old_tokens = crm_lead.get("cost_tokens_used", 0) if crm_lead else 0
                     old_cost = crm_lead.get("cost_estimated_brl", 0) if crm_lead else 0
                     update_lead(crm_lead_id, inst.tenant_id,

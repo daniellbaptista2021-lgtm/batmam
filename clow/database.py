@@ -168,46 +168,47 @@ def remove_user_api_key(uid: str) -> bool:
         return db.total_changes > 0
 
 
-def validate_anthropic_key(api_key: str) -> dict:
-    """Valida uma API key da Anthropic com chamada real ao Claude Sonnet.
+def validate_deepseek_key(api_key: str) -> dict:
+    """Valida uma API key da DeepSeek com chamada real.
 
-    Faz uma requisicao minima (1 token) para garantir que:
-    - A key e valida
-    - A conta tem saldo (minimo $5 recomendado)
-    - O modelo Sonnet esta acessivel
+    Faz uma requisicao minima (1 token) para garantir que a key e valida.
     """
-    if not api_key or not api_key.startswith("sk-ant-"):
-        return {"valid": False, "error": "API key invalida. Deve comecar com sk-ant-"}
+    if not api_key:
+        return {"valid": False, "error": "API key vazia"}
 
     try:
-        from anthropic import Anthropic
-        client = Anthropic(api_key=api_key)
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+        from openai import OpenAI
+        from . import config
+        base = config.DEEPSEEK_BASE_URL.rstrip("/")
+        if not base.endswith("/v1"):
+            base += "/v1"
+        client = OpenAI(api_key=api_key, base_url=base)
+        response = client.chat.completions.create(
+            model="deepseek-chat",
             messages=[{"role": "user", "content": "hi"}],
             max_tokens=1,
         )
-        return {"valid": True, "model": "claude-sonnet-4-20250514"}
+        return {"valid": True, "model": "deepseek-chat"}
     except Exception as e:
         err = str(e).lower()
         if "401" in err or "authentication" in err or "invalid x-api-key" in err or "invalid api key" in err:
             return {
                 "valid": False,
-                "error": "API key invalida. Verifique se copiou corretamente em console.anthropic.com/settings/keys",
+                "error": "API key invalida. Verifique se copiou corretamente em platform.deepseek.com",
             }
         if "credit" in err or "billing" in err or "balance" in err:
             return {
                 "valid": False,
-                "error": "Sua conta Anthropic esta sem saldo. Adicione no minimo $5 em console.anthropic.com/settings/billing",
+                "error": "Sua conta DeepSeek esta sem saldo. Adicione creditos em platform.deepseek.com",
             }
         if "permission" in err or "forbidden" in err:
             return {
                 "valid": False,
-                "error": "Sua key nao tem permissao para o Claude Sonnet. Gere uma nova key com acesso completo.",
+                "error": "Sua key nao tem permissao. Gere uma nova key com acesso completo em platform.deepseek.com",
             }
         if "rate" in err or "429" in str(e):
             # Rate limit = key valida, so esta sendo usada rapido demais
-            return {"valid": True, "model": "claude-sonnet-4-20250514"}
+            return {"valid": True, "model": "deepseek-chat"}
         return {
             "valid": False,
             "error": f"Erro ao validar: {str(e)[:150]}. Verifique sua key e tente novamente.",
