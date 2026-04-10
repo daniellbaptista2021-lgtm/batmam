@@ -16,6 +16,7 @@ from .admin import _mission_progress
 from ..webapp import track_action
 from ..rate_limit import limiter as user_limiter
 from ..rag import get_context_for_prompt as _rag_context
+from .. import config
 from ..database import (
     check_limit, check_message_limit,
     save_message, get_user_usage_today, PLANS,
