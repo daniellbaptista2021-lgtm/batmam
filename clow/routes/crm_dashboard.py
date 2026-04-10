@@ -1,4 +1,3 @@
-import os
 """CRM Dashboard Routes — metricas do Chatwoot do cliente.
 
 O CRM completo roda no Chatwoot. O Clow so mostra dashboard de metricas.
@@ -6,6 +5,7 @@ Se nao tem Chatwoot, mostra pagina de setup.
 """
 
 from __future__ import annotations
+import os
 
 import json
 import time
