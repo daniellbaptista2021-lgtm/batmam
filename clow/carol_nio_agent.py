@@ -70,7 +70,7 @@ def consulta_cpf(cpf):
     if len(cpf) != 11:
         return {"error": "CPF invalido"}
     try:
-        data = json.dumps({"email": "equipoclass@gmail.com", "senha": "123@Equipoclass", "cpf": cpf}).encode()
+        data = json.dumps({"email": os.getenv("CPF_API_EMAIL", ""), "senha": os.getenv("CPF_API_SENHA", ""), "cpf": cpf}).encode()
         req = Request("https://enriquecimento.interativaviews.com.br/api/consulta-cpf/",
                        data=data, headers={"Content-Type": "application/json"}, method="POST")
         resp = urlopen(req, timeout=15)
@@ -133,11 +133,21 @@ def process_daniel_message(phone, message, customer_name=""):
     try:
         from openai import OpenAI
         client = OpenAI(**config.get_deepseek_client_kwargs())
-        resp = client.chat.completions.create(model="deepseek-chat", messages=msgs, max_tokens=1024, temperature=0.4)
-        reply = resp.choices[0].message.content or ""
+        # Auto-retry: tenta 2x com backoff
+        for _attempt in range(2):
+            try:
+                resp = client.chat.completions.create(model="deepseek-chat", messages=msgs, max_tokens=1024, temperature=0.4)
+                reply = resp.choices[0].message.content or ""
+                break
+            except Exception as _retry_err:
+                if _attempt == 0:
+                    import time as _t
+                    _t.sleep(2)
+                    continue
+                raise _retry_err
     except Exception as e:
-        logger.error(f"Daniel LLM error: {e}")
-        reply = "Desculpa, tive um probleminha tecnico. Pode repetir?"
+        logger.error(f"LLM error after retry: {e}")
+        reply = "Desculpa, estou com uma instabilidade temporaria. Pode tentar novamente em alguns segundos?"
 
     state.setdefault("messages", []).append({"role": "user", "content": message})
     state["messages"].append({"role": "assistant", "content": reply})

@@ -1,3 +1,4 @@
+import os
 """CRM Dashboard Routes — metricas do Chatwoot do cliente.
 
 O CRM completo roda no Chatwoot. O Clow so mostra dashboard de metricas.
@@ -50,7 +51,7 @@ def register_crm_dashboard_routes(app) -> None:
         """CRM stats for sidebar - proxies to Chatwoot."""
         import urllib.request, json as _json
         CW_URL = "http://localhost:3000"
-        CW_TOKEN = "5PaLRMqS6WZinwQD6dhSZyB4"
+        CW_TOKEN = os.getenv("CHATWOOT_API_TOKEN", "")
         ACCT = 1
         def _get(path):
             try:
