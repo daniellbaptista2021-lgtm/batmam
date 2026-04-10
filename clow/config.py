@@ -7,9 +7,9 @@ from dotenv import load_dotenv
 
 # Carrega .env �� busca em vários locais possíveis
 _env_candidates = [
-    Path(__file__).resolve().parent.parent / ".env",   # ./clow/../.env (dev)
-    Path.home() / ".clow" / "app" / ".env",          # ~/.clow/app/.env (instalado)
+    Path.home() / ".clow" / "app" / ".env",          # ~/.clow/app/.env (producao — prioridade)
     Path.home() / ".clow" / ".env",                  # ~/.clow/.env
+    Path(__file__).resolve().parent.parent / ".env",   # ./clow/../.env (dev)
     Path.cwd() / ".env",                               # diretório atual
 ]
 
