@@ -462,6 +462,66 @@ def register_whatsapp_agent_routes(app) -> None:
         return _JR(pause_campaign(cid))
 
 
+
+# Meta contact names cache
+_meta_contact_names = {}
+
+def _process_meta_carol(instance_id, phone, message):
+    """Process Meta webhook message through Daniel NIO agent + send reply + save to Chatwoot."""
+    import os as _os
+    import json as _json
+    import logging
+    _log = logging.getLogger("clow.meta_agent")
+
+    name = _meta_contact_names.get(phone, "")
+
+    # Process with Daniel NIO agent
+    try:
+        from ..carol_nio_agent import process_daniel_message
+        reply = process_daniel_message(phone, message, customer_name=name)
+    except Exception as e:
+        _log.error(f"Daniel agent error: {e}")
+        reply = None
+
+    if not reply:
+        return
+
+    # Send via Meta API
+    token = _os.getenv("META_ACCESS_TOKEN", "")
+    phone_id = _os.getenv("META_PHONE_NUMBER_ID", "")
+    if token and phone_id:
+        try:
+            from urllib.request import urlopen, Request
+            url = f"https://graph.facebook.com/v18.0/{phone_id}/messages"
+            data = _json.dumps({
+                "messaging_product": "whatsapp", "to": phone,
+                "type": "text", "text": {"body": reply}
+            }).encode()
+            req = Request(url, data=data, headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            }, method="POST")
+            urlopen(req, timeout=30)
+        except Exception as e:
+            _log.error(f"Meta send error: {e}")
+
+    # Save to Chatwoot inbox 4 (private note to avoid duplicate)
+    try:
+        cw_url = _os.getenv("CHATWOOT_URL", "")
+        cw_token = _os.getenv("CHATWOOT_API_TOKEN", "")
+        inbox_id = int(_os.getenv("CHATWOOT_NIO_INBOX_ID", "4"))
+        if cw_url and cw_token:
+            from ..chatwoot_integration import get_chatwoot_client, get_or_create_chatwoot_conversation
+            client = get_chatwoot_client("nio")
+            if client:
+                convo_id = get_or_create_chatwoot_conversation(client, "meta-nio", phone, inbox_id)
+                if convo_id:
+                    client.send_message(convo_id, message, message_type="incoming")
+                    client.send_message(convo_id, "[Daniel] " + reply, message_type="outgoing", private=True)
+    except Exception:
+        pass
+
+
     # Meta API Webhook - Generic (no connection_id)
     @app.get("/api/v1/whatsapp/meta/webhook", tags=["whatsapp"], include_in_schema=False)
     async def meta_webhook_verify_generic(request: _Req):
