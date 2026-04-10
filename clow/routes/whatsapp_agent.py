@@ -272,6 +272,59 @@ def register_whatsapp_agent_routes(app) -> None:
     # ── Meta API Webhook - Verification (GET) ────────────────
 
 
+
+    # ── Blast Campaign Routes ────────────────────────────────
+
+    @app.get("/api/v1/whatsapp/blast/templates", tags=["blast"])
+    async def list_blast_templates(request: _Req):
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        from ..blast_sender import list_templates
+        return _JR({"templates": list_templates()})
+
+    @app.get("/api/v1/whatsapp/blast/campaigns", tags=["blast"])
+    async def list_blast_campaigns(request: _Req):
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        from ..blast_sender import list_campaigns
+        return _JR({"campaigns": list_campaigns(sess["user_id"])})
+
+    @app.post("/api/v1/whatsapp/blast/campaigns", tags=["blast"])
+    async def create_blast_campaign(request: _Req):
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        body = await request.json()
+        from ..blast_sender import create_campaign
+        return _JR(create_campaign(sess["user_id"], body.get("name",""), body.get("template_name",""), body.get("contacts",[])))
+
+    @app.post("/api/v1/whatsapp/blast/campaigns/{cid}/start", tags=["blast"])
+    async def start_blast(cid: str, request: _Req):
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        from ..blast_sender import start_campaign
+        return _JR(start_campaign(cid))
+
+    @app.get("/api/v1/whatsapp/blast/campaigns/{cid}/progress", tags=["blast"])
+    async def blast_progress(cid: str, request: _Req):
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..blast_sender import get_campaign_progress
+        return _JR(get_campaign_progress(cid))
+
+    @app.post("/api/v1/whatsapp/blast/campaigns/{cid}/pause", tags=["blast"])
+    async def pause_blast(cid: str, request: _Req):
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        from ..blast_sender import pause_campaign
+        return _JR(pause_campaign(cid))
+
+
     # Meta API Webhook - Generic (no connection_id)
     @app.get("/api/v1/whatsapp/meta/webhook", tags=["whatsapp"], include_in_schema=False)
     async def meta_webhook_verify_generic(request: _Req):
@@ -279,7 +332,7 @@ def register_whatsapp_agent_routes(app) -> None:
         mode = params.get("hub.mode", "")
         token = params.get("hub.verify_token", "")
         challenge = params.get("hub.challenge", "")
-        if mode == "subscribe" and token == "clow-webhook-2026":
+        if mode == "subscribe" and token in ("clow-webhook-2026", "clow-daniel-2026", os.getenv("META_VERIFY_TOKEN", "")):
             from fastapi.responses import PlainTextResponse
             return PlainTextResponse(challenge)
         return _JR({"error": "Verification failed"}, status_code=403)
@@ -297,6 +350,18 @@ def register_whatsapp_agent_routes(app) -> None:
             messages = value.get("messages", [])
             metadata = value.get("metadata", {})
             phone_number_id = metadata.get("phone_number_id", "")
+            # Extract contact name
+            contacts_list = value.get("contacts", [])
+            if contacts_list:
+                profile = contacts_list[0].get("profile", {})
+                contact_name = profile.get("name", "")
+                if contact_name and messages:
+                    from_phone = messages[0].get("from", "")
+                    if from_phone:
+                        _meta_contact_names[from_phone] = contact_name
+            # Skip status updates (delivery receipts)
+            if value.get("statuses"):
+                return _JR({"status": "status_update"})
             if not messages:
                 return _JR({"status": "no_messages"})
             from ..whatsapp_agent import get_wa_manager, WhatsAppInstance
@@ -324,8 +389,12 @@ def register_whatsapp_agent_routes(app) -> None:
                 text = ""
                 if msg_type == "text":
                     text = msg.get("text", {}).get("body", "")
-                elif msg_type in ("image", "audio", "video", "document"):
-                    text = "[" + msg_type + " recebido]"
+                elif msg_type == "audio":
+                    text = "[AUDIO] No momento so consigo te atender por texto. Me manda sua duvida escrita que te respondo!"
+                elif msg_type in ("image", "document", "video", "sticker"):
+                    text = "[MIDIA] No momento so consigo te atender com mensagens de texto. Me manda sua duvida por escrito!"
+                elif msg_type == "reaction":
+                    continue
                 if not phone or not text:
                     continue
                 key = inst.id + ":" + phone
@@ -344,7 +413,7 @@ def register_whatsapp_agent_routes(app) -> None:
                         if msgs:
                             combined = " ".join(msgs)
                             try:
-                                _process_with_chatwoot(i, ph, combined)
+                                _process_meta_carol(i, ph, combined)
                             except Exception:
                                 pass
                     timer = threading.Timer(DEBOUNCE_SECONDS, flush)
@@ -388,6 +457,18 @@ def register_whatsapp_agent_routes(app) -> None:
             value = changes.get("value", {})
             messages = value.get("messages", [])
 
+            # Extract contact name
+            contacts_list = value.get("contacts", [])
+            if contacts_list:
+                profile = contacts_list[0].get("profile", {})
+                contact_name = profile.get("name", "")
+                if contact_name and messages:
+                    from_phone = messages[0].get("from", "")
+                    if from_phone:
+                        _meta_contact_names[from_phone] = contact_name
+            # Skip status updates (delivery receipts)
+            if value.get("statuses"):
+                return _JR({"status": "status_update"})
             if not messages:
                 return _JR({"status": "no_messages"})
 
@@ -429,7 +510,7 @@ def register_whatsapp_agent_routes(app) -> None:
                         if msgs:
                             combined = " ".join(msgs)
                             try:
-                                _process_with_chatwoot(i, ph, combined)
+                                _process_meta_carol(i, ph, combined)
                             except Exception as e:
                                 logger.error(f"Meta process error: {e}")
 

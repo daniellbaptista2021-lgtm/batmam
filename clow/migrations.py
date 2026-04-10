@@ -629,3 +629,47 @@ def current_version(db_getter=None) -> int:
             return val or 0
         except Exception:
             return 0
+
+
+# Appended by automation — do not duplicate
+MIGRATIONS.append((
+    12,
+    "Create blast_campaigns and blast_contacts tables for mass messaging",
+    """
+    CREATE TABLE IF NOT EXISTS blast_campaigns (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        connection_id TEXT DEFAULT '"'"''"'"'',
+        name TEXT NOT NULL,
+        template_name TEXT NOT NULL,
+        template_language TEXT DEFAULT '"'"'pt_BR'"'"'',
+        total_contacts INTEGER DEFAULT 0,
+        sent INTEGER DEFAULT 0,
+        delivered INTEGER DEFAULT 0,
+        failed INTEGER DEFAULT 0,
+        status TEXT DEFAULT '"'"'draft'"'"' CHECK (status IN ('"'"'draft'"'"', '"'"'sending'"'"', '"'"'paused'"'"', '"'"'completed'"'"', '"'"'cancelled'"'"')),
+        error_rate REAL DEFAULT 0,
+        scheduled_at REAL,
+        started_at REAL,
+        completed_at REAL,
+        created_at REAL NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS blast_contacts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        campaign_id TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        name TEXT DEFAULT '"'"''"'"'',
+        status TEXT DEFAULT '"'"'pending'"'"' CHECK (status IN ('"'"'pending'"'"', '"'"'sent'"'"', '"'"'delivered'"'"', '"'"'failed'"'"', '"'"'skipped'"'"')),
+        sent_at REAL,
+        error_message TEXT DEFAULT '"'"''"'"'',
+        meta_message_id TEXT DEFAULT '"'"''"'"'',
+        created_at REAL NOT NULL,
+        FOREIGN KEY (campaign_id) REFERENCES blast_campaigns(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_blast_contacts_campaign ON blast_contacts(campaign_id);
+    CREATE INDEX IF NOT EXISTS idx_blast_contacts_status ON blast_contacts(status);
+    """,
+))
