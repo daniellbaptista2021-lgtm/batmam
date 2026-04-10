@@ -607,7 +607,7 @@ def _process_with_chatwoot(instance_id: str, phone: str, combined_message: str):
         try:
             # Send AI response to Chatwoot as outgoing message
             if reply:
-                cw_client.send_message(cw_convo_id, reply, message_type="outgoing")
+                cw_client.send_message(cw_convo_id, "[Bot] " + reply, message_type="outgoing", private=True)
 
             # Check for handoff keywords in user message
             handoff_keywords = ["humano", "atendente", "pessoa", "gerente", "falar com alguem"]
