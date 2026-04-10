@@ -253,10 +253,10 @@ async function loadPlan(){
   $('btn-portal').style.display=s.stripe_customer_id?'inline-block':'none';
 
   const plans=[
-    {id:'lite',name:'ONE',price:'R$ 89,90/mes',items:['IA Clow inclusa','Chatbot WhatsApp 24/7','CRM Chatwoot','Copywriting e roteiros']},
-    {id:'starter',name:'SMART',price:'R$ 127,90/mes',items:['Tudo do ONE','System Code incluso','Automacoes avancadas','Follow-up automatico']},
-    {id:'pro',name:'PROFISSIONAL',price:'R$ 239,90/mes',items:['Tudo do SMART','5 usuarios','Suporte prioritario','Relatorios avancados']},
-    {id:'business',name:'BUSINESS',price:'R$ 317,90/mes',items:['Tudo do PROFISSIONAL','10 usuarios','API publica','SLA 99.5%']},
+    {id:'lite',name:'ONE',price:'R$ 139,90/mes',items:['DeepSeek V3.2 incluso','Chatbot WhatsApp 24/7','CRM Chatwoot','Agente autonomo']},
+    {id:'starter',name:'SMART',price:'R$ 177,90/mes',items:['Tudo do ONE','Deploy Vercel + Chatwoot','Automacoes avancadas','Follow-up automatico']},
+    {id:'pro',name:'PROFISSIONAL',price:'R$ 289,90/mes',items:['Tudo do SMART','5 usuarios','SSH + Deploy VPS','Suporte prioritario']},
+    {id:'business',name:'BUSINESS',price:'R$ 367,90/mes',items:['Tudo do PROFISSIONAL','10 usuarios','API publica','SLA 99.5%']},
   ];
   $('plan-grid').innerHTML=plans.map(p=>{
     const cur=s.plan_id===p.id;
