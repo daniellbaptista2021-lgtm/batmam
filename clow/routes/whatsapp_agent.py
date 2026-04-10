@@ -1,13 +1,16 @@
 """WhatsApp Agent routes — CRUD instances, webhook, conversations."""
 
 from __future__ import annotations
+import os
 import time
 import threading
+import logging
 from pathlib import Path
 
 from fastapi import Request as _Req
 from fastapi.responses import JSONResponse as _JR, HTMLResponse as _HR, RedirectResponse
 
+logger = logging.getLogger("clow.routes.whatsapp_agent")
 
 # Debounce buffers: {instance_id:phone -> [messages]}
 _debounce_buffers: dict[str, list[str]] = {}
@@ -311,7 +314,7 @@ def register_whatsapp_agent_routes(app) -> None:
                     _debounce_timers.pop(k, None)
                 if msgs:
                     combined = "\n".join(msgs)
-                    get_wa_manager().process_incoming(iid, p, combined)
+                    _process_with_chatwoot(iid, p, combined)
 
             timer = threading.Timer(DEBOUNCE_SECONDS, _process_debounced)
             timer.daemon = True
@@ -319,3 +322,110 @@ def register_whatsapp_agent_routes(app) -> None:
             timer.start()
 
         return _JR({"status": "queued"})
+
+    # ── Chatwoot Webhook (receives Chatwoot events) ───────────
+
+    @app.post("/api/v1/chatwoot/webhook", tags=["chatwoot"], include_in_schema=False)
+    async def chatwoot_webhook(request: _Req):
+        """Receive Chatwoot events — detect label changes for handoff control."""
+        try:
+            body = await request.json()
+        except Exception:
+            return _JR({"status": "invalid"}, status_code=400)
+
+        event = body.get("event", "")
+
+        if event == "conversation_updated":
+            convo = body.get("conversation", {})
+            convo_id = convo.get("id")
+            labels = convo.get("labels", [])
+
+            # If "humano" label was removed, reactivate bot
+            # We track this by checking if bot label is missing and humano is missing
+            if "humano" not in labels and convo_id:
+                try:
+                    from ..chatwoot_integration import get_chatwoot_client, reactivate_bot
+                    client = get_chatwoot_client("global")
+                    if client and "bot" not in labels:
+                        reactivate_bot(client, convo_id, send_greeting=True)
+                except Exception as e:
+                    logger.warning(f"Chatwoot webhook reactivate_bot error: {e}")
+
+        return _JR({"status": "ok"})
+
+
+def _process_with_chatwoot(instance_id: str, phone: str, combined_message: str):
+    """Process incoming message with Chatwoot integration (optional).
+
+    Wraps the original process_incoming with Chatwoot sync:
+    1. Send incoming message to Chatwoot
+    2. Check if 'humano' label is active -> skip AI if yes
+    3. Call process_incoming for AI response
+    4. Send AI response to Chatwoot as outgoing
+    5. Check for handoff keywords / lead interest
+    """
+    from ..whatsapp_agent import get_wa_manager
+
+    # --- Chatwoot integration (all wrapped in try/except — never blocks main flow) ---
+    cw_client = None
+    cw_convo_id = None
+    handoff_label = os.getenv("CHATWOOT_HANDOFF_LABEL", "humano")
+
+    try:
+        chatwoot_url = os.getenv("CHATWOOT_URL", "")
+        if chatwoot_url:
+            from ..chatwoot_integration import (
+                get_chatwoot_client,
+                get_or_create_chatwoot_conversation,
+                check_handoff_label,
+                trigger_handoff,
+                detect_lead_interest,
+            )
+
+            cw_client = get_chatwoot_client(instance_id)
+            if cw_client:
+                inbox_id = int(os.getenv("CHATWOOT_INBOX_ID", "1"))
+                cw_convo_id = get_or_create_chatwoot_conversation(
+                    cw_client, instance_id, phone, inbox_id
+                )
+
+                # Send the incoming message to Chatwoot
+                if cw_convo_id:
+                    cw_client.send_message(cw_convo_id, combined_message, message_type="incoming")
+
+                # Check if handoff is active — if so, skip AI processing entirely
+                if cw_convo_id and check_handoff_label(cw_client, cw_convo_id, handoff_label):
+                    logger.info(f"Handoff active for {instance_id}:{phone[-4:]}, skipping AI")
+                    return
+    except Exception as e:
+        logger.warning(f"Chatwoot pre-processing error (non-blocking): {e}")
+        # Continue with normal processing even if Chatwoot fails
+
+    # --- Normal AI processing ---
+    reply = get_wa_manager().process_incoming(instance_id, phone, combined_message)
+
+    # --- Chatwoot post-processing (send AI reply, check labels) ---
+    if cw_client and cw_convo_id:
+        try:
+            # Send AI response to Chatwoot as outgoing message
+            if reply:
+                cw_client.send_message(cw_convo_id, reply, message_type="outgoing")
+
+            # Check for handoff keywords in user message
+            handoff_keywords = ["humano", "atendente", "pessoa", "gerente", "falar com alguem"]
+            msg_lower = combined_message.lower()
+            if any(kw in msg_lower for kw in handoff_keywords):
+                try:
+                    trigger_handoff(cw_client, cw_convo_id, reason="Cliente solicitou atendimento humano", label=handoff_label)
+                except Exception as e:
+                    logger.warning(f"Chatwoot trigger_handoff error: {e}")
+
+            # Check for lead interest — add "lead-quente" label
+            try:
+                if detect_lead_interest(combined_message):
+                    cw_client.add_label(cw_convo_id, "lead-quente")
+            except Exception as e:
+                logger.warning(f"Chatwoot lead label error: {e}")
+
+        except Exception as e:
+            logger.warning(f"Chatwoot post-processing error (non-blocking): {e}")
