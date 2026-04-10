@@ -271,6 +271,89 @@ def register_whatsapp_agent_routes(app) -> None:
 
     # ── Meta API Webhook - Verification (GET) ────────────────
 
+
+    # Meta API Webhook - Generic (no connection_id)
+    @app.get("/api/v1/whatsapp/meta/webhook", tags=["whatsapp"], include_in_schema=False)
+    async def meta_webhook_verify_generic(request: _Req):
+        params = request.query_params
+        mode = params.get("hub.mode", "")
+        token = params.get("hub.verify_token", "")
+        challenge = params.get("hub.challenge", "")
+        if mode == "subscribe" and token == "clow-webhook-2026":
+            from fastapi.responses import PlainTextResponse
+            return PlainTextResponse(challenge)
+        return _JR({"error": "Verification failed"}, status_code=403)
+
+    @app.post("/api/v1/whatsapp/meta/webhook", tags=["whatsapp"], include_in_schema=False)
+    async def meta_webhook_receive_generic(request: _Req):
+        try:
+            body = await request.json()
+        except Exception:
+            return _JR({"status": "invalid"}, status_code=400)
+        try:
+            entry = body.get("entry", [{}])[0]
+            changes = entry.get("changes", [{}])[0]
+            value = changes.get("value", {})
+            messages = value.get("messages", [])
+            metadata = value.get("metadata", {})
+            phone_number_id = metadata.get("phone_number_id", "")
+            if not messages:
+                return _JR({"status": "no_messages"})
+            from ..whatsapp_agent import get_wa_manager, WhatsAppInstance
+            from pathlib import Path
+            inst = None
+            wa_dir = Path.home() / ".clow" / "whatsapp_instances"
+            if wa_dir.exists():
+                for td in wa_dir.iterdir():
+                    if not td.is_dir():
+                        continue
+                    for idir in td.iterdir():
+                        if not idir.is_dir():
+                            continue
+                        c = WhatsAppInstance.load(idir)
+                        if c and getattr(c, "provider", "zapi") == "meta" and getattr(c, "meta_phone_number_id", "") == phone_number_id:
+                            inst = c
+                            break
+                    if inst:
+                        break
+            if not inst or not inst.active:
+                return _JR({"status": "no_matching_instance"})
+            for msg in messages:
+                phone = msg.get("from", "")
+                msg_type = msg.get("type", "")
+                text = ""
+                if msg_type == "text":
+                    text = msg.get("text", {}).get("body", "")
+                elif msg_type in ("image", "audio", "video", "document"):
+                    text = "[" + msg_type + " recebido]"
+                if not phone or not text:
+                    continue
+                key = inst.id + ":" + phone
+                with _debounce_lock:
+                    if key not in _debounce_buffers:
+                        _debounce_buffers[key] = []
+                    _debounce_buffers[key].append(text)
+                    if key in _debounce_timers:
+                        _debounce_timers[key].cancel()
+                    iid = inst.id
+                    p = phone
+                    def flush(k=key, i=iid, ph=p):
+                        with _debounce_lock:
+                            msgs = _debounce_buffers.pop(k, [])
+                            _debounce_timers.pop(k, None)
+                        if msgs:
+                            combined = " ".join(msgs)
+                            try:
+                                _process_with_chatwoot(i, ph, combined)
+                            except Exception:
+                                pass
+                    timer = threading.Timer(DEBOUNCE_SECONDS, flush)
+                    _debounce_timers[key] = timer
+                    timer.start()
+            return _JR({"status": "ok"})
+        except Exception:
+            return _JR({"status": "error"})
+
     @app.get("/api/v1/whatsapp/meta/webhook/{connection_id}", tags=["whatsapp"], include_in_schema=False)
     async def meta_webhook_verify(connection_id: str, request: _Req):
         """Meta webhook verification challenge."""
