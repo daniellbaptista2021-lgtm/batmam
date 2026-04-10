@@ -1,13 +1,12 @@
 """Stripe Billing — planos, checkout, portal, webhook, franquia.
 
-Planos:
-- ONE (lite):          R$89,90/mes — 1 WhatsApp, IA inclusa
-- SMART (starter):     R$127,90/mes — 2 WhatsApp, CRM, 8 fluxos n8n
-- PROFISSIONAL (pro):  R$239,90/mes — 3 WhatsApp, 5 usuarios, 2000 fluxos
-- BUSINESS (business): R$317,90/mes — 5 WhatsApp, 10 usuarios, 3000 fluxos, API publica
+Planos (DeepSeek V3.2):
+- ONE (lite):          R$139,90/mes — 1M tok/dia (30M/mes), 1 WhatsApp
+- SMART (starter):     R$177,90/mes — 1.8M tok/dia (54M/mes), 2 WhatsApp, CRM
+- PROFISSIONAL (pro):  R$289,90/mes — 2.5M tok/dia (75M/mes), 3 WhatsApp, 5 usuarios
+- BUSINESS (business): R$367,90/mes — 3M tok/dia (90M/mes), 5 WhatsApp, 10 usuarios
 
-WhatsApp Agent SEMPRE usa IA inclusa. Franquia separada do chat.
-Acesso apenas via assinatura paga — sem plano gratuito.
+Pagamento: cartao, boleto, PIX (pagamento unico 30 dias).
 """
 
 from __future__ import annotations
@@ -38,16 +37,16 @@ STRIPE_WEBHOOK_IPS = frozenset({
 # ── Plan Definitions ──────────────────────────────────────────
 
 PLANS = {
-    # ONE — plano entrada (mapeado ao checkout data-plan="lite")
+    # ONE — R$139,90/mes — 1M tokens/dia = 30M/mes
     "lite": {
         "name": "ONE",
-        "price_brl": 89.90,  # R$129,90/mês
-        "model": "IA Clow",
+        "price_brl": 139.90,
+        "model": "deepseek-chat",
         "uses_server_key": True,
-        "daily_input_tokens": 1_500_000,
-        "daily_output_tokens": 300_000,
-        "weekly_input_tokens": 7_500_000,
-        "weekly_output_tokens": 1_500_000,
+        "daily_input_tokens": 1_000_000,
+        "daily_output_tokens": 200_000,
+        "weekly_input_tokens": 7_000_000,
+        "weekly_output_tokens": 1_400_000,
         "n8n_flows": 0,
         "stripe_price_id": config.STRIPE_PRICE_ONE,
         "wa_model": "deepseek-chat",
@@ -56,16 +55,16 @@ PLANS = {
         "crm_enabled": False,
         "max_users": 1,
     },
-    # SMART — plano negócios (mapeado ao checkout data-plan="starter")
+    # SMART — R$177,90/mes — 1,8M tokens/dia = 54M/mes
     "starter": {
         "name": "SMART",
-        "price_brl": 127.90,  # R$297,00/mês
-        "model": "IA Clow",
+        "price_brl": 177.90,
+        "model": "deepseek-chat",
         "uses_server_key": True,
         "daily_input_tokens": 1_800_000,
-        "daily_output_tokens": 350_000,
-        "weekly_input_tokens": 9_000_000,
-        "weekly_output_tokens": 1_750_000,
+        "daily_output_tokens": 360_000,
+        "weekly_input_tokens": 12_600_000,
+        "weekly_output_tokens": 2_520_000,
         "n8n_flows": 8,
         "stripe_price_id": config.STRIPE_PRICE_SMART,
         "wa_model": "deepseek-chat",
@@ -74,16 +73,16 @@ PLANS = {
         "crm_enabled": True,
         "max_users": 3,
     },
-    # PROFISSIONAL — plano escala (mapeado ao checkout data-plan="pro")
+    # PROFISSIONAL — R$289,90/mes — 2,5M tokens/dia = 75M/mes
     "pro": {
         "name": "PROFISSIONAL",
-        "price_brl": 239.90,  # R$497,00/mês
-        "model": "IA Clow",
+        "price_brl": 289.90,
+        "model": "deepseek-chat",
         "uses_server_key": True,
         "daily_input_tokens": 2_500_000,
         "daily_output_tokens": 500_000,
-        "weekly_input_tokens": 12_500_000,
-        "weekly_output_tokens": 2_500_000,
+        "weekly_input_tokens": 17_500_000,
+        "weekly_output_tokens": 3_500_000,
         "n8n_flows": 2000,
         "stripe_price_id": config.STRIPE_PRICE_PROFISSIONAL,
         "wa_model": "deepseek-chat",
@@ -92,16 +91,16 @@ PLANS = {
         "crm_enabled": True,
         "max_users": 5,
     },
-    # BUSINESS — plano empresarial (mapeado ao checkout data-plan="business")
+    # BUSINESS — R$367,90/mes — 3M tokens/dia = 90M/mes
     "business": {
         "name": "BUSINESS",
-        "price_brl": 317.90,  # R$897,00/mês
-        "model": "IA Clow",
+        "price_brl": 367.90,
+        "model": "deepseek-chat",
         "uses_server_key": True,
-        "daily_input_tokens": 4_000_000,
-        "daily_output_tokens": 800_000,
-        "weekly_input_tokens": 20_000_000,
-        "weekly_output_tokens": 4_000_000,
+        "daily_input_tokens": 3_000_000,
+        "daily_output_tokens": 600_000,
+        "weekly_input_tokens": 21_000_000,
+        "weekly_output_tokens": 4_200_000,
         "n8n_flows": 3000,
         "stripe_price_id": config.STRIPE_PRICE_BUSINESS,
         "wa_model": "deepseek-chat",
