@@ -232,6 +232,8 @@ tr.expanded-row td{background:var(--bg-elevated);padding:16px;white-space:pre-wr
   .page-header{flex-direction:column;gap:10px;text-align:center}
   .header-actions{justify-content:center}
 }
+
+#csvDropZone.drag-over{border-color:#25D366!important;background:rgba(37,211,102,.05)!important}
 </style>
 <link rel="stylesheet" href="/static/css/bg.css">
 <script defer src="/static/js/bg.js"></script>
@@ -268,6 +270,7 @@ tr.expanded-row td{background:var(--bg-elevated);padding:16px;white-space:pre-wr
     <div class="main-tab" onclick="switchTab(1)"><span class="tab-icon">&#9881;</span>Configurar Bot</div>
     <div class="main-tab" onclick="switchTab(2)"><span class="tab-icon">&#128196;</span>Historico</div>
     <div class="main-tab" onclick="switchTab(3)"><span class="tab-icon">&#128200;</span>Estatisticas</div>
+    <div class="main-tab" onclick="switchTab(4)"><span class="tab-icon">&#128228;</span>Disparos</div>
   </div>
 
   <!-- ─────────────────────────────────────────────────────
@@ -735,6 +738,109 @@ tr.expanded-row td{background:var(--bg-elevated);padding:16px;white-space:pre-wr
 <!-- ═══════════════════════════════════════════════════════
      JAVASCRIPT
      ═══════════════════════════════════════════════════════ -->
+
+  <!-- TAB 4: DISPAROS EM MASSA -->
+  <div class="tab-panel" id="tab4">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+      <!-- COLUNA ESQUERDA: Nova Campanha -->
+      <div class="card">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.2rem">&#128228;</span> Nova Campanha de Disparo
+        </h3>
+
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:.8rem;color:var(--text-secondary);margin-bottom:4px">Nome da campanha</label>
+          <input id="blastName" type="text" placeholder="Ex: Campanha Abril 2026" style="width:100%;padding:10px 12px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.9rem">
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:.8rem;color:var(--text-secondary);margin-bottom:4px">Template de mensagem</label>
+          <select id="blastTemplate" onchange="previewTemplate()" style="width:100%;padding:10px 12px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.9rem">
+            <option value="">Carregando templates...</option>
+          </select>
+        </div>
+
+        <div id="templatePreview" style="display:none;margin-bottom:14px;padding:14px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px">
+          <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:6px">Preview do template:</div>
+          <div id="templatePreviewText" style="font-size:.85rem;color:var(--text-primary);line-height:1.5;white-space:pre-wrap;background:rgba(37,211,102,.05);padding:12px;border-radius:8px;border-left:3px solid #25D366"></div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:.8rem;color:var(--text-secondary);margin-bottom:4px">Lista de contatos</label>
+          <div id="csvDropZone" onclick="document.getElementById('csvInput').click()" style="border:2px dashed var(--border);border-radius:12px;padding:30px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg-base)" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:1.5rem;margin-bottom:8px">&#128206;</div>
+            <div style="font-size:.85rem;color:var(--text-secondary)">Arraste seu CSV aqui ou clique para selecionar</div>
+            <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px">Apenas .csv &bull; Max 10MB</div>
+          </div>
+          <input id="csvInput" type="file" accept=".csv" style="display:none" onchange="handleCSVUpload(this)">
+          <div style="margin-top:8px">
+            <a href="#" onclick="downloadCSVModel();return false" style="font-size:.8rem;color:var(--wa);text-decoration:none">&#11015; Baixar modelo CSV</a>
+          </div>
+        </div>
+
+        <div id="csvResult" style="display:none;margin-bottom:14px;padding:14px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px">
+          <div id="csvPreview" style="font-size:.85rem"></div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:.8rem;color:var(--text-secondary);margin-bottom:4px">Intervalo entre mensagens (segundos)</label>
+          <input id="blastInterval" type="number" min="3" max="30" value="5" style="width:100px;padding:8px 12px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;color:var(--text-primary)">
+          <span style="font-size:.75rem;color:var(--text-muted);margin-left:8px">Recomendado: 3-10</span>
+        </div>
+
+        <button id="blastStartBtn" onclick="startBlast()" disabled style="width:100%;padding:12px;background:#25D366;color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;opacity:.5;transition:all .2s">
+          &#128640; Iniciar Disparo
+        </button>
+      </div>
+
+      <!-- COLUNA DIREITA: Guia + Campanhas -->
+      <div>
+        <!-- Campanhas ativas -->
+        <div id="blastProgress" style="display:none;margin-bottom:16px" class="card">
+          <h4 style="font-size:.9rem;font-weight:600;margin-bottom:12px">&#128640; Disparo em andamento</h4>
+          <div id="blastProgressBar" style="height:8px;background:var(--bg-base);border-radius:4px;overflow:hidden;margin-bottom:10px">
+            <div id="blastProgressFill" style="height:100%;background:#25D366;border-radius:4px;transition:width .5s;width:0%"></div>
+          </div>
+          <div id="blastProgressText" style="font-size:.85rem;color:var(--text-secondary)"></div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button onclick="pauseBlast()" style="flex:1;padding:8px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);border-radius:8px;color:#FBBF24;font-size:.8rem;cursor:pointer">&#9208; Pausar</button>
+            <button onclick="cancelBlast()" style="flex:1;padding:8px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);border-radius:8px;color:#F87171;font-size:.8rem;cursor:pointer">&#9940; Cancelar</button>
+          </div>
+        </div>
+
+        <!-- Historico de campanhas -->
+        <div class="card" style="margin-bottom:16px">
+          <h4 style="font-size:.9rem;font-weight:600;margin-bottom:10px">Campanhas anteriores</h4>
+          <div id="blastCampaignList" style="font-size:.85rem;color:var(--text-muted)">Carregando...</div>
+        </div>
+
+        <!-- Guia de Templates -->
+        <div class="card" style="border:1px solid rgba(74,158,255,.15);background:rgba(74,158,255,.03)">
+          <h4 style="font-size:.9rem;font-weight:600;margin-bottom:12px;color:var(--blue)">&#128203; Como criar templates aprovados</h4>
+          <div style="font-size:.8rem;color:var(--text-secondary);line-height:1.6">
+            <p style="margin-bottom:8px"><span style="color:#FBBF24">&#9888;</span> Templates MARKETING custam mais e tem restricoes.</p>
+            <p style="margin-bottom:8px"><span style="color:#4ADE80">&#9989;</span> <strong>Use categoria UTILITY</strong> — Custo: ~R$0,03/msg — Aprovacao: ~24h</p>
+
+            <div style="margin:12px 0;padding:10px;background:var(--bg-base);border-radius:8px">
+              <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:6px">MODELOS RECOMENDADOS:</div>
+              <div style="margin-bottom:6px"><strong>1.</strong> "Ola {{1}}, temos uma atualizacao sobre seu cadastro. Pode confirmar?"</div>
+              <div style="margin-bottom:6px"><strong>2.</strong> "Oi {{1}}, seu agendamento esta confirmado. Posso ajudar?"</div>
+              <div style="margin-bottom:6px"><strong>3.</strong> "Ola {{1}}, tudo certo com seu servico? Estou a disposicao."</div>
+              <div style="margin-bottom:6px"><strong>4.</strong> "Oi {{1}}, identificamos uma pendencia. Podemos resolver?"</div>
+              <div><strong>5.</strong> "Bem-vindo(a) {{1}}! Sou seu assistente. Como posso ajudar?"</div>
+            </div>
+
+            <p style="margin-bottom:6px"><span style="color:#F87171">&#10060;</span> <strong>EVITE:</strong> promocao, oferta, desconto, gratis, clique aqui, links encurtados, emojis excessivos</p>
+
+            <p style="margin-top:10px"><strong>Onde criar:</strong> business.facebook.com &rarr; WhatsApp Manager &rarr; Modelos de mensagem &rarr; Criar &rarr; Utilitario</p>
+            <a href="https://business.facebook.com/latest/whatsapp_manager/message_templates" target="_blank" style="display:inline-block;margin-top:8px;padding:6px 14px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.2);border-radius:6px;color:var(--blue);font-size:.8rem;text-decoration:none">&#128279; Abrir WhatsApp Manager</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
 /* ── State ────────────────────────────────────────────── */
 let STATE = {
@@ -799,6 +905,7 @@ function switchTab(n){
   if(n===1) populateConfigSelect();
   if(n===2) populateHistSelect();
   if(n===3) loadStats();
+  if(n===4) loadBlastData();
 }
 
 /* ── Collapsible Sections ─────────────────────────────── */
@@ -1720,6 +1827,220 @@ document.addEventListener('keydown',e=>{
     $('convOverlay').classList.remove('show');
   }
 });
+
+
+
+/* ── Blast/Disparos Functions ─────────────────────────── */
+
+var blastContacts = [];
+var blastTemplates = [];
+var activeCampaignId = null;
+var blastPollTimer = null;
+
+function loadBlastData(){
+  // Load templates
+  fetch('/api/v1/whatsapp/blast/templates',{credentials:'same-origin'}).then(r=>r.json()).then(d=>{
+    blastTemplates = d.templates||[];
+    var sel=document.getElementById('blastTemplate');
+    sel.innerHTML='<option value="">Selecione um template</option>';
+    if(blastTemplates.length===0){
+      sel.innerHTML='<option value="">Nenhum template aprovado</option>';
+    } else {
+      blastTemplates.forEach(t=>{
+        sel.innerHTML+='<option value="'+t.name+'">'+t.name+' ('+t.category+')</option>';
+      });
+    }
+  }).catch(()=>{});
+
+  // Load campaigns
+  fetch('/api/v1/whatsapp/blast/campaigns',{credentials:'same-origin'}).then(r=>r.json()).then(d=>{
+    var list=document.getElementById('blastCampaignList');
+    var campaigns=d.campaigns||[];
+    if(campaigns.length===0){
+      list.innerHTML='<div style="color:var(--text-muted);text-align:center;padding:10px">Nenhuma campanha ainda</div>';
+      return;
+    }
+    var html='';
+    campaigns.slice(0,10).forEach(c=>{
+      var statusColor={'draft':'#9898B8','sending':'#FBBF24','completed':'#4ADE80','paused':'#F59E0B','cancelled':'#F87171'}[c.status]||'#9898B8';
+      var pct=c.total_contacts>0?Math.round(c.sent/c.total_contacts*100):0;
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">';
+      html+='<div><div style="font-weight:500">'+c.name+'</div><div style="font-size:.75rem;color:var(--text-muted)">'+c.template_name+' &bull; '+(c.total_contacts||0)+' contatos</div></div>';
+      html+='<div style="text-align:right"><span style="color:'+statusColor+';font-size:.8rem;font-weight:600">'+c.status.toUpperCase()+'</span>';
+      if(c.status==='sending'){html+='<div style="font-size:.75rem;color:var(--text-muted)">'+pct+'%</div>';}
+      html+='</div></div>';
+    });
+    list.innerHTML=html;
+  }).catch(()=>{});
+}
+
+function previewTemplate(){
+  var sel=document.getElementById('blastTemplate');
+  var name=sel.value;
+  var preview=document.getElementById('templatePreview');
+  var text=document.getElementById('templatePreviewText');
+  if(!name){preview.style.display='none';return;}
+  var t=blastTemplates.find(x=>x.name===name);
+  if(t&&t.components){
+    var body=t.components.find(c=>c.type==='BODY');
+    if(body){
+      text.textContent=body.text||'(sem texto)';
+      preview.style.display='block';
+    }
+  }
+  checkBlastReady();
+}
+
+function downloadCSVModel(){
+  var csv='nome,telefone\nJoao Silva,5521999999999\nMaria Santos,5511988888888\nPedro Costa,5531977777777';
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='modelo_contatos.csv';a.click();
+}
+
+function handleCSVUpload(input){
+  var file=input.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var lines=e.target.result.split('\n').filter(l=>l.trim());
+    if(lines.length<2){alert('CSV vazio');return;}
+    // Parse header
+    var header=lines[0].toLowerCase().split(',').map(h=>h.trim().replace(/"/g,''));
+    var nameIdx=header.findIndex(h=>['nome','name','contato'].includes(h));
+    var phoneIdx=header.findIndex(h=>['telefone','phone','numero','celular','whatsapp'].includes(h));
+    if(phoneIdx===-1){alert('Coluna telefone nao encontrada. Use: nome,telefone');return;}
+
+    blastContacts=[];
+    var invalid=0;
+    for(var i=1;i<lines.length;i++){
+      var cols=lines[i].split(',').map(c=>c.trim().replace(/"/g,''));
+      var phone=cols[phoneIdx]||'';
+      var name=nameIdx>=0?(cols[nameIdx]||''):'';
+      // Normalize phone
+      phone=phone.replace(/[\s+\-().]/g,'');
+      if(phone.startsWith('0'))phone=phone.substring(1);
+      if(!phone.startsWith('55'))phone='55'+phone;
+      if(phone.length>=12&&phone.length<=13){
+        blastContacts.push({phone:phone,name:name});
+      } else {
+        invalid++;
+      }
+    }
+
+    // Show result
+    var result=document.getElementById('csvResult');
+    var preview=document.getElementById('csvPreview');
+    result.style.display='block';
+    var html='';
+    blastContacts.slice(0,5).forEach(c=>{
+      html+='<div style="margin-bottom:4px"><span style="color:#4ADE80">&#9989;</span> '+c.name+' &mdash; '+c.phone+'</div>';
+    });
+    if(blastContacts.length>5)html+='<div style="color:var(--text-muted)">... e mais '+(blastContacts.length-5)+'</div>';
+    if(invalid>0)html+='<div style="margin-top:6px;color:#F87171">&#9888; '+invalid+' numeros invalidos ignorados</div>';
+    html+='<div style="margin-top:8px;font-weight:600;color:#4ADE80">&#9989; '+blastContacts.length+' contatos validos</div>';
+    preview.innerHTML=html;
+
+    // Update drop zone
+    document.getElementById('csvDropZone').innerHTML='<div style="color:#4ADE80;font-weight:600">&#9989; '+file.name+' ('+blastContacts.length+' contatos)</div><div style="font-size:.75rem;color:var(--text-muted);margin-top:4px">Clique para trocar</div>';
+
+    checkBlastReady();
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function checkBlastReady(){
+  var btn=document.getElementById('blastStartBtn');
+  var name=document.getElementById('blastName').value.trim();
+  var template=document.getElementById('blastTemplate').value;
+  var ready=name&&template&&blastContacts.length>0;
+  btn.disabled=!ready;
+  btn.style.opacity=ready?'1':'.5';
+}
+
+function startBlast(){
+  var name=document.getElementById('blastName').value.trim();
+  var template=document.getElementById('blastTemplate').value;
+  if(!name||!template||blastContacts.length===0)return;
+
+  if(!confirm('Iniciar disparo de '+blastContacts.length+' mensagens?'))return;
+
+  document.getElementById('blastStartBtn').disabled=true;
+  document.getElementById('blastStartBtn').textContent='Criando campanha...';
+
+  fetch('/api/v1/whatsapp/blast/campaigns',{
+    method:'POST',credentials:'same-origin',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:name,template_name:template,contacts:blastContacts})
+  }).then(r=>r.json()).then(d=>{
+    if(d.error){alert(d.error);return;}
+    activeCampaignId=d.id;
+    // Start sending
+    fetch('/api/v1/whatsapp/blast/campaigns/'+d.id+'/start',{
+      method:'POST',credentials:'same-origin',
+      headers:{'Content-Type':'application/json'}
+    }).then(r=>r.json()).then(s=>{
+      document.getElementById('blastProgress').style.display='block';
+      document.getElementById('blastStartBtn').textContent='Disparo iniciado!';
+      pollBlastProgress();
+    });
+  }).catch(e=>{
+    alert('Erro: '+e.message);
+    document.getElementById('blastStartBtn').disabled=false;
+    document.getElementById('blastStartBtn').textContent='\uD83D\uDE80 Iniciar Disparo';
+  });
+}
+
+function pollBlastProgress(){
+  if(!activeCampaignId)return;
+  fetch('/api/v1/whatsapp/blast/campaigns/'+activeCampaignId+'/progress',{credentials:'same-origin'})
+  .then(r=>r.json()).then(d=>{
+    var pct=d.progress_pct||0;
+    document.getElementById('blastProgressFill').style.width=pct+'%';
+    var html='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">';
+    html+='<div><div style="font-size:1.2rem;font-weight:700;color:#4ADE80">'+d.sent+'</div><div style="font-size:.7rem;color:var(--text-muted)">Enviados</div></div>';
+    html+='<div><div style="font-size:1.2rem;font-weight:700;color:#F87171">'+(d.failed||0)+'</div><div style="font-size:.7rem;color:var(--text-muted)">Falhas</div></div>';
+    html+='<div><div style="font-size:1.2rem;font-weight:700;color:var(--text-secondary)">'+(d.pending||0)+'</div><div style="font-size:.7rem;color:var(--text-muted)">Restantes</div></div>';
+    html+='</div>';
+    html+='<div style="text-align:center;margin-top:8px;font-size:.8rem;color:var(--text-muted)">'+d.sent+'/'+d.total+' ('+pct+'%)</div>';
+    document.getElementById('blastProgressText').innerHTML=html;
+
+    if(d.status==='sending'){
+      blastPollTimer=setTimeout(pollBlastProgress,3000);
+    } else {
+      document.getElementById('blastStartBtn').disabled=false;
+      document.getElementById('blastStartBtn').innerHTML='\uD83D\uDE80 Iniciar Disparo';
+      if(d.status==='completed'){
+        document.getElementById('blastProgressText').innerHTML+='<div style="margin-top:8px;padding:10px;background:rgba(74,222,128,.1);border-radius:8px;color:#4ADE80;font-weight:600;text-align:center">&#9989; Disparo concluido! '+d.sent+'/'+d.total+' enviados</div>';
+      }
+      loadBlastData();
+    }
+  }).catch(()=>{blastPollTimer=setTimeout(pollBlastProgress,5000);});
+}
+
+function pauseBlast(){
+  if(!activeCampaignId)return;
+  fetch('/api/v1/whatsapp/blast/campaigns/'+activeCampaignId+'/pause',{method:'POST',credentials:'same-origin'}).then(()=>{
+    if(blastPollTimer)clearTimeout(blastPollTimer);
+    document.getElementById('blastStartBtn').disabled=false;
+    document.getElementById('blastStartBtn').innerHTML='\uD83D\uDE80 Iniciar Disparo';
+    loadBlastData();
+  });
+}
+
+function cancelBlast(){
+  if(!activeCampaignId||!confirm('Cancelar disparo?'))return;
+  fetch('/api/v1/whatsapp/blast/campaigns/'+activeCampaignId+'/cancel',{method:'POST',credentials:'same-origin'}).then(()=>{
+    if(blastPollTimer)clearTimeout(blastPollTimer);
+    document.getElementById('blastProgress').style.display='none';
+    document.getElementById('blastStartBtn').disabled=false;
+    document.getElementById('blastStartBtn').innerHTML='\uD83D\uDE80 Iniciar Disparo';
+    activeCampaignId=null;
+    loadBlastData();
+  });
+}
+
+// Add event listener for name field
+document.getElementById('blastName')&&document.getElementById('blastName').addEventListener('input',checkBlastReady);
 
 </script>
 </body>
