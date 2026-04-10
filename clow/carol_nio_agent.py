@@ -20,34 +20,47 @@ logger = logging.getLogger("clow.daniel_agent")
 _CONV_DIR = config.CLOW_HOME / "daniel_nio_conversations"
 _CONV_DIR.mkdir(parents=True, exist_ok=True)
 
-CAROL_PROMPT = """Voce e o Daniel, consultor de vendas da NIO Fibra Internet.
+
+# PROMPT 100% FIXO — nunca muda entre chamadas = maximiza cache DeepSeek
+# Dados dinamicos (nome, telefone) vao na mensagem do usuario, NAO aqui
+STATIC_SYSTEM_PROMPT = """Voce e o Daniel, consultor de vendas da NIO Fibra Internet.
 Conversa de forma natural e profissional, como um consultor de vendas experiente pelo WhatsApp.
 
-NOME DO CLIENTE: {customer_name}
-TELEFONE: {customer_phone}
-
-COMPORTAMENTO:
+COMO VOCE SE COMPORTA:
 - Conversa como gente de verdade, nao como robo
-- Nunca pede pra digitar numero de opcao
-- Entende respostas naturais: sim, pode ser, aham, etc
+- Nunca pede pro cliente digitar numero de opcao
+- Entende respostas naturais: sim, pode ser, aham, minha casa, e pra empresa
 - Emojis com moderacao. Respostas curtas, 3-4 frases max
 - Se cliente perguntar algo fora do fluxo, responde e volta
 
-NIO FIBRA:
-- Instalacao: 24-48h apos cadastro. Gratis. Preco fixo ate jan/2028.
+INFORMACOES NIO FIBRA:
+- Prazo de instalacao: 24 a 48h apos cadastro. Casos complexos: ate 7 dias uteis
+- Todos os planos tem instalacao gratis e preco fixo garantido ate janeiro/2028
+- Suporte 24h via WhatsApp
 
-FLUXO (siga essa ordem, mas seja flexivel):
+PLANOS:
+- Essencial: 500 Mega, Wi-Fi 5. R$100/mes. Instalacao gratis.
+- Super: 700 Mega, Wi-Fi 6, inclui Globoplay. R$130/mes. Instalacao gratis.
+- Ultra: 1 Giga, Wi-Fi 6 + Mesh, Globoplay. R$160/mes. Instalacao gratis.
+
+FLUXO DE ATENDIMENTO:
 1. SAUDACAO - Boas-vindas, pergunta casa ou empresa
-2. CEP - Pede CEP. Quando receber 8 digitos, resultado abaixo aparece automaticamente
+2. CEP - Pede CEP do endereco de instalacao
 3. ENDERECO - Confirma endereco, pede numero e complemento
-4. EMAIL - Pede email
-5. PLANOS - Apresenta: Essencial 500M R$100 | Super 700M R$130 | Ultra 1G R$160
-6. CPF - Pede CPF. Quando receber 11 digitos, resultado abaixo aparece automaticamente
-   USA APENAS: Nome, DataNascimento, NomeMae. IGNORA score, renda, enderecos antigos
-7. CONFERENCIA - Resume TODOS os dados coletados com rotulos claros
+4. EMAIL - Pede email para contato
+5. PLANOS - Apresenta os 3 planos e pergunta qual interessa
+6. CPF - Pede CPF para analise cadastral
+7. CONFERENCIA - Resume TODOS os dados coletados
 8. FINALIZACAO - Cadastro concluido, proximos passos
 
-{context}"""
+REGRAS:
+- Siga a ordem mas seja flexivel na conversa
+- Se cliente pular etapas, processe e avance
+- Nunca force formato especifico de resposta
+- Nunca mostre dados sigilosos da consulta CPF (score, renda, enderecos antigos)
+- O contexto do cliente (nome, telefone, resultados de CEP/CPF) vem na mensagem do usuario"""
+
+
 
 
 def consulta_cep(cep):
@@ -124,11 +137,18 @@ def process_daniel_message(phone, message, customer_name=""):
         else:
             tool_ctx += f"\n[ERRO CPF] Peca novamente."
 
-    system = CAROL_PROMPT.format(customer_name=customer_name, customer_phone=phone, context=tool_ctx)
+    # Cache optimization: system prompt is STATIC, dynamic data goes in user message
+    system = STATIC_SYSTEM_PROMPT
     msgs = [{"role": "system", "content": system}]
     for m in state.get("messages", [])[-20:]:
         msgs.append({"role": m["role"], "content": m["content"]})
-    msgs.append({"role": "user", "content": message})
+    # Dynamic context in user message (not system) for cache optimization
+    user_context = ""
+    if customer_name:
+        user_context += f"[Cliente: {customer_name} | Tel: {phone}] "
+    if tool_ctx:
+        user_context += tool_ctx + "\n"
+    msgs.append({"role": "user", "content": user_context + message})
 
     try:
         from openai import OpenAI
@@ -138,6 +158,15 @@ def process_daniel_message(phone, message, customer_name=""):
             try:
                 resp = client.chat.completions.create(model="deepseek-chat", messages=msgs, max_tokens=1024, temperature=0.4)
                 reply = resp.choices[0].message.content or ""
+                # Log cache performance
+                if resp.usage:
+                    hit = getattr(resp.usage, 'prompt_cache_hit_tokens', 0) or 0
+                    miss = getattr(resp.usage, 'prompt_cache_miss_tokens', 0) or 0
+                    out = resp.usage.completion_tokens or 0
+                    total_in = resp.usage.prompt_tokens or 0
+                    pct = round(hit / total_in * 100) if total_in > 0 else 0
+                    cost = (hit / 1e6 * 0.028) + (miss / 1e6 * 0.28) + (out / 1e6 * 0.42)
+                    logger.info(f"Cache: {pct}% hit ({hit}/{total_in} tokens) cost=${cost:.5f}")
                 break
             except Exception as _retry_err:
                 if _attempt == 0:

@@ -298,6 +298,11 @@ class WhatsAppAgentManager:
             reply = response.choices[0].message.content if response.choices else ""
             inp_tokens = response.usage.prompt_tokens if response.usage else 0
             out_tokens = response.usage.completion_tokens if response.usage else 0
+            # Cache metrics
+            cache_hit = getattr(response.usage, 'prompt_cache_hit_tokens', 0) or 0
+            cache_miss = getattr(response.usage, 'prompt_cache_miss_tokens', 0) or 0
+            if cache_hit > 0:
+                log_action("wa_cache", f"hit={cache_hit} miss={cache_miss} pct={round(cache_hit/(cache_hit+cache_miss)*100) if (cache_hit+cache_miss)>0 else 0}%")
             from .metrics_collector import record_request
             record_request(inst.tenant_id, plan_id, inp_tokens, out_tokens, source="whatsapp")
 
