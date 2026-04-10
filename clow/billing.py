@@ -132,12 +132,38 @@ def plan_uses_server_key(plan_id: str) -> bool:
 
 # ── Quota Checking ────────────────────────────────────────────
 
+def check_plan_expiration(user_id: str) -> bool:
+    """Verifica se plano PIX expirou. Retorna True se expirado e bloqueia."""
+    from .database import get_db
+    try:
+        with get_db() as db:
+            row = db.execute(
+                "SELECT plan_expires_at, payment_mode FROM users WHERE id=?", (user_id,)
+            ).fetchone()
+            if not row:
+                return False
+            expires_at = int(row[0] or 0)
+            mode = row[1] or ""
+            if mode == "pix" and expires_at > 0 and time.time() > expires_at:
+                db.execute("UPDATE users SET plan='byok_free', payment_status='expired' WHERE id=?",
+                            (user_id,))
+                log_action("billing_pix_expired", f"user={user_id}", level="warning")
+                return True
+    except Exception:
+        pass
+    return False
+
+
 def check_quota(user_id: str, plan_id: str, source: str = "chat") -> dict[str, Any]:
     """Verifica se o user ainda tem franquia disponivel.
 
     source: "chat" ou "whatsapp" — franquias separadas.
     Returns dict com allowed=True/False e detalhes.
     """
+    # Verifica expiracao de plano PIX
+    if check_plan_expiration(user_id):
+        return {"allowed": False, "reason": "Seu plano PIX expirou. Renove para continuar.", "plan": plan_id}
+
     plan = get_plan(plan_id)
 
     # WhatsApp: franquia separada (verifica ANTES do BYOK check)
@@ -235,8 +261,14 @@ def _get_stripe():
 
 
 
-def create_public_checkout(plan_id: str, success_url: str = "", cancel_url: str = "") -> dict:
-    """Cria Stripe Checkout Session sem usuario logado."""
+def create_public_checkout(plan_id: str, success_url: str = "", cancel_url: str = "",
+                           payment_mode: str = "subscription") -> dict:
+    """Cria Stripe Checkout Session sem usuario logado.
+
+    payment_mode:
+      - "subscription": assinatura recorrente (cartao + boleto)
+      - "pix": pagamento unico via PIX (ativa plano por 30 dias)
+    """
     stripe = _get_stripe()
     if not stripe:
         return {"error": "Stripe nao configurado"}
@@ -246,23 +278,63 @@ def create_public_checkout(plan_id: str, success_url: str = "", cancel_url: str 
     if not price_id:
         return {"error": f"Plano {plan_id} sem price_id configurado"}
 
+    base_success = success_url or "https://clow.pvcorretor01.com.br/login"
+    base_cancel = cancel_url or "https://clow.pvcorretor01.com.br/landing"
+
     try:
-        session = stripe.checkout.Session.create(
-            mode="subscription",
-            payment_method_types=["card", "boleto"],
-            line_items=[{"price": price_id, "quantity": 1}],
-            success_url=success_url or "https://clow.pvcorretor01.com.br/login",
-            cancel_url=cancel_url or "https://clow.pvcorretor01.com.br/landing",
-            metadata={"plan_id": plan_id},
-            allow_promotion_codes=True,
-            locale="pt-BR",
-            payment_method_options={
-                "boleto": {"expires_after_days": 3},
-            },
-        )
+        if payment_mode == "pix":
+            # PIX: pagamento unico — ativa plano por 30 dias
+            amount = int(plan["price_brl"] * 100)
+            session = stripe.checkout.Session.create(
+                mode="payment",
+                payment_method_types=["pix"],
+                line_items=[{
+                    "price_data": {
+                        "currency": "brl",
+                        "product": _get_product_for_plan(stripe, plan_id),
+                        "unit_amount": amount,
+                    },
+                    "quantity": 1,
+                }],
+                success_url=base_success,
+                cancel_url=base_cancel,
+                metadata={"plan_id": plan_id, "payment_mode": "pix"},
+                locale="pt-BR",
+                expires_at=int(time.time()) + 3600,  # PIX expira em 1h
+            )
+        else:
+            # Assinatura recorrente: cartao + boleto
+            session = stripe.checkout.Session.create(
+                mode="subscription",
+                payment_method_types=["card", "boleto"],
+                line_items=[{"price": price_id, "quantity": 1}],
+                success_url=base_success,
+                cancel_url=base_cancel,
+                metadata={"plan_id": plan_id, "payment_mode": "subscription"},
+                allow_promotion_codes=True,
+                locale="pt-BR",
+                payment_method_options={
+                    "boleto": {"expires_after_days": 3},
+                },
+            )
         return {"url": session.url, "session_id": session.id}
     except Exception as e:
         return {"error": str(e)}
+
+
+def _get_product_for_plan(stripe, plan_id: str) -> str:
+    """Retorna product ID do Stripe para um plano (para checkout PIX avulso)."""
+    # Busca o product do price existente
+    plan = get_plan(plan_id)
+    price_id = plan.get("stripe_price_id", "")
+    if price_id:
+        try:
+            price = stripe.Price.retrieve(price_id)
+            return price.product
+        except Exception:
+            pass
+    # Fallback: cria product generico
+    return "prod_UIhpTB9J0DSOGM"
 
 def create_checkout_session(user_id: str, email: str, plan_id: str, success_url: str, cancel_url: str) -> dict[str, Any]:
     """Cria Stripe Checkout Session. Retorna URL."""
@@ -350,39 +422,55 @@ def handle_webhook(payload: bytes, sig_header: str, source_ip: str = "") -> dict
 
 
 def _handle_checkout_completed(session: dict) -> dict:
-    """Checkout concluido — ativa plano do user AUTOMATICAMENTE + envia email."""
+    """Checkout concluido — ativa plano do user AUTOMATICAMENTE + envia email.
+
+    Suporta:
+    - subscription (cartao/boleto): plano ativo enquanto assinatura existir
+    - payment/pix: plano ativo por 30 dias (plan_expires_at)
+    """
     from .database import get_db, get_user_by_id
 
     user_id = session.get("metadata", {}).get("user_id", "")
     plan_id = session.get("metadata", {}).get("plan_id", "")
+    payment_mode = session.get("metadata", {}).get("payment_mode", "subscription")
     customer_id = session.get("customer", "")
     subscription_id = session.get("subscription", "")
 
     if user_id and plan_id:
         with get_db() as db:
-            # Ativa plano IMEDIATAMENTE
-            db.execute("UPDATE users SET plan=? WHERE id=?", (plan_id, user_id))
-            try:
-                db.execute("ALTER TABLE users ADD COLUMN stripe_customer_id TEXT DEFAULT ''")
-            except sqlite3.OperationalError:
-                pass  # Coluna ja existe
-            try:
-                db.execute("ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT DEFAULT ''")
-            except sqlite3.OperationalError:
-                pass  # Coluna ja existe
+            # Garante colunas existem
+            for col, default in [
+                ("stripe_customer_id", "''"),
+                ("stripe_subscription_id", "''"),
+                ("plan_expires_at", "0"),
+                ("payment_mode", "''"),
+            ]:
+                try:
+                    db.execute(f"ALTER TABLE users ADD COLUMN {col} TEXT DEFAULT {default}")
+                except sqlite3.OperationalError:
+                    pass
+
+            # Ativa plano
+            db.execute("UPDATE users SET plan=?, payment_mode=? WHERE id=?",
+                        (plan_id, payment_mode, user_id))
             db.execute(
                 "UPDATE users SET stripe_customer_id=?, stripe_subscription_id=? WHERE id=?",
-                (customer_id, subscription_id, user_id),
+                (customer_id, subscription_id or "", user_id),
             )
 
-        # Envia email de confirmacao via Stripe (receipt automatico)
-        # O Stripe ja envia receipt se configurado no Dashboard
-        # Tambem enviamos notificacao customizada
+            # PIX: define expiracao em 30 dias
+            if payment_mode == "pix":
+                expires_at = int(time.time()) + (30 * 86400)
+                db.execute("UPDATE users SET plan_expires_at=? WHERE id=?",
+                            (str(expires_at), user_id))
+                log_action("billing_pix_activated",
+                            f"user={user_id} plan={plan_id} expires={expires_at}")
+
         user = get_user_by_id(user_id)
         if user:
             _send_welcome_email(user.get("email", ""), plan_id)
 
-        log_action("billing_activated", f"user={user_id} plan={plan_id}")
+        log_action("billing_activated", f"user={user_id} plan={plan_id} mode={payment_mode}")
         return {"status": "activated", "user_id": user_id, "plan": plan_id}
 
     return {"status": "no_metadata"}
