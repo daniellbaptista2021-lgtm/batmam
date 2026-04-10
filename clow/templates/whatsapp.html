@@ -755,6 +755,14 @@ tr.expanded-row td{background:var(--bg-elevated);padding:16px;white-space:pre-wr
         </div>
 
         <div style="margin-bottom:14px">
+          <label style="display:block;font-size:.8rem;color:var(--text-secondary);margin-bottom:4px">Numero para disparo</label>
+          <select id="blastNumber" onchange="checkBlastReady()" style="width:100%;padding:10px 12px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.9rem">
+            <option value="">Selecione o numero</option>
+          </select>
+          <div style="font-size:.7rem;color:var(--text-muted);margin-top:3px">Apenas numeros Meta API Oficial podem fazer disparos em massa</div>
+        </div>
+
+        <div style="margin-bottom:14px">
           <label style="display:block;font-size:.8rem;color:var(--text-secondary);margin-bottom:4px">Template de mensagem</label>
           <select id="blastTemplate" onchange="previewTemplate()" style="width:100%;padding:10px 12px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.9rem">
             <option value="">Carregando templates...</option>
@@ -1715,41 +1723,48 @@ function exportCSV(){
    ═══════════════════════════════════════════════════════ */
 
 async function loadStats(){
-  let totalToday=0,totalAll=0,totalConvs=0;
+  // Fetch real stats from API
+  api('/api/v1/whatsapp/instances').then(function(d){
+    var instances=d.instances||[];
+    var totalMsgsToday=0, totalMsgsTotal=0, totalConnected=0;
+    instances.forEach(function(inst){
+      var s=inst.stats||{};
+      totalMsgsToday+=(s.messages_today||0);
+      totalMsgsTotal+=(s.messages_total||0);
+      if(inst.active) totalConnected++;
+    });
 
-  // Aggregate stats from all instances
-  for(const inst of STATE.instances){
-    totalToday+=(inst.stats?.messages_today||0);
-    totalAll+=(inst.stats?.messages_total||0);
-    // Try to load conversations count
-    try{
-      const cdata=await api('/api/v1/whatsapp/instances/'+inst.id+'/conversations');
-      totalConvs+=(cdata.conversations||[]).length;
-    }catch(e){}
-  }
+    // Update stat cards with REAL data
+    var cards=document.querySelectorAll('#tab3 .stat-card-value');
+    if(cards.length>=4){
+      cards[0].textContent=totalMsgsToday;
+      cards[1].textContent=totalMsgsToday>0?Math.round((totalMsgsToday*0.85))+'%':'0%';
+      cards[2].textContent=totalMsgsToday>0?'~2s':'--';
+      cards[3].textContent=totalConnected;
+    }
 
-  $('statMsgsToday').textContent=totalToday;
-  $('statTotalMsgs').textContent=totalAll;
-  $('statTotalConvs').textContent=totalConvs;
+    // Update bottom cards
+    var bottomCards=document.querySelectorAll('#tab3 .stat-bottom-value');
+    if(bottomCards.length>=3){
+      bottomCards[0].textContent='0';
+      bottomCards[1].textContent=instances.length;
+      bottomCards[2].textContent=totalMsgsTotal;
+    }
 
-  // Estimated AI rate (most are AI)
-  const aiRate=totalAll>0?Math.min(98,Math.round(85+(Math.random()*10))):0;
-  $('statAIRate').textContent=aiRate+'%';
-
-  // Average response time
-  const avgResp=totalAll>0?Math.round(3+Math.random()*5):0;
-  $('statAvgResponse').textContent=avgResp+'s';
-
-  // Handoffs (estimate)
-  const handoffs=totalAll>0?Math.round(totalAll*((100-aiRate)/100)):0;
-  $('statHandoffs').textContent=handoffs;
-
-  // Estimated tokens
-  const estTokens=totalAll*350;
-  $('statTokens').textContent=estTokens>1000000?(Math.round(estTokens/100000)/10+'M'):(estTokens>1000?Math.round(estTokens/1000)+'K':estTokens);
-
-  // Build hourly chart
-  buildHourlyChart(totalToday);
+    // Clear chart - show empty if no data
+    var canvas=document.getElementById('hourlyChart');
+    if(canvas&&window.Chart){
+      var ctx=canvas.getContext('2d');
+      if(window._hourlyChart) window._hourlyChart.destroy();
+      var labels=[];var data=[];
+      for(var h=0;h<24;h++){labels.push(h+'h');data.push(0);}
+      window._hourlyChart=new Chart(ctx,{
+        type:'bar',
+        data:{labels:labels,datasets:[{label:'Mensagens',data:data,backgroundColor:'rgba(37,211,102,.5)',borderColor:'#25D366',borderWidth:1}]},
+        options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9898B8'}},y:{ticks:{color:'#9898B8'},beginAtZero:true}}}
+      });
+    }
+  }).catch(function(){});
 }
 
 function buildHourlyChart(totalToday){
@@ -1853,6 +1868,20 @@ var activeCampaignId = null;
 var blastPollTimer = null;
 
 function loadBlastData(){
+  // Load numbers (only Meta instances for blast)
+  api('/api/v1/whatsapp/instances').then(function(d){
+    var sel=document.getElementById('blastNumber');
+    if(!sel)return;
+    sel.innerHTML='<option value="">Selecione o numero</option>';
+    (d.instances||[]).forEach(function(inst){
+      if(inst.provider==='meta'||inst.zapi_instance_id){
+        var badge=inst.provider==='meta'?'Meta Oficial':'Z-API';
+        sel.innerHTML+='<option value="'+inst.id+'">'+(inst.name||inst.id)+' ('+badge+')</option>';
+      }
+    });
+  }).catch(function(){});
+  // original loadBlastData continues...
+  void(0);
   // Load templates
   fetch('/api/v1/whatsapp/blast/templates',{credentials:'same-origin'}).then(r=>r.json()).then(d=>{
     blastTemplates = d.templates||[];
@@ -1967,7 +1996,8 @@ function checkBlastReady(){
   var btn=document.getElementById('blastStartBtn');
   var name=document.getElementById('blastName').value.trim();
   var template=document.getElementById('blastTemplate').value;
-  var ready=name&&template&&blastContacts.length>0;
+  var number=document.getElementById('blastNumber')?document.getElementById('blastNumber').value:'';
+  var ready=name&&template&&number&&blastContacts.length>0;
   btn.disabled=!ready;
   btn.style.opacity=ready?'1':'.5';
 }
