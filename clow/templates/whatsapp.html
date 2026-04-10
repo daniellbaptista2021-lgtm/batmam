@@ -497,7 +497,33 @@ tr.expanded-row td{background:var(--bg-elevated);padding:16px;white-space:pre-wr
       </div>
 
       <!-- Save button -->
-      <div style="margin-top:20px;display:flex;justify-content:flex-end;gap:8px">
+      
+    <!-- Tools Automaticos -->
+    <div class="config-section">
+      <div class="section-header" onclick="toggleSection('toolsSection')">
+        <div class="section-icon" style="background:rgba(74,158,255,.15);color:#4A9EFF">&#9881;</div>
+        <div class="section-title">Ferramentas Automaticas (Tools)</div>
+        <div class="section-toggle">&#9660;</div>
+      </div>
+      <div id="toolsSection" class="section-body" style="display:none">
+        <div style="padding:12px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px;font-size:.82rem;color:var(--text-secondary);line-height:1.6">
+          <p style="margin-bottom:8px"><strong style="color:var(--text-primary)">Tools ativos neste agente:</strong></p>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.15);border-radius:8px">
+              <span style="color:#4ADE80;font-size:1.1rem">&#9989;</span>
+              <div><strong>consulta_cep</strong> — Quando o cliente envia um CEP (8 digitos), o bot consulta automaticamente o ViaCEP e retorna o endereco completo.</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.15);border-radius:8px">
+              <span style="color:#4ADE80;font-size:1.1rem">&#9989;</span>
+              <div><strong>consulta_cpf</strong> — Quando o cliente envia um CPF (11 digitos), o bot consulta automaticamente e retorna Nome, Data de Nascimento e Nome da Mae. Nunca exibe score ou renda.</div>
+            </div>
+          </div>
+          <p style="margin-top:10px;font-size:.78rem;color:var(--text-muted)">Estes tools sao ativados automaticamente pelo agente Daniel NIO Fibra. Para adicionar tools customizados, entre em contato com o suporte.</p>
+        </div>
+      </div>
+    </div>
+
+<div style="margin-top:20px;display:flex;justify-content:flex-end;gap:8px">
         <button class="btn btn-secondary" onclick="resetConfig()">Resetar</button>
         <button class="btn btn-wa btn-lg" onclick="saveConfig()" id="btnSaveConfig">Salvar Configuracao</button>
       </div>
