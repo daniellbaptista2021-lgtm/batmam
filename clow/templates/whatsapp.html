@@ -1072,16 +1072,31 @@ async function toggleInstance(id,activate){
 
 async function reconnectInstance(id){
   try{
-    const data=await api('/api/v1/whatsapp/instances/'+id+'/test');
-    if(data.connected){
-      toast('Conexao OK! WhatsApp ativo.','ok');
+    // Find instance to detect provider
+    var inst=instances.find(function(i){return i.id===id});
+    var provider=(inst&&inst.provider)||'zapi';
+
+    if(provider==='meta'){
+      // Meta API test
+      try{
+        var d=await api('/api/v1/whatsapp/instances/'+id);
+        if(d.meta_access_token_full){
+          var test=await api('/api/v1/whatsapp/instances/test-meta',{
+            method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({access_token:d.meta_access_token_full,phone_number_id:d.meta_phone_number_id||''})
+          });
+          if(test.success){toast('Meta API OK! Numero: '+(test.phone||'conectado'),'ok');}
+          else{toast('Meta API: '+(test.error||'Verifique credenciais'),'err');}
+        }else{toast('Credenciais Meta nao disponiveis','err');}
+      }catch(e2){toast('Erro Meta: '+e2.message,'err');}
     }else{
-      toast('Falha na conexao: '+(data.error||'Verifique credenciais na Z-API'),'err');
+      // Z-API test
+      var data=await api('/api/v1/whatsapp/instances/'+id+'/test');
+      if(data.connected){toast('Z-API OK! WhatsApp ativo','ok');}
+      else{toast('Z-API: '+(data.error||'Verifique credenciais'),'err');}
     }
     loadInstances();
-  }catch(e){
-    toast('Erro ao reconectar: '+e.message,'err');
-  }
+  }catch(e){toast('Erro: '+e.message,'err');}
 }
 
 async function removeInstance(id,name){
