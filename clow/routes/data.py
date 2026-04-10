@@ -58,6 +58,8 @@ def register_data_routes(app) -> None:
         sess = _auth(request)
         if not sess:
             return _JR({"error": "Nao autenticado"}, status_code=401)
+        if not sess.get("is_admin"):
+            return _JR({"error": "Apenas administradores podem importar dados"}, status_code=403)
         form = await request.form()
         file = form.get("file")
         instance_id = form.get("instance_id", "")
@@ -80,6 +82,8 @@ def register_data_routes(app) -> None:
         sess = _auth(request)
         if not sess:
             return _JR({"error": "Nao autenticado"}, status_code=401)
+        if not sess.get("is_admin"):
+            return _JR({"error": "Apenas administradores podem criar backups"}, status_code=403)
         from ..backup_export import create_backup
         return _JR(create_backup(_tenant(sess)))
 
@@ -88,6 +92,8 @@ def register_data_routes(app) -> None:
         sess = _auth(request)
         if not sess:
             return _JR({"error": "Nao autenticado"}, status_code=401)
+        if not sess.get("is_admin"):
+            return _JR({"error": "Apenas administradores podem baixar backups"}, status_code=403)
         from ..backup_export import get_backup_file
         data = get_backup_file(_tenant(sess), filename)
         if not data:
@@ -100,7 +106,7 @@ def register_data_routes(app) -> None:
         sess = _auth(request)
         if not sess:
             return _JR({"error": "Nao autenticado"}, status_code=401)
-        if not sess.get("is_admin") and not sess.get("is_owner", True):
+        if not sess.get("is_admin"):
             return _JR({"error": "Apenas o proprietario pode excluir dados"}, status_code=403)
         body = await request.json()
         if body.get("confirmation") != "EXCLUIR TUDO":

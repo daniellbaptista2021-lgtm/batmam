@@ -526,14 +526,15 @@ class Agent:
             if self._orchestration["needs_compression"]:
                 self._maybe_compact()
 
-            # Injeta contexto do agente especializado no prompt
+            # Contexto do agente especializado: embute no system prompt (nao como msg separada)
             agent_ctx = self._orchestration.get("agent_context", "")
-            if agent_ctx:
-                # Adiciona como system message temporario
-                self.session.messages.append({
-                    "role": "system",
-                    "content": agent_ctx,
-                })
+            if agent_ctx and self.session.messages and self.session.messages[0].get("role") == "system":
+                sys_content = self.session.messages[0].get("content", "")
+                if agent_ctx not in sys_content:
+                    self.session.messages[0] = {
+                        "role": "system",
+                        "content": sys_content + agent_ctx,
+                    }
 
         self.session.messages.append({"role": "user", "content": user_message})
         log_action("turn_start", msg_text[:80], session_id=self.session.id)
@@ -589,6 +590,7 @@ class Agent:
                             text_content,
                             self.model,
                             had_tool_errors=auto_correct_attempts > 0,
+                            was_conversational=self._orchestration.get("is_conversational", False),
                         )
                     ):
                         self._fallback.log_fallback(
@@ -656,6 +658,35 @@ class Agent:
             log_action("turn_error", str(e), level="error", session_id=self.session.id)
             raise
 
+        # ── Forca resposta final se houve tool calls sem texto conclusivo ──
+        had_tool_calls = any(
+            msg.get("role") == "assistant" and msg.get("tool_calls")
+            for msg in self.session.messages
+        )
+        last_text = full_response_text[-1].strip() if full_response_text else ""
+        # Se houve tools mas a ultima resposta e vazia/curta, forca sintese
+        if had_tool_calls and len(last_text) < 30 and iteration < max_iterations:
+            try:
+                self.session.messages.append({
+                    "role": "user",
+                    "content": "[Sistema] As ferramentas terminaram. Faca um resumo claro do que foi feito, resultados obtidos e proximos passos para o usuario.",
+                })
+                # Usa chat model para sintese (rapido e barato)
+                saved_model = self.model
+                self.model = config.CLOW_MODEL
+                synth_text, synth_tools, synth_usage = self._stream_call()
+                self.model = saved_model
+                if synth_text:
+                    full_response_text.append(synth_text)
+                    self.on_text_done(synth_text)
+                    synth_msg = self._build_assistant_message(synth_text, synth_tools)
+                    self.session.messages.append(synth_msg)
+                    turn.tokens_in += synth_usage.get("prompt_tokens", 0)
+                    turn.tokens_out += synth_usage.get("completion_tokens", 0)
+                log_action("forced_synthesis", "gerou resposta final apos tools", session_id=self.session.id)
+            except Exception as e:
+                log_action("forced_synthesis_error", str(e)[:100], level="warning", session_id=self.session.id)
+
         # Finaliza turno
         turn.assistant_message = "\n".join(full_response_text)
         self.session.add_tokens(turn.tokens_in, turn.tokens_out)
@@ -715,53 +746,24 @@ class Agent:
         error_count: int,
         prev_tool_calls: list[dict] | None,
     ) -> None:
-        """Alterna entre reasoner e chat dentro do loop agentico.
+        """Mantem o modelo escolhido pelo orquestrador durante todo o turno.
 
-        Reasoner ($0.55/M input) — usado para pensar:
-        - Iteracao 1: planejamento inicial da task
-        - Apos erro de tool: debug e correcao
-        - Sem tool calls na iteracao anterior: decisao/verificacao
-
-        Chat ($0.28/M input) — usado para executar:
-        - Iteracoes com tool calls (read, write, bash, glob)
-        - Confirmacoes intermediarias
-        - Tudo que nao precisa raciocinio profundo
-
-        Economia: ~85% nas iteracoes de execucao (maioria do loop).
+        Trocar de modelo mid-loop causa perda de contexto e respostas
+        incompletas. O orquestrador ja escolheu o modelo certo no inicio.
+        Unica excecao: promove para reasoner se houve erros repetidos.
         """
-        # Se orquestrador nao esta ativo (subagent) ou modelo foi forçado, nao altera
         if not self._orchestration or self.is_subagent:
             return
 
-        use_reasoner = False
-        reason = ""
-
-        if iteration == 1:
-            # Planejamento inicial — reasoner analisa a task
-            use_reasoner = True
-            reason = "planning"
-        elif error_count > 0 and self._has_recent_errors():
-            # Debug apos erro de tool — precisa raciocinio
-            use_reasoner = True
-            reason = "debug-after-error"
-        elif prev_tool_calls is None or len(prev_tool_calls) == 0:
-            # Iteracao anterior nao teve tool calls — decidindo/verificando
-            use_reasoner = True
-            reason = "decision-or-verify"
-        else:
-            # Execucao de tools — chat e suficiente e mais barato
-            use_reasoner = False
-            reason = "tool-execution"
-
-        target = config.DEEPSEEK_REASONER_MODEL if use_reasoner else config.CLOW_MODEL
-
-        if target != self.model:
+        # Unico caso de troca: erros repetidos precisam de raciocinio profundo
+        if (error_count >= 2 and self._has_recent_errors()
+                and self.model != config.DEEPSEEK_REASONER_MODEL):
             log_action(
-                "hybrid_routing",
-                f"iter={iteration} {self.model}->{target} reason={reason}",
+                "model_promotion",
+                f"iter={iteration} {self.model}->{config.DEEPSEEK_REASONER_MODEL} reason=repeated-errors",
                 session_id=self.session.id,
             )
-            self.model = target
+            self.model = config.DEEPSEEK_REASONER_MODEL
 
     # ── Streaming Call ─────────────────────────────────────────
 
@@ -940,11 +942,17 @@ class Agent:
         """Carrega apenas tools relevantes para a task atual.
 
         Estrategia de lazy loading:
+        0. Conversacional: NENHUMA tool (resposta direta)
         1. Core tools: sempre presentes (9 tools)
         2. Orchestrator: tools detectadas por dominio na mensagem do usuario
         3. Loop agentico: tools ja usadas no turno atual (para continuidade)
         4. Nunca envia as 64 tools de uma vez
         """
+        # Se orquestrador diz que nao precisa de tools, retorna vazio
+        if self._orchestration and not self._orchestration.get("needs_tools", True):
+            log_action("tool_loading", "conversational=True, no tools sent", session_id=self.session.id)
+            return []
+
         if not config.CLOW_TOOL_PRUNING:
             return self.registry.openai_tools()
 

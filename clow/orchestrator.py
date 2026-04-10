@@ -1,6 +1,7 @@
 """Orchestrator — roteamento inteligente de modelos, tools e agentes no Clow.
 
 Decide automaticamente:
+- Se a mensagem e conversacional (sem tools, sem reasoner)
 - Qual modelo usar (deepseek-chat vs deepseek-reasoner)
 - Quais tools sao relevantes para a task
 - Se precisa ativar um agente especializado
@@ -19,39 +20,129 @@ from . import config
 # SYSTEM PROMPT MESTRE — injetado em todas as chamadas
 # ═══════════════════════════════════════════════════════════════
 
-MASTER_SYSTEM_PROMPT = """Voce e um agente autonomo poderoso dentro do Clow.
-Voce tem acesso a ferramentas, skills e agentes especializados.
-Antes de responder, analise:
-1. Qual a complexidade real da task?
-2. Quais ferramentas sao necessarias?
-3. Precisa de um agente especializado?
-4. Quantas etapas serao necessarias?
+MASTER_SYSTEM_PROMPT = """Voce e o Clow, assistente inteligente de negocios.
 
-Sempre planeje antes de executar.
-Sempre verifique o resultado antes de concluir.
-Se encontrar erro, tente corrigir autonomamente ate 3 vezes.
-Nunca abandone uma task pela metade."""
+REGRAS CRITICAS DE COMPORTAMENTO:
+
+1. MENSAGENS SIMPLES — responda DIRETAMENTE em texto:
+   - Saudacoes (oi, bom dia, ola, hey)
+   - Agradecimentos (obrigado, valeu, vlw, thanks, perfeito)
+   - Confirmacoes (ok, entendi, certo, pode ser, beleza)
+   - Perguntas simples de informacao (o que e X, como funciona Y)
+   - Elogios ou feedback (ficou otimo, gostei, mandou bem)
+   - NUNCA use ferramentas para esses casos. Responda naturalmente.
+
+2. APOS EXECUTAR FERRAMENTAS — SEMPRE de uma resposta final:
+   - Depois que todas as ferramentas terminarem, SEMPRE escreva um resumo
+   - Explique o que foi feito, os resultados, e proximos passos
+   - NUNCA termine um turno com apenas resultados de ferramentas sem texto
+   - O usuario precisa de uma conclusao clara em linguagem natural
+
+3. USO INTELIGENTE DE FERRAMENTAS:
+   - So use ferramentas quando o usuario PEDIR uma acao concreta
+   - Exemplos de quando usar: criar arquivo, buscar dado, executar comando
+   - Exemplos de quando NAO usar: cumprimentar, agradecer, perguntar, explicar
+   - Na duvida entre usar ou nao uma ferramenta, prefira responder em texto
+
+4. LINKS E URLS:
+   - Quando gerar arquivos ou paginas, SEMPRE inclua o link completo em formato markdown
+   - Formato: [Clique aqui para abrir](https://url-completa.com/caminho)
+   - NUNCA deixe URLs soltas no texto sem formatacao markdown
+   - Exemplo correto: Sua landing page esta pronta: [Abrir Landing Page](https://clow.pvcorretor01.com.br/static/pages/...)
+   - Exemplo errado: Sua landing page esta em /static/pages/...
+
+5. FOCO E CONTEXTO:
+   - Mantenha o foco na tarefa atual ate concluir
+   - Se o usuario mudar de assunto, finalize o anterior primeiro
+   - Use o historico da conversa para manter coerencia"""
+
+
+# ═══════════════════════════════════════════════════════════════
+# CONVERSATIONAL DETECTOR — identifica msgs que NAO precisam de tools
+# ═══════════════════════════════════════════════════════════════
+
+CONVERSATIONAL_PATTERNS = re.compile(
+    r"^(?:"
+    r"(?:oi|ola|ol[aá]|hey|hi|hello|e\s*a[ií]|fala|bom\s*dia|boa\s*(?:tarde|noite)|"
+    r"tudo\s*(?:bem|bom|certo|tranquilo)|como\s*(?:vai|esta|ta|vc\s*ta))"
+    r"|"
+    r"(?:obrigad[oa]|obg|valeu|vlw|tmj|thanks|thank\s*you|"
+    r"muito\s*obrigad[oa]|brigadao|brigad[oa]|agradeco|grat[oa])"
+    r"|"
+    r"(?:ok|okay|certo|entendi|entendido|beleza|blz|pode\s*ser|"
+    r"fechou|combinado|perfeito|massa|top|show|dahora|"
+    r"sim|nao|s|n|uhum|aham)"
+    r"|"
+    r"(?:ficou\s*(?:otimo|bom|lindo|perfeito|massa|show|incrivel|top)|"
+    r"gostei|adorei|amei|mandou\s*bem|parabens|excelente|sensacional|"
+    r"era\s*isso|isso\s*(?:mesmo|ai|a[ií])|muito\s*bom|arrasou)"
+    r"|"
+    r"(?:tchau|bye|ate\s*(?:mais|logo|amanha)|falou|flw|fui|"
+    r"boa\s*noite|bom\s*descanso)"
+    r")[\s!.?]*$",
+    re.IGNORECASE,
+)
+
+SIMPLE_QUESTION_PATTERNS = re.compile(
+    r"^(?:"
+    r"(?:o\s*que\s*(?:e|eh|é)|como\s*funciona|me\s*explica|"
+    r"qual\s*(?:a\s*diferenca|o\s*melhor)|pra\s*que\s*serve|"
+    r"quanto\s*custa|quais?\s*(?:sao|são)|por\s*que|"
+    r"voce\s*(?:pode|consegue|sabe)|da\s*pra|pode\s*me\s*(?:dizer|falar))"
+    r")\s",
+    re.IGNORECASE,
+)
+
+
+def is_conversational(message: str) -> bool:
+    """Detecta se a mensagem e puramente conversacional (sem necessidade de tools)."""
+    msg = message.strip()
+    if len(msg) > 200:
+        return False
+    if CONVERSATIONAL_PATTERNS.match(msg):
+        return True
+    if len(msg) < 30 and not any(w in msg.lower() for w in [
+        "cria", "gera", "faz", "faca", "busca", "mostra",
+        "configura", "instala", "deploy", "executa", "roda", "abre",
+        "envia", "manda", "deleta", "remove", "atualiza",
+    ]):
+        return True
+    return False
+
+
+def is_simple_question(message: str) -> bool:
+    """Detecta perguntas simples que so precisam de resposta em texto."""
+    msg = message.strip()
+    if len(msg) > 500:
+        return False
+    if SIMPLE_QUESTION_PATTERNS.match(msg):
+        tech_triggers = [
+            "servidor", "banco", "deploy", "whatsapp", "z-api",
+            "campanha", "meta ads", "planilha", "landing",
+        ]
+        if any(t in msg.lower() for t in tech_triggers):
+            return False
+        return True
+    return False
 
 
 # ═══════════════════════════════════════════════════════════════
 # MODEL ROUTER — decide deepseek-chat vs deepseek-reasoner
 # ═══════════════════════════════════════════════════════════════
 
-# Palavras-chave que indicam task complexa -> reasoner
-REASONER_KEYWORDS = re.compile(
+REASONER_TRIGGERS = re.compile(
     r"\b(?:"
-    r"cria|crie|desenvolv[aeo]|arquitetur[ao]|refator[aeo]|"
-    r"debug|depu[gr]|analisa|analis[ea]|planeja|planej[ea]|"
-    r"otimiz[aeo]|implement[aeo]|"
-    r"refactoring|migra[cgr]|redesign|reescrev|"
-    r"investigar|diagnosticar|diagnostico|"
-    r"sistema\s+complet|do\s+zero|projeto\s+complet|"
-    r"pipeline|workflow\s+complet|integracao\s+complet"
+    r"(?:cria|crie|desenvolv[aeo]|implement[aeo]|constro[ia])\s+(?:um|uma|o|a)\s+\w+.*"
+    r"(?:complet[oa]|do\s+zero|sistema|plataforma|projeto|aplicat)|"
+    r"(?:debug|depu[gr]|diagnostica|investiga)\s+|"
+    r"(?:refator[aeo]|reescrev|redesign|migra[cgr])\s+|"
+    r"(?:planeja|planej[ea]|arquitetur[ao])\s+|"
+    r"(?:passo\s+a\s+passo|etapa\s+por\s+etapa|step\s+by\s+step)|"
+    r"(?:otimiz[aeo]|melhora|melhore)\s+(?:a\s+performance|o\s+codigo|a\s+arquitetura)"
     r")\b",
     re.IGNORECASE,
 )
 
-# Padroes de erro complexo (stack trace, multi-line errors)
 COMPLEX_ERROR_PATTERN = re.compile(
     r"(?:Traceback|traceback|Error:|ERRO:|Exception|"
     r"at\s+\w+\.\w+\(|File\s+\"[^\"]+\",\s+line\s+\d+|"
@@ -59,20 +150,7 @@ COMPLEX_ERROR_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# Indicadores de multi-step (conectores de etapas)
-MULTI_STEP_INDICATORS = re.compile(
-    r"(?:"
-    r"(?:primeiro|1[.)]).*(?:depois|2[.)]|segundo)|"  # sequencia explicita
-    r"(?:e\s+(?:depois|tambem|em\s+seguida|alem\s+disso)){2,}|"  # encadeamento
-    r"(?:\d+[.)]\s*\w+.*\n?){3,}|"  # lista numerada 3+
-    r"(?:passo\s+\d|etapa\s+\d|step\s+\d)"  # passos explícitos
-    r")",
-    re.IGNORECASE | re.MULTILINE,
-)
-
-# Threshold de tokens para contexto grande
 CONTEXT_TOKEN_THRESHOLD = 8000
-# ~4 chars por token (estimativa conservadora)
 CONTEXT_CHAR_THRESHOLD = CONTEXT_TOKEN_THRESHOLD * 4
 
 
@@ -85,47 +163,35 @@ class ModelRouter:
         context_messages: list[dict] | None = None,
         has_error_context: bool = False,
     ) -> tuple[str, str]:
-        """Retorna (model_id, reason) baseado na analise da mensagem.
-
-        Returns:
-            tuple: (model_id, reason) — modelo escolhido e motivo da escolha
-        """
         if not isinstance(user_message, str):
             return config.CLOW_MODEL, "non-text"
 
         msg = user_message.strip()
 
-        # 1. Palavras-chave de complexidade
-        kw_match = REASONER_KEYWORDS.search(msg)
-        if kw_match:
-            return config.DEEPSEEK_REASONER_MODEL, f"keyword:{kw_match.group()}"
+        if is_conversational(msg) or is_simple_question(msg):
+            return config.CLOW_MODEL, "conversational"
 
-        # 2. Erro complexo com stack trace
         if has_error_context or COMPLEX_ERROR_PATTERN.search(msg):
             return config.DEEPSEEK_REASONER_MODEL, "complex-error"
 
-        # 3. Multi-step (3+ etapas encadeadas)
-        if MULTI_STEP_INDICATORS.search(msg):
-            return config.DEEPSEEK_REASONER_MODEL, "multi-step"
+        if REASONER_TRIGGERS.search(msg):
+            return config.DEEPSEEK_REASONER_MODEL, "complex-task"
 
-        # 4. Contexto grande (>8K tokens estimados)
         context_chars = sum(
             len(m.get("content", "") if isinstance(m.get("content"), str) else "")
             for m in (context_messages or [])
         )
         if context_chars > CONTEXT_CHAR_THRESHOLD:
-            return config.DEEPSEEK_REASONER_MODEL, f"large-context:{context_chars // 4}tok"
+            return config.DEEPSEEK_REASONER_MODEL, "large-context"
 
-        # 5. Mensagem longa (>2K chars ~ indica task complexa)
         if len(msg) > 2000:
-            return config.DEEPSEEK_REASONER_MODEL, f"long-message:{len(msg)}chars"
+            return config.DEEPSEEK_REASONER_MODEL, "long-message"
 
-        # Default: chat para tudo mais (respostas simples, perguntas, status)
         return config.CLOW_MODEL, "default"
 
 
 # ═══════════════════════════════════════════════════════════════
-# TOOL SELECTOR — mapeia tools relevantes por contexto
+# TOOL SELECTOR
 # ═══════════════════════════════════════════════════════════════
 
 TOOL_DOMAIN_MAP = {
@@ -222,11 +288,8 @@ TOOL_DOMAIN_MAP = {
 
 
 class ToolSelector:
-    """Identifica quais dominios de tools sao relevantes para uma task."""
-
     @staticmethod
     def detect_domains(user_message: str) -> list[str]:
-        """Retorna lista de dominios de tools relevantes."""
         if not isinstance(user_message, str):
             return []
         domains = []
@@ -237,7 +300,6 @@ class ToolSelector:
 
     @staticmethod
     def get_relevant_tools(user_message: str) -> set[str]:
-        """Retorna set de nomes de tools relevantes para a task."""
         domains = ToolSelector.detect_domains(user_message)
         tools: set[str] = set()
         for domain in domains:
@@ -246,7 +308,7 @@ class ToolSelector:
 
 
 # ═══════════════════════════════════════════════════════════════
-# AGENT SELECTOR — escolhe agente especializado quando necessario
+# AGENT SELECTOR
 # ═══════════════════════════════════════════════════════════════
 
 AGENT_SPECIALIZATIONS = {
@@ -254,87 +316,68 @@ AGENT_SPECIALIZATIONS = {
         "description": "Desenvolvimento full-stack: sites, apps, APIs, deploy",
         "triggers": re.compile(
             r"\b(?:site|app|sistema|api\s+rest|frontend|backend|react|next\.?js|"
-            r"node|fastapi|laravel|full.?stack|deploy|vercel)\b",
-            re.IGNORECASE,
-        ),
+            r"node|fastapi|laravel|full.?stack|deploy|vercel)\b", re.IGNORECASE),
     },
     "devops": {
         "description": "Infraestrutura: VPS, Docker, Nginx, SSL, DNS, servidor",
         "triggers": re.compile(
             r"\b(?:server|servidor|vps|docker|nginx|traefik|ssl|certbot|"
-            r"dns|firewall|ssh|infraestrutura|devops|compose|systemctl)\b",
-            re.IGNORECASE,
-        ),
+            r"dns|firewall|ssh|infraestrutura|devops|compose|systemctl)\b", re.IGNORECASE),
     },
     "bot": {
         "description": "Bots WhatsApp: criacao, configuracao, Z-API, fluxos",
         "triggers": re.compile(
             r"\b(?:bot|chatbot|whatsapp|z.?api|atendente\s+virtual|"
-            r"atendimento\s+automat|robo|assistente\s+virtual)\b",
-            re.IGNORECASE,
-        ),
+            r"atendimento\s+automat|robo|assistente\s+virtual)\b", re.IGNORECASE),
     },
     "automation": {
         "description": "n8n, fluxos, webhooks e automacoes",
         "triggers": re.compile(
             r"\b(?:n8n|automac|fluxo|workflow|webhook|"
-            r"trigger|cron|agend|schedul|zapier|integromat)\b",
-            re.IGNORECASE,
-        ),
+            r"trigger|cron|agend|schedul|zapier|integromat)\b", re.IGNORECASE),
     },
     "design": {
         "description": "Design digital: imagens, banners, logos, landing pages visuais",
         "triggers": re.compile(
             r"\b(?:design|banner|logo|criativo|layout|"
-            r"mockup|thumbnail|visual|identidade\s+visual|ui|ux)\b",
-            re.IGNORECASE,
-        ),
+            r"mockup|thumbnail|visual|identidade\s+visual|ui|ux)\b", re.IGNORECASE),
     },
     "marketing": {
         "description": "Meta Ads, criativos, copy, campanhas, metricas",
         "triggers": re.compile(
             r"\b(?:anuncio|ads?|meta\s+ads|facebook\s+ads|instagram\s+ads|"
             r"campanha|pixel|capi|trafego\s+pago|gestao\s+de\s+trafego|"
-            r"remarketing|publico|audience|roas|cpc|cpm)\b",
-            re.IGNORECASE,
-        ),
+            r"remarketing|publico|audience|roas|cpc|cpm)\b", re.IGNORECASE),
     },
     "data": {
         "description": "Planilhas, analises de dados, SQL, relatorios",
         "triggers": re.compile(
             r"\b(?:planilha|excel|xlsx|csv|dados|data|analise|sql|query|"
-            r"relatorio|grafico|chart|metricas|kpi|dashboard|banco\s+de\s+dados)\b",
-            re.IGNORECASE,
-        ),
+            r"relatorio|grafico|chart|metricas|kpi|dashboard|banco\s+de\s+dados)\b", re.IGNORECASE),
     },
     "crm": {
         "description": "Chatwoot, leads, clientes, funil e atendimento",
         "triggers": re.compile(
             r"\b(?:crm|chatwoot|lead|prospect|"
             r"funil|pipeline|inbox|ticket|"
-            r"contato|followup|follow.up|gestao\s+de\s+clientes)\b",
-            re.IGNORECASE,
-        ),
+            r"contato|followup|follow.up|gestao\s+de\s+clientes)\b", re.IGNORECASE),
     },
     "code": {
         "description": "Desenvolvimento, debug e refatoracao de codigo puro",
         "triggers": re.compile(
             r"\b(?:codigo|code|bug|debug|refator|function|classe|"
             r"import|compilar|build|test|lint|typescript|python|"
-            r"javascript)\b",
-            re.IGNORECASE,
-        ),
+            r"javascript)\b", re.IGNORECASE),
     },
 }
 
 
 class AgentSelector:
-    """Identifica qual agente especializado ativar."""
-
     @staticmethod
     def detect(user_message: str) -> str | None:
-        """Retorna o nome do agente especializado ou None se nenhum necessario."""
         if not isinstance(user_message, str):
+            return None
+        if is_conversational(user_message):
             return None
         scores: dict[str, int] = {}
         for agent_name, info in AGENT_SPECIALIZATIONS.items():
@@ -343,12 +386,10 @@ class AgentSelector:
                 scores[agent_name] = len(matches)
         if not scores:
             return None
-        # Retorna o agente com mais matches
         return max(scores, key=scores.get)
 
     @staticmethod
     def get_context_prefix(agent_name: str) -> str:
-        """Retorna prefixo de contexto para injetar no prompt do agente."""
         info = AGENT_SPECIALIZATIONS.get(agent_name)
         if not info:
             return ""
@@ -356,13 +397,10 @@ class AgentSelector:
 
 
 # ═══════════════════════════════════════════════════════════════
-# FALLBACK TRACKER — monitora falhas e promove chat -> reasoner
+# FALLBACK TRACKER
 # ═══════════════════════════════════════════════════════════════
 
 class FallbackTracker:
-    """Detecta respostas insuficientes e promove para reasoner."""
-
-    # Indicadores de resposta insuficiente
     INSUFFICIENT_PATTERNS = re.compile(
         r"(?:nao\s+(?:consigo|posso|sei)|"
         r"desculpe.*(?:nao|n\xe3o)|"
@@ -375,48 +413,29 @@ class FallbackTracker:
     def __init__(self):
         self._fallback_log: list[dict] = []
 
-    def should_fallback(
-        self,
-        response_text: str,
-        current_model: str,
-        had_tool_errors: bool = False,
-    ) -> bool:
-        """Retorna True se deve tentar fallback para reasoner."""
-        # Ja esta no reasoner — nao ha fallback
+    def should_fallback(self, response_text: str, current_model: str,
+                        had_tool_errors: bool = False, was_conversational: bool = False) -> bool:
         if current_model == config.DEEPSEEK_REASONER_MODEL:
             return False
-
-        # Resposta vazia ou muito curta para task complexa
+        if was_conversational:
+            return False
         if not response_text or len(response_text.strip()) < 20:
             return True
-
-        # Resposta indica incapacidade
         if self.INSUFFICIENT_PATTERNS.search(response_text):
             return True
-
-        # Tool errors sem resolucao
         if had_tool_errors:
             return True
-
         return False
 
     def log_fallback(self, reason: str, original_model: str, session_id: str = ""):
-        """Registra fallback para analise futura."""
-        entry = {
-            "timestamp": time.time(),
-            "reason": reason,
-            "from_model": original_model,
-            "to_model": config.DEEPSEEK_REASONER_MODEL,
-        }
+        entry = {"timestamp": time.time(), "reason": reason,
+                 "from_model": original_model, "to_model": config.DEEPSEEK_REASONER_MODEL}
         self._fallback_log.append(entry)
-        # Mantem apenas ultimos 100
         if len(self._fallback_log) > 100:
             self._fallback_log = self._fallback_log[-100:]
-        log_action(
-            "model_fallback",
-            f"{original_model}->{config.DEEPSEEK_REASONER_MODEL} reason={reason}",
-            session_id=session_id,
-        )
+        log_action("model_fallback",
+                   f"{original_model}->{config.DEEPSEEK_REASONER_MODEL} reason={reason}",
+                   session_id=session_id)
 
     @property
     def recent_fallbacks(self) -> list[dict]:
@@ -424,15 +443,13 @@ class FallbackTracker:
 
 
 # ═══════════════════════════════════════════════════════════════
-# CONTEXT COMPRESSOR — comprime historico inteligentemente
+# CONTEXT COMPRESSOR
 # ═══════════════════════════════════════════════════════════════
 
-# Threshold: ~80K tokens estimados (~320K chars)
 COMPRESS_CHAR_THRESHOLD = 320_000
 
 
 def estimate_context_tokens(messages: list[dict]) -> int:
-    """Estima tokens do contexto atual (~4 chars/token)."""
     total_chars = 0
     for msg in messages:
         content = msg.get("content", "")
@@ -446,7 +463,6 @@ def estimate_context_tokens(messages: list[dict]) -> int:
 
 
 def should_compress(messages: list[dict]) -> bool:
-    """Retorna True se contexto precisa de compressao (>80K tokens)."""
     total_chars = sum(
         len(m.get("content", "")) if isinstance(m.get("content"), str) else 0
         for m in messages
@@ -455,7 +471,7 @@ def should_compress(messages: list[dict]) -> bool:
 
 
 # ═══════════════════════════════════════════════════════════════
-# ORCHESTRATE — funcao principal que junta tudo
+# ORCHESTRATE — funcao principal
 # ═══════════════════════════════════════════════════════════════
 
 def orchestrate(
@@ -464,51 +480,53 @@ def orchestrate(
     has_error_context: bool = False,
     session_id: str = "",
 ) -> dict[str, Any]:
-    """Analisa a task e retorna decisoes de orquestracao.
+    conversational = False
+    needs_tools = True
 
-    Returns:
-        dict com:
-        - model: str — modelo a usar
-        - model_reason: str — motivo da escolha
-        - agent: str | None — agente especializado (se necessario)
-        - agent_context: str — contexto extra para o agente
-        - tool_domains: list[str] — dominios de tools relevantes
-        - relevant_tools: set[str] — tools especificas sugeridas
-        - needs_compression: bool — se contexto precisa compressao
-        - estimated_tokens: int — tokens estimados do contexto
-    """
-    # 1. Roteamento de modelo
-    model, model_reason = ModelRouter.route(
-        user_message, context_messages, has_error_context
-    )
+    if isinstance(user_message, str):
+        if is_conversational(user_message):
+            conversational = True
+            needs_tools = False
+        elif is_simple_question(user_message):
+            conversational = True
+            needs_tools = False
 
-    # 2. Selecao de agente
-    agent = AgentSelector.detect(user_message)
-    agent_context = AgentSelector.get_context_prefix(agent) if agent else ""
+    model, model_reason = ModelRouter.route(user_message, context_messages, has_error_context)
 
-    # 3. Selecao de tools
-    tool_domains = ToolSelector.detect_domains(user_message)
-    relevant_tools = ToolSelector.get_relevant_tools(user_message)
+    agent = None
+    agent_context = ""
+    if not conversational:
+        agent = AgentSelector.detect(user_message)
+        agent_context = AgentSelector.get_context_prefix(agent) if agent else ""
 
-    # 4. Compressao de contexto
+    tool_domains = []
+    relevant_tools = set()
+    if not conversational:
+        tool_domains = ToolSelector.detect_domains(user_message)
+        relevant_tools = ToolSelector.get_relevant_tools(user_message)
+        needs_tools = True
+
     msgs = context_messages or []
     est_tokens = estimate_context_tokens(msgs)
     needs_compress = should_compress(msgs)
 
     log_action(
         "orchestrate",
-        f"model={model} reason={model_reason} agent={agent} "
-        f"domains={tool_domains} tokens~{est_tokens} compress={needs_compress}",
+        f"model={model} reason={model_reason} conv={conversational} "
+        f"agent={agent} domains={tool_domains} tools={needs_tools} "
+        f"tokens~{est_tokens} compress={needs_compress}",
         session_id=session_id,
     )
 
     return {
         "model": model,
         "model_reason": model_reason,
+        "is_conversational": conversational,
         "agent": agent,
         "agent_context": agent_context,
         "tool_domains": tool_domains,
         "relevant_tools": relevant_tools,
+        "needs_tools": needs_tools,
         "needs_compression": needs_compress,
         "estimated_tokens": est_tokens,
     }

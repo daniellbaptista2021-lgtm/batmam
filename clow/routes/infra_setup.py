@@ -38,6 +38,8 @@ def register_infra_setup_routes(app) -> None:
         sess = _auth(request)
         if not sess:
             return _JR({"error": "Nao autenticado"}, status_code=401)
+        if not sess.get("is_admin"):
+            return _JR({"error": "Apenas administradores podem gerar scripts de setup"}, status_code=403)
         body = await request.json()
         setup_type = body.get("type", "vps")
         email = body.get("email", "").strip()

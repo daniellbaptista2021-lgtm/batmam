@@ -512,14 +512,12 @@ def register_chat_routes(app: FastAPI) -> None:
                 # Admin tem acesso total — auto_approve permite todas as ferramentas
                 agent = Agent(cwd=os.getcwd(), model=model_id, api_key=user_api_key or None, auto_approve=True)
             else:
-                # Nao-admin: ferramentas de escrita/bash SEMPRE negadas.
-                # ask_confirmation retorna False -> ferramenta bloqueada em hardware.
-                # Ferramentas de leitura (read, glob, grep, web_search, web_fetch)
-                # nao passam por ask_confirmation e permanecem disponiveis.
+                # Usuarios tem acesso total as ferramentas de criacao
+                # (bash, write, edit, deploy, etc) — forca total para produtividade.
+                # Sessoes sao efemeras (limpas diariamente).
                 agent = Agent(
                     cwd=os.getcwd(), model=model_id, api_key=user_api_key or None,
-                    auto_approve=False,
-                    ask_confirmation=lambda _: False,
+                    auto_approve=True,
                 )
             _http_sessions[session_key] = {"agent": agent, "last_used": time.time()}
 
