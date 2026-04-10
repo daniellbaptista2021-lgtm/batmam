@@ -19,372 +19,55 @@ _debounce_lock = threading.Lock()
 DEBOUNCE_SECONDS = 8
 
 
+
+import os as _os_meta
+
 _meta_contact_names = {}
 
 def _process_meta_carol(instance_id, phone, message):
-    """Process Meta webhook message through Daniel NIO agent + send reply + save to Chatwoot."""
-    import os as _os
-    import json as _json
-    import logging
-    _log = logging.getLogger("clow.meta_agent")
-
+    import json as _j, logging
+    _log = logging.getLogger("clow.meta")
     name = _meta_contact_names.get(phone, "")
-
-    # Process with Daniel NIO agent
     try:
-        from ..carol_nio_agent import process_daniel_message
+        from .._carol_nio_agent_module import process_daniel_message
         reply = process_daniel_message(phone, message, customer_name=name)
+    except ImportError:
+        try:
+            from ..carol_nio_agent import process_daniel_message
+            reply = process_daniel_message(phone, message, customer_name=name)
+        except Exception as e:
+            _log.error(f"Agent error: {e}")
+            reply = None
     except Exception as e:
-        _log.error(f"Daniel agent error: {e}")
+        _log.error(f"Agent error: {e}")
         reply = None
-
     if not reply:
         return
-
-    # Send via Meta API
-    token = _os.getenv("META_ACCESS_TOKEN", "")
-    phone_id = _os.getenv("META_PHONE_NUMBER_ID", "")
+    token = _os_meta.getenv("META_ACCESS_TOKEN", "")
+    phone_id = _os_meta.getenv("META_PHONE_NUMBER_ID", "")
     if token and phone_id:
         try:
             from urllib.request import urlopen, Request
             url = f"https://graph.facebook.com/v18.0/{phone_id}/messages"
-            data = _json.dumps({
-                "messaging_product": "whatsapp", "to": phone,
-                "type": "text", "text": {"body": reply}
-            }).encode()
-            req = Request(url, data=data, headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {token}",
-            }, method="POST")
+            data = _j.dumps({"messaging_product": "whatsapp", "to": phone, "type": "text", "text": {"body": reply}}).encode()
+            req = Request(url, data=data, headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"}, method="POST")
             urlopen(req, timeout=30)
         except Exception as e:
-            _log.error(f"Meta send error: {e}")
-
-    # Save to Chatwoot inbox 4 (private note to avoid duplicate)
+            _log.error(f"Meta send: {e}")
     try:
-        cw_url = _os.getenv("CHATWOOT_URL", "")
-        cw_token = _os.getenv("CHATWOOT_API_TOKEN", "")
-        inbox_id = int(_os.getenv("CHATWOOT_NIO_INBOX_ID", "4"))
+        cw_url = _os_meta.getenv("CHATWOOT_URL", "")
+        cw_token = _os_meta.getenv("CHATWOOT_API_TOKEN", "")
+        inbox_id = int(_os_meta.getenv("CHATWOOT_NIO_INBOX_ID", "4"))
         if cw_url and cw_token:
             from ..chatwoot_integration import get_chatwoot_client, get_or_create_chatwoot_conversation
-            client = get_chatwoot_client("nio")
-            if client:
-                convo_id = get_or_create_chatwoot_conversation(client, "meta-nio", phone, inbox_id)
-                if convo_id:
-                    client.send_message(convo_id, message, message_type="incoming")
-                    client.send_message(convo_id, "[Daniel] " + reply, message_type="outgoing", private=True)
+            cl = get_chatwoot_client("nio")
+            if cl:
+                cid = get_or_create_chatwoot_conversation(cl, "meta-nio", phone, inbox_id)
+                if cid:
+                    cl.send_message(cid, message, message_type="incoming")
+                    cl.send_message(cid, "[Daniel] " + reply, message_type="outgoing", private=True)
     except Exception:
         pass
-
-
-    # Meta API Webhook - Generic (no connection_id)
-    @app.get("/api/v1/whatsapp/meta/webhook", tags=["whatsapp"], include_in_schema=False)
-    async def meta_webhook_verify_generic(request: _Req):
-        params = request.query_params
-        mode = params.get("hub.mode", "")
-        token = params.get("hub.verify_token", "")
-        challenge = params.get("hub.challenge", "")
-        if mode == "subscribe" and token in ("clow-webhook-2026", "clow-daniel-2026", os.getenv("META_VERIFY_TOKEN", "")):
-            from fastapi.responses import PlainTextResponse
-            return PlainTextResponse(challenge)
-        return _JR({"error": "Verification failed"}, status_code=403)
-
-    @app.post("/api/v1/whatsapp/meta/webhook", tags=["whatsapp"], include_in_schema=False)
-    async def meta_webhook_receive_generic(request: _Req):
-        try:
-            body = await request.json()
-        except Exception:
-            return _JR({"status": "invalid"}, status_code=400)
-        try:
-            entry = body.get("entry", [{}])[0]
-            changes = entry.get("changes", [{}])[0]
-            value = changes.get("value", {})
-            messages = value.get("messages", [])
-            metadata = value.get("metadata", {})
-            phone_number_id = metadata.get("phone_number_id", "")
-            # Extract contact name
-            contacts_list = value.get("contacts", [])
-            if contacts_list:
-                profile = contacts_list[0].get("profile", {})
-                contact_name = profile.get("name", "")
-                if contact_name and messages:
-                    from_phone = messages[0].get("from", "")
-                    if from_phone:
-                        _meta_contact_names[from_phone] = contact_name
-            # Skip status updates (delivery receipts)
-            if value.get("statuses"):
-                return _JR({"status": "status_update"})
-            if not messages:
-                return _JR({"status": "no_messages"})
-            from ..whatsapp_agent import get_wa_manager, WhatsAppInstance
-            from pathlib import Path
-            inst = None
-            wa_dir = Path.home() / ".clow" / "whatsapp_instances"
-            if wa_dir.exists():
-                for td in wa_dir.iterdir():
-                    if not td.is_dir():
-                        continue
-                    for idir in td.iterdir():
-                        if not idir.is_dir():
-                            continue
-                        c = WhatsAppInstance.load(idir)
-                        if c and getattr(c, "provider", "zapi") == "meta" and getattr(c, "meta_phone_number_id", "") == phone_number_id:
-                            inst = c
-                            break
-                    if inst:
-                        break
-            if not inst or not inst.active:
-                return _JR({"status": "no_matching_instance"})
-            for msg in messages:
-                phone = msg.get("from", "")
-                msg_type = msg.get("type", "")
-                text = ""
-                if msg_type == "text":
-                    text = msg.get("text", {}).get("body", "")
-                elif msg_type == "audio":
-                    text = "[AUDIO] No momento so consigo te atender por texto. Me manda sua duvida escrita que te respondo!"
-                elif msg_type in ("image", "document", "video", "sticker"):
-                    text = "[MIDIA] No momento so consigo te atender com mensagens de texto. Me manda sua duvida por escrito!"
-                elif msg_type == "reaction":
-                    continue
-                if not phone or not text:
-                    continue
-                key = inst.id + ":" + phone
-                with _debounce_lock:
-                    if key not in _debounce_buffers:
-                        _debounce_buffers[key] = []
-                    _debounce_buffers[key].append(text)
-                    if key in _debounce_timers:
-                        _debounce_timers[key].cancel()
-                    iid = inst.id
-                    p = phone
-                    def flush(k=key, i=iid, ph=p):
-                        with _debounce_lock:
-                            msgs = _debounce_buffers.pop(k, [])
-                            _debounce_timers.pop(k, None)
-                        if msgs:
-                            combined = " ".join(msgs)
-                            try:
-                                _process_meta_carol(i, ph, combined)
-                            except Exception:
-                                pass
-                    timer = threading.Timer(DEBOUNCE_SECONDS, flush)
-                    _debounce_timers[key] = timer
-                    timer.start()
-            return _JR({"status": "ok"})
-        except Exception:
-            return _JR({"status": "error"})
-
-    @app.get("/api/v1/whatsapp/meta/webhook/{connection_id}", tags=["whatsapp"], include_in_schema=False)
-    async def meta_webhook_verify(connection_id: str, request: _Req):
-        """Meta webhook verification challenge."""
-        params = request.query_params
-        mode = params.get("hub.mode", "")
-        token = params.get("hub.verify_token", "")
-        challenge = params.get("hub.challenge", "")
-
-        if mode == "subscribe":
-            from ..whatsapp_agent import get_wa_manager
-            inst = get_wa_manager().get_instance(connection_id)
-            if inst and inst.meta_verify_token == token:
-                from fastapi.responses import PlainTextResponse
-                return PlainTextResponse(challenge)
-
-        return _JR({"error": "Verification failed"}, status_code=403)
-
-    # ── Meta API Webhook - Receive messages (POST) ────────────
-
-    @app.post("/api/v1/whatsapp/meta/webhook/{connection_id}", tags=["whatsapp"], include_in_schema=False)
-    async def meta_webhook_receive(connection_id: str, request: _Req):
-        """Receive messages from Meta WhatsApp Business API."""
-        try:
-            body = await request.json()
-        except Exception:
-            return _JR({"status": "invalid"}, status_code=400)
-
-        # Parse Meta webhook payload
-        try:
-            entry = body.get("entry", [{}])[0]
-            changes = entry.get("changes", [{}])[0]
-            value = changes.get("value", {})
-            messages = value.get("messages", [])
-
-            # Extract contact name
-            contacts_list = value.get("contacts", [])
-            if contacts_list:
-                profile = contacts_list[0].get("profile", {})
-                contact_name = profile.get("name", "")
-                if contact_name and messages:
-                    from_phone = messages[0].get("from", "")
-                    if from_phone:
-                        _meta_contact_names[from_phone] = contact_name
-            # Skip status updates (delivery receipts)
-            if value.get("statuses"):
-                return _JR({"status": "status_update"})
-            if not messages:
-                return _JR({"status": "no_messages"})
-
-            from ..whatsapp_agent import get_wa_manager
-            inst = get_wa_manager().get_instance(connection_id)
-            if not inst or not inst.active or inst.provider != "meta":
-                return _JR({"status": "inactive"})
-
-            for msg in messages:
-                phone = msg.get("from", "")
-                msg_type = msg.get("type", "")
-
-                if msg_type == "text":
-                    text = msg.get("text", {}).get("body", "")
-                elif msg_type in ("image", "audio", "video", "document"):
-                    text = f"[{msg_type} recebido]"
-                else:
-                    continue
-
-                if not phone or not text:
-                    continue
-
-                # Use same debounce mechanism as Z-API
-                key = f"{connection_id}:{phone}"
-                with _debounce_lock:
-                    if key not in _debounce_buffers:
-                        _debounce_buffers[key] = []
-                    _debounce_buffers[key].append(text)
-
-                    if key in _debounce_timers:
-                        _debounce_timers[key].cancel()
-
-                    iid = connection_id
-                    p = phone
-                    def flush(k=key, i=iid, ph=p):
-                        with _debounce_lock:
-                            msgs = _debounce_buffers.pop(k, [])
-                            _debounce_timers.pop(k, None)
-                        if msgs:
-                            combined = " ".join(msgs)
-                            try:
-                                _process_meta_carol(i, ph, combined)
-                            except Exception as e:
-                                logger.error(f"Meta process error: {e}")
-
-                    timer = threading.Timer(DEBOUNCE_SECONDS, flush)
-                    timer.daemon = True
-                    _debounce_timers[key] = timer
-                    timer.start()
-
-            return _JR({"status": "ok"})
-        except Exception as e:
-            logger.error(f"Meta webhook error: {e}")
-            return _JR({"status": "error"})
-
-    # ── Test Meta Connection ──────────────────────────────────
-
-    @app.post("/api/v1/whatsapp/instances/test-meta", tags=["whatsapp"])
-    async def test_meta_connection(request: _Req):
-        """Test Meta WhatsApp Business API connection."""
-        sess = _get_user_session(request)
-        if not sess:
-            return _JR({"error": "Nao autenticado"}, status_code=401)
-        body = await request.json()
-        token = body.get("access_token", "").strip()
-        phone_id = body.get("phone_number_id", "").strip()
-        if not token or not phone_id:
-            return _JR({"success": False, "error": "Access Token e Phone Number ID obrigatorios"}, status_code=400)
-        from ..whatsapp_agent import get_wa_manager
-        result = get_wa_manager().test_meta_connection(token, phone_id)
-        return _JR({"success": result.get("connected", False), **result})
-
-    # ── Webhook (public — Z-API calls this) ───────────────────
-
-    @app.post("/api/v1/whatsapp/webhook/{instance_id}", tags=["whatsapp"], include_in_schema=False)
-    async def whatsapp_webhook(instance_id: str, request: _Req):
-        try:
-            body = await request.json()
-        except Exception:
-            return _JR({"error": "Invalid JSON"}, status_code=400)
-
-        phone = body.get("phone", "")
-        message = body.get("body", "")
-        from_me = body.get("fromMe", False)
-        is_group = body.get("isGroup", False)
-        msg_type = body.get("type", "")
-        moment = body.get("momment", 0) or body.get("moment", 0)
-
-        # Filters
-        if from_me or is_group or msg_type != "chat" or not message or not phone:
-            return _JR({"status": "ignored"})
-
-        # Skip old messages (> 5 min)
-        if moment and (time.time() - moment) > 300:
-            return _JR({"status": "too_old"})
-
-        # Validate instance exists
-        from ..whatsapp_agent import get_wa_manager
-        inst = get_wa_manager().get_instance(instance_id)
-        if not inst or not inst.active:
-            return _JR({"status": "inactive"})
-
-        # Validate Z-API instance ID matches
-        if body.get("instanceId") and body["instanceId"] != inst.zapi_instance_id:
-            return _JR({"status": "instance_mismatch"})
-
-        # Debounce: accumulate messages for 8 seconds
-        key = f"{instance_id}:{phone}"
-        with _debounce_lock:
-            if key not in _debounce_buffers:
-                _debounce_buffers[key] = []
-            _debounce_buffers[key].append(message)
-
-            # Cancel existing timer
-            if key in _debounce_timers:
-                _debounce_timers[key].cancel()
-
-            # Start new timer
-            def _process_debounced(k=key, iid=instance_id, p=phone):
-                with _debounce_lock:
-                    msgs = _debounce_buffers.pop(k, [])
-                    _debounce_timers.pop(k, None)
-                if msgs:
-                    combined = "\n".join(msgs)
-                    _process_with_chatwoot(iid, p, combined)
-
-            timer = threading.Timer(DEBOUNCE_SECONDS, _process_debounced)
-            timer.daemon = True
-            _debounce_timers[key] = timer
-            timer.start()
-
-        return _JR({"status": "queued"})
-
-    # ── Chatwoot Webhook (receives Chatwoot events) ───────────
-
-    @app.post("/api/v1/chatwoot/webhook", tags=["chatwoot"], include_in_schema=False)
-    async def chatwoot_webhook(request: _Req):
-        """Receive Chatwoot events — detect label changes for handoff control."""
-        try:
-            body = await request.json()
-        except Exception:
-            return _JR({"status": "invalid"}, status_code=400)
-
-        event = body.get("event", "")
-
-        if event == "conversation_updated":
-            convo = body.get("conversation", {})
-            convo_id = convo.get("id")
-            labels = convo.get("labels", [])
-
-            # If "humano" label was removed, reactivate bot
-            # We track this by checking if bot label is missing and humano is missing
-            if "humano" not in labels and convo_id:
-                try:
-                    from ..chatwoot_integration import get_chatwoot_client, reactivate_bot
-                    client = get_chatwoot_client("global")
-                    if client and "bot" not in labels:
-                        reactivate_bot(client, convo_id, send_greeting=True)
-                except Exception as e:
-                    logger.warning(f"Chatwoot webhook reactivate_bot error: {e}")
-
-        return _JR({"status": "ok"})
-
-
 
 
 def register_whatsapp_agent_routes(app) -> None:
@@ -830,8 +513,314 @@ def register_whatsapp_agent_routes(app) -> None:
         return _JR(pause_campaign(cid))
 
 
+    # Meta API Webhook - Generic (no connection_id)
+    @app.get("/api/v1/whatsapp/meta/webhook", tags=["whatsapp"], include_in_schema=False)
+    async def meta_webhook_verify_generic(request: _Req):
+        params = request.query_params
+        mode = params.get("hub.mode", "")
+        token = params.get("hub.verify_token", "")
+        challenge = params.get("hub.challenge", "")
+        if mode == "subscribe" and token in ("clow-webhook-2026", "clow-daniel-2026", os.getenv("META_VERIFY_TOKEN", "")):
+            from fastapi.responses import PlainTextResponse
+            return PlainTextResponse(challenge)
+        return _JR({"error": "Verification failed"}, status_code=403)
 
-# Meta contact names cache
+    @app.post("/api/v1/whatsapp/meta/webhook", tags=["whatsapp"], include_in_schema=False)
+    async def meta_webhook_receive_generic(request: _Req):
+        try:
+            body = await request.json()
+        except Exception:
+            return _JR({"status": "invalid"}, status_code=400)
+        try:
+            entry = body.get("entry", [{}])[0]
+            changes = entry.get("changes", [{}])[0]
+            value = changes.get("value", {})
+            messages = value.get("messages", [])
+            metadata = value.get("metadata", {})
+            phone_number_id = metadata.get("phone_number_id", "")
+            # Extract contact name
+            contacts_list = value.get("contacts", [])
+            if contacts_list:
+                profile = contacts_list[0].get("profile", {})
+                contact_name = profile.get("name", "")
+                if contact_name and messages:
+                    from_phone = messages[0].get("from", "")
+                    if from_phone:
+                        _meta_contact_names[from_phone] = contact_name
+            # Skip status updates (delivery receipts)
+            if value.get("statuses"):
+                return _JR({"status": "status_update"})
+            if not messages:
+                return _JR({"status": "no_messages"})
+            from ..whatsapp_agent import get_wa_manager, WhatsAppInstance
+            from pathlib import Path
+            inst = None
+            wa_dir = Path.home() / ".clow" / "whatsapp_instances"
+            if wa_dir.exists():
+                for td in wa_dir.iterdir():
+                    if not td.is_dir():
+                        continue
+                    for idir in td.iterdir():
+                        if not idir.is_dir():
+                            continue
+                        c = WhatsAppInstance.load(idir)
+                        if c and getattr(c, "provider", "zapi") == "meta" and getattr(c, "meta_phone_number_id", "") == phone_number_id:
+                            inst = c
+                            break
+                    if inst:
+                        break
+            if not inst or not inst.active:
+                return _JR({"status": "no_matching_instance"})
+            for msg in messages:
+                phone = msg.get("from", "")
+                msg_type = msg.get("type", "")
+                text = ""
+                if msg_type == "text":
+                    text = msg.get("text", {}).get("body", "")
+                elif msg_type == "audio":
+                    text = "[AUDIO] No momento so consigo te atender por texto. Me manda sua duvida escrita que te respondo!"
+                elif msg_type in ("image", "document", "video", "sticker"):
+                    text = "[MIDIA] No momento so consigo te atender com mensagens de texto. Me manda sua duvida por escrito!"
+                elif msg_type == "reaction":
+                    continue
+                if not phone or not text:
+                    continue
+                key = inst.id + ":" + phone
+                with _debounce_lock:
+                    if key not in _debounce_buffers:
+                        _debounce_buffers[key] = []
+                    _debounce_buffers[key].append(text)
+                    if key in _debounce_timers:
+                        _debounce_timers[key].cancel()
+                    iid = inst.id
+                    p = phone
+                    def flush(k=key, i=iid, ph=p):
+                        with _debounce_lock:
+                            msgs = _debounce_buffers.pop(k, [])
+                            _debounce_timers.pop(k, None)
+                        if msgs:
+                            combined = " ".join(msgs)
+                            try:
+                                _process_meta_carol(i, ph, combined)
+                            except Exception:
+                                pass
+                    timer = threading.Timer(DEBOUNCE_SECONDS, flush)
+                    _debounce_timers[key] = timer
+                    timer.start()
+            return _JR({"status": "ok"})
+        except Exception:
+            return _JR({"status": "error"})
+
+    @app.get("/api/v1/whatsapp/meta/webhook/{connection_id}", tags=["whatsapp"], include_in_schema=False)
+    async def meta_webhook_verify(connection_id: str, request: _Req):
+        """Meta webhook verification challenge."""
+        params = request.query_params
+        mode = params.get("hub.mode", "")
+        token = params.get("hub.verify_token", "")
+        challenge = params.get("hub.challenge", "")
+
+        if mode == "subscribe":
+            from ..whatsapp_agent import get_wa_manager
+            inst = get_wa_manager().get_instance(connection_id)
+            if inst and inst.meta_verify_token == token:
+                from fastapi.responses import PlainTextResponse
+                return PlainTextResponse(challenge)
+
+        return _JR({"error": "Verification failed"}, status_code=403)
+
+    # ── Meta API Webhook - Receive messages (POST) ────────────
+
+    @app.post("/api/v1/whatsapp/meta/webhook/{connection_id}", tags=["whatsapp"], include_in_schema=False)
+    async def meta_webhook_receive(connection_id: str, request: _Req):
+        """Receive messages from Meta WhatsApp Business API."""
+        try:
+            body = await request.json()
+        except Exception:
+            return _JR({"status": "invalid"}, status_code=400)
+
+        # Parse Meta webhook payload
+        try:
+            entry = body.get("entry", [{}])[0]
+            changes = entry.get("changes", [{}])[0]
+            value = changes.get("value", {})
+            messages = value.get("messages", [])
+
+            # Extract contact name
+            contacts_list = value.get("contacts", [])
+            if contacts_list:
+                profile = contacts_list[0].get("profile", {})
+                contact_name = profile.get("name", "")
+                if contact_name and messages:
+                    from_phone = messages[0].get("from", "")
+                    if from_phone:
+                        _meta_contact_names[from_phone] = contact_name
+            # Skip status updates (delivery receipts)
+            if value.get("statuses"):
+                return _JR({"status": "status_update"})
+            if not messages:
+                return _JR({"status": "no_messages"})
+
+            from ..whatsapp_agent import get_wa_manager
+            inst = get_wa_manager().get_instance(connection_id)
+            if not inst or not inst.active or inst.provider != "meta":
+                return _JR({"status": "inactive"})
+
+            for msg in messages:
+                phone = msg.get("from", "")
+                msg_type = msg.get("type", "")
+
+                if msg_type == "text":
+                    text = msg.get("text", {}).get("body", "")
+                elif msg_type in ("image", "audio", "video", "document"):
+                    text = f"[{msg_type} recebido]"
+                else:
+                    continue
+
+                if not phone or not text:
+                    continue
+
+                # Use same debounce mechanism as Z-API
+                key = f"{connection_id}:{phone}"
+                with _debounce_lock:
+                    if key not in _debounce_buffers:
+                        _debounce_buffers[key] = []
+                    _debounce_buffers[key].append(text)
+
+                    if key in _debounce_timers:
+                        _debounce_timers[key].cancel()
+
+                    iid = connection_id
+                    p = phone
+                    def flush(k=key, i=iid, ph=p):
+                        with _debounce_lock:
+                            msgs = _debounce_buffers.pop(k, [])
+                            _debounce_timers.pop(k, None)
+                        if msgs:
+                            combined = " ".join(msgs)
+                            try:
+                                _process_meta_carol(i, ph, combined)
+                            except Exception as e:
+                                logger.error(f"Meta process error: {e}")
+
+                    timer = threading.Timer(DEBOUNCE_SECONDS, flush)
+                    timer.daemon = True
+                    _debounce_timers[key] = timer
+                    timer.start()
+
+            return _JR({"status": "ok"})
+        except Exception as e:
+            logger.error(f"Meta webhook error: {e}")
+            return _JR({"status": "error"})
+
+    # ── Test Meta Connection ──────────────────────────────────
+
+    @app.post("/api/v1/whatsapp/instances/test-meta", tags=["whatsapp"])
+    async def test_meta_connection(request: _Req):
+        """Test Meta WhatsApp Business API connection."""
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        body = await request.json()
+        token = body.get("access_token", "").strip()
+        phone_id = body.get("phone_number_id", "").strip()
+        if not token or not phone_id:
+            return _JR({"success": False, "error": "Access Token e Phone Number ID obrigatorios"}, status_code=400)
+        from ..whatsapp_agent import get_wa_manager
+        result = get_wa_manager().test_meta_connection(token, phone_id)
+        return _JR({"success": result.get("connected", False), **result})
+
+    # ── Webhook (public — Z-API calls this) ───────────────────
+
+    @app.post("/api/v1/whatsapp/webhook/{instance_id}", tags=["whatsapp"], include_in_schema=False)
+    async def whatsapp_webhook(instance_id: str, request: _Req):
+        try:
+            body = await request.json()
+        except Exception:
+            return _JR({"error": "Invalid JSON"}, status_code=400)
+
+        phone = body.get("phone", "")
+        message = body.get("body", "")
+        from_me = body.get("fromMe", False)
+        is_group = body.get("isGroup", False)
+        msg_type = body.get("type", "")
+        moment = body.get("momment", 0) or body.get("moment", 0)
+
+        # Filters
+        if from_me or is_group or msg_type != "chat" or not message or not phone:
+            return _JR({"status": "ignored"})
+
+        # Skip old messages (> 5 min)
+        if moment and (time.time() - moment) > 300:
+            return _JR({"status": "too_old"})
+
+        # Validate instance exists
+        from ..whatsapp_agent import get_wa_manager
+        inst = get_wa_manager().get_instance(instance_id)
+        if not inst or not inst.active:
+            return _JR({"status": "inactive"})
+
+        # Validate Z-API instance ID matches
+        if body.get("instanceId") and body["instanceId"] != inst.zapi_instance_id:
+            return _JR({"status": "instance_mismatch"})
+
+        # Debounce: accumulate messages for 8 seconds
+        key = f"{instance_id}:{phone}"
+        with _debounce_lock:
+            if key not in _debounce_buffers:
+                _debounce_buffers[key] = []
+            _debounce_buffers[key].append(message)
+
+            # Cancel existing timer
+            if key in _debounce_timers:
+                _debounce_timers[key].cancel()
+
+            # Start new timer
+            def _process_debounced(k=key, iid=instance_id, p=phone):
+                with _debounce_lock:
+                    msgs = _debounce_buffers.pop(k, [])
+                    _debounce_timers.pop(k, None)
+                if msgs:
+                    combined = "\n".join(msgs)
+                    _process_with_chatwoot(iid, p, combined)
+
+            timer = threading.Timer(DEBOUNCE_SECONDS, _process_debounced)
+            timer.daemon = True
+            _debounce_timers[key] = timer
+            timer.start()
+
+        return _JR({"status": "queued"})
+
+    # ── Chatwoot Webhook (receives Chatwoot events) ───────────
+
+    @app.post("/api/v1/chatwoot/webhook", tags=["chatwoot"], include_in_schema=False)
+    async def chatwoot_webhook(request: _Req):
+        """Receive Chatwoot events — detect label changes for handoff control."""
+        try:
+            body = await request.json()
+        except Exception:
+            return _JR({"status": "invalid"}, status_code=400)
+
+        event = body.get("event", "")
+
+        if event == "conversation_updated":
+            convo = body.get("conversation", {})
+            convo_id = convo.get("id")
+            labels = convo.get("labels", [])
+
+            # If "humano" label was removed, reactivate bot
+            # We track this by checking if bot label is missing and humano is missing
+            if "humano" not in labels and convo_id:
+                try:
+                    from ..chatwoot_integration import get_chatwoot_client, reactivate_bot
+                    client = get_chatwoot_client("global")
+                    if client and "bot" not in labels:
+                        reactivate_bot(client, convo_id, send_greeting=True)
+                except Exception as e:
+                    logger.warning(f"Chatwoot webhook reactivate_bot error: {e}")
+
+        return _JR({"status": "ok"})
+
+
 def _process_with_chatwoot(instance_id: str, phone: str, combined_message: str):
     """Process incoming message with Chatwoot integration (optional).
 
