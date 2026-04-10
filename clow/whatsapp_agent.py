@@ -288,8 +288,10 @@ class WhatsAppAgentManager:
 
             from openai import OpenAI
             client = OpenAI(**config.get_deepseek_client_kwargs())
+            # OBRIGATORIO: WhatsApp auto-reply SEMPRE usa deepseek-chat (mais barato)
+            # Nunca usar reasoner para respostas automaticas
             response = client.chat.completions.create(
-                model=config.CLOW_MODEL,
+                model="deepseek-chat",
                 messages=llm_msgs,
                 max_tokens=1024,
             )
