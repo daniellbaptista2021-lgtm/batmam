@@ -211,7 +211,7 @@ TOOL_DOMAIN_MAP = {
         ),
     },
     "documents": {
-        "tools": {"pdf_tool", "spreadsheet", "image_gen", "design_generate"},
+        "tools": {"pdf_tool", "spreadsheet", "design_generate"},
         "triggers": re.compile(
             r"\b(?:planilha|pdf|documento|apresenta|pptx|docx|xlsx|"
             r"relatorio|export|banner|imagem|design)\b",

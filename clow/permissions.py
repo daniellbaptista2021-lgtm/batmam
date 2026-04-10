@@ -55,7 +55,6 @@ TOOL_REQUIREMENTS: dict[str, PermissionLevel] = {
     "notebook_edit": PermissionLevel.WORKSPACE_WRITE,
     "pdf_tool": PermissionLevel.WORKSPACE_WRITE,
     "spreadsheet": PermissionLevel.WORKSPACE_WRITE,
-    "image_gen": PermissionLevel.WORKSPACE_WRITE,
     "agent": PermissionLevel.WORKSPACE_WRITE,
     # Acesso perigoso — nivel 3
     "bash": PermissionLevel.DANGER_FULL_ACCESS,
@@ -165,7 +164,7 @@ def needs_confirmation(tool_name: str, arguments: dict) -> bool:
         return False
 
     if tool_name in ("whatsapp_send", "docker_manage", "n8n_workflow",
-                      "supabase_query", "image_gen"):
+                      "supabase_query"):
         return True
 
     if tool_name in ("pdf_tool", "spreadsheet"):
@@ -311,7 +310,6 @@ ACTION_CLASSIFICATIONS = {
     "notebook_edit": {"reversible": True, "external": False, "level": "write"},
     "pdf_tool": {"reversible": True, "external": False, "level": "write"},
     "spreadsheet": {"reversible": True, "external": False, "level": "write"},
-    "image_gen": {"reversible": True, "external": True, "level": "write"},
     "git_advanced": {"reversible": False, "external": False, "level": "dangerous"},
     "bash": {"reversible": None, "external": None, "level": "varies"},
     "agent": {"reversible": None, "external": None, "level": "varies"},

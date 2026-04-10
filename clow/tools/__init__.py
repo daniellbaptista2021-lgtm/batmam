@@ -17,7 +17,6 @@ from .n8n_workflow import N8nWorkflowTool
 from .docker_manage import DockerManageTool
 from .git_advanced import GitAdvancedTool
 from .scraper import ScraperTool
-from .image_gen import ImageGenTool
 from .pdf_tool import PdfTool
 from .spreadsheet import SpreadsheetTool
 from .base import BaseTool, ToolRegistry
@@ -42,7 +41,6 @@ __all__ = [
     "DockerManageTool",
     "GitAdvancedTool",
     "ScraperTool",
-    "ImageGenTool",
     "PdfTool",
     "SpreadsheetTool",
 ]

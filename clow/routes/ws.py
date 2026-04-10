@@ -12,7 +12,7 @@ from .auth import (
     _get_api_keys, _verify_api_key, _validate_session,
     _ws_rate_limiter,
 )
-from .chat import _build_multimodal_message, _should_generate_image, _process_image_request
+from .chat import _build_multimodal_message
 from ..webapp import track_action
 from ..rate_limit import limiter as user_limiter
 from ..rag import get_context_for_prompt as _rag_context
@@ -146,24 +146,6 @@ def register_ws_routes(app: FastAPI) -> None:
 
                     # Envia thinking
                     await websocket.send_json({"type": "thinking_start"})
-
-                    # ── Detecta e processa pedido de imagem ──
-                    if _should_generate_image(content) and not file_data:
-                        await websocket.send_json({"type": "thinking_end"})
-
-                        # Gera imagem
-                        try:
-                            filepath, filename, response_html = await _process_image_request(content, agent)
-                            await websocket.send_json({"type": "text_delta", "content": response_html})
-                            await websocket.send_json({"type": "text_done"})
-                            track_action("image_generated", filename or "failed")
-                        except Exception as e:
-                            await websocket.send_json({"type": "error", "content": f"Erro ao gerar imagem: {str(e)}"})
-                            track_action("image_error", str(e)[:60], "error")
-
-                        # Finaliza turno
-                        await websocket.send_json({"type": "turn_complete"})
-                        continue
 
                     # Monta mensagem multimodal se tem arquivo
                     if file_data:

@@ -286,8 +286,6 @@ def _tool_label(name: str, args: dict) -> str:
         return f"Git {args.get('action', '')}: {args.get('target', '')}"
     elif name == "scraper":
         return f"Scrape: {args.get('url', '')[:80]}"
-    elif name == "image_gen":
-        return f"Image gen: {args.get('prompt', '')[:60]}"
     elif name == "pdf_tool":
         return f"PDF {args.get('action', '')}: {args.get('input_path', args.get('output_path', ''))}"
     elif name == "spreadsheet":
@@ -930,7 +928,7 @@ def handle_slash_command(cmd: str, agent: Agent) -> bool:
             "WhatsApp": [n for n in agent.registry.names() if n.startswith("whatsapp_")],
             "Chatwoot": [n for n in agent.registry.names() if n.startswith("chatwoot_")],
             "Meta Ads": ["meta_ads"],
-            "Design/Docs": ["image_gen", "design_generate", "canva_template", "pdf_tool", "spreadsheet"],
+            "Design/Docs": ["design_generate", "canva_template", "pdf_tool", "spreadsheet"],
             "Integracao": ["http_request", "n8n_workflow", "docker_manage", "scraper"],
         }
         console.print(f"\n  [purple bold]Tools ({len(all_tools)}):[/]")

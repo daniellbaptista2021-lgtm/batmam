@@ -1,7 +1,7 @@
 """Base para todas as ferramentas do Clow v0.2.0.
 
-Registro de 33 tools: 10 core + 4 task + 10 integracoes + 9 WhatsApp
-(whatsapp, http, supabase, n8n, docker, git_advanced, scraper, image_gen, pdf, spreadsheet)
+Registro de 32 tools: 10 core + 4 task + 9 integracoes + 9 WhatsApp
+(whatsapp, http, supabase, n8n, docker, git_advanced, scraper, pdf, spreadsheet)
 """
 
 from __future__ import annotations
@@ -56,6 +56,13 @@ class ToolRegistry:
     def openai_tools(self) -> list[dict]:
         return [t.to_openai_tool() for t in self._tools.values()]
 
+    def openai_tools_filtered(self, allowed_names: set[str]) -> list[dict]:
+        """Retorna tool definitions apenas para os nomes permitidos."""
+        return [
+            t.to_openai_tool() for t in self._tools.values()
+            if t.name in allowed_names
+        ]
+
     def names(self) -> list[str]:
         return list(self._tools.keys())
 
@@ -85,7 +92,6 @@ def create_default_registry() -> ToolRegistry:
     from .docker_manage import DockerManageTool
     from .git_advanced import GitAdvancedTool
     from .scraper import ScraperTool
-    from .image_gen import ImageGenTool
     from .pdf_tool import PdfTool
     from .spreadsheet import SpreadsheetTool
 
@@ -103,7 +109,7 @@ def create_default_registry() -> ToolRegistry:
     # ── Integracao (10) ──
     for tool_cls in (WhatsAppSendTool, HttpRequestTool, SupabaseQueryTool,
                      N8nWorkflowTool, DockerManageTool, GitAdvancedTool,
-                     ScraperTool, ImageGenTool, PdfTool, SpreadsheetTool):
+                     ScraperTool, PdfTool, SpreadsheetTool):
         registry.register(tool_cls())
 
     # ── WhatsApp Agent (9) ──

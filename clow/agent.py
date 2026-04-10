@@ -59,6 +59,225 @@ CONFIRMATION_PATTERNS = [
 ]
 
 
+def sanitize_messages(msgs: list[dict], session_id: str = "") -> list[dict]:
+    """Sanitiza historico de mensagens para compatibilidade com DeepSeek API.
+
+    Garante que NUNCA exista:
+    - role='tool' sem um role='assistant' com tool_calls correspondente ANTES
+    - role='assistant' com tool_calls sem TODOS os tool results correspondentes DEPOIS
+
+    Opera em 2 passadas:
+    1. Forward pass: rastreia tool_call IDs pendentes, descarta tool results orfaos
+    2. Backward pass: remove/limpa assistant com tool_calls cujos results sumiram
+
+    Retorna lista limpa. Nunca modifica a lista original.
+    """
+    if not msgs:
+        return []
+
+    # ── Passada 1 (forward): valida cada mensagem na ordem ──
+    # Rastreia quais tool_call IDs foram emitidos e ainda nao respondidos
+    result: list[dict] = []
+    pending_tc_ids: set[str] = set()  # IDs de tool_calls aguardando results
+    removed_count = 0
+
+    for msg in msgs:
+        role = msg.get("role", "")
+
+        if role == "assistant":
+            result.append(msg)
+            # Registra tool_call IDs deste assistant
+            for tc in msg.get("tool_calls", []):
+                tc_id = tc.get("id", "")
+                if tc_id:
+                    pending_tc_ids.add(tc_id)
+
+        elif role == "tool":
+            tc_id = msg.get("tool_call_id", "")
+            if tc_id in pending_tc_ids:
+                # Valido: tem par
+                result.append(msg)
+                pending_tc_ids.discard(tc_id)
+            else:
+                # Orfao: sem assistant com esse tool_call_id antes
+                removed_count += 1
+
+        else:
+            # system, user — passa direto
+            result.append(msg)
+
+    # ── Passada 2 (backward): limpa assistants com tool_calls sem results ──
+    # Qualquer assistant com tool_calls cujos IDs nunca receberam results
+    # precisa ser limpo (remove tool_calls, mantem texto)
+    if pending_tc_ids:
+        cleaned: list[dict] = []
+        for msg in result:
+            if msg.get("role") == "assistant" and msg.get("tool_calls"):
+                msg_tc_ids = {tc.get("id", "") for tc in msg["tool_calls"]}
+                orphan_ids = msg_tc_ids & pending_tc_ids
+                if orphan_ids:
+                    surviving = [tc for tc in msg["tool_calls"]
+                                 if tc.get("id", "") not in orphan_ids]
+                    if surviving:
+                        # Mantem assistant com tool_calls que TEM results
+                        new_msg = {"role": "assistant", "tool_calls": surviving}
+                        if msg.get("content"):
+                            new_msg["content"] = msg["content"]
+                        cleaned.append(new_msg)
+                    elif msg.get("content"):
+                        # Sem tool_calls sobreviventes mas tem texto
+                        cleaned.append({"role": "assistant", "content": msg["content"]})
+                    else:
+                        # Assistant vazio (so tinha tool_calls orfaos) — remove
+                        removed_count += 1
+                    # Remove tool results orfaos que sobraram
+                    continue
+                else:
+                    cleaned.append(msg)
+            elif msg.get("role") == "tool":
+                tc_id = msg.get("tool_call_id", "")
+                if tc_id in pending_tc_ids:
+                    removed_count += 1
+                    continue
+                cleaned.append(msg)
+            else:
+                cleaned.append(msg)
+        result = cleaned
+
+    # ── Passada 3: validacao final — garante ordem estrita ──
+    # Cada tool result DEVE ter assistant com tool_calls imediatamente antes
+    # (possivelmente com outros tool results do mesmo bloco entre eles)
+    final: list[dict] = []
+    # Set de tool_call IDs do assistant mais recente que ainda aceita results
+    active_tc_ids: set[str] = set()
+
+    for msg in result:
+        role = msg.get("role", "")
+
+        if role == "tool":
+            tc_id = msg.get("tool_call_id", "")
+            if tc_id in active_tc_ids:
+                final.append(msg)
+                active_tc_ids.discard(tc_id)
+            else:
+                # Tool result fora de posicao — descarta
+                removed_count += 1
+        elif role == "assistant":
+            # Novo assistant: fecha qualquer bloco anterior de tool_calls pendentes
+            if active_tc_ids:
+                # Tinha tool_calls sem results — limpa o assistant anterior
+                for k in range(len(final) - 1, -1, -1):
+                    prev = final[k]
+                    if prev.get("role") == "assistant" and prev.get("tool_calls"):
+                        prev_ids = {tc.get("id", "") for tc in prev["tool_calls"]}
+                        if prev_ids & active_tc_ids:
+                            surviving = [tc for tc in prev["tool_calls"]
+                                         if tc.get("id", "") not in active_tc_ids]
+                            if surviving:
+                                final[k] = {"role": "assistant", "tool_calls": surviving}
+                                if prev.get("content"):
+                                    final[k]["content"] = prev["content"]
+                            elif prev.get("content"):
+                                final[k] = {"role": "assistant", "content": prev["content"]}
+                            else:
+                                final.pop(k)
+                            break
+                active_tc_ids.clear()
+
+            final.append(msg)
+            for tc in msg.get("tool_calls", []):
+                tc_id = tc.get("id", "")
+                if tc_id:
+                    active_tc_ids.add(tc_id)
+        else:
+            # user/system fecha bloco de tool_calls pendentes
+            if active_tc_ids:
+                for k in range(len(final) - 1, -1, -1):
+                    prev = final[k]
+                    if prev.get("role") == "assistant" and prev.get("tool_calls"):
+                        prev_ids = {tc.get("id", "") for tc in prev["tool_calls"]}
+                        if prev_ids & active_tc_ids:
+                            surviving = [tc for tc in prev["tool_calls"]
+                                         if tc.get("id", "") not in active_tc_ids]
+                            if surviving:
+                                final[k] = {"role": "assistant", "tool_calls": surviving}
+                                if prev.get("content"):
+                                    final[k]["content"] = prev["content"]
+                            elif prev.get("content"):
+                                final[k] = {"role": "assistant", "content": prev["content"]}
+                            else:
+                                final.pop(k)
+                            break
+                active_tc_ids.clear()
+            final.append(msg)
+
+    # Limpa pendentes no final
+    if active_tc_ids:
+        for k in range(len(final) - 1, -1, -1):
+            prev = final[k]
+            if prev.get("role") == "assistant" and prev.get("tool_calls"):
+                prev_ids = {tc.get("id", "") for tc in prev["tool_calls"]}
+                if prev_ids & active_tc_ids:
+                    surviving = [tc for tc in prev["tool_calls"]
+                                 if tc.get("id", "") not in active_tc_ids]
+                    if surviving:
+                        final[k] = {"role": "assistant", "tool_calls": surviving}
+                        if prev.get("content"):
+                            final[k]["content"] = prev["content"]
+                    elif prev.get("content"):
+                        final[k] = {"role": "assistant", "content": prev["content"]}
+                    else:
+                        final.pop(k)
+                    break
+
+    if removed_count > 0:
+        log_action(
+            "sanitize_messages",
+            f"removidas {removed_count} mensagens orfas do historico",
+            level="warning",
+            session_id=session_id,
+        )
+
+    return final
+
+
+def _slice_at_safe_boundary(msgs: list[dict], keep_last_n: int) -> list[dict]:
+    """Corta historico mantendo os ultimos N msgs, mas ajustando o ponto
+    de corte para nunca partir um bloco assistant(tool_calls)+tool(results).
+
+    Retorna: [system] + mensagens recentes com corte seguro.
+    """
+    if len(msgs) <= keep_last_n + 1:
+        return list(msgs)
+
+    system = msgs[0] if msgs and msgs[0].get("role") == "system" else None
+    start_from = len(msgs) - keep_last_n
+
+    # Avanca o ponto de corte para frente ate encontrar um limite seguro:
+    # Nao pode comecar com role='tool' (orfao)
+    # Nao pode comecar logo apos um assistant com tool_calls (cortaria os results)
+    while start_from < len(msgs):
+        msg = msgs[start_from]
+        if msg.get("role") == "tool":
+            # Orfao — pula
+            start_from += 1
+            continue
+        # Verifica se a mensagem anterior era assistant com tool_calls
+        # cujos results estao apos o ponto de corte
+        if start_from > 0:
+            prev = msgs[start_from - 1]
+            if (prev.get("role") == "assistant" and prev.get("tool_calls")
+                    and msg.get("role") == "tool"):
+                start_from += 1
+                continue
+        break
+
+    recent = msgs[start_from:]
+    if system:
+        return [system] + recent
+    return recent
+
+
 class Agent:
     """Agente principal do Clow v0.2.0."""
 
@@ -273,6 +492,8 @@ class Agent:
         max_iterations = 30
         iteration = 0
         auto_correct_attempts = 0
+        cache_hit_total = 0
+        cache_miss_total = 0
 
         try:
             while iteration < max_iterations:
@@ -283,6 +504,8 @@ class Agent:
 
                 turn.tokens_in += usage.get("prompt_tokens", 0)
                 turn.tokens_out += usage.get("completion_tokens", 0)
+                cache_hit_total += usage.get("cache_hit_tokens", 0)
+                cache_miss_total += usage.get("cache_miss_tokens", 0)
 
                 if text_content:
                     full_response_text.append(text_content)
@@ -372,9 +595,12 @@ class Agent:
         # Finaliza turno
         turn.assistant_message = "\n".join(full_response_text)
         self.session.add_tokens(turn.tokens_in, turn.tokens_out)
+        cache_info = ""
+        if cache_hit_total:
+            cache_info = f" cache_hit={cache_hit_total} cache_miss={cache_miss_total}"
         log_action(
             "turn_done",
-            f"tokens_in={turn.tokens_in} tokens_out={turn.tokens_out}",
+            f"tokens_in={turn.tokens_in} tokens_out={turn.tokens_out}{cache_info}",
             session_id=self.session.id,
             tokens=turn.tokens_in + turn.tokens_out,
         )
@@ -420,14 +646,56 @@ class Agent:
     # ── Streaming Call ─────────────────────────────────────────
 
     def _stream_call(self) -> tuple[str, list[dict], dict]:
-        """Faz chamada streaming com retry automatico para rate limit (429)."""
+        """Faz chamada streaming com retry para rate limit (429) e erro de historico (400)."""
         max_retries = config.MAX_RETRY_ATTEMPTS
+        history_retried = False
 
         for attempt in range(max_retries):
             try:
                 return self._stream_call_openai()
             except Exception as e:
                 err_str = str(e).lower()
+
+                # ── Erro 400: historico de mensagens invalido ──
+                is_history_error = (
+                    "400" in err_str
+                    and ("tool" in err_str or "tool_calls" in err_str
+                         or "preceding" in err_str or "message" in err_str)
+                )
+                if is_history_error and not history_retried:
+                    history_retried = True
+                    log_action(
+                        "history_error_recovery",
+                        f"erro 400 detectado, sanitizando historico: {str(e)[:200]}",
+                        level="error",
+                        session_id=self.session.id,
+                    )
+                    # Sanitiza o historico real
+                    before = len(self.session.messages)
+                    self.session.messages = sanitize_messages(
+                        self.session.messages, self.session.id
+                    )
+                    after = len(self.session.messages)
+                    log_action(
+                        "history_error_recovery",
+                        f"sanitizado: {before} -> {after} msgs, retentando",
+                        level="warning",
+                        session_id=self.session.id,
+                    )
+
+                    # Se sanitizar nao mudou nada, o problema e mais grave — reseta
+                    if before == after:
+                        log_action(
+                            "history_reset",
+                            "sanitizacao nao resolveu, resetando historico",
+                            level="error",
+                            session_id=self.session.id,
+                        )
+                        self._reset_to_system_prompt()
+
+                    continue
+
+                # ── Rate limit 429 ──
                 is_rate_limit = (
                     "429" in err_str
                     or "rate_limit" in err_str
@@ -435,7 +703,6 @@ class Agent:
                     or "overloaded" in err_str
                 )
                 if is_rate_limit and attempt < max_retries - 1:
-                    # Tenta extrair retry-after do erro
                     wait = min(30 * (attempt + 1), 90)
                     import re as _re_retry
                     retry_match = _re_retry.search(r"retry.after[:\s]*(\d+)", err_str)
@@ -450,8 +717,35 @@ class Agent:
             "Tente novamente em alguns minutos."
         )
 
+    def _reset_to_system_prompt(self) -> None:
+        """Reset de emergencia: mantem apenas system prompt + ultima mensagem do usuario."""
+        system = None
+        last_user = None
+
+        for msg in self.session.messages:
+            if msg.get("role") == "system" and system is None:
+                system = msg
+        for msg in reversed(self.session.messages):
+            if msg.get("role") == "user":
+                last_user = msg
+                break
+
+        new_msgs = []
+        if system:
+            new_msgs.append(system)
+        if last_user:
+            new_msgs.append(last_user)
+
+        self.session.messages = new_msgs
+        log_action(
+            "history_reset",
+            f"historico resetado para {len(new_msgs)} msgs (system + last user)",
+            level="warning",
+            session_id=self.session.id,
+        )
+
     def _stream_call_openai(self) -> tuple[str, list[dict], dict]:
-        """Streaming via DeepSeek (OpenAI-compatible API)."""
+        """Streaming via DeepSeek (OpenAI-compatible API) com context caching."""
         kwargs: dict[str, Any] = {
             "model": self.model,
             "messages": self._get_messages(),
@@ -462,21 +756,29 @@ class Agent:
         kwargs["max_tokens"] = config.MAX_TOKENS
         kwargs["stream_options"] = {"include_usage": True}
 
-        tools = self._prune_tools(self.registry.openai_tools())
+        tools = self._get_active_tools()
         if tools:
             kwargs["tools"] = tools
             kwargs["tool_choice"] = "auto"
+
+        # DeepSeek Context Caching: extra_headers para ativar cache de prefixo
+        kwargs["extra_headers"] = {"cache-control": "ephemeral"}
 
         stream = self._client.chat.completions.create(**kwargs)
 
         collected_text = []
         collected_tool_calls: dict[int, dict] = {}
-        usage_data = {"prompt_tokens": 0, "completion_tokens": 0}
+        usage_data = {"prompt_tokens": 0, "completion_tokens": 0, "cache_hit_tokens": 0, "cache_miss_tokens": 0}
 
         for chunk in stream:
             if hasattr(chunk, "usage") and chunk.usage:
                 usage_data["prompt_tokens"] = chunk.usage.prompt_tokens or 0
                 usage_data["completion_tokens"] = chunk.usage.completion_tokens or 0
+                # DeepSeek cache metrics (prompt_cache_hit_tokens / prompt_cache_miss_tokens)
+                if hasattr(chunk.usage, "prompt_cache_hit_tokens"):
+                    usage_data["cache_hit_tokens"] = chunk.usage.prompt_cache_hit_tokens or 0
+                if hasattr(chunk.usage, "prompt_cache_miss_tokens"):
+                    usage_data["cache_miss_tokens"] = chunk.usage.prompt_cache_miss_tokens or 0
 
             if not chunk.choices:
                 continue
@@ -508,91 +810,53 @@ class Agent:
         tool_calls = [collected_tool_calls[k] for k in sorted(collected_tool_calls)]
         return text, tool_calls, usage_data
 
-    # ── Tool Pruning Dinâmico ─────────────────────────────────
+    # ── Tool Loading Dinâmico (Lazy) ─────────────────────────────
 
-    TOOL_CATEGORIES = {
-        "core": {"read", "glob", "grep", "write", "edit", "bash", "agent"},
-        "task": {"task_create", "task_update", "task_list", "task_get"},
-        "web": {"web_search", "web_fetch", "scraper"},
-        "integration": {"whatsapp", "n8n_workflow", "supabase_query", "docker_manage",
-                        "http_request", "git_advanced"},
-        "creative": {"image_gen", "pdf_tool", "spreadsheet", "notebook_edit"},
-    }
+    # Tools sempre disponiveis em qualquer contexto
+    CORE_TOOLS = {"read", "glob", "grep", "write", "edit", "bash", "agent",
+                  "web_search", "web_fetch"}
 
-    PRUNING_KEYWORDS: dict[str, list[str]] = {
-        "task": ["task", "tarefa", "todo", "lista", "progresso", "pendente"],
-        "web": ["busca", "buscar", "pesquisa", "pesquisar", "search", "url", "site",
-                "pagina", "web", "fetch", "scrape", "scraping", "crawler"],
-        "integration": ["whatsapp", "zap", "mensagem", "enviar", "n8n", "workflow",
-                        "supabase", "banco", "database", "docker", "container",
-                        "api", "endpoint", "http", "request", "git", "branch",
-                        "merge", "deploy"],
-        "creative": ["imagem", "image", "foto", "gerar", "pdf", "planilha",
-                     "excel", "xlsx", "spreadsheet", "notebook", "jupyter",
-                     "apresentacao", "pptx", "documento", "docx"],
-    }
+    def _get_active_tools(self) -> list[dict]:
+        """Carrega apenas tools relevantes para a task atual.
 
-    def _prune_tools(self, tools: list) -> list:
-        """Filtra tools baseado na ultima mensagem do usuario.
-
-        Sempre inclui core tools. Inclui categorias adicionais
-        somente se keywords relevantes aparecerem na mensagem.
+        Estrategia de lazy loading:
+        1. Core tools: sempre presentes (9 tools)
+        2. Orchestrator: tools detectadas por dominio na mensagem do usuario
+        3. Loop agentico: tools ja usadas no turno atual (para continuidade)
+        4. Nunca envia as 64 tools de uma vez
         """
         if not config.CLOW_TOOL_PRUNING:
-            return tools
+            return self.registry.openai_tools()
 
-        # Pega ultima mensagem do usuario
-        last_user_msg = ""
-        for msg in reversed(self.session.messages):
-            if msg.get("role") == "user":
-                content = msg.get("content", "")
-                if isinstance(content, str):
-                    last_user_msg = content.lower()
-                elif isinstance(content, list):
-                    last_user_msg = " ".join(
-                        b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text"
-                    ).lower()
-                break
+        allowed = set(self.CORE_TOOLS)
 
-        if not last_user_msg:
-            return tools
+        # Adiciona tools do orquestrador (detectadas por keyword matching)
+        if self._orchestration:
+            allowed.update(self._orchestration.get("relevant_tools", set()))
 
-        # Determina categorias ativas
-        active_categories = {"core"}  # Sempre incluido
-        for category, keywords in self.PRUNING_KEYWORDS.items():
-            if any(kw in last_user_msg for kw in keywords):
-                active_categories.add(category)
+        # No loop agentico, inclui tools que o modelo ja chamou neste turno
+        # (para que possa continuar usando sem perder acesso)
+        for msg in self.session.messages:
+            if msg.get("role") == "assistant":
+                for tc in msg.get("tool_calls", []):
+                    fn = tc.get("function", {})
+                    name = fn.get("name", tc.get("name", ""))
+                    if name:
+                        allowed.add(name)
 
-        # Monta set de tool names permitidos
-        allowed_names: set[str] = set()
-        for cat in active_categories:
-            allowed_names.update(self.TOOL_CATEGORIES.get(cat, set()))
+        # Filtra pelo registry — so serializa tools que existem e sao permitidas
+        available = set(self.registry.names())
+        final = allowed & available
 
-        # Filtra
-        pruned = [t for t in tools if self._tool_name_from(t) in allowed_names]
+        tools = self.registry.openai_tools_filtered(final)
 
-        total = len(tools)
-        sent = len(pruned)
         log_action(
-            "tool_pruning",
-            f"enviadas={sent}/{total} categorias={active_categories}",
+            "tool_loading",
+            f"enviadas={len(tools)}/{len(available)} tools={sorted(final)}",
             session_id=self.session.id,
         )
 
-        return pruned if pruned else tools  # Fallback: envia tudo se nenhuma sobrou
-
-    @staticmethod
-    def _tool_name_from(tool_item) -> str:
-        """Extrai nome de um tool dict (Anthropic ou OpenAI format)."""
-        if isinstance(tool_item, dict):
-            # Anthropic format: {"name": ...}
-            if "name" in tool_item:
-                return tool_item["name"]
-            # OpenAI format: {"function": {"name": ...}}
-            func = tool_item.get("function", {})
-            return func.get("name", "")
-        # BaseTool object
-        return getattr(tool_item, "name", "")
+        return tools
 
     # ── Tool Execution (parallel + sequential) ─────────────────
 
@@ -895,12 +1159,21 @@ class Agent:
     # ── Context Management ─────────────────────────────────────
 
     def _get_messages(self) -> list[dict]:
-        """Retorna mensagens respeitando limites de contexto e truncando tool results grandes."""
-        msgs = self.session.messages
-        if len(msgs) > config.MAX_CONTEXT_MESSAGES:
-            msgs = [msgs[0]] + msgs[-(config.MAX_CONTEXT_MESSAGES - 1):]
+        """Retorna mensagens sanitizadas, truncadas e com cache control."""
+        # 1. Sanitiza o historico REAL (corrige corrupcao permanente)
+        self.session.messages = sanitize_messages(
+            self.session.messages, self.session.id
+        )
 
-        # Trunca tool results muito grandes para reduzir consumo de tokens
+        # 2. Corta no limite de contexto respeitando fronteiras de tool blocks
+        msgs = _slice_at_safe_boundary(
+            self.session.messages, config.MAX_CONTEXT_MESSAGES
+        )
+
+        # 3. Sanitiza a copia cortada (o corte pode ter criado orfaos na borda)
+        msgs = sanitize_messages(msgs, self.session.id)
+
+        # 4. Trunca tool results muito grandes
         max_chars = config.MAX_TOOL_RESULT_CHARS
         truncated = []
         for msg in msgs:
@@ -910,6 +1183,11 @@ class Agent:
                     msg = dict(msg)
                     msg["content"] = content[:max_chars] + "\n... (truncado)"
             truncated.append(msg)
+
+        # 5. DeepSeek Context Caching
+        if truncated and truncated[0].get("role") == "system":
+            truncated[0] = dict(truncated[0])
+            truncated[0]["cache_control"] = {"type": "ephemeral"}
 
         return truncated
 
@@ -924,7 +1202,12 @@ class Agent:
         system = self.session.messages[0]
         half = config.MAX_CONTEXT_MESSAGES // 2
         old_messages = self.session.messages[1:-half]
-        recent = self.session.messages[-half:]
+
+        # Corta em fronteira segura (nunca parte um bloco tool_calls+results)
+        recent_msgs = _slice_at_safe_boundary(self.session.messages, half)
+        # Remove system do slice (vamos re-adicionar)
+        if recent_msgs and recent_msgs[0].get("role") == "system":
+            recent_msgs = recent_msgs[1:]
 
         # Tenta resumir via LLM
         summary = self._summarize_messages(old_messages)
@@ -933,10 +1216,14 @@ class Agent:
                 "role": "system",
                 "content": f"[Resumo do contexto anterior]\n{summary}",
             }
-            self.session.messages = [system, summary_msg] + recent
+            self.session.messages = [system, summary_msg] + recent_msgs
         else:
-            # Fallback: descarta mensagens antigas sem resumo
-            self.session.messages = [system] + recent
+            self.session.messages = [system] + recent_msgs
+
+        # Sanitiza apos compactacao para garantir consistencia
+        self.session.messages = sanitize_messages(
+            self.session.messages, self.session.id
+        )
 
     def _summarize_messages(self, messages: list[dict]) -> str:
         """Resume mensagens antigas com extracao semantica estruturada.

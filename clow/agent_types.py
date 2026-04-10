@@ -151,7 +151,7 @@ DATA_AGENT = AgentType(
 CREATIVE_AGENT = AgentType(
     name="creative",
     description="Agente criativo para marketing. Copies, ads, posts, scripts, landing pages.",
-    allowed_tools={"read", "write", "web_search", "web_fetch", "image_gen",
+    allowed_tools={"read", "write", "web_search", "web_fetch",
                     "scraper", "http_request"},
     system_prompt_extra=(
         "Você é um criativo de marketing digital especializado em seguros e internet fibra. Produz:\n"
@@ -213,7 +213,7 @@ AUTOMATION_AGENT = AgentType(
 DESIGN_AGENT = AgentType(
     name="design",
     description="Agente de design. Imagens, banners, logos, landing pages visuais.",
-    allowed_tools={"read", "write", "edit", "image_gen", "web_search", "web_fetch",
+    allowed_tools={"read", "write", "edit", "web_search", "web_fetch",
                     "scraper", "design_generate", "canva_template"},
     system_prompt_extra=(
         "Voce e um designer digital criativo. Produz:\n"
@@ -222,7 +222,7 @@ DESIGN_AGENT = AgentType(
         "- Posts Instagram/TikTok (carrossel, feed, stories)\n"
         "- Logos e identidade visual\n"
         "- Mockups de produtos e sites\n\n"
-        "Use image_gen para gerar imagens com IA. Use design_generate para criativos.\n"
+        "Use design_generate para criativos.\n"
         "Use write para criar HTML/CSS. Sempre aplique o design system do Clow."
     ),
     max_iterations=20,
@@ -232,7 +232,7 @@ DESIGN_AGENT = AgentType(
 MARKETING_AGENT = AgentType(
     name="marketing",
     description="Agente de marketing digital. Meta Ads, criativos, copy, campanhas, metricas.",
-    allowed_tools={"read", "write", "web_search", "web_fetch", "image_gen",
+    allowed_tools={"read", "write", "web_search", "web_fetch",
                     "meta_ads", "http_request", "spreadsheet", "pdf_tool",
                     "design_generate", "scraper"},
     system_prompt_extra=(
@@ -242,7 +242,7 @@ MARKETING_AGENT = AgentType(
         "- Criativos: imagens, carroseis, videos curtos\n"
         "- Metricas: CPC, CPM, CTR, ROAS, CAC, LTV\n"
         "- Funis: topo, meio, fundo — retargeting, lookalike\n\n"
-        "Use meta_ads para gerenciar campanhas. Use image_gen para criativos.\n"
+        "Use meta_ads para gerenciar campanhas. Use design_generate para criativos.\n"
         "Use spreadsheet para relatorios de metricas."
     ),
     max_iterations=20,
