@@ -13,9 +13,9 @@ def record_request(user_id: str, plan: str, input_tokens: int, output_tokens: in
 
     # WhatsApp sempre usa Haiku pricing
     if source == "whatsapp" or plan == "lite":
-        cost = (input_tokens * config.HAIKU_INPUT_PRICE_PER_MTOK + output_tokens * config.HAIKU_OUTPUT_PRICE_PER_MTOK) / 1_000_000
+        cost = (input_tokens * config.DEEPSEEK_INPUT_PRICE_PER_MTOK + output_tokens * config.DEEPSEEK_OUTPUT_PRICE_PER_MTOK) / 1_000_000
     else:
-        cost = (input_tokens * config.SONNET_INPUT_PRICE_PER_MTOK + output_tokens * config.SONNET_OUTPUT_PRICE_PER_MTOK) / 1_000_000
+        cost = (input_tokens * config.DEEPSEEK_REASONER_INPUT_PRICE_PER_MTOK + output_tokens * config.DEEPSEEK_REASONER_OUTPUT_PRICE_PER_MTOK) / 1_000_000
 
     with get_db() as db:
         db.execute(
