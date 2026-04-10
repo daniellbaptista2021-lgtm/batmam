@@ -273,6 +273,143 @@ def register_whatsapp_agent_routes(app) -> None:
 
 
 
+    
+    # ── Meta Template Manager Routes ─────────────────────
+
+    @app.get("/api/v1/whatsapp/templates/list", tags=["templates"])
+    async def list_meta_templates(request: _Req):
+        """List templates from Meta API + local DB status."""
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        import os as _os
+        token = _os.getenv("META_ACCESS_TOKEN", "")
+        waba = _os.getenv("META_WABA_ID", "")
+        # Fetch from Meta
+        meta_templates = []
+        if token and waba:
+            try:
+                from urllib.request import urlopen, Request as _Req2
+                url = f"https://graph.facebook.com/v18.0/{waba}/message_templates?fields=name,status,rejected_reason,category,language,components&limit=50"
+                req = _Req2(url, headers={"Authorization": f"Bearer {token}"})
+                resp = urlopen(req, timeout=15)
+                data = json.loads(resp.read().decode())
+                meta_templates = data.get("data", [])
+            except Exception:
+                pass
+        # Fetch local DB
+        from ..database import get_db
+        with get_db() as db:
+            local = db.execute("SELECT * FROM meta_templates WHERE user_id=? ORDER BY created_at DESC", (sess["user_id"],)).fetchall()
+        local_dict = {r["template_name"]: dict(r) for r in local} if local else {}
+        # Merge
+        result = []
+        for t in meta_templates:
+            name = t.get("name", "")
+            body = ""
+            for comp in t.get("components", []):
+                if comp.get("type") == "BODY":
+                    body = comp.get("text", "")
+            result.append({
+                "name": name, "status": t.get("status", ""),
+                "rejected_reason": t.get("rejected_reason", ""),
+                "category": t.get("category", ""),
+                "language": t.get("language", ""),
+                "body": body,
+                "local": local_dict.get(name, {}),
+            })
+        # Add local-only templates not yet in Meta
+        for name, loc in local_dict.items():
+            if not any(r["name"] == name for r in result):
+                result.append({"name": name, "status": loc.get("status", "PENDING"),
+                               "body": loc.get("template_text", ""), "category": loc.get("category", "UTILITY"),
+                               "language": "pt_BR", "rejected_reason": loc.get("rejected_reason", ""), "local": loc})
+        return _JR({"templates": result})
+
+    @app.post("/api/v1/whatsapp/templates/submit", tags=["templates"])
+    async def submit_meta_templates(request: _Req):
+        """Submit templates to Meta for approval."""
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        body = await request.json()
+        templates = body.get("templates", [])
+        if not templates:
+            return _JR({"error": "Nenhum template selecionado"}, status_code=400)
+        import os as _os
+        token = _os.getenv("META_ACCESS_TOKEN", "")
+        waba = _os.getenv("META_WABA_ID", "")
+        if not token or not waba:
+            return _JR({"error": "META_ACCESS_TOKEN ou META_WABA_ID nao configurados"}, status_code=500)
+        from urllib.request import urlopen, Request as _Req2
+        from urllib.error import HTTPError
+        from ..database import get_db
+        results = []
+        for tpl in templates:
+            name = tpl.get("name", "").strip().lower().replace(" ", "_").replace("-", "_")
+            text = tpl.get("text", "").strip()
+            if not name or not text:
+                results.append({"name": name, "success": False, "error": "Nome e texto obrigatorios"})
+                continue
+            try:
+                url = f"https://graph.facebook.com/v18.0/{waba}/message_templates"
+                payload = json.dumps({
+                    "name": name, "language": "pt_BR", "category": "UTILITY",
+                    "components": [{"type": "BODY", "text": text}]
+                }).encode()
+                req = _Req2(url, data=payload, headers={
+                    "Content-Type": "application/json", "Authorization": f"Bearer {token}"
+                }, method="POST")
+                resp = urlopen(req, timeout=15)
+                data = json.loads(resp.read().decode())
+                tpl_id = data.get("id", "")
+                with get_db() as db:
+                    db.execute("INSERT INTO meta_templates (user_id,connection_id,template_id,template_name,template_text,category,status,submitted_at,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+                               (sess["user_id"], _os.getenv("META_PHONE_NUMBER_ID",""), tpl_id, name, text, "UTILITY", "PENDING", time.time(), time.time()))
+                results.append({"name": name, "success": True, "template_id": tpl_id})
+            except HTTPError as e:
+                err = e.read().decode()[:200] if e.fp else str(e)
+                results.append({"name": name, "success": False, "error": err})
+                with get_db() as db:
+                    db.execute("INSERT INTO meta_templates (user_id,template_name,template_text,category,status,rejected_reason,created_at) VALUES (?,?,?,?,?,?,?)",
+                               (sess["user_id"], name, text, "UTILITY", "FAILED", err[:200], time.time()))
+            except Exception as e:
+                results.append({"name": name, "success": False, "error": str(e)[:100]})
+        return _JR({"results": results})
+
+    @app.post("/api/v1/whatsapp/templates/refresh", tags=["templates"])
+    async def refresh_template_status(request: _Req):
+        """Refresh status of all templates from Meta API."""
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        import os as _os
+        token = _os.getenv("META_ACCESS_TOKEN", "")
+        waba = _os.getenv("META_WABA_ID", "")
+        if not token or not waba:
+            return _JR({"error": "Credenciais Meta nao configuradas"}, status_code=500)
+        try:
+            from urllib.request import urlopen, Request as _Req2
+            url = f"https://graph.facebook.com/v18.0/{waba}/message_templates?fields=name,status,rejected_reason&limit=50"
+            req = _Req2(url, headers={"Authorization": f"Bearer {token}"})
+            resp = urlopen(req, timeout=15)
+            data = json.loads(resp.read().decode())
+            from ..database import get_db
+            updated = 0
+            for t in data.get("data", []):
+                name = t.get("name", "")
+                status = t.get("status", "")
+                reason = t.get("rejected_reason", "") or ""
+                with get_db() as db:
+                    r = db.execute("UPDATE meta_templates SET status=?, rejected_reason=?, last_checked_at=?, approved_at=CASE WHEN ?='APPROVED' THEN ? ELSE approved_at END WHERE template_name=? AND status != ?",
+                                   (status, reason, time.time(), status, time.time(), name, status))
+                    if r.rowcount > 0:
+                        updated += 1
+            return _JR({"updated": updated, "total": len(data.get("data", []))})
+        except Exception as e:
+            return _JR({"error": str(e)[:200]}, status_code=500)
+
+
     # ── Blast Campaign Routes ────────────────────────────────
 
     @app.get("/api/v1/whatsapp/blast/templates", tags=["blast"])

@@ -270,7 +270,8 @@ tr.expanded-row td{background:var(--bg-elevated);padding:16px;white-space:pre-wr
     <div class="main-tab" onclick="switchTab(1)"><span class="tab-icon">&#9881;</span>Configurar Bot</div>
     <div class="main-tab" onclick="switchTab(2)"><span class="tab-icon">&#128196;</span>Historico</div>
     <div class="main-tab" onclick="switchTab(3)"><span class="tab-icon">&#128200;</span>Estatisticas</div>
-    <div class="main-tab" onclick="switchTab(4)"><span class="tab-icon">&#128228;</span>Disparos</div>
+    <div class="main-tab" onclick="switchTab(4)"><span class="tab-icon">&#128203;</span>Templates</div>
+    <div class="main-tab" onclick="switchTab(5)"><span class="tab-icon">&#128228;</span>Disparos</div>
   </div>
 
   <!-- ─────────────────────────────────────────────────────
@@ -740,7 +741,61 @@ tr.expanded-row td{background:var(--bg-elevated);padding:16px;white-space:pre-wr
      ═══════════════════════════════════════════════════════ -->
 
   <!-- TAB 4: DISPAROS EM MASSA -->
+  
+  <!-- TAB 4: TEMPLATES -->
   <div class="tab-panel" id="tab4">
+    <div class="card" style="margin-bottom:16px">
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px">
+        <span>&#9989;</span> Solicitar Templates
+      </h3>
+      <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:16px">Templates sao mensagens pre-aprovadas pelo Meta para iniciar conversas. Categoria UTILITY: ~R$0,03/msg, aprovacao em ate 24h.</p>
+
+      <div id="tplModels" style="display:flex;flex-direction:column;gap:10px">
+        <label style="display:flex;gap:10px;padding:12px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+          <input type="checkbox" class="tpl-check" value="confirmacao_cadastro" data-text="Ola {{1}}, temos uma atualizacao sobre seu cadastro na NIO Fibra. Pode confirmar seus dados?">
+          <div><div style="font-weight:600;font-size:.85rem">Confirmacao de cadastro</div><div style="font-size:.78rem;color:var(--text-muted);margin-top:2px">"Ola {{1}}, temos uma atualizacao sobre seu cadastro na NIO Fibra. Pode confirmar seus dados?"</div><div style="font-size:.7rem;color:#25D366;margin-top:4px">UTILITY &bull; ~R$0,03/msg</div></div>
+        </label>
+        <label style="display:flex;gap:10px;padding:12px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+          <input type="checkbox" class="tpl-check" value="agendamento_confirmado" data-text="Oi {{1}}, seu agendamento de instalacao NIO Fibra esta confirmado. Posso te ajudar com mais alguma informacao?">
+          <div><div style="font-weight:600;font-size:.85rem">Agendamento confirmado</div><div style="font-size:.78rem;color:var(--text-muted);margin-top:2px">"Oi {{1}}, seu agendamento de instalacao NIO Fibra esta confirmado. Posso te ajudar com mais alguma informacao?"</div><div style="font-size:.7rem;color:#25D366;margin-top:4px">UTILITY &bull; ~R$0,03/msg</div></div>
+        </label>
+        <label style="display:flex;gap:10px;padding:12px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+          <input type="checkbox" class="tpl-check" value="suporte_pos_venda" data-text="Ola {{1}}, tudo certo com seu servico NIO Fibra? Estou a disposicao para qualquer duvida.">
+          <div><div style="font-weight:600;font-size:.85rem">Suporte pos-venda</div><div style="font-size:.78rem;color:var(--text-muted);margin-top:2px">"Ola {{1}}, tudo certo com seu servico NIO Fibra? Estou a disposicao para qualquer duvida."</div><div style="font-size:.7rem;color:#25D366;margin-top:4px">UTILITY &bull; ~R$0,03/msg</div></div>
+        </label>
+        <label style="display:flex;gap:10px;padding:12px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+          <input type="checkbox" class="tpl-check" value="pendencia_cadastro" data-text="Oi {{1}}, identificamos uma pendencia no seu cadastro NIO Fibra. Podemos resolver agora?">
+          <div><div style="font-weight:600;font-size:.85rem">Pendencia no cadastro</div><div style="font-size:.78rem;color:var(--text-muted);margin-top:2px">"Oi {{1}}, identificamos uma pendencia no seu cadastro NIO Fibra. Podemos resolver agora?"</div><div style="font-size:.7rem;color:#25D366;margin-top:4px">UTILITY &bull; ~R$0,03/msg</div></div>
+        </label>
+        <label style="display:flex;gap:10px;padding:12px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+          <input type="checkbox" class="tpl-check" value="boas_vindas_cliente" data-text="Bem-vindo(a) {{1}}! Sou o Daniel da NIO Fibra. Como posso te ajudar hoje?">
+          <div><div style="font-weight:600;font-size:.85rem">Boas-vindas</div><div style="font-size:.78rem;color:var(--text-muted);margin-top:2px">"Bem-vindo(a) {{1}}! Sou o Daniel da NIO Fibra. Como posso te ajudar hoje?"</div><div style="font-size:.7rem;color:#25D366;margin-top:4px">UTILITY &bull; ~R$0,03/msg</div></div>
+        </label>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px">
+        <label style="font-size:.82rem;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;gap:4px">
+          <input type="checkbox" id="tplSelectAll" onchange="document.querySelectorAll('.tpl-check').forEach(c=>c.checked=this.checked)"> Selecionar todos
+        </label>
+      </div>
+
+      <button id="tplSubmitBtn" onclick="submitTemplates()" style="width:100%;margin-top:14px;padding:12px;background:#25D366;color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s">
+        &#128640; Clow, solicita aprovacao
+      </button>
+      <div id="tplSubmitResult" style="margin-top:10px"></div>
+    </div>
+
+    <!-- Status dos Templates -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="font-size:1rem;font-weight:700;display:flex;align-items:center;gap:8px"><span>&#128202;</span> Status dos Templates</h3>
+        <button onclick="refreshTemplateStatus()" style="padding:6px 14px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.8rem;cursor:pointer">&#128260; Atualizar</button>
+      </div>
+      <div id="tplStatusList" style="font-size:.85rem;color:var(--text-muted)">Carregando...</div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab5">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
 
       <!-- COLUNA ESQUERDA: Nova Campanha -->
@@ -913,7 +968,8 @@ function switchTab(n){
   if(n===1) populateConfigSelect();
   if(n===2) populateHistSelect();
   if(n===3) loadStats();
-  if(n===4) loadBlastData();
+  if(n===4) loadTemplateData();
+  if(n===5) loadBlastData();
 }
 
 /* ── Collapsible Sections ─────────────────────────────── */
@@ -2086,6 +2142,77 @@ function cancelBlast(){
 
 // Add event listener for name field
 document.getElementById('blastName')&&document.getElementById('blastName').addEventListener('input',checkBlastReady);
+
+
+
+/* ── Template Manager ─────────────────────────────── */
+
+function loadTemplateData(){
+  api('/api/v1/whatsapp/templates/list').then(function(d){
+    var list=document.getElementById('tplStatusList');
+    var templates=d.templates||[];
+    if(templates.length===0){
+      list.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted)">Nenhum template encontrado. Solicite aprovacao acima.</div>';
+      return;
+    }
+    var html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.84rem">';
+    html+='<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:8px;color:var(--text-muted);font-weight:600">Template</th><th style="padding:8px;color:var(--text-muted);font-weight:600">Status</th><th style="padding:8px;color:var(--text-muted);font-weight:600">Categoria</th><th style="padding:8px;color:var(--text-muted);font-weight:600">Acao</th></tr>';
+    templates.forEach(function(t){
+      var statusIcon={'APPROVED':'<span style="color:#4ADE80">&#9989; APROVADO</span>','PENDING':'<span style="color:#FBBF24">&#9203; PENDENTE</span>','REJECTED':'<span style="color:#F87171">&#10060; REJEITADO</span>','PAUSED':'<span style="color:#9898B8">&#128260; PAUSADO</span>'}[t.status]||'<span style="color:#9898B8">'+t.status+'</span>';
+      var action='';
+      if(t.status==='APPROVED') action='<button onclick="switchTab(5)" style="padding:4px 10px;background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.2);border-radius:6px;color:#25D366;font-size:.75rem;cursor:pointer">Usar</button>';
+      if(t.status==='REJECTED') action='<span style="font-size:.7rem;color:#F87171">'+(t.rejected_reason||'')+'</span>';
+      html+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px"><div style="font-weight:500">'+t.name+'</div><div style="font-size:.75rem;color:var(--text-muted);margin-top:2px">'+(t.body||'').substring(0,60)+'...</div></td><td style="padding:8px;text-align:center">'+statusIcon+'</td><td style="padding:8px;text-align:center;font-size:.8rem">'+t.category+'</td><td style="padding:8px;text-align:center">'+action+'</td></tr>';
+    });
+    html+='</table></div>';
+    list.innerHTML=html;
+  }).catch(function(){
+    document.getElementById('tplStatusList').innerHTML='<div style="color:#F87171">Erro ao carregar templates</div>';
+  });
+}
+
+function submitTemplates(){
+  var checks=document.querySelectorAll('.tpl-check:checked');
+  if(checks.length===0){toast('Selecione pelo menos 1 template','err');return;}
+  if(!confirm('Solicitar aprovacao de '+checks.length+' template(s) ao Meta?'))return;
+
+  var btn=document.getElementById('tplSubmitBtn');
+  var result=document.getElementById('tplSubmitResult');
+  btn.disabled=true;btn.textContent='Enviando...';
+  result.innerHTML='';
+
+  var templates=[];
+  checks.forEach(function(c){templates.push({name:c.value,text:c.getAttribute('data-text')});});
+
+  api('/api/v1/whatsapp/templates/submit',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({templates:templates})
+  }).then(function(d){
+    btn.disabled=false;btn.innerHTML='&#128640; Clow, solicita aprovacao';
+    var html='';
+    (d.results||[]).forEach(function(r){
+      if(r.success){
+        html+='<div style="margin-bottom:4px"><span style="color:#4ADE80">&#9989;</span> <strong>'+r.name+'</strong> enviado (ID: '+r.template_id+')</div>';
+      }else{
+        html+='<div style="margin-bottom:4px"><span style="color:#F87171">&#10060;</span> <strong>'+r.name+'</strong>: '+(r.error||'erro')+'</div>';
+      }
+    });
+    var ok=(d.results||[]).filter(function(r){return r.success}).length;
+    html+='<div style="margin-top:8px;padding:8px;background:rgba(37,211,102,.05);border-radius:8px;font-size:.85rem">'+ok+'/'+templates.length+' enviados. Aprovacao em ate 24h.</div>';
+    result.innerHTML=html;
+    loadTemplateData();
+  }).catch(function(e){
+    btn.disabled=false;btn.innerHTML='&#128640; Clow, solicita aprovacao';
+    result.innerHTML='<div style="color:#F87171">Erro: '+e.message+'</div>';
+  });
+}
+
+function refreshTemplateStatus(){
+  api('/api/v1/whatsapp/templates/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(d){
+    toast('Status atualizado: '+(d.updated||0)+' mudancas','ok');
+    loadTemplateData();
+  }).catch(function(){toast('Erro ao atualizar','err');});
+}
 
 </script>
 </body>
