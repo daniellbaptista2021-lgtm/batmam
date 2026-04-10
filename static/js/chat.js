@@ -265,7 +265,30 @@ function appendTxt(t){ensureMsg();
     curBody=newBody;raw='';
   }
   raw+=t;const c=curBody.querySelector('.scur');if(c)c.remove();curBody.insertAdjacentText('beforeend',t);const s=document.createElement('span');s.className='scur';curBody.appendChild(s);scrl()}
-function finishTxt(){if(curBody){const c=curBody.querySelector('.scur');if(c)c.remove();if(raw&&typeof marked!=='undefined'){marked.setOptions({breaks:true,gfm:true});curBody.innerHTML=marked.parse(raw);curBody.querySelectorAll('a').forEach(a=>{a.target='_blank';a.rel='noopener'})}raw=''}}
+function _linkify(text){
+  // Nao linkifica dentro de blocos de codigo
+  if(text.indexOf('```')!==-1){
+    return text.replace(/(```[\s\S]*?```)/g,function(block){return block}).replace(/(?:^|(?<=\n))([^`]*?)$/gm,function(line){return _linkifyLine(line)});
+  }
+  return _linkifyLine(text);
+}
+function _linkifyLine(text){
+  // 1. URLs com protocolo: https://... -> [url](url)
+  var out=text.replace(/(^|[^([\]])https?:\/\/[^\s)<>\]]+/gm,function(m){
+    var pre='',url=m;
+    if(/^[^a-zA-Z]/.test(m)){pre=m[0];url=m.slice(1)}
+    return pre+'['+url+']('+url+')';
+  });
+  // 2. Dominios sem protocolo: site.com, app.vercel.app, sub.dom.com.br -> [url](https://url)
+  out=out.replace(/(^|[\s(])([a-zA-Z0-9][a-zA-Z0-9.-]*\.(?:com|app|br|io|dev|net|org|xyz)(?:\.[a-z]{2,4})?(?:\/[^\s)<>]*)?)/gm,function(m,pre,url){
+    if(out.indexOf(']('+url+')')!==-1||out.indexOf('](https://'+url+')')!==-1)return m;
+    return pre+'['+url+'](https://'+url+')';
+  });
+  // 3. Paths de arquivo: /root/... -> inline code
+  out=out.replace(/(^|[\s(])(\/(?:root|home|var|opt|etc|tmp)\/[^\s)<>]+)/gm,'$1`$2`');
+  return out;
+}
+function finishTxt(){if(curBody){const c=curBody.querySelector('.scur');if(c)c.remove();if(raw&&typeof marked!=='undefined'){marked.setOptions({breaks:true,gfm:true});curBody.innerHTML=marked.parse(_linkify(raw));curBody.querySelectorAll('a').forEach(a=>{a.target='_blank';a.rel='noopener noreferrer'})}raw=''}}
 function showTool(n,a){ensureMsg();hadTools=true;const b=document.createElement('div');b.className='tblk act';const as=typeof a==='string'?a:JSON.stringify(a);const short=as.length>80?as.substring(0,80)+'\u2026':as;b.innerHTML=`<div class="thd" onclick="this.parentElement.classList.toggle('open')"><div class="tdot"></div><span class="tlb"><span class="tn">${esc(n)}</span>(<span class="ta">${esc(short)}</span>)</span><span class="tdr">0.0s</span></div><div class="tout"></div>`;curMsg.querySelector('.mb-wrap').appendChild(b);curTool=b;tStart=Date.now();if(tTimer)clearInterval(tTimer);tTimer=setInterval(()=>{if(!curTool){clearInterval(tTimer);return}const d=curTool.querySelector('.tdr');if(d){const s=(Date.now()-tStart)/1000;if(s<60)d.textContent=s.toFixed(1)+'s';else d.textContent=Math.floor(s/60)+'m '+Math.floor(s%60)+'s'}},100);scrl()}
 function showToolR(n,s,o){if(tTimer){clearInterval(tTimer);tTimer=null}if(curTool){curTool.classList.remove('act');curTool.classList.add(s==='success'?'done':'err');if(o){const b=curTool.querySelector('.tout');if(b){const lines=o.split('\n').slice(0,4);const rest=o.split('\n').length-4;let h='';lines.forEach(l=>{h+='<div class="tline">'+esc(l)+'</div>'});if(rest>0)h+='<div class="tmore" onclick="this.parentElement.style.maxHeight=\'none\';this.remove()">\u2026 +'+rest+' lines (click to expand)</div>';b.innerHTML=h;b.style.display='block'}}const d=curTool.querySelector('.tdr');if(d){const s2=(Date.now()-tStart)/1000;if(s2<60)d.textContent=s2.toFixed(1)+'s';else d.textContent=Math.floor(s2/60)+'m '+Math.floor(s2%60)+'s'}curTool=null}scrl()}
 function showFile(f){ensureMsg();const ic={'landing_page':'\ud83c\udf10','app':'\u26a1','xlsx':'\ud83d\udcca','docx':'\ud83d\udcc4','pptx':'\ud83c\udfac'};const i=ic[f.type]||'\ud83d\udcc1';const wb=f.type==='landing_page'||f.type==='app';const c=document.createElement('div');c.className='fcard';c.innerHTML=`<div class="ficon">${i}</div><div class="finfo"><div class="fname">${esc(f.name)}</div><div class="fmeta">${esc(f.size)}</div></div><div style="display:flex;gap:6px">${wb?`<a href="${esc(f.url)}" target="_blank" class="fbtn pr">Abrir</a>`:''}<a href="${esc(f.url)}" download class="fbtn ${wb?'sc':'pr'}">Download</a></div>`;curMsg.querySelector('.mb-wrap').appendChild(c);scrl()}
