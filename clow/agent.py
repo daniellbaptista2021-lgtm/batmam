@@ -278,6 +278,61 @@ def _slice_at_safe_boundary(msgs: list[dict], keep_last_n: int) -> list[dict]:
     return recent
 
 
+def _repair_tool_json(raw: str) -> dict | None:
+    """Tenta reparar JSON malformado de tool calls do DeepSeek.
+
+    Problemas comuns:
+    1. String truncada: {"command": "echo hello  (falta fechar)
+    2. Aspas internas nao escapadas: {"command": "echo "hello""}
+    3. Trailing comma: {"command": "ls",}
+    """
+    s = raw.strip()
+
+    # Remove trailing commas antes de }
+    s = re.sub(r',\s*}', '}', s)
+    s = re.sub(r',\s*$', '', s)
+
+    # Tenta fechar JSON truncado
+    if not s.endswith('}'):
+        # Conta chaves abertas
+        depth = 0
+        in_string = False
+        escape = False
+        for ch in s:
+            if escape:
+                escape = False
+                continue
+            if ch == '\\':
+                escape = True
+                continue
+            if ch == '"' and not escape:
+                in_string = not in_string
+                continue
+            if not in_string:
+                if ch == '{':
+                    depth += 1
+                elif ch == '}':
+                    depth -= 1
+
+        # Fecha string aberta + chaves
+        if in_string:
+            s += '"'
+        for _ in range(depth):
+            s += '}'
+
+    try:
+        return json.loads(s)
+    except (json.JSONDecodeError, TypeError):
+        pass
+
+    # Ultimo recurso: regex para extrair pares key:value
+    pairs = re.findall(r'"(\w+)"\s*:\s*"((?:[^"\\]|\\.)*)(?:")?', raw)
+    if pairs:
+        return {k: v.replace('\\"', '"') for k, v in pairs}
+
+    return None
+
+
 class Agent:
     """Agente principal do Clow v0.2.0."""
 
@@ -494,13 +549,22 @@ class Agent:
         auto_correct_attempts = 0
         cache_hit_total = 0
         cache_miss_total = 0
+        prev_tool_calls: list[dict] | None = None
 
         try:
             while iteration < max_iterations:
                 iteration += 1
 
+                # ── Roteamento hibrido por etapa ──
+                # Reasoner: planejamento (iter 1), debug (apos erro), verificacao final
+                # Chat: execucao de tools (read, write, bash, glob — rapido e barato)
+                self._select_model_for_iteration(
+                    iteration, auto_correct_attempts, prev_tool_calls
+                )
+
                 # Chama modelo com streaming
                 text_content, tool_calls_data, usage = self._stream_call()
+                prev_tool_calls = tool_calls_data  # tracking para roteamento hibrido
 
                 turn.tokens_in += usage.get("prompt_tokens", 0)
                 turn.tokens_out += usage.get("completion_tokens", 0)
@@ -642,6 +706,62 @@ class Agent:
                 ):
                     return True
         return False
+
+    # ── Roteamento Hibrido por Etapa ──────────────────────
+
+    def _select_model_for_iteration(
+        self,
+        iteration: int,
+        error_count: int,
+        prev_tool_calls: list[dict] | None,
+    ) -> None:
+        """Alterna entre reasoner e chat dentro do loop agentico.
+
+        Reasoner ($0.55/M input) — usado para pensar:
+        - Iteracao 1: planejamento inicial da task
+        - Apos erro de tool: debug e correcao
+        - Sem tool calls na iteracao anterior: decisao/verificacao
+
+        Chat ($0.28/M input) — usado para executar:
+        - Iteracoes com tool calls (read, write, bash, glob)
+        - Confirmacoes intermediarias
+        - Tudo que nao precisa raciocinio profundo
+
+        Economia: ~85% nas iteracoes de execucao (maioria do loop).
+        """
+        # Se orquestrador nao esta ativo (subagent) ou modelo foi forçado, nao altera
+        if not self._orchestration or self.is_subagent:
+            return
+
+        use_reasoner = False
+        reason = ""
+
+        if iteration == 1:
+            # Planejamento inicial — reasoner analisa a task
+            use_reasoner = True
+            reason = "planning"
+        elif error_count > 0 and self._has_recent_errors():
+            # Debug apos erro de tool — precisa raciocinio
+            use_reasoner = True
+            reason = "debug-after-error"
+        elif prev_tool_calls is None or len(prev_tool_calls) == 0:
+            # Iteracao anterior nao teve tool calls — decidindo/verificando
+            use_reasoner = True
+            reason = "decision-or-verify"
+        else:
+            # Execucao de tools — chat e suficiente e mais barato
+            use_reasoner = False
+            reason = "tool-execution"
+
+        target = config.DEEPSEEK_REASONER_MODEL if use_reasoner else config.CLOW_MODEL
+
+        if target != self.model:
+            log_action(
+                "hybrid_routing",
+                f"iter={iteration} {self.model}->{target} reason={reason}",
+                session_id=self.session.id,
+            )
+            self.model = target
 
     # ── Streaming Call ─────────────────────────────────────────
 
@@ -1455,12 +1575,42 @@ class Agent:
 
     @staticmethod
     def _parse_arguments(arguments: str | dict) -> dict:
+        """Parseia arguments de tool call com reparo de JSON malformado.
+
+        DeepSeek as vezes gera JSON com aspas nao escapadas dentro de strings,
+        especialmente no campo 'command' do bash tool. Ex:
+          {"command": "echo "hello""}  -> invalido
+        """
         if isinstance(arguments, dict):
             return arguments
+        if not arguments or not isinstance(arguments, str):
+            return {"raw": arguments}
+
+        # Tentativa 1: parse direto
         try:
             return json.loads(arguments)
         except (json.JSONDecodeError, TypeError):
-            return {"raw": arguments}
+            pass
+
+        # Tentativa 2: repara JSON truncado/malformado
+        repaired = _repair_tool_json(arguments)
+        if repaired is not None:
+            return repaired
+
+        # Tentativa 3: extrai campo command de bash tool calls quebrados
+        # Padrao comum: {"command": "...conteudo com aspas..."}
+        cmd_match = re.search(r'"command"\s*:\s*"', arguments)
+        if cmd_match:
+            start = cmd_match.end()
+            # Pega tudo ate o final, remove trailing "} se existir
+            raw_cmd = arguments[start:].rstrip()
+            for suffix in ('"}', '"}', '"', '}'):
+                if raw_cmd.endswith(suffix):
+                    raw_cmd = raw_cmd[:-len(suffix)]
+                    break
+            return {"command": raw_cmd}
+
+        return {"raw": arguments}
 
 
 class SubAgent:
