@@ -249,12 +249,16 @@ def create_public_checkout(plan_id: str, success_url: str = "", cancel_url: str 
     try:
         session = stripe.checkout.Session.create(
             mode="subscription",
-            payment_method_types=["card"],
+            payment_method_types=["card", "boleto"],
             line_items=[{"price": price_id, "quantity": 1}],
             success_url=success_url or "https://clow.pvcorretor01.com.br/login",
             cancel_url=cancel_url or "https://clow.pvcorretor01.com.br/landing",
             metadata={"plan_id": plan_id},
             allow_promotion_codes=True,
+            locale="pt-BR",
+            payment_method_options={
+                "boleto": {"expires_after_days": 3},
+            },
         )
         return {"url": session.url, "session_id": session.id}
     except Exception as e:
@@ -273,6 +277,7 @@ def create_checkout_session(user_id: str, email: str, plan_id: str, success_url:
     try:
         session = stripe.checkout.Session.create(
             mode="subscription",
+            payment_method_types=["card", "boleto"],
             line_items=[{"price": plan["stripe_price_id"], "quantity": 1}],
             customer_email=email,
             success_url=success_url or "https://clow.pvcorretor01.com.br/app/settings?payment=success",
@@ -280,7 +285,9 @@ def create_checkout_session(user_id: str, email: str, plan_id: str, success_url:
             metadata={"user_id": user_id, "plan_id": plan_id},
             locale="pt-BR",
             allow_promotion_codes=True,
-            subscription_data={},
+            payment_method_options={
+                "boleto": {"expires_after_days": 3},
+            },
         )
         log_action("billing_checkout", f"plan={plan_id} user={user_id}")
         return {"url": session.url, "session_id": session.id}
