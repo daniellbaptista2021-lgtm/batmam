@@ -1,4 +1,4 @@
-"""Carol NIO Fibra — Agente de vendas WhatsApp para NIO Fibra Internet.
+"""Daniel NIO Fibra — Agente de vendas WhatsApp para NIO Fibra Internet.
 
 Fluxo: Saudacao > CEP > Endereco > Email > Planos > CPF > Conferencia > Finalizacao
 Tools: consulta_cep, consulta_cpf
@@ -15,13 +15,13 @@ from urllib.request import urlopen, Request
 
 from . import config
 
-logger = logging.getLogger("clow.carol")
+logger = logging.getLogger("clow.daniel_agent")
 
-_CONV_DIR = config.CLOW_HOME / "carol_conversations"
+_CONV_DIR = config.CLOW_HOME / "daniel_nio_conversations"
 _CONV_DIR.mkdir(parents=True, exist_ok=True)
 
-CAROL_PROMPT = """Voce e a Carol, assistente virtual da NIO Fibra Internet.
-Conversa de forma natural e simpatica, como uma vendedora experiente pelo WhatsApp.
+CAROL_PROMPT = """Voce e o Daniel, consultor de vendas da NIO Fibra Internet.
+Conversa de forma natural e profissional, como um consultor de vendas experiente pelo WhatsApp.
 
 NOME DO CLIENTE: {customer_name}
 TELEFONE: {customer_phone}
@@ -95,8 +95,8 @@ def _save_conv(phone, state):
     (_CONV_DIR / f"{phone}.json").write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def process_carol_message(phone, message, customer_name=""):
-    """Process message through Carol agent. Returns reply string."""
+def process_daniel_message(phone, message, customer_name=""):
+    """Process message through Daniel agent. Returns reply string."""
     state = _load_conv(phone)
     if not customer_name:
         customer_name = state.get("data", {}).get("name", phone[-4:])
@@ -136,7 +136,7 @@ def process_carol_message(phone, message, customer_name=""):
         resp = client.chat.completions.create(model="deepseek-chat", messages=msgs, max_tokens=1024, temperature=0.4)
         reply = resp.choices[0].message.content or ""
     except Exception as e:
-        logger.error(f"Carol LLM error: {e}")
+        logger.error(f"Daniel LLM error: {e}")
         reply = "Desculpa, tive um probleminha tecnico. Pode repetir?"
 
     state.setdefault("messages", []).append({"role": "user", "content": message})
