@@ -132,3 +132,36 @@ def register_bootstrap_routes(app) -> None:
         mgr = PluginManager()
         mgr.load_all(cwd=_os.getcwd())
         return _JR({"plugins": mgr.list_plugins()})
+
+    # -- Coordinator API (Ep.03) --
+
+    @app.get("/api/v1/system/coordinator", tags=["system"])
+    async def get_coordinator_status(request: _Req):
+        """Get coordinator status (admin only)."""
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        from ..coordinator import get_coordinator, is_coordinator_mode
+        if not is_coordinator_mode():
+            return _JR({"mode": "normal", "message": "Coordinator mode not active"})
+        return _JR(get_coordinator().get_status())
+
+    @app.post("/api/v1/system/coordinator/mode", tags=["system"])
+    async def toggle_coordinator_mode(request: _Req):
+        """Toggle coordinator mode on/off (admin only)."""
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        body = await request.json()
+        from ..coordinator import set_coordinator_mode, is_coordinator_mode
+        set_coordinator_mode(body.get("enabled", False))
+        return _JR({"coordinator_mode": is_coordinator_mode()})
+
+    @app.get("/api/v1/system/coordinator/workers", tags=["system"])
+    async def list_coordinator_workers(request: _Req):
+        """List all coordinator workers (admin only)."""
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        from ..coordinator import get_coordinator
+        return _JR({"workers": get_coordinator().list_workers()})
