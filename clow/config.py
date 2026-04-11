@@ -108,6 +108,15 @@ CLOW_TEAM_MAX_AGENTS = int(os.getenv("CLOW_TEAM_MAX_AGENTS", "4"))
 # ── Natural Language Automations ──────────────────────────
 CLOW_NL_AUTOMATIONS = os.getenv("CLOW_NL_AUTOMATIONS", "true").lower() in ("true", "1", "yes")
 
+
+# ── Compaction (Claude Code 3-tier) ───────────────
+MICROCOMPACT_KEEP_LAST = 3          # Keep last N tool results full
+MICROCOMPACT_TRUNCATE_TO = 500      # Truncate older tool results to N chars
+SESSION_COMPACT_MIN_TOKENS = 10000  # Keep at least this many tokens after compact
+SESSION_COMPACT_MAX_TOKENS = 40000  # Hard cap after compact
+AUTOCOMPACT_THRESHOLD = 320000      # Chars (~80K tokens) to trigger autocompact
+AUTOCOMPACT_MAX_FAILURES = 3        # Stop trying after N failures
+
 # ── Stripe Billing ────────────────────────────────────────
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "")

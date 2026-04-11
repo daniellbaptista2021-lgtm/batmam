@@ -573,6 +573,13 @@ class Agent:
                 cache_hit_total += usage.get("cache_hit_tokens", 0)
                 cache_miss_total += usage.get("cache_miss_tokens", 0)
 
+                # Budget check: if this turn consumed too many tokens, stop
+                if turn.tokens_in + turn.tokens_out > 50000:
+                    log_action("budget_exceeded", f"Turn tokens: {turn.tokens_in + turn.tokens_out}", session_id=self.session.id)
+                    if text_content:
+                        full_response_text.append(text_content)
+                    break
+
                 if text_content:
                     full_response_text.append(text_content)
                     self.on_text_done(text_content)
@@ -1307,21 +1314,40 @@ class Agent:
     # ── Context Management ─────────────────────────────────────
 
     def _get_messages(self) -> list[dict]:
-        """Retorna mensagens sanitizadas, truncadas e com cache control."""
-        # 1. Sanitiza o historico REAL (corrige corrupcao permanente)
-        self.session.messages = sanitize_messages(
-            self.session.messages, self.session.id
-        )
+        """5-stage preprocessing pipeline (Claude Code architecture).
 
-        # 2. Corta no limite de contexto respeitando fronteiras de tool blocks
-        msgs = _slice_at_safe_boundary(
-            self.session.messages, config.MAX_CONTEXT_MESSAGES
-        )
+        Before every API call, messages pass through:
+        1. Tool result budget -- cap old tool results to save tokens
+        2. Snip -- remove flagged/deleted messages
+        3. MicroCompact -- clear old tool result content (keep last 3)
+        4. Context collapse -- merge adjacent same-role messages
+        5. AutoCompact -- LLM summarize if over threshold
+        """
+        msgs = list(self.session.messages)
 
-        # 3. Sanitiza a copia cortada (o corte pode ter criado orfaos na borda)
+        # Stage 1: Tool result budget -- cap old tool results to save tokens
+        msgs = self._stage_tool_result_budget(msgs)
+
+        # Stage 2: Snip -- remove any flagged/deleted messages
+        msgs = self._stage_snip(msgs)
+
+        # Stage 3: MicroCompact -- clear old tool result content (keep last 3)
+        msgs = self._stage_microcompact(msgs)
+
+        # Stage 4: Context collapse -- merge adjacent same-role messages
+        msgs = self._stage_context_collapse(msgs)
+
+        # Stage 5: AutoCompact -- summarize if over threshold
+        if self._should_autocompact(msgs):
+            self._maybe_compact()
+            msgs = list(self.session.messages)
+
+        # Sanitize and truncate
+        msgs = sanitize_messages(msgs, self.session.id)
+        msgs = _slice_at_safe_boundary(msgs, config.MAX_CONTEXT_MESSAGES)
         msgs = sanitize_messages(msgs, self.session.id)
 
-        # 4. Trunca tool results muito grandes
+        # Truncate large tool results
         max_chars = config.MAX_TOOL_RESULT_CHARS
         truncated = []
         for msg in msgs:
@@ -1332,12 +1358,77 @@ class Agent:
                     msg["content"] = content[:max_chars] + "\n... (truncado)"
             truncated.append(msg)
 
-        # 5. DeepSeek Context Caching
+        # DeepSeek cache control on system prompt
         if truncated and truncated[0].get("role") == "system":
             truncated[0] = dict(truncated[0])
             truncated[0]["cache_control"] = {"type": "ephemeral"}
 
         return truncated
+
+    # -- 5-Stage Preprocessing Methods (Claude Code Architecture) --
+
+    def _stage_tool_result_budget(self, msgs: list[dict]) -> list[dict]:
+        """Stage 1: Cap tool results to max 500 chars each, except last 3."""
+        tool_indices = [i for i, m in enumerate(msgs) if m.get("role") == "tool"]
+        if len(tool_indices) <= 3:
+            return msgs
+        # Keep last 3 full, truncate older ones more aggressively
+        old_indices = set(tool_indices[:-3])
+        result = []
+        for i, msg in enumerate(msgs):
+            if i in old_indices:
+                msg = dict(msg)
+                content = msg.get("content", "")
+                if isinstance(content, str) and len(content) > 500:
+                    msg["content"] = content[:500] + "\n[... resultado antigo truncado]"
+            result.append(msg)
+        return result
+
+    def _stage_snip(self, msgs: list[dict]) -> list[dict]:
+        """Stage 2: Remove messages flagged for deletion."""
+        return [m for m in msgs if not m.get("_snipped")]
+
+    def _stage_microcompact(self, msgs: list[dict]) -> list[dict]:
+        """Stage 3: Clear content of old tool results (keep last 3 full).
+        This is the key cache optimization -- old tool results get replaced
+        with '[resultado anterior limpo]' so they don't waste tokens."""
+        tool_indices = [i for i, m in enumerate(msgs) if m.get("role") == "tool"]
+        if len(tool_indices) <= 3:
+            return msgs
+        old_indices = set(tool_indices[:-3])
+        result = []
+        for i, msg in enumerate(msgs):
+            if i in old_indices:
+                msg = dict(msg)
+                msg["content"] = "[resultado anterior limpo]"
+            result.append(msg)
+        return result
+
+    def _stage_context_collapse(self, msgs: list[dict]) -> list[dict]:
+        """Stage 4: Merge adjacent messages with same role."""
+        if not msgs:
+            return msgs
+        result = [msgs[0]]
+        for msg in msgs[1:]:
+            prev = result[-1]
+            # Merge adjacent user messages
+            if msg.get("role") == prev.get("role") == "user":
+                if isinstance(prev.get("content"), str) and isinstance(msg.get("content"), str):
+                    merged = dict(prev)
+                    merged["content"] = prev["content"] + "\n\n" + msg["content"]
+                    result[-1] = merged
+                    continue
+            result.append(msg)
+        return result
+
+    def _should_autocompact(self, msgs: list[dict]) -> bool:
+        """Check if context exceeds autocompact threshold."""
+        total_chars = sum(
+            len(m.get("content", "")) if isinstance(m.get("content"), str) else 0
+            for m in msgs
+        )
+        # Threshold: ~80K tokens estimated (320K chars)
+        return total_chars > 320_000
 
     def _maybe_compact(self) -> None:
         """Compacta contexto com resumo LLM se muito grande (>80K tokens ou msgs)."""
