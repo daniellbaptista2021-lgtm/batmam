@@ -556,6 +556,11 @@ class Agent:
         cache_miss_total = 0
         prev_tool_calls: list[dict] | None = None
 
+        # Watermark-based error scoping (Claude Code pattern)
+        _error_watermark = len(self.session.messages)
+        _output_recovery_count = 0
+        self._reactive_compact_done = False
+
         _last_tool_calls: list[str] = []  # Loop detection
         try:
             while iteration < max_iterations:
@@ -576,6 +581,26 @@ class Agent:
                 turn.tokens_out += usage.get("completion_tokens", 0)
                 cache_hit_total += usage.get("cache_hit_tokens", 0)
                 cache_miss_total += usage.get("cache_miss_tokens", 0)
+
+                # Max output tokens recovery (Claude Code pattern -- up to 3 retries)
+                MAX_OUTPUT_RECOVERY = 3
+                if (usage.get("finish_reason") == "length"
+                        and _output_recovery_count < MAX_OUTPUT_RECOVERY):
+                    _output_recovery_count += 1
+                    log_action(
+                        "output_recovery",
+                        f"max tokens hit, retry {_output_recovery_count}/{MAX_OUTPUT_RECOVERY}",
+                        session_id=self.session.id,
+                    )
+                    if text_content:
+                        full_response_text.append(text_content)
+                        assistant_msg = self._build_assistant_message(text_content, tool_calls_data)
+                        self.session.messages.append(assistant_msg)
+                    self.session.messages.append({
+                        "role": "user",
+                        "content": "[Sistema] Resposta truncada. Continue de onde parou.",
+                    })
+                    continue
 
                 # Budget check: if this turn consumed too many tokens, stop
                 if turn.tokens_in + turn.tokens_out > 50000:
@@ -715,6 +740,18 @@ class Agent:
                 log_action("forced_synthesis", "gerou resposta final apos tools", session_id=self.session.id)
             except Exception as e:
                 log_action("forced_synthesis_error", str(e)[:100], level="warning", session_id=self.session.id)
+
+        # Count errors this turn only (watermark-based error scoping)
+        turn_errors = sum(
+            1 for msg in self.session.messages[_error_watermark:]
+            if msg.get("role") == "tool" and "[ERROR]" in msg.get("content", "")
+        )
+        if turn_errors:
+            log_action(
+                "turn_errors",
+                f"{turn_errors} errors in this turn",
+                session_id=self.session.id,
+            )
 
         # Finaliza turno
         turn.assistant_message = "\n".join(full_response_text)
@@ -876,6 +913,39 @@ class Agent:
                         wait = int(retry_match.group(1))
                     self.on_rate_limit(wait, attempt + 1, max_retries)
                     continue
+
+                # Reactive compaction: if prompt-too-long (413 or context_length_exceeded)
+                is_context_error = (
+                    "413" in err_str
+                    or "context_length" in err_str
+                    or "too long" in err_str
+                )
+                if is_context_error and not getattr(self, "_reactive_compact_done", False):
+                    self._reactive_compact_done = True
+                    log_action(
+                        "reactive_compact",
+                        "prompt too long, compacting and retrying",
+                        session_id=self.session.id,
+                    )
+                    self._maybe_compact()
+                    continue
+
+                # Fallback model retry (Claude Code pattern)
+                # If primary model fails with non-rate-limit error, try fallback
+                if attempt == 0 and not is_rate_limit:
+                    fallback_model = (
+                        config.DEEPSEEK_REASONER_MODEL
+                        if self.model == config.CLOW_MODEL
+                        else config.CLOW_MODEL
+                    )
+                    log_action(
+                        "fallback_retry",
+                        f"primary {self.model} failed, trying {fallback_model}",
+                        session_id=self.session.id,
+                    )
+                    self.model = fallback_model
+                    continue
+
                 raise
 
         raise RuntimeError(
@@ -936,6 +1006,8 @@ class Agent:
         collected_tool_calls: dict[int, dict] = {}
         usage_data = {"prompt_tokens": 0, "completion_tokens": 0, "cache_hit_tokens": 0, "cache_miss_tokens": 0}
 
+        finish_reason = None
+
         for chunk in stream:
             if hasattr(chunk, "usage") and chunk.usage:
                 usage_data["prompt_tokens"] = chunk.usage.prompt_tokens or 0
@@ -948,6 +1020,10 @@ class Agent:
 
             if not chunk.choices:
                 continue
+
+            # Track finish_reason from chunks
+            if chunk.choices[0].finish_reason:
+                finish_reason = chunk.choices[0].finish_reason
 
             delta = chunk.choices[0].delta
 
@@ -974,6 +1050,7 @@ class Agent:
 
         text = "".join(collected_text)
         tool_calls = [collected_tool_calls[k] for k in sorted(collected_tool_calls)]
+        usage_data["finish_reason"] = finish_reason
         return text, tool_calls, usage_data
 
     # ── Tool Loading Dinâmico (Lazy) ─────────────────────────────
@@ -1346,7 +1423,7 @@ class Agent:
         4. Context collapse -- merge adjacent same-role messages
         5. AutoCompact -- LLM summarize if over threshold
         """
-        msgs = list(self.session.messages)
+        msgs = list(self.session.messages)  # Immutable snapshot (Claude Code pattern)
 
         # Stage 1: Tool result budget -- cap old tool results to save tokens
         msgs = self._stage_tool_result_budget(msgs)
