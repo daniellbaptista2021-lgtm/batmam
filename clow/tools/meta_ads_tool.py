@@ -21,11 +21,12 @@ def _get_creds(kwargs: dict) -> tuple[str, str]:
     token = kwargs.get("access_token", "")
     account = kwargs.get("ad_account_id", "")
 
-    # DeepSeek as vezes manda o account_id no campo campaign_id
+    # DeepSeek manda o account_id em qualquer campo — busca em todos
     if not account:
-        cid = kwargs.get("campaign_id", "")
-        if cid and cid.startswith("act_"):
-            account = cid
+        for k, v in kwargs.items():
+            if isinstance(v, str) and v.startswith("act_"):
+                account = v
+                break
 
     # Busca token em qualquer valor de string dos kwargs (fallback para DeepSeek)
     if not token:
