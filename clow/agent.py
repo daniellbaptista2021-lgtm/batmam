@@ -549,7 +549,7 @@ class Agent:
 
         turn = Turn(user_message=user_message)
         full_response_text = []
-        max_iterations = 8
+        max_iterations = 50
         iteration = 0
         auto_correct_attempts = 0
         cache_hit_total = 0
@@ -583,7 +583,7 @@ class Agent:
                 cache_miss_total += usage.get("cache_miss_tokens", 0)
 
                 # Max output tokens recovery (Claude Code pattern -- up to 3 retries)
-                MAX_OUTPUT_RECOVERY = 3
+                MAX_OUTPUT_RECOVERY = 5
                 if (usage.get("finish_reason") == "length"
                         and _output_recovery_count < MAX_OUTPUT_RECOVERY):
                     _output_recovery_count += 1
@@ -598,12 +598,12 @@ class Agent:
                         self.session.messages.append(assistant_msg)
                     self.session.messages.append({
                         "role": "user",
-                        "content": "[Sistema] Resposta truncada. Continue de onde parou.",
+                        "content": "[Sistema] Resposta truncada por limite de tokens. Use a ferramenta 'write' para salvar o conteudo em arquivo ao inves de escrever na resposta. Continue a tarefa.",
                     })
                     continue
 
                 # Budget check: if this turn consumed too many tokens, stop
-                if turn.tokens_in + turn.tokens_out > 50000:
+                if turn.tokens_in + turn.tokens_out > 1000000:
                     log_action("budget_exceeded", f"Turn tokens: {turn.tokens_in + turn.tokens_out}", session_id=self.session.id)
                     if text_content:
                         full_response_text.append(text_content)
@@ -647,20 +647,23 @@ class Agent:
 
                 # ── Time Travel: checkpoint antes de tools de escrita ──
                 if config.CLOW_CHECKPOINTS and not self.is_subagent:
-                    has_write = any(
-                        is_write_tool_call(
-                            tc["name"],
-                            json.loads(tc["arguments"]) if isinstance(tc["arguments"], str) else tc["arguments"],
-                        )
-                        for tc in tool_calls_data
-                    )
-                    if has_write:
-                        target_files = extract_target_files(tool_calls_data)
-                        if target_files:
-                            save_checkpoint(
-                                self.session.id, iteration, target_files,
-                                summary=msg_text[:80] if isinstance(user_message, str) else "",
+                    try:
+                        has_write = any(
+                            is_write_tool_call(
+                                tc["name"],
+                                self._parse_arguments(tc["arguments"]),
                             )
+                            for tc in tool_calls_data
+                        )
+                        if has_write:
+                            target_files = extract_target_files(tool_calls_data)
+                            if target_files:
+                                save_checkpoint(
+                                    self.session.id, iteration, target_files,
+                                    summary=msg_text[:80] if isinstance(user_message, str) else "",
+                                )
+                    except Exception:
+                        pass  # Checkpoint e opcional, nao deve crashar o turno
 
                 # Loop detection: same tool + same args = stop
                 tool_signatures = []
@@ -712,6 +715,15 @@ class Agent:
             log_action("turn_error", str(e), level="error", session_id=self.session.id)
             raise
 
+        # ── Auto-file-extract: salva blocos de codigo da resposta em arquivo ──
+        # DeepSeek frequentemente gera HTML/JSON/etc na resposta ao inves de usar tools
+        full_text = "\n".join(full_response_text)
+        if full_text and not self.is_subagent:
+            extracted = self._auto_extract_files(full_text, msg_text if isinstance(user_message, str) else "")
+            if extracted:
+                for fpath in extracted:
+                    log_action("auto_extract", f"arquivo salvo: {fpath}", session_id=self.session.id)
+
         # ── Forca resposta final se houve tool calls sem texto conclusivo ──
         had_tool_calls = any(
             msg.get("role") == "assistant" and msg.get("tool_calls")
@@ -723,7 +735,7 @@ class Agent:
             try:
                 self.session.messages.append({
                     "role": "user",
-                    "content": "[Sistema] As ferramentas terminaram. Faca um resumo claro do que foi feito, resultados obtidos e proximos passos para o usuario.",
+                    "content": "[Sistema] Responda em 2-3 linhas: o que foi feito e o link do resultado. Sem explicacoes longas.",
                 })
                 # Usa chat model para sintese (rapido e barato)
                 saved_model = self.model
@@ -1093,13 +1105,13 @@ class Agent:
                     if name:
                         allowed.add(name)
 
-        # Step 4: Cap at 20 tools max (Claude Code never sends >42, we cap at 20)
+        # Step 4: Cap at 42 tools max (potencia maxima)
         available = set(self.registry.names())
         final = allowed & available
-        if len(final) > 20:
+        if len(final) > 42:
             # Prioritize core tools + most recently used
             core = final & set(self.CORE_TOOLS)
-            extra = list(final - core)[:20 - len(core)]
+            extra = list(final - core)[:42 - len(core)]
             final = core | set(extra)
 
         # Step 5: Sort for cache stability (built-in first)
@@ -1363,6 +1375,74 @@ class Agent:
         return False
 
     # ── Vision Feedback Loop ──────────────────────────────────
+
+    # ── Auto-file-extract ──────────────────────────────────────
+
+    _CODE_BLOCK_RE = re.compile(
+        r"```(\w+)?\s*\n(.*?)```",
+        re.DOTALL,
+    )
+    _FILE_PATH_RE = re.compile(
+        r"(?:salv[aeo]|cri[ae]|gerar?|escrev|arquivo|file|path)[^\n]{0,50}?(/[\w/._ -]+\.(?:html|css|js|json|xlsx|py|sh|yaml|yml|md|txt))",
+        re.IGNORECASE,
+    )
+
+    def _auto_extract_files(self, response_text: str, user_message: str) -> list[str]:
+        """Extrai blocos de codigo da resposta e salva em arquivo.
+
+        Ativado quando:
+        1. A resposta contem blocos de codigo grandes (>500 chars)
+        2. O usuario pediu para criar/salvar um arquivo
+        3. Nenhuma tool write foi usada com sucesso neste turno
+        """
+        # Verifica se ja usou write com sucesso
+        write_used = any(
+            msg.get("role") == "tool"
+            and msg.get("tool_call_id", "")
+            and "success" in msg.get("content", "").lower()[:50]
+            for msg in self.session.messages[-20:]
+            if any(
+                tc.get("name") == "write"
+                for amsg in self.session.messages[-20:]
+                if amsg.get("role") == "assistant"
+                for tc in amsg.get("tool_calls", [])
+            )
+        )
+        if write_used:
+            return []
+
+        # Busca path alvo no pedido do usuario ou na resposta
+        target_path = None
+        for text in [user_message, response_text]:
+            m = self._FILE_PATH_RE.search(text)
+            if m:
+                target_path = m.group(1)
+                break
+
+        if not target_path:
+            return []
+
+        # Extrai blocos de codigo grandes
+        blocks = self._CODE_BLOCK_RE.findall(response_text)
+        if not blocks:
+            return []
+
+        # Pega o maior bloco
+        best_lang, best_code = max(blocks, key=lambda b: len(b[1]))
+        if len(best_code.strip()) < 200:
+            return []
+
+        # Salva o arquivo
+        try:
+            target_dir = os.path.dirname(target_path)
+            if target_dir:
+                os.makedirs(target_dir, exist_ok=True)
+            with open(target_path, "w", encoding="utf-8") as f:
+                f.write(best_code.strip())
+            return [target_path]
+        except Exception as e:
+            log_action("auto_extract_error", str(e)[:100], level="warning", session_id=self.session.id)
+            return []
 
     VISION_EXTENSIONS = {".html", ".jsx", ".tsx", ".css"}
 

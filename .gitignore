@@ -34,6 +34,9 @@ app_temp.py
 # Arquivos de teste soltos na raiz
 test_*.py
 
+# Skills backup importados
+clow/skills/imported_backup/
+
 # Credenciais e sensiveis
 *.pem
 *.key

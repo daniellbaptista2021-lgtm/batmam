@@ -47,42 +47,42 @@ CLOW_MODEL = os.getenv("CLOW_MODEL", DEEPSEEK_MODEL)
 CLOW_MODEL_HEAVY = os.getenv("CLOW_MODEL_HEAVY", DEEPSEEK_REASONER_MODEL)
 
 # ── Limites ─────────────────────────────────────────────────
-MAX_TOKENS = int(os.getenv("CLOW_MAX_TOKENS", "2048"))
+MAX_TOKENS = int(os.getenv("CLOW_MAX_TOKENS", "16384"))
 
 # Limites de mensagens por usuário (0 = sem limite)
-CLOW_DAILY_LIMIT = int(os.getenv("CLOW_DAILY_LIMIT", "50"))
-CLOW_WEEKLY_LIMIT = int(os.getenv("CLOW_WEEKLY_LIMIT", "200"))
-MAX_CONTEXT_MESSAGES = 30
-TEMPERATURE = 0.2
-MAX_RETRY_ATTEMPTS = 3
-MAX_TOOL_RESULT_CHARS = 5000
+CLOW_DAILY_LIMIT = int(os.getenv("CLOW_DAILY_LIMIT", "0"))
+CLOW_WEEKLY_LIMIT = int(os.getenv("CLOW_WEEKLY_LIMIT", "0"))
+MAX_CONTEXT_MESSAGES = 100
+TEMPERATURE = 0.0
+MAX_RETRY_ATTEMPTS = 5
+MAX_TOOL_RESULT_CHARS = 30000
 
 # ── Permissões ──────────────────────────────────────────────
 AUTO_APPROVE_READ = True       # Leitura sempre liberada
-AUTO_APPROVE_WRITE = False     # Escrita pede confirmação
-AUTO_APPROVE_BASH = False      # Bash pede confirmação
+AUTO_APPROVE_WRITE = True      # Escrita liberada — agente executor
+AUTO_APPROVE_BASH = True       # Bash liberado — agente executor
 
 # ── Extended Thinking ────────��─────────────────────────────
 CLOW_EXTENDED_THINKING = os.getenv("CLOW_EXTENDED_THINKING", "true").lower() in ("true", "1", "yes")
-CLOW_THINKING_BUDGET = int(os.getenv("CLOW_THINKING_BUDGET", "10000"))
+CLOW_THINKING_BUDGET = int(os.getenv("CLOW_THINKING_BUDGET", "32000"))
 
 # ── Auto-Correction ───────────────────────────────────────
 CLOW_AUTO_CORRECT = os.getenv("CLOW_AUTO_CORRECT", "true").lower() in ("true", "1", "yes")
-CLOW_AUTO_CORRECT_MAX = int(os.getenv("CLOW_AUTO_CORRECT_MAX", "2"))
+CLOW_AUTO_CORRECT_MAX = int(os.getenv("CLOW_AUTO_CORRECT_MAX", "5"))
 
 # ── Vision Feedback Loop ──────────────────────────────────
-CLOW_VISION_FEEDBACK = os.getenv("CLOW_VISION_FEEDBACK", "true").lower() in ("true", "1", "yes")
+CLOW_VISION_FEEDBACK = os.getenv("CLOW_VISION_FEEDBACK", "false").lower() in ("true", "1", "yes")
 
 # ── Tool Pruning Dinâmico ─────────────────────────────────
 CLOW_TOOL_PRUNING = os.getenv("CLOW_TOOL_PRUNING", "true").lower() in ("true", "1", "yes")
 
 # ── Time Travel (Checkpoints) ─────────────────────────────
 CLOW_CHECKPOINTS = os.getenv("CLOW_CHECKPOINTS", "true").lower() in ("true", "1", "yes")
-CLOW_MAX_CHECKPOINTS = int(os.getenv("CLOW_MAX_CHECKPOINTS", "50"))
+CLOW_MAX_CHECKPOINTS = int(os.getenv("CLOW_MAX_CHECKPOINTS", "200"))
 
 # ── Agent Swarm ───────────────────────────────────────────
 CLOW_SWARM = os.getenv("CLOW_SWARM", "true").lower() in ("true", "1", "yes")
-CLOW_SWARM_MAX_AGENTS = int(os.getenv("CLOW_SWARM_MAX_AGENTS", "5"))
+CLOW_SWARM_MAX_AGENTS = int(os.getenv("CLOW_SWARM_MAX_AGENTS", "10"))
 
 # ── Self-Learning ─────────────────────────────────────────
 CLOW_SELF_LEARN = os.getenv("CLOW_SELF_LEARN", "true").lower() in ("true", "1", "yes")
@@ -103,19 +103,19 @@ CLOW_TELEPORT = os.getenv("CLOW_TELEPORT", "true").lower() in ("true", "1", "yes
 
 # ── Agent Teams ───────────────────────────────────────────
 CLOW_TEAMS = os.getenv("CLOW_TEAMS", "true").lower() in ("true", "1", "yes")
-CLOW_TEAM_MAX_AGENTS = int(os.getenv("CLOW_TEAM_MAX_AGENTS", "4"))
+CLOW_TEAM_MAX_AGENTS = int(os.getenv("CLOW_TEAM_MAX_AGENTS", "10"))
 
 # ── Natural Language Automations ──────────────────────────
 CLOW_NL_AUTOMATIONS = os.getenv("CLOW_NL_AUTOMATIONS", "true").lower() in ("true", "1", "yes")
 
 
 # ── Compaction (Claude Code 3-tier) ───────────────
-MICROCOMPACT_KEEP_LAST = 3          # Keep last N tool results full
-MICROCOMPACT_TRUNCATE_TO = 500      # Truncate older tool results to N chars
-SESSION_COMPACT_MIN_TOKENS = 10000  # Keep at least this many tokens after compact
-SESSION_COMPACT_MAX_TOKENS = 40000  # Hard cap after compact
-AUTOCOMPACT_THRESHOLD = 320000      # Chars (~80K tokens) to trigger autocompact
-AUTOCOMPACT_MAX_FAILURES = 3        # Stop trying after N failures
+MICROCOMPACT_KEEP_LAST = 10         # Keep last N tool results full
+MICROCOMPACT_TRUNCATE_TO = 2000     # Truncate older tool results to N chars
+SESSION_COMPACT_MIN_TOKENS = 30000  # Keep at least this many tokens after compact
+SESSION_COMPACT_MAX_TOKENS = 120000 # Hard cap after compact
+AUTOCOMPACT_THRESHOLD = 500000      # Chars (~125K tokens) to trigger autocompact
+AUTOCOMPACT_MAX_FAILURES = 5        # Stop trying after N failures
 
 # ── Stripe Billing ────────────────────────────────────────
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
