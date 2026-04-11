@@ -203,6 +203,10 @@ if HAS_FASTAPI:
     from .routes.extensions import register_extension_routes
     register_extension_routes(app)
 
+    # ── Bridge (remote control protocol) ──────────────────────
+    from .routes.bridge import register_bridge_routes
+    register_bridge_routes(app)
+
     # ── Proteger /docs e /openapi.json (admin only) ──────────────
     from starlette.middleware.base import BaseHTTPMiddleware
     from fastapi.responses import JSONResponse as _DocsJR
