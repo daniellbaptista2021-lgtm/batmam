@@ -38,6 +38,7 @@ class WriteTool(BaseTool):
         }
 
     def execute(self, **kwargs: Any) -> str:
+        import os
         file_path = kwargs.get("file_path", "")
         content = kwargs.get("content", "")
 
@@ -50,6 +51,20 @@ class WriteTool(BaseTool):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content, encoding="utf-8")
             lines = content.count("\n") + (1 if content and not content.endswith("\n") else 0)
-            return f"Arquivo escrito: {path} ({lines} linhas)"
+
+            # Auto-publish: se for HTML/CSS/JS em /tmp, copia para static/files
+            web_url = ""
+            suffix = path.suffix.lower()
+            if suffix in (".html", ".css", ".js", ".json", ".pdf", ".xlsx"):
+                static_dir = Path("/root/clow/static/files")
+                static_dir.mkdir(parents=True, exist_ok=True)
+                web_path = static_dir / path.name
+                if str(path).startswith("/tmp") or not str(path).startswith("/root/clow/static"):
+                    import shutil
+                    shutil.copy2(str(path), str(web_path))
+                domain = os.getenv("CLOW_DOMAIN", "clow.pvcorretor01.com.br")
+                web_url = f"\n\nAcessar: https://{domain}/static/files/{path.name}"
+
+            return f"Arquivo escrito: {path} ({lines} linhas){web_url}"
         except Exception as e:
             return f"[ERROR] Falha ao escrever: {e}"
