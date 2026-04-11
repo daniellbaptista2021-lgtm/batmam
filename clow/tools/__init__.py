@@ -32,16 +32,34 @@ CORE_TOOLS = [
 
 # ON-DEMAND TOOLS — loaded only when orchestrator detects need
 ONDEMAND_TOOLS = [
-    "whatsapp_send", "http_request", "supabase_query",
-    "n8n_workflow", "docker_manage", "git_advanced",
-    "scraper", "pdf_tool", "spreadsheet",
-    "ssh_connect", "manage_process", "configure_nginx",
-    "manage_ssl", "monitor_resources", "manage_cron",
-    "backup_create", "deploy_vercel", "deploy_vps",
-    "meta_ads", "image_gen", "design_generate",
-    "chatwoot_setup", "chatwoot_list_conversations",
-    "chatwoot_search_contact", "chatwoot_create_contact",
-    "chatwoot_report", "git_ops",
+    # WhatsApp (10)
+    "whatsapp_send", "whatsapp_create_instance", "whatsapp_list_instances",
+    "whatsapp_connect_test", "whatsapp_setup_webhook", "whatsapp_test_webhook",
+    "whatsapp_send_test_message", "whatsapp_save_prompt", "whatsapp_save_rag_text",
+    "whatsapp_full_test",
+    # Chatwoot (15)
+    "chatwoot_setup", "chatwoot_list_conversations", "chatwoot_search_contact",
+    "chatwoot_create_contact", "chatwoot_report", "chatwoot_list_agents",
+    "chatwoot_list_inboxes", "chatwoot_list_labels", "chatwoot_create_label",
+    "chatwoot_label_conversation", "chatwoot_assign_conversation",
+    "chatwoot_create_automation", "chatwoot_list_automations",
+    "chatwoot_create_team", "chatwoot_test_connection",
+    # Infrastructure (7)
+    "ssh_connect", "manage_process", "configure_nginx", "manage_ssl",
+    "monitor_resources", "manage_cron", "backup_create",
+    # DevOps (3)
+    "docker_manage", "deploy_vercel", "deploy_vps",
+    # Data & APIs (5)
+    "http_request", "supabase_query", "n8n_workflow",
+    "query_mysql", "query_postgres",
+    # Content & Media (5)
+    "scraper", "pdf_tool", "spreadsheet", "image_gen", "meta_ads",
+    # Design (2)
+    "canva_template", "design_generate",
+    # Git (2)
+    "git_advanced", "git_ops",
+    # Workflow (5)
+    "notebook_edit", "task_create", "task_get", "task_list", "task_update",
 ]
 
 __all__ = [
