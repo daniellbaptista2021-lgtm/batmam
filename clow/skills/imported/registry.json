@@ -1,836 +1,172 @@
 {
   "skills": [
     {
-      "id": "paid-ads",
-      "name": "Paid Ads Expert",
-      "category": "marketing",
+      "id": "commit",
+      "name": "Git Commit",
+      "category": "core",
       "trigger_words": [
-        "meta ads",
-        "facebook ads",
-        "google ads",
-        "campanha",
-        "anuncio",
-        "trafego pago",
-        "cpc",
-        "cpa",
-        "roas",
-        "ctr",
-        "ppc",
-        "paid",
-        "ads",
-        "trafego",
-        "andromeda"
+        "/commit",
+        "commit",
+        "git commit",
+        "comitar",
+        "commitar"
       ],
-      "path": "imported/paid-ads/SKILL.md"
+      "path": "imported/commit/SKILL.md"
     },
     {
-      "id": "ad-creative",
-      "name": "Ad Creative Generator",
-      "category": "marketing",
+      "id": "pr",
+      "name": "Pull Request",
+      "category": "core",
       "trigger_words": [
-        "criativo",
-        "creative",
-        "banner",
-        "imagem anuncio",
-        "visual ad",
-        "briefing criativo"
+        "/pr",
+        "pull request",
+        "create pr",
+        "abrir pr",
+        "merge request",
+        "open pr",
+        "criar pr"
       ],
-      "path": "imported/ad-creative/SKILL.md"
+      "path": "imported/pr/SKILL.md"
+    },
+    {
+      "id": "review-pr",
+      "name": "PR Review",
+      "category": "core",
+      "trigger_words": [
+        "/review-pr",
+        "code review",
+        "review pr",
+        "review do pr",
+        "revisar pr",
+        "revisar codigo",
+        "pr review"
+      ],
+      "path": "imported/review-pr/SKILL.md"
+    },
+    {
+      "id": "init",
+      "name": "Project Init",
+      "category": "core",
+      "trigger_words": [
+        "/init",
+        "init project",
+        "inicializar projeto",
+        "criar claude.md",
+        "setup project",
+        "inicializa o projeto"
+      ],
+      "path": "imported/init/SKILL.md"
+    },
+    {
+      "id": "compact",
+      "name": "Context Compaction",
+      "category": "core",
+      "trigger_words": [
+        "/compact",
+        "compactar",
+        "compacta o contexto",
+        "compact context",
+        "resumir contexto",
+        "liberar contexto",
+        "liberar tokens"
+      ],
+      "path": "imported/compact/SKILL.md"
+    },
+    {
+      "id": "memory",
+      "name": "Memory Management",
+      "category": "core",
+      "trigger_words": [
+        "/memory",
+        "memoria",
+        "lembrar disso",
+        "remember this",
+        "salvar memoria",
+        "lembra disso"
+      ],
+      "path": "imported/memory/SKILL.md"
     },
     {
       "id": "copywriting",
       "name": "Copywriter Expert",
-      "category": "marketing",
+      "category": "business",
       "trigger_words": [
-        "copy",
+        "/copy",
+        "copywriting",
+        "marketing copy",
         "headline",
-        "texto anuncio",
-        "cta",
+        "texto de venda",
         "persuasao",
-        "venda",
-        "headline"
+        "escreve um copy",
+        "reescrever texto",
+        "texto persuasivo"
       ],
       "path": "imported/copywriting/SKILL.md"
     },
     {
-      "id": "content-humanizer",
-      "name": "Content Humanizer",
-      "category": "marketing",
+      "id": "seo",
+      "name": "SEO Specialist",
+      "category": "business",
       "trigger_words": [
-        "__always__"
-      ],
-      "path": "imported/content-humanizer/SKILL.md"
-    },
-    {
-      "id": "content-creator",
-      "name": "Content Creator",
-      "category": "marketing",
-      "trigger_words": [
-        "conteudo",
-        "blog",
-        "artigo",
-        "post",
-        "texto",
-        "redacao"
-      ],
-      "path": "imported/content-creator/SKILL.md"
-    },
-    {
-      "id": "social-content",
-      "name": "Social Media Content",
-      "category": "marketing",
-      "trigger_words": [
-        "instagram",
-        "reels",
-        "stories",
-        "tiktok",
-        "linkedin",
-        "rede social",
-        "social media",
-        "carrossel"
-      ],
-      "path": "imported/social-content/SKILL.md"
-    },
-    {
-      "id": "campaign-analytics",
-      "name": "Campaign Analytics",
-      "category": "marketing",
-      "trigger_words": [
-        "metricas",
-        "analytics",
-        "relatorio campanha",
-        "performance",
-        "dashboard ads"
-      ],
-      "path": "imported/campaign-analytics/SKILL.md"
-    },
-    {
-      "id": "content-strategy",
-      "name": "Content Strategy",
-      "category": "marketing",
-      "trigger_words": [
-        "estrategia conteudo",
-        "calendario editorial",
-        "planejamento conteudo"
-      ],
-      "path": "imported/content-strategy/SKILL.md"
-    },
-    {
-      "id": "email-sequence",
-      "name": "Email Sequence Builder",
-      "category": "marketing",
-      "trigger_words": [
-        "email",
-        "sequencia",
-        "nurture",
-        "follow-up",
-        "email marketing",
-        "automacao email"
-      ],
-      "path": "imported/email-sequence/SKILL.md"
-    },
-    {
-      "id": "pricing-strategy",
-      "name": "Pricing Strategy",
-      "category": "marketing",
-      "trigger_words": [
-        "preco",
-        "pricing",
-        "precificacao",
-        "quanto cobrar",
-        "tabela preco"
-      ],
-      "path": "imported/pricing-strategy/SKILL.md"
-    },
-    {
-      "id": "seo-audit",
-      "name": "SEO Audit",
-      "category": "marketing",
-      "trigger_words": [
-        "seo",
-        "google organico",
-        "rankeamento",
+        "/seo",
+        "seo ",
+        "meta tags",
         "palavras-chave",
-        "backlink"
+        "rankeamento",
+        "backlink",
+        "search optimization",
+        "google organico",
+        "otimizar seo"
       ],
-      "path": "imported/seo-audit/SKILL.md"
+      "path": "imported/seo/SKILL.md"
     },
     {
-      "id": "landing-page-generator",
-      "name": "Landing Page Generator",
-      "category": "marketing",
-      "trigger_words": [
-        "landing page",
-        "lp",
-        "pagina de captura",
-        "pagina de vendas",
-        "hotsite"
-      ],
-      "path": "imported/landing-page-generator/SKILL.md"
-    },
-    {
-      "id": "llm-cost-optimizer",
-      "name": "LLM Cost Optimizer",
-      "category": "engineering",
-      "trigger_words": [
-        "custo api",
-        "otimizar tokens",
-        "economizar api",
-        "gasto llm",
-        "token usage"
-      ],
-      "path": "imported/llm-cost-optimizer/SKILL.md"
-    },
-    {
-      "id": "agent-designer",
-      "name": "Agent Designer",
-      "category": "engineering",
-      "trigger_words": [
-        "multi-agent",
-        "arquitetura agente",
-        "orquestracao",
-        "swarm",
-        "supervisor agent"
-      ],
-      "path": "imported/agent-designer/SKILL.md"
-    },
-    {
-      "id": "database-designer",
-      "name": "Database Designer",
-      "category": "engineering",
-      "trigger_words": [
-        "banco de dados",
-        "database design",
-        "schema",
-        "modelagem",
-        "erd"
-      ],
-      "path": "imported/database-designer/SKILL.md"
-    },
-    {
-      "id": "sql-database-assistant",
-      "name": "SQL Assistant",
-      "category": "engineering",
-      "trigger_words": [
-        "sql",
-        "query",
-        "select",
-        "insert",
-        "postgres query",
-        "supabase query"
-      ],
-      "path": "imported/sql-database-assistant/SKILL.md"
-    },
-    {
-      "id": "docker-development",
-      "name": "Docker Development",
-      "category": "engineering",
-      "trigger_words": [
-        "docker",
-        "container",
-        "dockerfile",
-        "docker-compose",
-        "imagem docker"
-      ],
-      "path": "imported/docker-development/SKILL.md"
-    },
-    {
-      "id": "mcp-server-builder",
-      "name": "MCP Server Builder",
-      "category": "engineering",
-      "trigger_words": [
-        "mcp",
-        "model context protocol",
-        "mcp server",
-        "tool server"
-      ],
-      "path": "imported/mcp-server-builder/SKILL.md"
-    },
-    {
-      "id": "api-design-reviewer",
-      "name": "API Design Reviewer",
-      "category": "engineering",
-      "trigger_words": [
-        "api design",
-        "rest api",
-        "endpoint",
-        "api review"
-      ],
-      "path": "imported/api-design-reviewer/SKILL.md"
-    },
-    {
-      "id": "ci-cd-pipeline-builder",
-      "name": "CI/CD Pipeline Builder",
-      "category": "engineering",
-      "trigger_words": [
-        "ci cd",
-        "pipeline",
-        "github actions",
-        "deploy automatico",
-        "ci/cd"
-      ],
-      "path": "imported/ci-cd-pipeline-builder/SKILL.md"
-    },
-    {
-      "id": "contract-proposal-writer",
-      "name": "Contract & Proposal Writer",
+      "id": "spreadsheet",
+      "name": "Excel/Spreadsheet Creator",
       "category": "business",
       "trigger_words": [
-        "contrato",
-        "proposta",
-        "sow",
-        "nda",
-        "acordo",
-        "documento legal",
-        "proposta comercial"
+        "/spreadsheet",
+        "xlsx",
+        "excel",
+        "planilha",
+        "spreadsheet",
+        "openpyxl",
+        "dashboard excel"
       ],
-      "path": "imported/contract-and-proposal-writer/SKILL.md"
+      "path": "imported/spreadsheet/SKILL.md"
     },
     {
-      "id": "sales-engineer",
-      "name": "Sales Engineer",
-      "category": "business",
-      "trigger_words": [
-        "demo tecnica",
-        "poc",
-        "venda tecnica",
-        "objecao tecnica"
-      ],
-      "path": "imported/sales-engineer/SKILL.md"
-    },
-    {
-      "id": "customer-success-manager",
-      "name": "Customer Success Manager",
-      "category": "business",
-      "trigger_words": [
-        "customer success",
-        "onboarding cliente",
-        "retencao",
-        "cs manager"
-      ],
-      "path": "imported/customer-success-manager/SKILL.md"
-    },
-    {
-      "id": "revenue-operations",
-      "name": "Revenue Operations",
-      "category": "business",
-      "trigger_words": [
-        "revops",
-        "revenue operations",
-        "funil vendas",
-        "pipeline vendas"
-      ],
-      "path": "imported/revenue-operations/SKILL.md"
-    },
-    {
-      "id": "saas-metrics-coach",
-      "name": "SaaS Metrics Coach",
-      "category": "business",
-      "trigger_words": [
-        "mrr",
-        "arr",
-        "churn",
-        "ltv",
-        "cac",
-        "metricas saas",
-        "receita recorrente"
-      ],
-      "path": "imported/saas-metrics-coach/SKILL.md"
-    },
-    {
-      "id": "saas-scaffolder",
-      "name": "SaaS Scaffolder",
-      "category": "engineering",
-      "trigger_words": [
-        "saas",
-        "scaffold",
-        "boilerplate",
-        "starter",
-        "template saas",
-        "criar saas"
-      ],
-      "path": "imported/saas-scaffolder/SKILL.md"
-    },
-    {
-      "id": "canvas-design",
-      "name": "Canvas Design (Arte Visual)",
-      "category": "design",
-      "trigger_words": [
-        "poster",
-        "arte",
-        "design visual",
-        "canvas",
-        "banner",
-        "cartaz",
-        "flyer",
-        "visual art",
-        "ilustracao",
-        "design philosophy",
-        "masterpiece",
-        "composicao visual"
-      ],
-      "path": "imported/canvas-design/SKILL.md"
-    },
-    {
-      "id": "brand-guidelines",
-      "name": "Brand Guidelines (Diretrizes de Marca)",
-      "category": "design",
-      "trigger_words": [
-        "brand",
-        "marca",
-        "identidade visual",
-        "guidelines",
-        "branding",
-        "manual de marca",
-        "paleta de cores",
-        "tipografia",
-        "logo usage",
-        "estilo visual"
-      ],
-      "path": "imported/brand-guidelines/SKILL.md"
-    },
-    {
-      "id": "financial-analysis",
-      "name": "Financial Statement Analysis",
-      "category": "business",
-      "trigger_words": [
-        "balanco",
-        "dre",
-        "demonstracao financeira",
-        "financial statement",
-        "analise financeira",
-        "balancete",
-        "ativo",
-        "passivo",
-        "patrimonio",
-        "revenue analysis"
-      ],
-      "path": "imported/financial-analysis/SKILL.md"
-    },
-    {
-      "id": "financial-models",
-      "name": "Financial Modeling",
-      "category": "business",
-      "trigger_words": [
-        "modelo financeiro",
-        "financial model",
-        "projecao",
-        "fluxo de caixa",
-        "cash flow",
-        "valuation",
-        "dcf",
-        "forecast",
-        "budget",
-        "orcamento",
-        "breakeven"
-      ],
-      "path": "imported/financial-models/SKILL.md"
-    },
-    {
-      "id": "algorithmic-art",
-      "name": "Algorithmic Art (p5.js)",
-      "category": "design",
-      "trigger_words": [
-        "arte generativa",
-        "algorithmic art",
-        "p5js",
-        "generative",
-        "animacao",
-        "canvas art"
-      ],
-      "path": "imported/algorithmic-art/SKILL.md"
-    },
-    {
-      "id": "claude-api",
-      "name": "Claude API Builder",
-      "category": "engineering",
-      "trigger_words": [
-        "claude api",
-        "anthropic sdk",
-        "api claude",
-        "agent sdk",
-        "tool use",
-        "streaming api"
-      ],
-      "path": "imported/claude-api/SKILL.md"
-    },
-    {
-      "id": "doc-coauthoring",
-      "name": "Document Co-authoring",
-      "category": "business",
-      "trigger_words": [
-        "co-author",
-        "spec",
-        "proposal",
-        "decision doc",
-        "rfc",
-        "design doc",
-        "documento colaborativo"
-      ],
-      "path": "imported/doc-coauthoring/SKILL.md"
-    },
-    {
-      "id": "docx",
-      "name": "Word Document Creator",
-      "category": "office",
-      "trigger_words": [
-        "docx",
-        "word",
-        "documento word",
-        "criar documento",
-        "relatorio",
-        "report"
-      ],
-      "path": "imported/docx/SKILL.md"
-    },
-    {
-      "id": "frontend-design",
-      "name": "Frontend Design Premium",
-      "category": "design",
-      "trigger_words": [
-        "frontend",
-        "ui design",
-        "interface",
-        "react",
-        "html css",
-        "component",
-        "design system"
-      ],
-      "path": "imported/frontend-design/SKILL.md"
-    },
-    {
-      "id": "internal-comms",
-      "name": "Internal Communications",
-      "category": "business",
-      "trigger_words": [
-        "comunicacao interna",
-        "newsletter",
-        "status report",
-        "incident report",
-        "faq",
-        "update"
-      ],
-      "path": "imported/internal-comms/SKILL.md"
-    },
-    {
-      "id": "mcp-builder",
-      "name": "MCP Server Builder",
-      "category": "engineering",
-      "trigger_words": [
-        "mcp",
-        "model context protocol",
-        "mcp server",
-        "integration",
-        "external api"
-      ],
-      "path": "imported/mcp-builder/SKILL.md"
-    },
-    {
-      "id": "pdf-creator",
+      "id": "pdf",
       "name": "PDF Tools",
-      "category": "office",
+      "category": "business",
       "trigger_words": [
-        "pdf",
-        "extrair pdf",
+        "/pdf",
+        " pdf",
+        "criar pdf",
         "merge pdf",
-        "split pdf",
-        "watermark",
-        "ocr",
-        "encrypt pdf"
+        "gerar pdf",
+        "extrair pdf",
+        "documento pdf"
       ],
       "path": "imported/pdf/SKILL.md"
     },
     {
-      "id": "pptx",
-      "name": "PowerPoint Creator",
-      "category": "office",
-      "trigger_words": [
-        "pptx",
-        "powerpoint",
-        "apresentacao",
-        "slides",
-        "presentation",
-        "slide deck"
-      ],
-      "path": "imported/pptx/SKILL.md"
-    },
-    {
-      "id": "skill-creator",
-      "name": "Skill Creator",
-      "category": "engineering",
-      "trigger_words": [
-        "criar skill",
-        "new skill",
-        "custom skill",
-        "skill template",
-        "benchmark"
-      ],
-      "path": "imported/skill-creator/SKILL.md"
-    },
-    {
-      "id": "theme-factory",
-      "name": "Theme Factory",
-      "category": "design",
-      "trigger_words": [
-        "tema",
-        "theme",
-        "dark theme",
-        "light theme",
-        "color scheme",
-        "styling",
-        "paleta"
-      ],
-      "path": "imported/theme-factory/SKILL.md"
-    },
-    {
-      "id": "webapp-testing",
-      "name": "Web App Testing (Playwright)",
-      "category": "engineering",
-      "trigger_words": [
-        "teste web",
-        "playwright",
-        "e2e test",
-        "browser test",
-        "screenshot test",
-        "qa"
-      ],
-      "path": "imported/webapp-testing/SKILL.md"
-    },
-    {
-      "id": "web-artifacts",
-      "name": "Web Artifacts Builder",
-      "category": "engineering",
-      "trigger_words": [
-        "artifact",
-        "react app",
-        "vite",
-        "tailwind",
-        "shadcn",
-        "web component"
-      ],
-      "path": "imported/web-artifacts-builder/SKILL.md"
-    },
-    {
-      "id": "xlsx",
-      "name": "Excel/Spreadsheet Creator",
-      "category": "office",
-      "trigger_words": [
-        "xlsx",
-        "excel",
-        "planilha excel",
-        "spreadsheet",
-        "csv",
-        "financial model",
-        "formula"
-      ],
-      "path": "imported/xlsx/SKILL.md"
-    },
-    {
-      "id": "kw-bio-research",
-      "name": "Bio Research",
-      "category": "science",
-      "trigger_words": [
-        "biologia",
-        "research",
-        "scrna",
-        "drug discovery",
-        "genomics",
-        "pipeline",
-        "nf-core"
-      ],
-      "path": "imported/kw-bio-research/SKILL.md"
-    },
-    {
-      "id": "kw-customer-support",
-      "name": "Customer Support",
+      "id": "design",
+      "name": "Frontend Design Generator",
       "category": "business",
       "trigger_words": [
-        "suporte",
-        "ticket",
-        "atendimento",
-        "helpdesk",
-        "customer support",
-        "triage",
-        "escalation"
+        "/design",
+        "landing page",
+        "frontend design",
+        "html css",
+        "tailwind design",
+        "dashboard design",
+        "hotsite",
+        "pagina web",
+        "criar site",
+        "montar site"
       ],
-      "path": "imported/kw-customer-support/SKILL.md"
-    },
-    {
-      "id": "kw-data",
-      "name": "Data Analytics",
-      "category": "analytics",
-      "trigger_words": [
-        "dados",
-        "data analysis",
-        "sql",
-        "dashboard",
-        "visualization",
-        "metrica",
-        "kpi",
-        "bi"
-      ],
-      "path": "imported/kw-data/SKILL.md"
-    },
-    {
-      "id": "kw-design",
-      "name": "Design & UX",
-      "category": "design",
-      "trigger_words": [
-        "ux",
-        "user experience",
-        "design critique",
-        "accessibility",
-        "handoff",
-        "wireframe",
-        "prototype"
-      ],
-      "path": "imported/kw-design/SKILL.md"
-    },
-    {
-      "id": "kw-engineering",
-      "name": "Engineering Ops",
-      "category": "engineering",
-      "trigger_words": [
-        "code review",
-        "incident",
-        "postmortem",
-        "system design",
-        "tech debt",
-        "devops",
-        "ci cd"
-      ],
-      "path": "imported/kw-engineering/SKILL.md"
-    },
-    {
-      "id": "kw-enterprise-search",
-      "name": "Enterprise Search",
-      "category": "business",
-      "trigger_words": [
-        "busca",
-        "search",
-        "enterprise search",
-        "knowledge base",
-        "wiki",
-        "confluence"
-      ],
-      "path": "imported/kw-enterprise-search/SKILL.md"
-    },
-    {
-      "id": "kw-finance",
-      "name": "Finance & Accounting",
-      "category": "finance",
-      "trigger_words": [
-        "contabilidade",
-        "accounting",
-        "journal entry",
-        "reconciliation",
-        "financial close",
-        "sox",
-        "auditoria"
-      ],
-      "path": "imported/kw-finance/SKILL.md"
-    },
-    {
-      "id": "kw-hr",
-      "name": "Human Resources",
-      "category": "business",
-      "trigger_words": [
-        "rh",
-        "recursos humanos",
-        "recruiting",
-        "onboarding",
-        "performance review",
-        "compensation",
-        "headcount"
-      ],
-      "path": "imported/kw-human-resources/SKILL.md"
-    },
-    {
-      "id": "kw-legal",
-      "name": "Legal & Compliance",
-      "category": "legal",
-      "trigger_words": [
-        "contrato",
-        "juridico",
-        "legal",
-        "compliance",
-        "nda",
-        "contract review",
-        "litigation"
-      ],
-      "path": "imported/kw-legal/SKILL.md"
-    },
-    {
-      "id": "kw-marketing",
-      "name": "Marketing Suite",
-      "category": "marketing",
-      "trigger_words": [
-        "marketing suite",
-        "brand voice",
-        "campaign planning",
-        "content calendar",
-        "competitive brief"
-      ],
-      "path": "imported/kw-marketing/SKILL.md"
-    },
-    {
-      "id": "kw-operations",
-      "name": "Operations Management",
-      "category": "business",
-      "trigger_words": [
-        "operacoes",
-        "vendor",
-        "process documentation",
-        "change management",
-        "capacity planning",
-        "runbook"
-      ],
-      "path": "imported/kw-operations/SKILL.md"
-    },
-    {
-      "id": "kw-product",
-      "name": "Product Management",
-      "category": "business",
-      "trigger_words": [
-        "prd",
-        "product spec",
-        "roadmap",
-        "feature spec",
-        "stakeholder update",
-        "user research",
-        "product management"
-      ],
-      "path": "imported/kw-product-management/SKILL.md"
-    },
-    {
-      "id": "kw-productivity",
-      "name": "Productivity System",
-      "category": "productivity",
-      "trigger_words": [
-        "task management",
-        "productivity",
-        "workspace",
-        "task triage",
-        "daily standup",
-        "weekly review"
-      ],
-      "path": "imported/kw-productivity/SKILL.md"
-    },
-    {
-      "id": "kw-sales",
-      "name": "Sales & Pipeline",
-      "category": "sales",
-      "trigger_words": [
-        "vendas",
-        "prospecting",
-        "outreach",
-        "pipeline",
-        "deal strategy",
-        "forecast",
-        "sales call",
-        "crm"
-      ],
-      "path": "imported/kw-sales/SKILL.md"
+      "path": "imported/design/SKILL.md"
     }
   ]
 }
