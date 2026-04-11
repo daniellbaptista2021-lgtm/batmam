@@ -740,6 +740,21 @@ class Agent:
         # Auto-save (nao salva sub-agents)
         if not self.is_subagent:
             save_session(self.session)
+
+            # JSONL persistence (Claude Code architecture Ep.09)
+            try:
+                from .session_jsonl import SessionWriter
+                if not hasattr(self, '_jsonl_writer'):
+                    self._jsonl_writer = SessionWriter(self.session.id, self.cwd)
+                # Persist last user message and assistant response
+                for msg in self.session.messages[-2:]:
+                    role = msg.get('role', '')
+                    content = msg.get('content', '')
+                    if role in ('user', 'assistant') and content:
+                        self._jsonl_writer.append_message(role, content)
+            except Exception:
+                pass
+
             self._maybe_compact()
 
         # Notifica background agents completados
