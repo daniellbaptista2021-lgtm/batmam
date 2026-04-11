@@ -273,10 +273,10 @@ TOOL_DOMAIN_MAP = {
         ),
     },
     "documents": {
-        "tools": {"pdf_tool", "spreadsheet", "design_generate"},
+        "tools": {"pdf_tool", "spreadsheet", "design_generate", "image_gen"},
         "triggers": re.compile(
             r"\b(?:planilha|pdf|documento|apresenta|pptx|docx|xlsx|"
-            r"relatorio|export|banner|imagem|design)\b",
+            r"relatorio|export|banner|imagem|design|foto|gerar?\s+imagem|dall-?e|logo)\b",
             re.IGNORECASE,
         ),
     },

@@ -60,8 +60,9 @@ class WhatsAppSendTool(BaseTool):
                 url = f"{base_url}/send-image"
                 payload = {"phone": phone, "image": media_url, "caption": message}
             elif media_type == "document":
-                url = f"{base_url}/send-document/{media_type}"
-                payload = {"phone": phone, "document": media_url, "fileName": filename or "documento", "caption": message}
+                ext = filename.rsplit(".", 1)[-1] if "." in (filename or "") else "pdf"
+                url = f"{base_url}/send-document/{ext}"
+                payload = {"phone": phone, "document": media_url, "fileName": filename or "documento.pdf", "caption": message}
             elif media_type == "audio":
                 url = f"{base_url}/send-audio"
                 payload = {"phone": phone, "audio": media_url}

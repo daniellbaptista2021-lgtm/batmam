@@ -495,8 +495,8 @@ class ChatwootReportTool(BaseTool):
             return len(r) if isinstance(r, list) else 0
 
         n_agents = len(agents) if isinstance(agents, list) else len(agents.get("payload", [])) if isinstance(agents, dict) else 0
-        n_inboxes = len(inboxes.get("payload", inboxes)) if isinstance(inboxes, (dict, list)) else 0
-        n_labels = len(labels.get("payload", labels)) if isinstance(labels, (dict, list)) else 0
+        n_inboxes = len(inboxes) if isinstance(inboxes, list) else len(inboxes.get("payload", [])) if isinstance(inboxes, dict) else 0
+        n_labels = len(labels) if isinstance(labels, list) else len(labels.get("payload", [])) if isinstance(labels, dict) else 0
 
         return (f"=== Relatorio CRM ===\n"
                 f"Conversas abertas: {_count(open_c)}\n"

@@ -27,8 +27,8 @@ def _get_creds(kwargs: dict) -> tuple[str, str]:
 
     if not token:
         try:
-            from ..credentials.credential_manager import get_credentials
-            creds = get_credentials("meta_ads") or {}
+            from ..credentials.credential_manager import load_credential
+            creds = load_credential("system", "meta") or {}
             token = creds.get("access_token", "")
             account = account or creds.get("ad_account_id", "")
         except Exception:

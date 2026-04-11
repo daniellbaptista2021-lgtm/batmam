@@ -38,12 +38,14 @@ class QueryPostgresTool(BaseTool):
         if password:
             env["PGPASSWORD"] = password
 
-        cmd = f'psql -h {host} -p {port} -U {user} -d {db} -c "{sql}" --no-psqlrc'
         try:
             import os
             full_env = {**os.environ, **env}
-            r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30, env=full_env)
-            return (r.stdout + r.stderr)[:5000] or "Query executada."
+            r = subprocess.run(
+                ["psql", "-h", str(host), "-p", str(port), "-U", user, "-d", db, "--no-psqlrc", "-c", sql],
+                capture_output=True, text=True, timeout=30, env=full_env,
+            )
+            return (r.stdout + r.stderr)[:10000] or "Query executada."
         except Exception as e:
             return f"Erro Postgres: {e}"
 
@@ -75,17 +77,15 @@ class QueryMysqlTool(BaseTool):
         user = kwargs.get("user", "root")
         password = kwargs.get("password", "")
 
-        parts = [f"mysql -h {host} -P {port} -u {user}"]
-        if password:
-            parts.append(f"-p'{password}'")
-        if db:
-            parts.append(db)
-        parts.append(f'-e "{sql}"')
-        cmd = " ".join(parts)
-
         try:
-            r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
-            return (r.stdout + r.stderr)[:5000] or "Query executada."
+            args = ["mysql", "-h", str(host), "-P", str(port), "-u", user]
+            if password:
+                args.append(f"-p{password}")
+            if db:
+                args.append(db)
+            args.extend(["-e", sql])
+            r = subprocess.run(args, capture_output=True, text=True, timeout=30)
+            return (r.stdout + r.stderr)[:10000] or "Query executada."
         except Exception as e:
             return f"Erro MySQL: {e}"
 

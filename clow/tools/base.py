@@ -386,4 +386,11 @@ def create_default_registry() -> ToolRegistry:
     registry.register(DeployVercelTool())
     registry.register(DeployVpsTool())
 
+    # ── Image Generation (1) ──
+    try:
+        from .image_gen import ImageGenTool
+        registry.register(ImageGenTool())
+    except ImportError:
+        pass
+
     return registry
