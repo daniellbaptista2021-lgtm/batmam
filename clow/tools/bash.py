@@ -7,6 +7,7 @@ from .base import BaseTool
 from ..sandbox import Sandbox
 from ..git_safety import GitSafety
 from ..logging import log_action
+from ..bash_engine import validate_command, classify_command, is_read_only
 
 
 class BashTool(BaseTool):
@@ -37,6 +38,15 @@ class BashTool(BaseTool):
         command: str = kwargs.get("command", "")
         if not command:
             return "Erro: comando vazio."
+
+        # Bash Engine — defense-in-depth validation (Ep.06)
+        safe, reason = validate_command(command)
+        if not safe:
+            return f"[BASH ENGINE] Command blocked: {reason}"
+
+        # Classify for logging
+        classification = classify_command(command)
+        log_action("bash_classify", f"{classification}: {command[:80]}")
 
         timeout_ms: int = kwargs.get("timeout", 120000)
         timeout_s = min(max(timeout_ms // 1000, 1), 600)
