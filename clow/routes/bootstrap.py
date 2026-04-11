@@ -107,16 +107,28 @@ def register_bootstrap_routes(app) -> None:
             return _JR({'error': f'Mode invalido. Use: {list(PERMISSION_MODES.keys())}'}, status_code=400)
         return _JR(set_permission_mode(mode))
 
-    # -- Hooks API (Ep.05) --
+    # ── Plugins API (Ep.04) ──
 
-    @app.get('/api/v1/system/hooks', tags=['system'])
-    async def get_hooks(request: _Req):
-        """Get hook system status (admin only)."""
+    @app.get("/api/v1/system/plugins", tags=["system"])
+    async def get_plugins(request: _Req):
+        """Get plugin system stats and loaded plugins (admin only)."""
         sess = _get_user_session(request)
-        if not sess or not sess.get('is_admin'):
-            return _JR({'error': 'Acesso negado'}, status_code=403)
-        from ..hooks import HOOK_EVENTS
-        return _JR({
-            'events': sorted(list(HOOK_EVENTS)),
-            'total_events': len(HOOK_EVENTS),
-        })
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        import os as _os
+        from ..plugins import PluginManager
+        mgr = PluginManager()
+        mgr.discover(_os.getcwd())
+        return _JR({"stats": mgr.get_stats(), "plugins": mgr.list_plugins()})
+
+    @app.get("/api/v1/system/plugins/list", tags=["system"])
+    async def list_plugins(request: _Req):
+        """List all discovered plugins with details (admin only)."""
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        import os as _os
+        from ..plugins import PluginManager
+        mgr = PluginManager()
+        mgr.load_all(cwd=_os.getcwd())
+        return _JR({"plugins": mgr.list_plugins()})
