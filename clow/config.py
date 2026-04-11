@@ -141,7 +141,7 @@ DEEPSEEK_REASONER_INPUT_PRICE_PER_MTOK = 0.55
 DEEPSEEK_REASONER_OUTPUT_PRICE_PER_MTOK = 2.19
 
 DANGEROUS_COMMANDS = [
-    "rm -rf", "rm -r /", "mkfs", "dd if=", ":(){:|:&};:",
+    "rm -rf", "rm -r /", "mkfs", "dd if=", ":(){:|:&};:", ":()", ":|:",
     "chmod -R 777 /", "shutdown", "reboot", "kill -9",
     "git push --force", "git reset --hard", "drop table",
     "drop database", "> /dev/sda",

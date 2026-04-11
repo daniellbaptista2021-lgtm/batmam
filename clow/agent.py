@@ -1274,6 +1274,22 @@ class Agent:
 
         log_action("tool_exec", f"{tool_call.name}: {tr.status.value}", tool_name=tool_call.name)
 
+        # ── JSONL persistence: tool_use + tool_result (Claude Code Ep.09) ──
+        if not self.is_subagent and hasattr(self, "_jsonl_writer"):
+            try:
+                self._jsonl_writer.append_tool_use(
+                    tool_name=tool_call.name,
+                    tool_args=tool_call.arguments,
+                    tool_id=tool_call.id,
+                )
+                self._jsonl_writer.append_tool_result(
+                    tool_id=tool_call.id,
+                    status=tr.status.value,
+                    output=tr.output[:5000],
+                )
+            except Exception:
+                pass
+
         # ── Vision Feedback Loop: screenshot após write/edit de UI files ──
         if (
             config.CLOW_VISION_FEEDBACK

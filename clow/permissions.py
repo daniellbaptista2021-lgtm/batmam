@@ -295,7 +295,8 @@ def get_tool_requirement(tool_name: str) -> PermissionLevel:
 def is_dangerous_command(command: str) -> bool:
     """Check if a bash command is in the dangerous list."""
     cmd_lower = command.lower().strip()
-    return any(danger in cmd_lower for danger in DANGEROUS_COMMANDS)
+    cmd_normalized = cmd_lower.replace(" ", "")
+    return any(danger in cmd_lower or danger.replace(" ", "") in cmd_normalized for danger in DANGEROUS_COMMANDS)
 
 
 def classify_bash_command(command: str) -> str:

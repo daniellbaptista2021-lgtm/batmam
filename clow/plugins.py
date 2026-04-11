@@ -64,11 +64,11 @@ class PluginManifest:
             name=data.get("name", ""),
             description=data.get("description", ""),
             version=data.get("version", "1.0.0"),
-            author=data.get("author", ""),
-            commands=data.get("commands", []),
-            agents=data.get("agents", []),
+            author=data.get("author", "") if isinstance(data.get("author"), str) else (data.get("author", {}).get("name", "") if isinstance(data.get("author"), dict) else ""),
+            commands=data.get("commands", []) if isinstance(data.get("commands"), list) else ([data["commands"]] if isinstance(data.get("commands"), str) and data["commands"] not in ("", "./") else []),
+            agents=data.get("agents", []) if isinstance(data.get("agents"), list) else ([data["agents"]] if isinstance(data.get("agents"), str) and data["agents"] not in ("", "./") else []),
             hooks=data.get("hooks", {}),
-            skills=data.get("skills", []),
+            skills=data.get("skills", []) if isinstance(data.get("skills"), list) else ([data["skills"]] if isinstance(data.get("skills"), str) and data["skills"] not in ("", "./") else []),
             mcp_servers=data.get("mcpServers", data.get("mcp_servers", {})),
             output_style=data.get("outputStyle", data.get("output_style", "")),
             # Legacy
@@ -381,18 +381,27 @@ class PluginManager:
 
         # Check referenced command globs
         for cmd_glob in manifest.commands:
-            if not list(plugin_dir.glob(cmd_glob)):
-                errors.append(f"Command glob matched no files: {cmd_glob}")
+            try:
+                if cmd_glob and cmd_glob != "./" and not list(plugin_dir.glob(cmd_glob)):
+                    errors.append(f"Command glob matched no files: {cmd_glob}")
+            except (IndexError, ValueError):
+                errors.append(f"Invalid command glob: {cmd_glob}")
 
         # Check referenced agent globs
         for agent_glob in manifest.agents:
-            if not list(plugin_dir.glob(agent_glob)):
-                errors.append(f"Agent glob matched no files: {agent_glob}")
+            try:
+                if agent_glob and agent_glob != "./" and not list(plugin_dir.glob(agent_glob)):
+                    errors.append(f"Agent glob matched no files: {agent_glob}")
+            except (IndexError, ValueError):
+                errors.append(f"Invalid agent glob: {agent_glob}")
 
         # Check referenced skill globs
         for skill_glob in manifest.skills:
-            if not list(plugin_dir.glob(skill_glob)):
-                errors.append(f"Skill glob matched no files: {skill_glob}")
+            try:
+                if skill_glob and skill_glob != "./" and not list(plugin_dir.glob(skill_glob)):
+                    errors.append(f"Skill glob matched no files: {skill_glob}")
+            except (IndexError, ValueError):
+                errors.append(f"Invalid skill glob: {skill_glob}")
 
         return errors
 

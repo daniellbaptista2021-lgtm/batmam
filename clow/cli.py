@@ -1496,7 +1496,7 @@ def run_repl(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    from .bootstrap import profile_checkpoint, init, setup, is_fast_path, get_state
+    from .bootstrap import profile_checkpoint, init, setup, is_fast_path, get_state, preconnect_api
     profile_checkpoint("cli_entry")
 
     # Fast-path cascade (skip full startup for simple commands)
@@ -1504,6 +1504,11 @@ def main() -> None:
     if fast == "version":
         print(f"Clow v{__version__}")
         return
+
+    # Full startup: init bootstrap + preconnect API (fire-and-forget TCP+TLS)
+    init()
+    preconnect_api()
+    profile_checkpoint("bootstrap_done")
 
     parser = argparse.ArgumentParser(prog="clow", description="System Clow — AI Code Agent")
     parser.add_argument("--version", "-v", action="version", version=f"Clow v{__version__}")
