@@ -160,6 +160,16 @@ def register_chat_routes(app: FastAPI) -> None:
             _whisper_model = WhisperModel("medium", device="cpu", compute_type="int8")
         return _whisper_model
 
+    @app.post("/api/v1/compact", tags=["system"])
+    async def manual_compact(request: Request):
+        """Manual conversation compaction (/compact command)."""
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        from ..compaction import get_context_warning
+        # Return context state (actual compaction happens in agent loop)
+        return JSONResponse({"context": get_context_warning([])})
+
     @app.post("/api/v1/transcribe", tags=["chat"])
     async def transcribe_audio(request: Request):
         sess = _get_user_session(request)

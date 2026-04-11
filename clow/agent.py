@@ -1393,20 +1393,9 @@ class Agent:
         return [m for m in msgs if not m.get("_snipped")]
 
     def _stage_microcompact(self, msgs: list[dict]) -> list[dict]:
-        """Stage 3: Clear content of old tool results (keep last 3 full).
-        This is the key cache optimization -- old tool results get replaced
-        with '[resultado anterior limpo]' so they don't waste tokens."""
-        tool_indices = [i for i, m in enumerate(msgs) if m.get("role") == "tool"]
-        if len(tool_indices) <= 3:
-            return msgs
-        old_indices = set(tool_indices[:-3])
-        result = []
-        for i, msg in enumerate(msgs):
-            if i in old_indices:
-                msg = dict(msg)
-                msg["content"] = "[resultado anterior limpo]"
-            result.append(msg)
-        return result
+        """Stage 3: MicroCompact via compaction module (Tier 1)."""
+        from .compaction import microcompact
+        return microcompact(msgs)
 
     def _stage_context_collapse(self, msgs: list[dict]) -> list[dict]:
         """Stage 4: Merge adjacent messages with same role."""
@@ -1435,38 +1424,35 @@ class Agent:
         return total_chars > 320_000
 
     def _maybe_compact(self) -> None:
-        """Compacta contexto com resumo LLM se muito grande (>80K tokens ou msgs)."""
-        if (
-            len(self.session.messages) <= config.MAX_CONTEXT_MESSAGES + 30
-            and not should_compress(self.session.messages)
-        ):
-            return
+        """3-tier compaction system (Claude Code architecture).
 
-        system = self.session.messages[0]
-        half = config.MAX_CONTEXT_MESSAGES // 2
-        old_messages = self.session.messages[1:-half]
+        Tier 1: MicroCompact — runs automatically in _get_messages preprocessing
+        Tier 2: Session Memory — tries pre-built summary first (no LLM)
+        Tier 3: Full Compact — LLM summarization as last resort
+        """
+        from .compaction import auto_compact_if_needed
 
-        # Corta em fronteira segura (nunca parte um bloco tool_calls+results)
-        recent_msgs = _slice_at_safe_boundary(self.session.messages, half)
-        # Remove system do slice (vamos re-adicionar)
-        if recent_msgs and recent_msgs[0].get("role") == "system":
-            recent_msgs = recent_msgs[1:]
+        # Build session memory from _summarize_messages (existing method)
+        session_memory = ""
+        try:
+            old_msgs = self.session.messages[1:-5] if len(self.session.messages) > 6 else []
+            if old_msgs:
+                session_memory = self._summarize_messages(old_msgs) or ""
+        except Exception:
+            pass
 
-        # Tenta resumir via LLM
-        summary = self._summarize_messages(old_messages)
-        if summary:
-            summary_msg = {
-                "role": "system",
-                "content": f"[Resumo do contexto anterior]\n{summary}",
-            }
-            self.session.messages = [system, summary_msg] + recent_msgs
-        else:
-            self.session.messages = [system] + recent_msgs
-
-        # Sanitiza apos compactacao para garantir consistencia
-        self.session.messages = sanitize_messages(
-            self.session.messages, self.session.id
+        result = auto_compact_if_needed(
+            self.session.messages,
+            session_memory=session_memory,
+            llm_client=self._client,
+            query_source="chat",
         )
+
+        if result:
+            self.session.messages = result
+            # Re-sanitize after compaction
+            self.session.messages = sanitize_messages(self.session.messages, self.session.id)
+            log_action("compaction_applied", f"messages: {len(result)}", session_id=self.session.id)
 
     def _summarize_messages(self, messages: list[dict]) -> str:
         """Resume mensagens antigas com extracao semantica estruturada.
