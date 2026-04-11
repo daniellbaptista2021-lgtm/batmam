@@ -10,7 +10,12 @@ from .base import BaseTool
 
 class SpreadsheetTool(BaseTool):
     name = "spreadsheet"
-    description = "Cria e manipula planilhas Excel/CSV. Ações: create, read, add_row, add_sheet, format."
+    description = (
+        "Cria e manipula planilhas Excel/CSV. "
+        "IMPORTANTE: ao criar planilha, passe TODAS as linhas de dados no campo 'rows' dentro da acao 'create'. "
+        "NAO use add_row repetidamente — passe tudo de uma vez no create. "
+        "Acoes: create (com headers + rows), read, add_row, add_sheet, to_csv, from_csv, info."
+    )
     requires_confirmation = True
 
     def get_schema(self) -> dict:
@@ -32,7 +37,19 @@ class SpreadsheetTool(BaseTool):
                 "rows": {
                     "type": "array",
                     "items": {"type": "array", "items": {"type": "string"}},
-                    "description": "Linhas de dados",
+                    "description": "TODAS as linhas de dados de uma vez. Ex: [[\"val1\",\"val2\"],[\"val3\",\"val4\"]]",
+                },
+                "sheets": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "headers": {"type": "array", "items": {"type": "string"}},
+                            "rows": {"type": "array", "items": {"type": "array", "items": {"type": "string"}}},
+                        },
+                    },
+                    "description": "Multiplas abas de uma vez. Cada item: {name, headers, rows}",
                 },
                 "row": {
                     "type": "array",
@@ -52,6 +69,9 @@ class SpreadsheetTool(BaseTool):
             return "Erro: file_path é obrigatório."
 
         if action == "create":
+            sheets = kwargs.get("sheets")
+            if sheets and isinstance(sheets, list):
+                return self._create_multi(file_path, sheets)
             return self._create(file_path, sheet_name, kwargs.get("headers", []), kwargs.get("rows", []))
         elif action == "read":
             return self._read(file_path, sheet_name)
@@ -66,6 +86,59 @@ class SpreadsheetTool(BaseTool):
         elif action == "info":
             return self._info(file_path)
         return f"Ação '{action}' não reconhecida."
+
+    def _create_multi(self, path: str, sheets: list) -> str:
+        """Cria planilha com multiplas abas de uma vez."""
+        try:
+            from openpyxl import Workbook
+            from openpyxl.styles import Font, PatternFill
+            wb = Workbook()
+
+            for i, sheet_data in enumerate(sheets):
+                name = sheet_data.get("name", f"Sheet{i+1}")
+                headers = sheet_data.get("headers", [])
+                rows = sheet_data.get("rows", [])
+
+                if i == 0:
+                    ws = wb.active
+                    ws.title = name
+                else:
+                    ws = wb.create_sheet(title=name)
+
+                if headers:
+                    ws.append(headers)
+                    for cell in ws[1]:
+                        cell.font = Font(bold=True, color="FFFFFF")
+                        cell.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+
+                for row in rows:
+                    ws.append(row)
+
+                for col in ws.columns:
+                    max_len = max(len(str(cell.value or "")) for cell in col)
+                    ws.column_dimensions[col[0].column_letter].width = min(max_len + 2, 50)
+
+            static_dir = "/root/clow/static/files"
+            os.makedirs(static_dir, exist_ok=True)
+            fname = os.path.basename(path)
+            if not fname.endswith(".xlsx"):
+                fname = fname.rsplit(".", 1)[0] + ".xlsx" if "." in fname else fname + ".xlsx"
+            fpath = os.path.join(static_dir, fname)
+            wb.save(fpath)
+            try:
+                wb.save(path)
+            except Exception:
+                pass
+
+            total_rows = sum(len(s.get("rows", [])) for s in sheets)
+            domain = os.getenv("CLOW_DOMAIN", "clow.pvcorretor01.com.br")
+            url = f"https://{domain}/static/files/{fname}"
+            return f"Planilha criada com {len(sheets)} abas e {total_rows} linhas!\n\nBaixar: {url}"
+
+        except ImportError:
+            return "Erro: openpyxl nao instalado."
+        except Exception as e:
+            return f"Erro: {e}"
 
     def _create(self, path: str, sheet: str, headers: list, rows: list) -> str:
         if path.endswith(".csv"):
@@ -107,7 +180,8 @@ class SpreadsheetTool(BaseTool):
                 wb.save(path)
             except Exception:
                 pass
-            url = f"https://clow.pvcorretor01.com.br/static/files/{fname}"
+            domain = os.getenv("CLOW_DOMAIN", "clow.pvcorretor01.com.br")
+            url = f"https://{domain}/static/files/{fname}"
             return f"Planilha criada com {len(rows)} linhas!\n\nBaixar: {url}\n\nAbrir no Google Sheets: copie o link, va em sheets.google.com > Arquivo > Importar"
 
         except ImportError:

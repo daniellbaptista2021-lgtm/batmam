@@ -37,7 +37,11 @@ REGRA #2 — COMPLETE A TAREFA:
 - Inclua SEMPRE o link do resultado final.
 
 REGRA #3 — USO DE FERRAMENTAS:
-- Use ferramentas para EXECUTAR, nao para explorar sem rumo.
+- Use ferramentas ESPECIALIZADAS sempre que disponiveis. Exemplos:
+  * Para Meta Ads: use meta_ads (NAO http_request)
+  * Para planilhas: use spreadsheet com TODOS os dados de uma vez (NAO add_row repetido)
+  * Para WhatsApp: use whatsapp_send (NAO http_request)
+  * Para n8n: use n8n_workflow (NAO http_request)
 - Se uma ferramenta falhar 2 vezes: PARE, repense, tente diferente.
 - NUNCA chame a mesma ferramenta com os mesmos parametros mais de 1 vez.
 - Para saudacoes e perguntas simples: responda DIRETO em texto, sem ferramentas.
