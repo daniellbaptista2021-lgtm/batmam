@@ -23,6 +23,13 @@ class ReadTool(BaseTool):
     )
     requires_confirmation = False
 
+    # Behavioral flags (Claude Code Ep.02)
+    _is_read_only = True
+    _is_concurrency_safe = True
+    _is_destructive = False
+    _search_hint = "file read content"
+    _aliases = ["Read", "cat"]
+
     MAX_LINES = 2000
 
     def get_schema(self) -> dict:

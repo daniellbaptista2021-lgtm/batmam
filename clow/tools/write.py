@@ -14,6 +14,13 @@ class WriteTool(BaseTool):
     )
     requires_confirmation = True
 
+    # Behavioral flags (Claude Code Ep.02)
+    _is_read_only = False
+    _is_concurrency_safe = False
+    _is_destructive = True
+    _search_hint = "file write create overwrite"
+    _aliases = ["Write"]
+
     def get_schema(self) -> dict:
         return {
             "type": "object",

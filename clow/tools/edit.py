@@ -17,6 +17,13 @@ class EditTool(BaseTool):
     )
     requires_confirmation = True
 
+    # Behavioral flags (Claude Code Ep.02)
+    _is_read_only = False
+    _is_concurrency_safe = False
+    _is_destructive = False
+    _search_hint = "file edit replace modify"
+    _aliases = ["Edit", "sed"]
+
     def get_schema(self) -> dict:
         return {
             "type": "object",

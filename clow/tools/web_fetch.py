@@ -14,6 +14,13 @@ class WebFetchTool(BaseTool):
     description = "Busca conteúdo de uma URL e retorna como texto. Converte HTML para markdown."
     requires_confirmation = False
 
+    # Behavioral flags (Claude Code Ep.02)
+    _is_read_only = True
+    _is_concurrency_safe = True
+    _is_destructive = False
+    _search_hint = "web fetch url http"
+    _aliases = ["WebFetch", "curl"]
+
     def get_schema(self) -> dict:
         return {
             "type": "object",

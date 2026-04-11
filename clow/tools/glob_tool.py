@@ -24,6 +24,13 @@ class GlobTool(BaseTool):
     )
     requires_confirmation = False
 
+    # Behavioral flags (Claude Code Ep.02)
+    _is_read_only = True
+    _is_concurrency_safe = True
+    _is_destructive = False
+    _search_hint = "file search pattern"
+    _aliases = ["Glob", "find"]
+
     def get_schema(self) -> dict:
         return {
             "type": "object",

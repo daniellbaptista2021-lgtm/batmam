@@ -15,6 +15,13 @@ class AgentTool(BaseTool):
     )
     requires_confirmation = False
 
+    # Behavioral flags (Claude Code Ep.02)
+    _is_read_only = False
+    _is_concurrency_safe = False
+    _is_destructive = False
+    _search_hint = "agent subagent delegate task"
+    _aliases = ["Agent", "subagent"]
+
     _parent_agent: Any = None
 
     def get_schema(self) -> dict:

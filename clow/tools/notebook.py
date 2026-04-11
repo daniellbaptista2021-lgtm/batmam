@@ -17,6 +17,13 @@ class NotebookEditTool(BaseTool):
     )
     requires_confirmation = True
 
+    # Behavioral flags (Claude Code Ep.02)
+    _is_read_only = False
+    _is_concurrency_safe = False
+    _is_destructive = False
+    _search_hint = "jupyter notebook ipynb cell"
+    _aliases = ["NotebookEdit", "jupyter"]
+
     def get_schema(self) -> dict:
         return {
             "type": "object",

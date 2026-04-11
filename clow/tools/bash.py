@@ -18,8 +18,34 @@ class BashTool(BaseTool):
     )
     requires_confirmation = True
 
+    # Behavioral flags (Claude Code Ep.02)
+    _is_read_only = False   # Input-dependent — fail-closed
+    _is_concurrency_safe = False
+    _is_destructive = False  # Input-dependent — checked at runtime
+    _search_hint = "bash shell command terminal"
+    _aliases = ["Bash", "sh", "shell"]
+
     def __init__(self) -> None:
         self._sandbox = Sandbox()
+
+    def is_read_only(self, **kwargs) -> bool:
+        """Input-dependent: delegates to bash_engine.is_read_only."""
+        command = kwargs.get("command", "")
+        if command:
+            return is_read_only(command)
+        return False  # Fail-closed
+
+    def is_destructive(self, **kwargs) -> bool:
+        """Input-dependent: destructive if command modifies system state irreversibly."""
+        command = kwargs.get("command", "")
+        if not command:
+            return False
+        destructive_prefixes = (
+            "rm ", "rm -", "rmdir", "mkfs", "dd ",
+            "git push --force", "git reset --hard",
+            "DROP ", "DELETE FROM", "TRUNCATE ",
+        )
+        return any(command.strip().startswith(p) for p in destructive_prefixes)
 
     def get_schema(self) -> dict:
         return {

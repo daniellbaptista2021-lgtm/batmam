@@ -14,6 +14,13 @@ class WebSearchTool(BaseTool):
     description = "Busca na web usando DuckDuckGo. Retorna resultados com título, URL e snippet."
     requires_confirmation = False
 
+    # Behavioral flags (Claude Code Ep.02)
+    _is_read_only = True
+    _is_concurrency_safe = True
+    _is_destructive = False
+    _search_hint = "web search query internet"
+    _aliases = ["WebSearch"]
+
     def get_schema(self) -> dict:
         return {
             "type": "object",
