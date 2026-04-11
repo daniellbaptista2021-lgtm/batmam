@@ -966,16 +966,14 @@ class Agent:
                   "web_search", "web_fetch"}
 
     def _get_active_tools(self) -> list[dict]:
-        """Carrega apenas tools relevantes para a task atual.
-
-        Estrategia de lazy loading:
-        0. Conversacional: NENHUMA tool (resposta direta)
-        1. Core tools: sempre presentes (9 tools)
-        2. Orchestrator: tools detectadas por dominio na mensagem do usuario
-        3. Loop agentico: tools ja usadas no turno atual (para continuidade)
-        4. Nunca envia as 64 tools de uma vez
+        """Claude Code tool filtering pipeline:
+        1. Core tools (always available)
+        2. Orchestrator-detected tools (by keyword)
+        3. Previously-used tools (continuity)
+        4. Sort for cache stability
+        5. Never send >20 tools total
         """
-        # Se orquestrador diz que nao precisa de tools, retorna vazio
+        # If conversational — NO tools
         if self._orchestration and not self._orchestration.get("needs_tools", True):
             log_action("tool_loading", "conversational=True, no tools sent", session_id=self.session.id)
             return []
@@ -983,15 +981,15 @@ class Agent:
         if not config.CLOW_TOOL_PRUNING:
             return self.registry.openai_tools()
 
+        # Step 1: Core tools (9 — always available)
         allowed = set(self.CORE_TOOLS)
 
-        # Adiciona tools do orquestrador (detectadas por keyword matching)
+        # Step 2: Orchestrator-detected tools
         if self._orchestration:
             allowed.update(self._orchestration.get("relevant_tools", set()))
 
-        # No loop agentico, inclui tools que o modelo ja chamou neste turno
-        # (para que possa continuar usando sem perder acesso)
-        for msg in self.session.messages:
+        # Step 3: Previously-used tools (continuity in this turn)
+        for msg in self.session.messages[-10:]:  # Only recent messages
             if msg.get("role") == "assistant":
                 for tc in msg.get("tool_calls", []):
                     fn = tc.get("function", {})
@@ -999,15 +997,21 @@ class Agent:
                     if name:
                         allowed.add(name)
 
-        # Filtra pelo registry — so serializa tools que existem e sao permitidas
+        # Step 4: Cap at 20 tools max (Claude Code never sends >42, we cap at 20)
         available = set(self.registry.names())
         final = allowed & available
+        if len(final) > 20:
+            # Prioritize core tools + most recently used
+            core = final & set(self.CORE_TOOLS)
+            extra = list(final - core)[:20 - len(core)]
+            final = core | set(extra)
 
+        # Step 5: Sort for cache stability (built-in first)
         tools = self.registry.openai_tools_filtered(final)
 
         log_action(
             "tool_loading",
-            f"enviadas={len(tools)}/{len(available)} tools={sorted(final)}",
+            f"sent={len(tools)}/{len(available)} tools={sorted(final)}",
             session_id=self.session.id,
         )
 
