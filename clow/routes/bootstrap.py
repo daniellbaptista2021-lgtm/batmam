@@ -80,3 +80,29 @@ def register_bootstrap_routes(app) -> None:
             return _JR({"error": "Acesso negado"}, status_code=403)
         from ..swarm import delete_team
         return _JR({"deleted": delete_team(team_name)})
+
+    # ── Permissions API (Ep.07) ──
+
+    @app.get('/api/v1/system/permissions', tags=['system'])
+    async def get_permissions_state(request: _Req):
+        sess = _get_user_session(request)
+        if not sess or not sess.get('is_admin'):
+            return _JR({'error': 'Acesso negado'}, status_code=403)
+        from ..permissions import get_permission_mode, get_denial_stats, PERMISSION_MODES
+        return _JR({
+            'mode': get_permission_mode(),
+            'modes_available': list(PERMISSION_MODES.keys()),
+            'denial_stats': get_denial_stats(),
+        })
+
+    @app.post('/api/v1/system/permissions/mode', tags=['system'])
+    async def set_permissions_mode(request: _Req):
+        sess = _get_user_session(request)
+        if not sess or not sess.get('is_admin'):
+            return _JR({'error': 'Acesso negado'}, status_code=403)
+        body = await request.json()
+        from ..permissions import set_permission_mode, PERMISSION_MODES
+        mode = body.get('mode', '')
+        if mode not in PERMISSION_MODES:
+            return _JR({'error': f'Mode invalido. Use: {list(PERMISSION_MODES.keys())}'}, status_code=400)
+        return _JR(set_permission_mode(mode))

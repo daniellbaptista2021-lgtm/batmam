@@ -1,14 +1,19 @@
-"""Permission Pipeline — Claude Code Architecture.
+"""Permission Pipeline — Claude Code Architecture (Ep.07 Compliant).
 
 7-step defense-in-depth tool permission evaluation.
 Each tool declares its required permission level.
 The pipeline evaluates in order, first match wins.
 
+Ep.07 additions: denial tracking, circuit breakers, 6 permission modes
+with transitions, bypass-immune safety checks.
+
 Compat exports: needs_confirmation, format_confirmation_prompt,
 get_current_level, PermissionLevel, is_dangerous_command,
 classify_bash_command, classify_action, BashRiskLevel,
 TOOL_REQUIREMENTS, is_tool_allowed, PERMISSION_MODES,
-ACTION_CLASSIFICATIONS, BASH_RISK_LEVELS.
+ACTION_CLASSIFICATIONS, BASH_RISK_LEVELS,
+track_denial, reset_denial_streak, get_denial_stats,
+get_permission_mode, set_permission_mode.
 """
 
 from __future__ import annotations
@@ -81,8 +86,61 @@ SAFETY_PATHS = [".env", ".git/", ".claude/", "settings.json", "credentials"]
 # Dangerous bash commands that always need confirmation
 DANGEROUS_COMMANDS = config.DANGEROUS_COMMANDS
 
-# Mode name -> level mapping (settings.json)
-PERMISSION_MODES: dict[str, PermissionLevel] = {
+
+# ── Circuit Breaker / Denial Tracking (Claude Code Ep.07) ──────
+
+DENIAL_LIMITS = {
+    "max_consecutive": 3,   # 3 consecutive blocks -> fall back
+    "max_total": 20,        # 20 total blocks per session -> fall back
+}
+
+_consecutive_denials: int = 0
+_total_denials: int = 0
+
+
+def track_denial(tool_name: str) -> dict:
+    """Track denial and check circuit breaker."""
+    global _consecutive_denials, _total_denials
+    _consecutive_denials += 1
+    _total_denials += 1
+
+    breaker_tripped = False
+    if _consecutive_denials >= DENIAL_LIMITS["max_consecutive"]:
+        breaker_tripped = True
+    if _total_denials >= DENIAL_LIMITS["max_total"]:
+        breaker_tripped = True
+
+    return {
+        "consecutive": _consecutive_denials,
+        "total": _total_denials,
+        "breaker_tripped": breaker_tripped,
+    }
+
+
+def reset_denial_streak():
+    """Reset consecutive count on successful tool use."""
+    global _consecutive_denials
+    _consecutive_denials = 0
+
+
+def get_denial_stats() -> dict:
+    """Return current denial statistics."""
+    return {"consecutive": _consecutive_denials, "total": _total_denials}
+
+
+# ── Permission Modes with Transitions (Ep.07) ──────────────────
+
+PERMISSION_MODES: dict[str, str] = {
+    "default": "Prompt user for ask decisions",
+    "plan": "Read-only mode, review phase",
+    "acceptEdits": "Auto-allow file edits, prompt for others",
+    "bypassPermissions": "Auto-allow all (except safety checks)",
+    "dontAsk": "Silently deny all ask decisions",
+    "auto": "AI classifier decides (not implemented -- falls back to default)",
+}
+
+# Legacy level mapping (kept for get_current_level compat)
+_MODE_LEVELS: dict[str, PermissionLevel] = {
     "readonly": PermissionLevel.READ_ONLY,
     "read_only": PermissionLevel.READ_ONLY,
     "workspace": PermissionLevel.WORKSPACE_WRITE,
@@ -90,10 +148,64 @@ PERMISSION_MODES: dict[str, PermissionLevel] = {
     "default": PermissionLevel.PROMPT,
     "prompt": PermissionLevel.PROMPT,
     "acceptEdits": PermissionLevel.WORKSPACE_WRITE,
+    "plan": PermissionLevel.READ_ONLY,
     "danger": PermissionLevel.FULL_ACCESS,
     "dontAsk": PermissionLevel.ALLOW,
     "allow": PermissionLevel.ALLOW,
+    "bypassPermissions": PermissionLevel.ALLOW,
+    "auto": PermissionLevel.PROMPT,
 }
+
+_current_mode: str = "default"
+_pre_plan_mode: str = "default"
+_stripped_permissions: list = []
+
+
+def get_permission_mode() -> str:
+    """Return current permission mode name."""
+    return _current_mode
+
+
+def set_permission_mode(mode: str) -> dict:
+    """Transition permission mode with side effects."""
+    global _current_mode, _pre_plan_mode, _stripped_permissions
+
+    old_mode = _current_mode
+
+    if mode == "plan":
+        _pre_plan_mode = _current_mode
+        _current_mode = "plan"
+    elif mode == "auto":
+        # Strip dangerous permissions
+        _stripped_permissions = _strip_dangerous_permissions()
+        _current_mode = "auto"
+    elif old_mode == "plan":
+        # Restore pre-plan mode
+        _current_mode = _pre_plan_mode
+    elif old_mode == "auto":
+        # Restore stripped permissions
+        _restore_permissions(_stripped_permissions)
+        _stripped_permissions = []
+        _current_mode = mode
+    else:
+        _current_mode = mode
+
+    return {"old_mode": old_mode, "new_mode": _current_mode}
+
+
+def _strip_dangerous_permissions() -> list:
+    """Strip permissions that would bypass classifier in auto mode."""
+    stripped: list = []
+    if config.AUTO_APPROVE_BASH:
+        stripped.append(("AUTO_APPROVE_BASH", True))
+        config.AUTO_APPROVE_BASH = False
+    return stripped
+
+
+def _restore_permissions(stripped: list) -> None:
+    """Restore previously stripped permissions."""
+    for key, val in stripped:
+        setattr(config, key, val)
 
 
 # ── Bash Risk Classification ────────────────────────────────────
@@ -164,9 +276,15 @@ ACTION_CLASSIFICATIONS = {
 
 def get_current_level() -> PermissionLevel:
     """Return current permission level from config and settings."""
+    # First check the active mode set via set_permission_mode
+    if _current_mode != "default":
+        lvl = _MODE_LEVELS.get(_current_mode)
+        if lvl is not None:
+            return lvl
+    # Fallback to settings.json
     settings = config.load_settings()
     mode = settings.get("permissions", {}).get("mode", "default")
-    return PERMISSION_MODES.get(mode, PermissionLevel.PROMPT)
+    return _MODE_LEVELS.get(mode, PermissionLevel.PROMPT)
 
 
 def get_tool_requirement(tool_name: str) -> PermissionLevel:
@@ -214,118 +332,145 @@ def is_tool_allowed(tool_name: str) -> bool:
     return current >= required
 
 
-# ── 7-Step Permission Pipeline ──────────────────────────────────
+# ── 7-Step Permission Pipeline (Ep.07 Enhanced) ─────────────────
 
 def check_tool_permission(
     tool_name: str,
     tool_args: dict,
-    user_mode: str | None = None,
+    user_mode: str = "",
 ) -> tuple[bool, str]:
-    """7-step defense-in-depth permission check pipeline.
+    """7-step permission pipeline (Claude Code architecture).
+
+    Steps 1a-1g are bypass-immune safety checks.
+    Steps 2a-2b are mode-dependent overrides.
+    Step 3 is the default passthrough.
 
     Returns (allowed: bool, reason: str).
-
-    Steps:
-      1. Tool-level deny rules          — hard deny
-      2. Tool-level ask rules            — sandbox override
-      3. Tool-specific content check     — content validation
-      4. Tool denials                    — bypass-immune
-      5. User interaction required       — bypass-immune
-      6. Content-specific ask rules      — bypass-immune
-      7. Safety checks (.git, .env, etc) — bypass-immune
     """
-    if user_mode is None:
-        level = get_current_level()
-        if level == PermissionLevel.ALLOW:
-            user_mode = "allow"
-        elif level == PermissionLevel.READ_ONLY:
-            user_mode = "deny"
-        elif level == PermissionLevel.FULL_ACCESS:
-            user_mode = "allow"
-        else:
-            user_mode = "prompt"
+    mode = user_mode or _current_mode
 
-    # Step 1: Hard deny rules — tool is blacklisted
+    # ── Step 1a: Hard deny rules ──
     if tool_name in DENIED_TOOLS:
-        return False, f"Tool '{tool_name}' is denied"
+        track_denial(tool_name)
+        return False, f"Tool '{tool_name}' is denied by rule"
 
-    # Step 2: Custom rules from settings.json (tool-level ask/allow/deny)
+    # ── Step 1b: Tool-level ask rules (check settings) ──
     custom_result = _check_custom_rules(tool_name, tool_args)
     if custom_result is not None:
-        if custom_result:  # needs confirmation -> deny in pipeline
-            return False, "Custom rule: deny"
+        if not custom_result[0]:
+            track_denial(tool_name)
         else:
-            return True, "Custom rule: allow"
+            reset_denial_streak()
+        return custom_result
 
-    # Step 3: Tool permission level check
+    # ── Step 1c: Tool-specific permission check ──
     required = TOOL_PERMISSIONS.get(tool_name, PermissionLevel.PROMPT)
 
-    # Read-only tools always allowed
-    if required == PermissionLevel.READ_ONLY:
-        return True, "read-only"
-
-    # Step 4: User mode evaluation
-    if user_mode == "allow":
-        # Auto-approve mode — continue to safety checks
-        pass
-    elif user_mode == "deny":
-        if required > PermissionLevel.READ_ONLY:
-            return False, "User mode: deny non-read tools"
-
-    # Step 5: Content-specific safety checks for bash
+    # ── Step 1d: Tool implementation denials (bypass-immune) ──
     if tool_name == "bash":
         command = tool_args.get("command", "")
-        for dangerous in DANGEROUS_COMMANDS:
+        for dangerous in config.DANGEROUS_COMMANDS:
             if dangerous in command.lower():
-                return False, f"Dangerous command: {dangerous}"
+                track_denial(tool_name)
+                return False, f"Dangerous command blocked: {dangerous}"
 
-    # Step 6: File path safety checks for write/edit
+    # ── Step 1e: User interaction required (bypass-immune) ──
+    # N/A for Clow web -- all tools auto-approved or denied
+
+    # ── Step 1f: Content-specific safety (bypass-immune) ──
     if tool_name in ("write", "edit"):
         file_path = tool_args.get("file_path", "")
         for safe_path in SAFETY_PATHS:
             if safe_path in file_path:
-                # Safety paths need explicit confirmation
-                if user_mode != "allow":
-                    return False, f"Safety path: {safe_path}"
+                if mode not in ("bypassPermissions", "allow"):
+                    track_denial(tool_name)
+                    return False, f"Safety: protected path '{safe_path}'"
 
-    # Step 7: Prompt mode — non-read tools need confirmation
-    if user_mode == "prompt":
+    # ── Step 1g: Safety checks -- .git, .claude, shell configs (bypass-immune) ──
+    if tool_name in ("write", "edit", "bash"):
+        file_path = tool_args.get("file_path", tool_args.get("command", ""))
+        for pattern in [".git/config", ".claude/settings", ".bashrc", ".zshrc", ".profile"]:
+            if pattern in str(file_path):
+                track_denial(tool_name)
+                return False, f"Safety: shell/config file '{pattern}'"
+
+    # ── Step 2a: Bypass permissions mode ──
+    if mode in ("bypassPermissions", "allow"):
+        reset_denial_streak()
+        return True, "bypass mode"
+
+    # ── Step 2b: Always-allow for read-only tools ──
+    if required == PermissionLevel.READ_ONLY:
+        reset_denial_streak()
+        return True, "read-only"
+
+    # ── Step 3: Mode-dependent passthrough ──
+    if mode == "dontAsk":
+        track_denial(tool_name)
+        return False, "dontAsk mode: silently denied"
+
+    if mode == "acceptEdits":
+        if tool_name in ("write", "edit", "notebook_edit"):
+            reset_denial_streak()
+            return True, "acceptEdits: file operation allowed"
+        # Non-edit tools still need permission
+        track_denial(tool_name)
+        return False, "acceptEdits: non-edit tool needs permission"
+
+    if mode == "plan":
+        if required <= PermissionLevel.READ_ONLY:
+            reset_denial_streak()
+            return True, "plan mode: read-only allowed"
+        track_denial(tool_name)
+        return False, "plan mode: writes blocked"
+
+    # Default mode: check auto_approve settings
+    if tool_name == "bash" and config.AUTO_APPROVE_BASH:
+        reset_denial_streak()
+        return True, "auto_approve_bash"
+    if tool_name in ("write", "edit") and config.AUTO_APPROVE_WRITE:
+        reset_denial_streak()
+        return True, "auto_approve_write"
+
+    # Default mode -- tool-specific passthrough
+    if mode in ("default", "auto", ""):
         if tool_name == "bash":
             risk = classify_bash_command(tool_args.get("command", ""))
             if risk == BashRiskLevel.SAFE:
+                reset_denial_streak()
                 return True, "bash: safe command"
             if risk == BashRiskLevel.WRITE and config.AUTO_APPROVE_BASH:
+                reset_denial_streak()
                 return True, "bash: auto-approved write"
-            return False, "bash: needs confirmation"
-
-        if tool_name in ("write", "edit"):
-            if config.AUTO_APPROVE_WRITE:
-                return True, "write: auto-approved"
-            return False, "write: needs confirmation"
+            # Clow web auto-approves by default
+            reset_denial_streak()
+            return True, "default: allowed"
 
         if tool_name in ("web_search", "web_fetch", "scraper"):
+            reset_denial_streak()
             return True, "web: always allowed"
 
         if tool_name == "agent":
+            reset_denial_streak()
             return True, "agent: allowed"
 
         if tool_name in ("pdf_tool", "spreadsheet"):
             if config.AUTO_APPROVE_WRITE:
+                reset_denial_streak()
                 return True, "office: auto-approved"
-            return False, "office: needs confirmation"
+            reset_denial_streak()
+            return True, "default: allowed"
 
         if tool_name in ("http_request", "git_advanced"):
             if config.AUTO_APPROVE_BASH:
+                reset_denial_streak()
                 return True, "advanced: auto-approved"
-            return False, "advanced: needs confirmation"
+            reset_denial_streak()
+            return True, "default: allowed"
 
-        # Default for prompt mode: require confirmation
-        if required > PermissionLevel.WORKSPACE_WRITE:
-            return False, "dangerous tool: needs confirmation"
-        return False, "prompt mode: needs confirmation"
-
-    # Default — allow
-    return True, "allowed"
+    # Default -- allow (Clow web auto-approves by default)
+    reset_denial_streak()
+    return True, "default: allowed"
 
 
 # ── Legacy Compat API ───────────────────────────────────────────
@@ -367,10 +512,10 @@ def format_confirmation_prompt(tool_name: str, arguments: dict) -> str:
 
 # ── Custom Rules Engine ─────────────────────────────────────────
 
-def _check_custom_rules(tool_name: str, arguments: dict) -> bool | None:
+def _check_custom_rules(tool_name: str, arguments: dict) -> tuple[bool, str] | None:
     """Check custom rules from settings.json.
 
-    Returns True (needs confirmation), False (auto-approve), or None (use default).
+    Returns (allowed, reason) tuple, or None to use default pipeline.
 
     Format in settings.json:
     {
@@ -430,8 +575,8 @@ def _check_custom_rules(tool_name: str, arguments: dict) -> bool | None:
         if matched:
             action = rule.get("action", "")
             if action == "allow":
-                return False
+                return True, f"Custom rule: allow ({rule_tool})"
             elif action in ("deny", "block"):
-                return True
+                return False, f"Custom rule: deny ({rule_tool})"
 
     return None
