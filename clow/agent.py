@@ -619,6 +619,31 @@ class Agent:
 
                 # Se nao tem tool calls, verifica se precisa fallback
                 if not tool_calls_data:
+                    # Verificacao de entrega: se o usuario pediu algo concreto
+                    # mas o modelo so respondeu com texto, forca continuar
+                    if (
+                        not self.is_subagent
+                        and iteration < 3
+                        and self._orchestration
+                        and self._orchestration.get("needs_tools")
+                        and not self._orchestration.get("is_conversational")
+                        and not self._has_delivered_output()
+                    ):
+                        log_action(
+                            "incomplete_delivery",
+                            "modelo respondeu sem entregar — forcando execucao",
+                            session_id=self.session.id,
+                        )
+                        self.session.messages.append({
+                            "role": "user",
+                            "content": (
+                                "[Sistema] Voce NAO concluiu a tarefa. O usuario pediu algo concreto "
+                                "mas voce so respondeu com texto. Use suas ferramentas AGORA para "
+                                "criar/entregar o que foi pedido. Execute, nao explique."
+                            ),
+                        })
+                        continue
+
                     # Fallback: se resposta insuficiente com chat, tenta reasoner
                     if (
                         self._orchestration
@@ -1407,6 +1432,35 @@ class Agent:
         r"(?:salv[aeo]|cri[ae]|gerar?|escrev|arquivo|file|path)[^\n]{0,50}?(/[\w/._ -]+\.(?:html|css|js|json|xlsx|py|sh|yaml|yml|md|txt))",
         re.IGNORECASE,
     )
+
+    def _has_delivered_output(self) -> bool:
+        """Verifica se o agente realmente entregou algo concreto neste turno.
+
+        Retorna True se:
+        - Usou write/edit com sucesso
+        - Usou spreadsheet com sucesso
+        - Usou bash com sucesso para criar algo
+        - Usou meta_ads/http_request com sucesso (dados obtidos)
+        """
+        for msg in self.session.messages:
+            if msg.get("role") != "tool":
+                continue
+            content = msg.get("content", "")
+            if not isinstance(content, str):
+                continue
+            # Write/edit/spreadsheet com sucesso
+            if any(kw in content.lower() for kw in [
+                "arquivo escrito", "editado", "planilha criada",
+                "linhas!", "substituição", "acessar: https://",
+            ]):
+                return True
+            # HTTP 200 com dados reais (nao erro)
+            if "http 200" in content.lower() and len(content) > 200:
+                return True
+            # meta_ads com resultado real
+            if "ativa" in content.lower() or "orcamento" in content.lower():
+                return True
+        return False
 
     def _extract_meta_creds_from_context(self) -> tuple[str, str]:
         """Extrai token Meta Ads e ad_account_id das mensagens do usuario."""
