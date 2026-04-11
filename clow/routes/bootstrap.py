@@ -27,3 +27,13 @@ def register_bootstrap_routes(app) -> None:
             return _JR({"error": "Acesso negado"}, status_code=403)
         from ..bootstrap import get_startup_report
         return _JR(get_startup_report())
+
+    @app.get("/api/v1/system/context", tags=["system"])
+    async def analyze_context_endpoint(request: _Req):
+        """Analyze current context breakdown (admin only)."""
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        from ..context_assembly import analyze_context
+        return _JR(analyze_context([], sess.get("cwd", "")))
+

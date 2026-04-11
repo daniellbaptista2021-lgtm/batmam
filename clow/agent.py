@@ -414,37 +414,41 @@ class Agent:
     # ── System Messages ────────────────────────────────────────
 
     def _build_system_messages(self) -> None:
-        """System prompt com prompt mestre do orquestrador + contexto dinamico."""
+        """Build system prompt using 3-layer context assembly (Claude Code architecture)."""
+        from .context_assembly import _prompt_builder
+
+        # Get business prompt
         business_prompt = get_system_prompt(self.cwd)
-        self._system_base = f"{MASTER_SYSTEM_PROMPT}\n\n{business_prompt}"
 
-        # Contexto dinamico
+        # Build via assembly pipeline
+        system_content = _prompt_builder.build(
+            cwd=self.cwd,
+            model=self.model,
+            custom_prompt=business_prompt,
+        )
+
+        # Add learned context
         dynamic_parts = []
-
-        # CLOW.md do projeto
         project_ctx = load_project_context(self.cwd)
         if project_ctx:
-            dynamic_parts.append(f"\n# Contexto do Projeto (CLOW.md)\n{project_ctx}")
+            dynamic_parts.append("\n# Contexto do Projeto\n" + project_ctx)
 
-        # Project DNA: INSTRUCTIONS.md com heranca de diretorios pai
         instructions = self._load_project_instructions()
         if instructions:
-            dynamic_parts.append(f"\n# [Instrucoes do Projeto]\n{instructions}")
+            dynamic_parts.append("\n# Instrucoes do Projeto\n" + instructions)
 
-        # Memoria persistente
         if not self.is_subagent:
             memory_ctx = load_memory_context()
             if memory_ctx:
-                dynamic_parts.append(f"\n# Memoria\n{memory_ctx}")
+                dynamic_parts.append("\n# Memoria\n" + memory_ctx)
 
-        self._system_dynamic = "\n".join(dynamic_parts) if dynamic_parts else ""
+        self._system_dynamic = "\n".join(dynamic_parts)
 
-        full_system = self._system_base
+        full_system = system_content
         if self._system_dynamic:
             full_system += "\n\n" + self._system_dynamic
-        self.session.messages = [
-            {"role": "system", "content": full_system}
-        ]
+
+        self.session.messages = [{"role": "system", "content": full_system}]
 
     def _load_project_instructions(self) -> str:
         """Carrega .clow/INSTRUCTIONS.md do cwd e diretorios pai (heranca).
