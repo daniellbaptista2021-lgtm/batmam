@@ -106,3 +106,17 @@ def register_bootstrap_routes(app) -> None:
         if mode not in PERMISSION_MODES:
             return _JR({'error': f'Mode invalido. Use: {list(PERMISSION_MODES.keys())}'}, status_code=400)
         return _JR(set_permission_mode(mode))
+
+    # -- Hooks API (Ep.05) --
+
+    @app.get('/api/v1/system/hooks', tags=['system'])
+    async def get_hooks(request: _Req):
+        """Get hook system status (admin only)."""
+        sess = _get_user_session(request)
+        if not sess or not sess.get('is_admin'):
+            return _JR({'error': 'Acesso negado'}, status_code=403)
+        from ..hooks import HOOK_EVENTS
+        return _JR({
+            'events': sorted(list(HOOK_EVENTS)),
+            'total_events': len(HOOK_EVENTS),
+        })
