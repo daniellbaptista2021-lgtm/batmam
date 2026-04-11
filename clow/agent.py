@@ -1178,13 +1178,25 @@ class Agent:
             arguments=self._parse_arguments(tc_data["arguments"]),
         )
 
-        # Auto-inject: extrai credenciais do contexto da conversa quando o modelo esquece
-        if tool_call.name == "meta_ads" and not tool_call.arguments.get("access_token"):
-            token, account = self._extract_meta_creds_from_context()
-            if token:
-                tool_call.arguments["access_token"] = token
-            if account and not tool_call.arguments.get("ad_account_id"):
-                tool_call.arguments["ad_account_id"] = account
+        # Auto-inject: SEMPRE usa token/account extraido da mensagem do usuario
+        # DeepSeek corrompe tokens ao copiá-los (troca/remove caracteres)
+        if tool_call.name in ("meta_ads", "http_request"):
+            ctx_token, ctx_account = self._extract_meta_creds_from_context()
+            if tool_call.name == "meta_ads":
+                if ctx_token:
+                    tool_call.arguments["access_token"] = ctx_token
+                if ctx_account:
+                    tool_call.arguments["ad_account_id"] = ctx_account
+            elif tool_call.name == "http_request":
+                # Corrige token corrompido em URLs do http_request
+                url = tool_call.arguments.get("url", "")
+                if ctx_token and "access_token=" in url and "graph.facebook.com" in url:
+                    import re as _url_re
+                    tool_call.arguments["url"] = _url_re.sub(
+                        r"access_token=EAA[A-Za-z0-9+/=]+",
+                        f"access_token={ctx_token}",
+                        url,
+                    )
 
         turn.tool_calls.append(tool_call)
 
