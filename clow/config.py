@@ -52,7 +52,7 @@ MAX_TOKENS = int(os.getenv("CLOW_MAX_TOKENS", "2048"))
 # Limites de mensagens por usuário (0 = sem limite)
 CLOW_DAILY_LIMIT = int(os.getenv("CLOW_DAILY_LIMIT", "50"))
 CLOW_WEEKLY_LIMIT = int(os.getenv("CLOW_WEEKLY_LIMIT", "200"))
-MAX_CONTEXT_MESSAGES = 20
+MAX_CONTEXT_MESSAGES = 30
 TEMPERATURE = 0.2
 MAX_RETRY_ATTEMPTS = 3
 MAX_TOOL_RESULT_CHARS = 5000
@@ -68,7 +68,7 @@ CLOW_THINKING_BUDGET = int(os.getenv("CLOW_THINKING_BUDGET", "10000"))
 
 # ── Auto-Correction ───────────────────────────────────────
 CLOW_AUTO_CORRECT = os.getenv("CLOW_AUTO_CORRECT", "true").lower() in ("true", "1", "yes")
-CLOW_AUTO_CORRECT_MAX = int(os.getenv("CLOW_AUTO_CORRECT_MAX", "3"))
+CLOW_AUTO_CORRECT_MAX = int(os.getenv("CLOW_AUTO_CORRECT_MAX", "2"))
 
 # ── Vision Feedback Loop ──────────────────────────────────
 CLOW_VISION_FEEDBACK = os.getenv("CLOW_VISION_FEEDBACK", "true").lower() in ("true", "1", "yes")

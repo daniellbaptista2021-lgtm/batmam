@@ -545,13 +545,14 @@ class Agent:
 
         turn = Turn(user_message=user_message)
         full_response_text = []
-        max_iterations = 30
+        max_iterations = 8
         iteration = 0
         auto_correct_attempts = 0
         cache_hit_total = 0
         cache_miss_total = 0
         prev_tool_calls: list[dict] | None = None
 
+        _last_tool_calls: list[str] = []  # Loop detection
         try:
             while iteration < max_iterations:
                 iteration += 1
@@ -624,6 +625,23 @@ class Agent:
                                 self.session.id, iteration, target_files,
                                 summary=msg_text[:80] if isinstance(user_message, str) else "",
                             )
+
+                # Loop detection: same tool + same args = stop
+                tool_signatures = []
+                for tc in tool_calls_data:
+                    sig = f"{tc['name']}:{tc.get('arguments', '')[:100]}"
+                    tool_signatures.append(sig)
+
+                repeated = [s for s in tool_signatures if s in _last_tool_calls]
+                if repeated:
+                    log_action("loop_detected", f"Repeated tool call: {repeated[0][:60]}", level="warning", session_id=self.session.id)
+                    # Force final response instead of looping
+                    self.session.messages.append({
+                        "role": "user",
+                        "content": "[Sistema] Ferramenta repetida detectada. Pare e de a resposta final ao usuario.",
+                    })
+                    break
+                _last_tool_calls = tool_signatures
 
                 # Executa tool calls (com paralelismo para read-only)
                 tool_results = self._execute_tool_calls(tool_calls_data, turn)
@@ -935,7 +953,9 @@ class Agent:
     # ── Tool Loading Dinâmico (Lazy) ─────────────────────────────
 
     # Tools sempre disponiveis em qualquer contexto
-    CORE_TOOLS = {"read", "glob", "grep", "write", "edit", "bash", "agent",
+    # Claude Code Architecture: 9 core tools always available
+    # All others loaded ONLY when orchestrator detects explicit need
+    CORE_TOOLS = {"read", "write", "edit", "glob", "grep", "bash", "agent",
                   "web_search", "web_fetch"}
 
     def _get_active_tools(self) -> list[dict]:
