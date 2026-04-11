@@ -1177,6 +1177,15 @@ class Agent:
             name=tc_data["name"],
             arguments=self._parse_arguments(tc_data["arguments"]),
         )
+
+        # Auto-inject: extrai credenciais do contexto da conversa quando o modelo esquece
+        if tool_call.name == "meta_ads" and not tool_call.arguments.get("access_token"):
+            token, account = self._extract_meta_creds_from_context()
+            if token:
+                tool_call.arguments["access_token"] = token
+            if account and not tool_call.arguments.get("ad_account_id"):
+                tool_call.arguments["ad_account_id"] = account
+
         turn.tool_calls.append(tool_call)
 
         # Hook pre_tool_call (protocolo exit-code: 0=allow, 2=deny, outro=warn)
@@ -1386,6 +1395,31 @@ class Agent:
         r"(?:salv[aeo]|cri[ae]|gerar?|escrev|arquivo|file|path)[^\n]{0,50}?(/[\w/._ -]+\.(?:html|css|js|json|xlsx|py|sh|yaml|yml|md|txt))",
         re.IGNORECASE,
     )
+
+    def _extract_meta_creds_from_context(self) -> tuple[str, str]:
+        """Extrai token Meta Ads e ad_account_id das mensagens do usuario."""
+        token = ""
+        account = ""
+        for msg in self.session.messages:
+            if msg.get("role") != "user":
+                continue
+            content = msg.get("content", "")
+            if not isinstance(content, str):
+                continue
+            # Token Meta: comeca com EAA e tem 100+ chars
+            if not token:
+                import re as _re
+                m = _re.search(r"(EAA[A-Za-z0-9+/=]{50,})", content)
+                if m:
+                    token = m.group(1)
+            # Ad Account ID: act_NNNNN
+            if not account:
+                m = re.search(r"(act_\d{5,})", content)
+                if m:
+                    account = m.group(1)
+            if token and account:
+                break
+        return token, account
 
     def _auto_extract_files(self, response_text: str, user_message: str) -> list[str]:
         """Extrai blocos de codigo da resposta e salva em arquivo.

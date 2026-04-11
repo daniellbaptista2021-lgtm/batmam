@@ -14,11 +14,25 @@ def _get_creds(kwargs: dict) -> tuple[str, str]:
 
     Prioridade:
     1. Parametros diretos (access_token, ad_account_id)
-    2. Env vars (META_ADS_TOKEN, META_ADS_ACCOUNT_ID / META_ACCESS_TOKEN)
+    2. Env vars (META_ADS_TOKEN, META_ADS_ACCOUNT_ID)
     3. Credential manager
+    4. Busca token em QUALQUER parametro (DeepSeek as vezes manda no campo errado)
     """
     token = kwargs.get("access_token", "")
     account = kwargs.get("ad_account_id", "")
+
+    # DeepSeek as vezes manda o account_id no campo campaign_id
+    if not account:
+        cid = kwargs.get("campaign_id", "")
+        if cid and cid.startswith("act_"):
+            account = cid
+
+    # Busca token em qualquer valor de string dos kwargs (fallback para DeepSeek)
+    if not token:
+        for k, v in kwargs.items():
+            if isinstance(v, str) and v.startswith("EAA") and len(v) > 50:
+                token = v
+                break
 
     if not token:
         token = os.getenv("META_ADS_TOKEN", "") or os.getenv("META_ACCESS_TOKEN", "")
