@@ -207,6 +207,10 @@ if HAS_FASTAPI:
     from .routes.bridge import register_bridge_routes
     register_bridge_routes(app)
 
+    # ── Bootstrap (state singleton + startup profiler) ────────
+    from .routes.bootstrap import register_bootstrap_routes
+    register_bootstrap_routes(app)
+
     # ── Proteger /docs e /openapi.json (admin only) ──────────────
     from starlette.middleware.base import BaseHTTPMiddleware
     from fastapi.responses import JSONResponse as _DocsJR

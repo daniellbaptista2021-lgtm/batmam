@@ -1370,6 +1370,9 @@ def _run_agent_turn(agent: Agent, message: str) -> None:
         _spinner.stop()
         _thinking_active = False
         _first_turn = False
+        # Reset per-turn bootstrap metrics
+        from .bootstrap import get_state as _get_bs_state
+        _get_bs_state().reset_turn_metrics()
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1397,6 +1400,11 @@ def run_repl(args: argparse.Namespace) -> None:
         on_rate_limit=show_rate_limit_warning,
         auto_approve=getattr(args, "auto_approve", False),
     )
+
+    from .bootstrap import profile_checkpoint, setup, get_state
+    profile_checkpoint("cli_agent_created")
+    setup()  # Phase 3: background prefetch
+    profile_checkpoint("cli_ready")
 
     history_file = config.CLOW_HOME / "input_history"
     prompt_session = PromptSession(
@@ -1488,6 +1496,15 @@ def run_repl(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
+    from .bootstrap import profile_checkpoint, init, setup, is_fast_path, get_state
+    profile_checkpoint("cli_entry")
+
+    # Fast-path cascade (skip full startup for simple commands)
+    fast = is_fast_path(sys.argv[1:])
+    if fast == "version":
+        print(f"Clow v{__version__}")
+        return
+
     parser = argparse.ArgumentParser(prog="clow", description="System Clow — AI Code Agent")
     parser.add_argument("--version", "-v", action="version", version=f"Clow v{__version__}")
     parser.add_argument("--model", "-m", help=f"Model (default: {config.CLOW_MODEL})")
