@@ -239,9 +239,9 @@ def build_tool(
 def create_default_registry() -> ToolRegistry:
     """Cria registro com todas as ferramentas do Clow.
 
-    Core (10) + Task (4) + Integracao (10) + WhatsApp Agent (9) +
-    Chatwoot CRM (15) + Canva (2) + SSH/VPS (7) + Git (1) + Database (4) +
-    Meta Ads (1) + Deploy (2) = 65 tools
+    Core (10) + Task (4) + Claude Code Official (25) + Integracao (10) +
+    WhatsApp Agent (9) + Chatwoot CRM (15) + Canva (2) + SSH/VPS (7) +
+    Git (1) + Database (4) + Meta Ads (1) + Deploy (2) = 90 tools
     """
     from .bash import BashTool
     from .read import ReadTool
@@ -273,6 +273,38 @@ def create_default_registry() -> ToolRegistry:
 
     # ── Task (4) ──
     for tool_cls in (TaskCreateTool, TaskUpdateTool, TaskListTool, TaskGetTool):
+        registry.register(tool_cls())
+
+    # ── Claude Code Official Tools (25 new) ──
+    from .plan_tools import EnterPlanModeTool, ExitPlanModeTool, ToolSearchTool
+    from .worktree_tools import EnterWorktreeTool, ExitWorktreeTool
+    from .agent_management import (
+        SendMessageTool, TaskStopTool, TeamCreateTool, TeamDeleteTool, ListPeersTool,
+    )
+    from .skill_tool import SkillTool
+    from .snip_tool import SnipTool
+    from .sleep_tool import SleepTool
+    from .monitor_tool import MonitorTool
+    from .cron_tools import CronCreateTool, CronDeleteTool, CronListTool
+    from .mcp_tools import ListMcpResourcesTool, ReadMcpResourceTool
+    from .notification_tools import SendUserFileTool, PushNotificationTool
+    from .remote_trigger import RemoteTriggerTool
+    from .workflow_tool import WorkflowTool
+    from .task_output import TaskOutputTool
+    from .config_tool import ConfigTool
+    from .memory_tools import MemoryReadTool, MemoryWriteTool, MemoryDeleteTool
+
+    for tool_cls in (
+        EnterPlanModeTool, ExitPlanModeTool, ToolSearchTool,
+        EnterWorktreeTool, ExitWorktreeTool,
+        SendMessageTool, TaskStopTool, TeamCreateTool, TeamDeleteTool, ListPeersTool,
+        SkillTool, SnipTool, SleepTool, MonitorTool,
+        CronCreateTool, CronDeleteTool, CronListTool,
+        ListMcpResourcesTool, ReadMcpResourceTool,
+        SendUserFileTool, PushNotificationTool,
+        RemoteTriggerTool, WorkflowTool, TaskOutputTool, ConfigTool,
+        MemoryReadTool, MemoryWriteTool, MemoryDeleteTool,
+    ):
         registry.register(tool_cls())
 
     # ── Integracao (10) ──
