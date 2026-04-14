@@ -16,6 +16,7 @@ from ..webapp import track_action
 from ..rate_limit import limiter as user_limiter
 from ..rag import get_context_for_prompt as _rag_context
 from ..database import check_message_limit
+from ..orchestrator import is_conversational, is_simple_question
 
 
 def register_ws_routes(app: FastAPI) -> None:
@@ -136,6 +137,14 @@ def register_ws_routes(app: FastAPI) -> None:
                         continue
 
                 track_action("user_message", content[:60])
+
+                if not file_data and (is_conversational(content) or is_simple_question(content)):
+                    short_reply = "Boa tarde. Em que posso ajudar?" if any(x in content.lower() for x in ["boa tarde", "bom dia", "boa noite", "oi", "ola", "ol?"]) else "Posso ajudar com isso."
+                    await websocket.send_json({"type": "text_delta", "content": short_reply})
+                    await websocket.send_json({"type": "text_done"})
+                    await websocket.send_json({"type": "turn_complete"})
+                    continue
+
                 await websocket.send_json({"type": "thinking_start"})
 
                 if file_data:

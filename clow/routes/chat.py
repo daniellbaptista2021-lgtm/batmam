@@ -21,6 +21,7 @@ from ..database import (
     check_limit, check_message_limit,
     save_message, get_user_usage_today, PLANS,
 )
+from ..orchestrator import is_conversational, is_simple_question
 
 
 def _build_multimodal_message(text: str, file_data: dict) -> Any:
