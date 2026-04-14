@@ -3,7 +3,6 @@
 from __future__ import annotations
 import asyncio
 import os
-import logging
 from typing import Any
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -24,11 +23,9 @@ def register_ws_routes(app: FastAPI) -> None:
 
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):
-        # Verificacao de sessao via cookie para WebSocket
         ws_cookie = websocket.cookies.get("clow_session", "")
         ws_sess = _validate_session(ws_cookie)
         if not ws_sess:
-            # Fallback: API key via query param
             api_key = websocket.query_params.get("api_key", "")
             keys = _get_api_keys()
             if keys and not _verify_api_key(api_key):
@@ -41,7 +38,6 @@ def register_ws_routes(app: FastAPI) -> None:
         ws_is_admin = ws_sess.get("is_admin", False) if ws_sess else False
         ws_user_id = ws_sess.get("user_id", "") if ws_sess else ""
 
-        # Rate limit para WebSocket
         client_ip = websocket.client.host if websocket.client else "unknown"
         if not _ws_rate_limiter.is_allowed(client_ip):
             await websocket.close(code=4029, reason="Rate limit excedido")
@@ -52,8 +48,8 @@ def register_ws_routes(app: FastAPI) -> None:
         from ..agent import Agent
 
         loop = asyncio.get_event_loop()
-
-        # Cria agente com callbacks que enviam via WebSocket
+        agents_by_conv: dict[str, Any] = {}
+        draft_agent: Any = None
         send_queue: asyncio.Queue = asyncio.Queue()
 
         def on_text_delta(delta: str):
@@ -82,19 +78,17 @@ def register_ws_routes(app: FastAPI) -> None:
                 loop,
             )
 
-        if ws_is_admin:
-            # Admin tem acesso total
-            agent = Agent(
-                cwd=os.getcwd(),
-                on_text_delta=on_text_delta,
-                on_text_done=on_text_done,
-                on_tool_call=on_tool_call,
-                on_tool_result=on_tool_result,
-                auto_approve=True,
-            )
-        else:
-            # Nao-admin: ferramentas de escrita/bash SEMPRE negadas em hardware.
-            agent = Agent(
+        def build_agent() -> Any:
+            if ws_is_admin:
+                return Agent(
+                    cwd=os.getcwd(),
+                    on_text_delta=on_text_delta,
+                    on_text_done=on_text_done,
+                    on_tool_call=on_tool_call,
+                    on_tool_result=on_tool_result,
+                    auto_approve=True,
+                )
+            return Agent(
                 cwd=os.getcwd(),
                 on_text_delta=on_text_delta,
                 on_text_done=on_text_done,
@@ -104,7 +98,6 @@ def register_ws_routes(app: FastAPI) -> None:
                 ask_confirmation=lambda _: False,
             )
 
-        # Task para enviar mensagens da fila para o WebSocket
         async def send_loop():
             try:
                 while True:
@@ -118,60 +111,63 @@ def register_ws_routes(app: FastAPI) -> None:
         try:
             while True:
                 data = await websocket.receive_json()
-                if data.get("type") == "message":
-                    content = data.get("content", "")
-                    file_data = data.get("file_data")
-                    ws_model = data.get("model", "haiku")
+                if data.get("type") != "message":
+                    continue
 
-                    if not content and not file_data:
-                        continue
+                content = data.get("content", "")
+                file_data = data.get("file_data")
+                conv_id = str(data.get("conversation_id", "") or "").strip()
 
-                    # Rate limit per user
-                    ws_plan = ws_sess.get("plan", "lite") if ws_sess else "lite"
-                    rl_ok, _ = user_limiter.check(client_ip, ws_user_id, "admin" if ws_is_admin else ws_plan)
-                    if not rl_ok:
-                        await websocket.send_json({"type": "error", "content": "Rate limit atingido. Aguarde alguns minutos."})
+                if not content and not file_data:
+                    continue
+
+                ws_plan = ws_sess.get("plan", "lite") if ws_sess else "lite"
+                rl_ok, _ = user_limiter.check(client_ip, ws_user_id, "admin" if ws_is_admin else ws_plan)
+                if not rl_ok:
+                    await websocket.send_json({"type": "error", "content": "Rate limit atingido. Aguarde alguns minutos."})
+                    await websocket.send_json({"type": "turn_complete"})
+                    continue
+
+                if ws_user_id and not ws_is_admin:
+                    msg_allowed, msg_reason = check_message_limit(ws_user_id)
+                    if not msg_allowed:
+                        await websocket.send_json({"type": "error", "content": msg_reason})
                         await websocket.send_json({"type": "turn_complete"})
                         continue
 
-                    # Limite de mensagens diário/semanal (admins isentos)
-                    if ws_user_id and not ws_is_admin:
-                        msg_allowed, msg_reason = check_message_limit(ws_user_id)
-                        if not msg_allowed:
-                            await websocket.send_json({"type": "error", "content": msg_reason})
-                            await websocket.send_json({"type": "turn_complete"})
-                            continue
+                track_action("user_message", content[:60])
+                await websocket.send_json({"type": "thinking_start"})
 
-                    track_action("user_message", content[:60])
-
-                    # Envia thinking
-                    await websocket.send_json({"type": "thinking_start"})
-
-                    # Monta mensagem multimodal se tem arquivo
-                    if file_data:
-                        user_msg = _build_multimodal_message(content, file_data)
-                    else:
-                        # Enrich with RAG context
-                        rag_ctx = ""
-                        try:
-                            rag_ctx = _rag_context(content, root=os.getcwd(), max_chars=8000)
-                        except Exception:
-                            pass
-                        user_msg = f"{rag_ctx}\n\n---\n\n{content}" if rag_ctx else content
-
-                    # Executa agente em thread separada (chat normal)
+                if file_data:
+                    user_msg = _build_multimodal_message(content, file_data)
+                else:
+                    rag_ctx = ""
                     try:
-                        result = await loop.run_in_executor(
-                            None, agent.run_turn, user_msg
-                        )
-                        track_action("agent_response", result[:60] if result else "")
-                    except Exception as e:
-                        await websocket.send_json({"type": "thinking_end"})
-                        await websocket.send_json({"type": "error", "content": str(e)})
-                        track_action("agent_error", str(e)[:60], "error")
+                        rag_ctx = _rag_context(content, root=os.getcwd(), max_chars=8000)
+                    except Exception:
+                        pass
+                    user_msg = f"{rag_ctx}\n\n---\n\n{content}" if rag_ctx else content
 
-                    # Finaliza turno
-                    await websocket.send_json({"type": "turn_complete"})
+                try:
+                    if conv_id:
+                        agent = agents_by_conv.get(conv_id)
+                        if agent is None:
+                            agent = build_agent()
+                            agents_by_conv[conv_id] = agent
+                    else:
+                        agent = draft_agent
+                        if agent is None:
+                            agent = build_agent()
+                            draft_agent = agent
+
+                    result = await loop.run_in_executor(None, agent.run_turn, user_msg)
+                    track_action("agent_response", result[:60] if result else "")
+                except Exception as e:
+                    await websocket.send_json({"type": "thinking_end"})
+                    await websocket.send_json({"type": "error", "content": str(e)})
+                    track_action("agent_error", str(e)[:60], "error")
+
+                await websocket.send_json({"type": "turn_complete"})
 
         except WebSocketDisconnect:
             pass
