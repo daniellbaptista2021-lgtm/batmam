@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 import time
 from typing import Any
 
@@ -21,7 +22,24 @@ from ..database import (
     check_limit, check_message_limit,
     save_message, get_user_usage_today, PLANS,
 )
-from ..orchestrator import is_conversational, is_simple_question
+
+_GREETING_ONLY_RE = re.compile(
+    r"^\s*(?:oi|ola|ol[aá]|bom\s*dia|boa\s*tarde|boa\s*noite|e\s*a[ií]|fala|hey|hi|hello)[!.?\s]*$",
+    re.IGNORECASE,
+)
+
+
+def _is_plain_greeting(message: str) -> bool:
+    return bool(_GREETING_ONLY_RE.match((message or "").strip()))
+
+
+def _greeting_reply(message: str) -> str:
+    lower = (message or "").strip().lower()
+    if "bom dia" in lower:
+        return "Bom dia. Em que posso ajudar?"
+    if "boa noite" in lower:
+        return "Boa noite. Em que posso ajudar?"
+    return "Boa tarde. Em que posso ajudar?"
 
 
 def _build_multimodal_message(text: str, file_data: dict) -> Any:
@@ -263,6 +281,14 @@ def register_chat_routes(app: FastAPI) -> None:
 
         if not content and not file_data:
             return JSONResponse({"error": "content vazio"}, status_code=400)
+
+        if not file_data and _is_plain_greeting(content):
+            return JSONResponse({
+                "session_id": session_id or "",
+                "response": _greeting_reply(content),
+                "tools": [],
+                "file": None,
+            })
 
         user_email = sess["email"]
         user_id = sess["user_id"]

@@ -11,12 +11,11 @@ from .auth import (
     _get_api_keys, _verify_api_key, _validate_session,
     _ws_rate_limiter,
 )
-from .chat import _build_multimodal_message
+from .chat import _build_multimodal_message, _greeting_reply, _is_plain_greeting
 from ..webapp import track_action
 from ..rate_limit import limiter as user_limiter
 from ..rag import get_context_for_prompt as _rag_context
 from ..database import check_message_limit
-from ..orchestrator import is_conversational, is_simple_question
 
 
 def register_ws_routes(app: FastAPI) -> None:
@@ -138,8 +137,8 @@ def register_ws_routes(app: FastAPI) -> None:
 
                 track_action("user_message", content[:60])
 
-                if not file_data and (is_conversational(content) or is_simple_question(content)):
-                    short_reply = "Boa tarde. Em que posso ajudar?" if any(x in content.lower() for x in ["boa tarde", "bom dia", "boa noite", "oi", "ola", "ol?"]) else "Posso ajudar com isso."
+                if not file_data and _is_plain_greeting(content):
+                    short_reply = _greeting_reply(content)
                     await websocket.send_json({"type": "text_delta", "content": short_reply})
                     await websocket.send_json({"type": "text_done"})
                     await websocket.send_json({"type": "turn_complete"})
