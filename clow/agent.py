@@ -408,13 +408,18 @@ class Agent:
 
         # Sessao
         self.session = session or Session(cwd=self.cwd, model=self.model)
-        if not self.session.messages:
-            self._build_system_messages()
+        # Sempre constroi system prompt (mesmo se há histórico)
+        # Se há histórico, será prepended; se não há, inicializa a sessão com system prompt apenas
+        self._build_system_messages()
 
     # ── System Messages ────────────────────────────────────────
 
     def _build_system_messages(self) -> None:
-        """Build system prompt using 3-layer context assembly (Claude Code architecture)."""
+        """Build system prompt using 3-layer context assembly (Claude Code architecture).
+        
+        Se há histórico de conversa (session.messages), prepend sistema prompt.
+        Caso contrário, cria sessão apenas com o sistema prompt.
+        """
         from .context_assembly import _prompt_builder
 
         # Get business prompt
@@ -448,7 +453,20 @@ class Agent:
         if self._system_dynamic:
             full_system += "\n\n" + self._system_dynamic
 
-        self.session.messages = [{"role": "system", "content": full_system}]
+        # Se há histórico de conversa, preservá-lo e prepend system prompt
+        if self.session.messages:
+            existing_messages = self.session.messages
+            # Verifica se já tem system prompt
+            has_system = existing_messages and existing_messages[0].get("role") == "system"
+            if has_system:
+                # Substitui system prompt existente pelo novo
+                self.session.messages = [{"role": "system", "content": full_system}] + existing_messages[1:]
+            else:
+                # Prepend system prompt ao histórico
+                self.session.messages = [{"role": "system", "content": full_system}] + existing_messages
+        else:
+            # Sem histórico: apenas system prompt
+            self.session.messages = [{"role": "system", "content": full_system}]
 
     def _load_project_instructions(self) -> str:
         """Carrega .clow/INSTRUCTIONS.md do cwd e diretorios pai (heranca).

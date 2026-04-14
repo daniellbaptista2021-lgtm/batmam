@@ -538,7 +538,8 @@ def register_chat_routes(app: FastAPI) -> None:
         # ── Chat normal via Agent ──
         # session_key inclui user_id para garantir isolamento entre usuarios:
         # dois usuarios com o mesmo session_id nunca compartilham o mesmo agente.
-        session_key = f"{user_id}_{session_id}_{chosen_model}"
+        # Se conversation_id foi fornecido, usar como parte da session_key (nunca reutilizar agentes entre conversas)
+        session_key = f"{user_id}_{conv_id or session_id}_{chosen_model}"
         
         # Se conversation_id foi fornecido, carregar mensagens anteriores
         session_obj = None
@@ -562,11 +563,17 @@ def register_chat_routes(app: FastAPI) -> None:
                     model=chosen_model,
                 )
         
-        if session_id and session_key in _http_sessions:
+        # Se há conversa (conv_id), NUNCA reutilizar agent de cache (sempre criar novo com histórico carregado)
+        # Se é novo chat (sem conv_id), pode reutilizar se mesmo session_id
+        use_cached_agent = session_id and session_key in _http_sessions and not conv_id
+        
+        if use_cached_agent:
             agent = _http_sessions[session_key]["agent"]
         else:
-            session_id = str(uuid.uuid4())[:8]
-            session_key = f"{user_id}_{session_id}_{chosen_model}"
+            if not session_id:
+                session_id = str(uuid.uuid4())[:8]
+                session_key = f"{user_id}_{conv_id or session_id}_{chosen_model}"
+            
             if is_admin:
                 # Admin tem acesso total — auto_approve permite todas as ferramentas
                 agent = Agent(
