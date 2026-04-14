@@ -47,7 +47,8 @@ CLOW_MODEL = os.getenv("CLOW_MODEL", DEEPSEEK_MODEL)
 CLOW_MODEL_HEAVY = os.getenv("CLOW_MODEL_HEAVY", DEEPSEEK_REASONER_MODEL)
 
 # ── Limites ─────────────────────────────────────────────────
-MAX_TOKENS = int(os.getenv("CLOW_MAX_TOKENS", "16384"))
+# DeepSeek limita a 8192 tokens por resposta
+MAX_TOKENS = int(os.getenv("CLOW_MAX_TOKENS", "8192"))
 
 # Limites de mensagens por usuário (0 = sem limite)
 CLOW_DAILY_LIMIT = int(os.getenv("CLOW_DAILY_LIMIT", "0"))

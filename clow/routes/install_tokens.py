@@ -360,7 +360,7 @@ echo ""
             kwargs: dict[str, Any] = {
                 "model": model,
                 "messages": oai_msgs,
-                "max_tokens": min(max_tokens, 16384),
+                "max_tokens": min(max_tokens, 8192),  # DeepSeek max: 8192
             }
             if tools:
                 kwargs["tools"] = tools
