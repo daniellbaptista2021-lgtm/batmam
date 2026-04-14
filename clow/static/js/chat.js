@@ -86,6 +86,18 @@ function smartTitle(t){
   return t;
 }
 
+function showWelc(){
+  T.innerHTML=`<div class="welc" id="welc">
+      <img src="/static/brand/logo.png" alt="Clow - Inteligência Infinita" class="welc-logo">
+      <div class="welc-tagline">INTELIG&Ecirc;NCIA INFINITA <span class="welc-dot">&bull;</span> POSSIBILIDADES PREMIUM</div>
+      <h1>Como posso <span>ajudar</span>?</h1>
+    </div>`;
+  const hdr=document.getElementById('hdrT');
+  if(hdr)hdr.textContent='Nova conversa';
+  const wm=document.getElementById('wmark');
+  if(wm)wm.classList.add('empty');
+}
+
 async function loadConvs(){try{
   const r=await fetch('/api/v1/conversations');const d=await r.json();
   const el=document.getElementById('convList');
