@@ -336,7 +336,7 @@ echo ""
 
         messages = body.get("messages", [])
         model_req = body.get("model", "")
-        max_tokens = body.get("max_tokens", 4096)
+        max_tokens = body.get("max_tokens", 2048)  # DeepSeek default 8192 max
         system_prompt = body.get("system", "")
         tools = body.get("tools", [])
 
