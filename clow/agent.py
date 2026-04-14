@@ -562,6 +562,8 @@ class Agent:
         self._reactive_compact_done = False
 
         _last_tool_calls: list[str] = []  # Loop detection
+        _last_responses: list[str] = []  # Conversational repetition detection
+        _iterations_without_tools: int = 0  # Track iterations without tool execution
         try:
             while iteration < max_iterations:
                 iteration += 1
@@ -617,8 +619,39 @@ class Agent:
                 assistant_msg = self._build_assistant_message(text_content, tool_calls_data)
                 self.session.messages.append(assistant_msg)
 
+                # ── Detecção de conversação repetida/travada ──
+                # Se a resposta for muito similar às anteriores, para
+                if text_content and len(_last_responses) >= 2:
+                    similarity = self._calc_text_similarity(text_content, _last_responses[-1])
+                    if similarity > 0.7:  # 70% similar = loop conversacional
+                        log_action(
+                            "conversation_loop_detected",
+                            f"respostas {similarity*100:.0f}% similares, parando",
+                            level="warning",
+                            session_id=self.session.id,
+                        )
+                        break
+                
+                # Mantém histórico das últimas 3 respostas para comparação
+                if text_content:
+                    _last_responses.append(text_content)
+                    if len(_last_responses) > 3:
+                        _last_responses.pop(0)
+
                 # Se nao tem tool calls, verifica se precisa fallback
                 if not tool_calls_data:
+                    _iterations_without_tools += 1
+                    
+                    # Se ficar 5+ iterações sem tools (conversação pura), para
+                    if _iterations_without_tools >= 5:
+                        log_action(
+                            "max_conversational_turns_reached",
+                            f"{_iterations_without_tools} turnos sem tools, finalizando",
+                            level="warning",
+                            session_id=self.session.id,
+                        )
+                        break
+                    
                     # Verificacao de entrega: se o usuario pediu algo concreto
                     # mas o modelo so respondeu com texto, forca continuar
                     if (
@@ -669,6 +702,9 @@ class Agent:
                         full_response_text.pop() if full_response_text else None
                         continue
                     break
+                
+                # Tem tool calls — reseta contador
+                _iterations_without_tools = 0
 
                 # ── Time Travel: checkpoint antes de tools de escrita ──
                 if config.CLOW_CHECKPOINTS and not self.is_subagent:
@@ -1398,6 +1434,29 @@ class Agent:
         r"IndentationError|AttributeError|ModuleNotFoundError)",
         re.IGNORECASE,
     )
+
+    def _calc_text_similarity(self, text1: str, text2: str) -> float:
+        """Calcula similaridade entre dois textos (0.0 a 1.0).
+        
+        Usa simples algoritmo baseado em palavras-chave compartilhadas.
+        Maior que 0.7 = looping conversacional (mesmas perguntas).
+        """
+        if not text1 or not text2:
+            return 0.0
+        
+        # Normaliza e extrai palavras (sem pontuação)
+        import re as _re_sim
+        words1 = set(_re_sim.findall(r'\b\w{3,}\b', text1.lower()))
+        words2 = set(_re_sim.findall(r'\b\w{3,}\b', text2.lower()))
+        
+        if not words1 or not words2:
+            return 0.0
+        
+        # Jaccad similarity: (intersecção) / (união)
+        intersection = len(words1 & words2)
+        union = len(words1 | words2)
+        
+        return intersection / union if union > 0 else 0.0
 
     def _detect_tool_errors(self, tool_results: list[ToolResult]) -> bool:
         """Detecta se algum tool result contém erro que merece auto-correção."""
