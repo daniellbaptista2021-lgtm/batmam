@@ -30,7 +30,7 @@ Formato EXATO (sem markdown, sem explicacao):
 - Retorne APENAS o JSON valido"""
 
     model = "deepseek-chat"
-    raw = ask_ai(prompt, system=system, model=model, max_tokens=4096)
+    raw = ask_ai(prompt, system=system, model=model, max_tokens=2048)
 
     text = raw.strip()
     if text.startswith("```"):

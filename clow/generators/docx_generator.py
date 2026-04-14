@@ -31,7 +31,7 @@ Formato EXATO (sem markdown, sem explicacao):
 - Minimo 3 secoes com paragrafos detalhados
 - Retorne APENAS o JSON valido"""
 
-    raw = ask_ai(prompt, system=system, max_tokens=4096)
+    raw = ask_ai(prompt, system=system, max_tokens=2048)
 
     text = raw.strip()
     if text.startswith("```"):

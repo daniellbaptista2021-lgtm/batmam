@@ -29,7 +29,7 @@ Regras tecnicas:
 - Retorne APENAS o codigo HTML, sem explicacoes, sem markdown, sem ```"""
 
     model = "deepseek-chat"
-    html = ask_ai(prompt, system=system, model=model, max_tokens=4096)
+    html = ask_ai(prompt, system=system, model=model, max_tokens=2048)
 
     if html.startswith("```"):
         html = "\n".join(html.split("\n")[1:])
@@ -46,7 +46,7 @@ Regras tecnicas:
             issues_text = "\n".join(result["issues"])
             html2 = ask_ai(
                 f"Corrija estes problemas de design no HTML:\n{issues_text}\n\nHTML original:\n{html[:2000]}",
-                system=system, model=model, max_tokens=4096,
+                system=system, model=model, max_tokens=2048,
             )
             if html2.startswith("```"):
                 html2 = "\n".join(html2.split("\n")[1:])

@@ -198,7 +198,7 @@ Regras:
 - Se houver navegacao entre paginas, use anchors ou links relativos
 - Retorne APENAS o HTML, sem markdown, sem explicacoes"""
 
-    html = ask_ai(step.get("description", ""), system=system, model=model, max_tokens=4096)
+    html = ask_ai(step.get("description", ""), system=system, model=model, max_tokens=2048)
     if html.startswith("```"):
         html = "\n".join(html.split("\n")[1:])
     if html.endswith("```"):

@@ -29,7 +29,7 @@ Formato EXATO do JSON (sem markdown, sem explicacao):
 - Inclua formulas quando fizer sentido (ex: =SUM(B2:B10))
 - Retorne APENAS o JSON valido"""
 
-    raw = ask_ai(prompt, system=system, max_tokens=4096)
+    raw = ask_ai(prompt, system=system, max_tokens=2048)
 
     # Limpa markdown
     text = raw.strip()

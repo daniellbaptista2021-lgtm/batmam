@@ -40,7 +40,7 @@ MODELS = {
 }
 
 
-def ask_ai(prompt: str, system: str = "", model: str = "", max_tokens: int = 4096, user_id: str = "") -> str:
+def ask_ai(prompt: str, system: str = "", model: str = "", max_tokens: int = 2000, user_id: str = "") -> str:  # DeepSeek max 8192
     from .. import config
     client = get_client()
     model = model or config.CLOW_MODEL
