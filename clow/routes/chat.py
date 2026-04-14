@@ -282,7 +282,9 @@ def register_chat_routes(app: FastAPI) -> None:
         if not content and not file_data:
             return JSONResponse({"error": "content vazio"}, status_code=400)
 
-        if not file_data and _is_plain_greeting(content):
+        # Greeting bypass APENAS para conversas NOVAS (sem conversation_id)
+        # NÃO deve retornar greeting se a conversa já existe e tem histórico!
+        if not file_data and _is_plain_greeting(content) and not conv_id:
             return JSONResponse({
                 "session_id": session_id or "",
                 "response": _greeting_reply(content),
@@ -326,10 +328,6 @@ def register_chat_routes(app: FastAPI) -> None:
                 })
             model_id = get_model_for_plan(effective_plan)
         track_action("user_message_http", content[:60])
-
-        # Salva mensagem do usuario no historico
-        if conv_id:
-            save_message(conv_id, "user", content)
 
         # ── Comandos internos ──
         if content.startswith("/"):
@@ -541,6 +539,29 @@ def register_chat_routes(app: FastAPI) -> None:
         # session_key inclui user_id para garantir isolamento entre usuarios:
         # dois usuarios com o mesmo session_id nunca compartilham o mesmo agente.
         session_key = f"{user_id}_{session_id}_{chosen_model}"
+        
+        # Se conversation_id foi fornecido, carregar mensagens anteriores
+        session_obj = None
+        if conv_id:
+            from ..database import get_messages as _get_messages
+            prev_messages = _get_messages(conv_id, limit=50)
+            if prev_messages:
+                # Converter mensagens da conversa para formato da Session
+                session_messages = []
+                for msg in prev_messages:
+                    session_messages.append({
+                        "role": msg.get("role", "user"),
+                        "content": msg.get("content", ""),
+                        "file_data": msg.get("file_data"),
+                    })
+                from ..models import Session
+                session_obj = Session(
+                    id=conv_id,
+                    messages=session_messages,
+                    cwd=os.getcwd(),
+                    model=chosen_model,
+                )
+        
         if session_id and session_key in _http_sessions:
             agent = _http_sessions[session_key]["agent"]
         else:
@@ -548,14 +569,17 @@ def register_chat_routes(app: FastAPI) -> None:
             session_key = f"{user_id}_{session_id}_{chosen_model}"
             if is_admin:
                 # Admin tem acesso total — auto_approve permite todas as ferramentas
-                agent = Agent(cwd=os.getcwd(), model=model_id, api_key=user_api_key or None, auto_approve=True)
+                agent = Agent(
+                    cwd=os.getcwd(), model=model_id, api_key=user_api_key or None, 
+                    auto_approve=True, session=session_obj
+                )
             else:
                 # Usuarios tem acesso total as ferramentas de criacao
                 # (bash, write, edit, deploy, etc) — forca total para produtividade.
                 # Sessoes sao efemeras (limpas diariamente).
                 agent = Agent(
                     cwd=os.getcwd(), model=model_id, api_key=user_api_key or None,
-                    auto_approve=True,
+                    auto_approve=True, session=session_obj
                 )
             _http_sessions[session_key] = {"agent": agent, "last_used": time.time()}
 
@@ -602,6 +626,10 @@ def register_chat_routes(app: FastAPI) -> None:
                 pass
             user_msg = f"{rag_ctx}\n\n---\n\n{content}" if rag_ctx else content
 
+        # Salva mensagem do usuário na conversa (se conversation_id foi fornecido)
+        if conv_id:
+            save_message(conv_id, "user", content, file_data)
+
         try:
             result = await loop.run_in_executor(None, agent.run_turn, user_msg)
         except Exception as e:
@@ -612,6 +640,10 @@ def register_chat_routes(app: FastAPI) -> None:
 
         response_text = "".join(collected_text) if collected_text else (result or "")
         track_action("agent_response_http", response_text[:60] if response_text else "")
+
+        # Salva resposta do agent na conversa (se conversation_id foi fornecido)
+        if conv_id:
+            save_message(conv_id, "assistant", response_text)
 
         return JSONResponse({
             "session_id": session_id,
