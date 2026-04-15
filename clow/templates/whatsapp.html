@@ -62,6 +62,12 @@ a{color:var(--p);text-decoration:none}
 .toggle input{display:none}
 .ttrack{width:36px;height:20px;background:var(--bg);border-radius:10px;position:relative;border:1px solid var(--border);flex-shrink:0;transition:background .2s}
 .toggle input:checked+.ttrack{background:var(--wa);border-color:var(--wa)}
+.sw{position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0}
+.sw input{opacity:0;width:0;height:0}
+.sw .slider{position:absolute;cursor:pointer;inset:0;background:var(--bg);border:1px solid var(--border);border-radius:11px;transition:.2s}
+.sw .slider:before{content:'';position:absolute;height:16px;width:16px;left:2px;bottom:2px;background:#fff;border-radius:50%;transition:.2s}
+.sw input:checked+.slider{background:var(--wa);border-color:var(--wa)}
+.sw input:checked+.slider:before{transform:translateX(18px)}
 .ttrack::after{content:'';width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:transform .2s}
 .toggle input:checked+.ttrack::after{transform:translateX(16px)}
 .toggle span{font-size:13px}
@@ -125,6 +131,10 @@ a{color:var(--p);text-decoration:none}
 
 <div class="main">
   <p>Conecte seus numeros e configure o chatbot com IA para atender seus clientes 24/7.</p>
+  <div id="slotInfo" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-bottom:16px;font-size:13px">
+    <div><span style="color:var(--t2)">Slots usados:</span> <strong id="slotUsed" style="color:var(--wa)">-</strong> / <strong id="slotMax" style="color:var(--t1)">-</strong></div>
+    <div id="slotPlan" style="color:var(--t3);font-size:11px"></div>
+  </div>
 
   <div class="instances" id="instances">
     <div style="text-align:center;padding:40px;color:var(--t2)">Carregando...</div>
@@ -328,6 +338,20 @@ async function loadInstances(){
   try{
     var d=await api('/api/v1/whatsapp/instances');
     STATE.instances=d.instances||[];
+    var planSlots={lite:1,starter:2,pro:3,business:5};
+    try{
+      var b=await api('/api/v1/billing/status');
+      var pid=b.plan_id||'lite';
+      var max=planSlots[pid]||1;
+      if($('slotUsed'))$('slotUsed').textContent=STATE.instances.length;
+      if($('slotMax'))$('slotMax').textContent=max;
+      if($('slotPlan'))$('slotPlan').textContent='Plano '+(b.plan_name||pid);
+      var addCard=$('addCard');
+      if(addCard&&STATE.instances.length>=max){
+        addCard.innerHTML='<div class="plus" style="color:var(--t3)">&#128274;</div><p style="color:var(--t3)">Limite do plano atingido ('+max+' numeros). <a href="/app/settings" style="color:var(--wa)">Fazer upgrade</a></p>';
+        addCard.style.cursor='default';addCard.onclick=null;
+      }
+    }catch(e){}
     renderInstances();
   }catch(e){
     $('instances').innerHTML='<div style="text-align:center;padding:30px;color:var(--red)">Erro: '+e.message+'</div>';
@@ -346,9 +370,13 @@ function renderInstances(){
     var provLabel=prov==='meta'?'Meta Oficial':prov==='evolution'?'Evolution API':prov==='zapi'?'Z-API':'API';
     var provClass=prov==='meta'?'meta':prov==='evolution'?'evo':'zapi';
     html+='<div class="inst-card" id="card-'+inst.id+'">';
-    html+='<div class="inst-header" onclick="toggleCard(\''+inst.id+'\')">';
-    html+='<div class="inst-name"><span class="inst-status '+(active?'on':'off')+'"></span>'+inst.name+'<span class="inst-badge '+provClass+'">'+provLabel+'</span></div>';
-    html+='<div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--t3)">'+(inst.stats?inst.stats.messages_today||0:0)+' msgs hoje</span><span class="chevron">&#9660;</span></div>';
+    html+='<div class="inst-header">';
+    html+='<div class="inst-name" onclick="toggleCard(\''+inst.id+'\')" style="cursor:pointer;flex:1"><span class="inst-status '+(active?'on':'off')+'"></span>'+inst.name+'<span class="inst-badge '+provClass+'">'+provLabel+'</span></div>';
+    html+='<div style="display:flex;align-items:center;gap:12px">';
+    html+='<span style="font-size:11px;color:var(--t3)">'+(inst.stats?inst.stats.messages_today||0:0)+' msgs hoje</span>';
+    html+='<label class="sw" title="'+(active?'Bot ativo':'Bot inativo')+'" onclick="event.stopPropagation()"><input type="checkbox" '+(active?'checked':'')+' onchange="toggleActive(\''+inst.id+'\',' +'+(!active)+')" id="sw-'+inst.id+'"><span class="slider"></span></label>';
+    html+='<span class="chevron" onclick="toggleCard(\''+inst.id+'\')" style="cursor:pointer">&#9660;</span>';
+    html+='</div>';
     html+='</div>';
     html+='<div class="inst-body">';
 
@@ -363,7 +391,6 @@ function renderInstances(){
     // Actions
     html+='<div style="display:flex;gap:8px;flex-wrap:wrap">';
     html+='<button class="btn btn-wa btn-sm" onclick="saveInstance(\''+inst.id+'\')">Salvar</button>';
-    html+='<button class="btn btn-outline btn-sm" onclick="toggleActive(\''+inst.id+'\','+(!active)+')">'+(active?'Pausar Bot':'Ativar Bot')+'</button>';
     html+='<button class="btn btn-danger btn-sm" onclick="removeInstance(\''+inst.id+'\',\''+inst.name+'\')">Remover</button>';
     html+='</div>';
 
@@ -401,7 +428,7 @@ async function saveInstance(id){
 async function toggleActive(id,activate){
   try{
     await api('/api/v1/whatsapp/instances/'+id+'/'+(activate?'activate':'deactivate'),{method:'POST'});
-    toast(activate?'Bot ativado':'Bot pausado','ok');
+    toast(activate?'Bot ativado - respondendo com IA 24/7':'Bot desativado','ok');
     loadInstances();
   }catch(e){toast('Erro: '+e.message,'err');}
 }
