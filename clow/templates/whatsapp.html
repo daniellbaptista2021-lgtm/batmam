@@ -191,6 +191,18 @@ a{color:var(--p);text-decoration:none}
             <input id="newMetaWabaId" placeholder="123456789...">
           </div>
         </div>
+        <div style="margin-top:14px;padding:14px;background:rgba(37,211,102,.04);border:1px solid rgba(37,211,102,.12);border-radius:10px">
+          <div style="font-size:12px;font-weight:700;color:var(--wa);margin-bottom:8px">&#128279; Configuracao do Webhook</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7;margin-bottom:10px">
+            <strong style="color:var(--t1)">Apos salvar, copie a Webhook URL gerada e configure no Meta:</strong><br>
+            1. Acesse <a href="https://developers.facebook.com" target="_blank" style="color:var(--wa)">developers.facebook.com</a><br>
+            2. Seu App &rarr; WhatsApp &rarr; Configuracao<br>
+            3. Em <strong>Webhooks</strong>, clique Editar<br>
+            4. Cole a <strong>Webhook URL</strong> e o <strong>Verify Token</strong><br>
+            5. Assine o campo <strong>messages</strong>
+          </div>
+          <div style="font-size:11px;color:var(--t3)">&#128274; O Webhook URL sera gerado automaticamente apos clicar em "Salvar e Conectar"</div>
+        </div>
       </div>
 
       <!-- Evolution fields -->
@@ -209,6 +221,17 @@ a{color:var(--p);text-decoration:none}
             <input id="newEvoInstance" placeholder="clow-bot">
           </div>
         </div>
+        <div style="margin-top:14px;padding:14px;background:rgba(74,158,255,.04);border:1px solid rgba(74,158,255,.12);border-radius:10px">
+          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px">&#128279; Configuracao do Webhook</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7;margin-bottom:10px">
+            <strong style="color:var(--t1)">Apos salvar, copie a Webhook URL e configure no Evolution API:</strong><br>
+            1. Acesse o painel do seu Evolution API<br>
+            2. Configuracoes da instancia &rarr; <strong>Webhook</strong><br>
+            3. Cole a URL gerada<br>
+            4. Ative o evento <strong>MESSAGES_UPSERT</strong>
+          </div>
+          <div style="font-size:11px;color:var(--t3)">&#128274; O Webhook URL sera gerado automaticamente apos clicar em "Salvar e Conectar"</div>
+        </div>
       </div>
 
       <!-- Z-API fields -->
@@ -222,6 +245,17 @@ a{color:var(--p);text-decoration:none}
           <label>Token</label>
           <input id="newZapiToken" placeholder="Seu Token da Z-API">
           <div class="hint">Encontre em painel.z-api.io &rarr; sua instancia &rarr; Token</div>
+        </div>
+        <div style="margin-top:14px;padding:14px;background:rgba(155,89,252,.04);border:1px solid rgba(155,89,252,.12);border-radius:10px">
+          <div style="font-size:12px;font-weight:700;color:var(--p);margin-bottom:8px">&#128279; Configuracao do Webhook</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7;margin-bottom:10px">
+            <strong style="color:var(--t1)">Apos salvar, copie a Webhook URL e configure na Z-API:</strong><br>
+            1. Acesse <a href="https://painel.z-api.io" target="_blank" style="color:var(--p)">painel.z-api.io</a><br>
+            2. Sua instancia &rarr; <strong>Webhooks</strong><br>
+            3. Em "URL para recebimento", cole a URL gerada<br>
+            4. Ative o webhook e salve
+          </div>
+          <div style="font-size:11px;color:var(--t3)">&#128274; O Webhook URL sera gerado automaticamente apos clicar em "Salvar e Conectar"</div>
         </div>
       </div>
 
