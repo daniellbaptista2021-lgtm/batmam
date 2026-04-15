@@ -563,9 +563,9 @@ def register_chat_routes(app: FastAPI) -> None:
                     model=chosen_model,
                 )
         
-        # Se há conversa (conv_id), NUNCA reutilizar agent de cache (sempre criar novo com histórico carregado)
-        # Se é novo chat (sem conv_id), pode reutilizar se mesmo session_id
-        use_cached_agent = session_id and session_key in _http_sessions and not conv_id
+        # Reutilizar agent do cache quando possível (mantém estado interno, orchestrator, etc)
+        # Só cria novo se não existe no cache ainda
+        use_cached_agent = session_key in _http_sessions
         
         if use_cached_agent:
             agent = _http_sessions[session_key]["agent"]

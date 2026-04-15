@@ -567,7 +567,7 @@ class Agent:
 
         turn = Turn(user_message=user_message)
         full_response_text = []
-        max_iterations = 50
+        max_iterations = 20
         iteration = 0
         auto_correct_attempts = 0
         cache_hit_total = 0
@@ -582,6 +582,7 @@ class Agent:
         _last_tool_calls: list[str] = []  # Loop detection
         _last_responses: list[str] = []  # Conversational repetition detection
         _iterations_without_tools: int = 0  # Track iterations without tool execution
+        self._fallback_used_this_turn = False  # Max 1 fallback per turn
         try:
             while iteration < max_iterations:
                 iteration += 1
@@ -603,7 +604,7 @@ class Agent:
                 cache_miss_total += usage.get("cache_miss_tokens", 0)
 
                 # Max output tokens recovery (Claude Code pattern -- up to 3 retries)
-                MAX_OUTPUT_RECOVERY = 5
+                MAX_OUTPUT_RECOVERY = 2
                 if (usage.get("finish_reason") == "length"
                         and _output_recovery_count < MAX_OUTPUT_RECOVERY):
                     _output_recovery_count += 1
@@ -660,8 +661,8 @@ class Agent:
                 if not tool_calls_data:
                     _iterations_without_tools += 1
                     
-                    # Se ficar 5+ iterações sem tools (conversação pura), para
-                    if _iterations_without_tools >= 5:
+                    # Se ficar 2+ iterações sem tools (conversação pura), para
+                    if _iterations_without_tools >= 2:
                         log_action(
                             "max_conversational_turns_reached",
                             f"{_iterations_without_tools} turnos sem tools, finalizando",
@@ -670,34 +671,15 @@ class Agent:
                         )
                         break
                     
-                    # Verificacao de entrega: se o usuario pediu algo concreto
-                    # mas o modelo so respondeu com texto, forca continuar
-                    if (
-                        not self.is_subagent
-                        and iteration < 3
-                        and self._orchestration
-                        and self._orchestration.get("needs_tools")
-                        and not self._orchestration.get("is_conversational")
-                        and not self._has_delivered_output()
-                    ):
-                        log_action(
-                            "incomplete_delivery",
-                            "modelo respondeu sem entregar — forcando execucao",
-                            session_id=self.session.id,
-                        )
-                        self.session.messages.append({
-                            "role": "user",
-                            "content": (
-                                "[Sistema] Voce NAO concluiu a tarefa. O usuario pediu algo concreto "
-                                "mas voce so respondeu com texto. Use suas ferramentas AGORA para "
-                                "criar/entregar o que foi pedido. Execute, nao explique."
-                            ),
-                        })
-                        continue
+                    # Verificacao de entrega desabilitada — causava loop:
+                    # modelo responde com texto → sistema injeta "use tools" →
+                    # modelo responde com texto novamente → loop
+                    # O modelo decide sozinho quando usar tools via system prompt.
 
-                    # Fallback: se resposta insuficiente com chat, tenta reasoner
+                    # Fallback chat→reasoner: máximo 1 vez por turno para evitar loop
                     if (
-                        self._orchestration
+                        not getattr(self, '_fallback_used_this_turn', False)
+                        and self._orchestration
                         and self.model != config.DEEPSEEK_REASONER_MODEL
                         and self._fallback.should_fallback(
                             text_content,
@@ -706,15 +688,15 @@ class Agent:
                             was_conversational=self._orchestration.get("is_conversational", False),
                         )
                     ):
+                        self._fallback_used_this_turn = True
                         self._fallback.log_fallback(
                             "insufficient-response", self.model, self.session.id
                         )
                         self.model = config.DEEPSEEK_REASONER_MODEL
-                        # Remove resposta insuficiente e tenta de novo
                         self.session.messages.pop()  # remove assistant msg
                         log_action(
                             "fallback_retry",
-                            f"promovendo para {self.model}",
+                            f"promovendo para {self.model} (unica tentativa)",
                             session_id=self.session.id,
                         )
                         full_response_text.pop() if full_response_text else None
