@@ -93,6 +93,33 @@ def is_conversational(message: str) -> bool:
     return False
 
 
+INFORMATIONAL_PATTERNS = re.compile(
+    r"(?:"
+    r"(?:quais?\s+(?:sao|são)\s+(?:as|os|suas?|meus?))|"
+    r"(?:(?:liste|lista|mostre|mostra)\s+(?:as|os|suas?|meus?|todos?))|"
+    r"(?:pesquis[ea]\s+(?:a\s+fundo\s+)?(?:no|na|os?|as?|sobre|suas?))|"
+    r"(?:me\s+(?:diga|fala|conte|explica|mostr[ae]))|"
+    r"(?:o\s+que\s+(?:voce|vc|tu)\s+(?:tem|sabe|faz|consegue|pode))|"
+    r"(?:(?:suas?|quais?)\s+(?:principal|principai)s?\s+(?:skill|funcao|ferramenta|recurso|capacidade))"
+    r")",
+    re.IGNORECASE,
+)
+
+
+def is_informational_query(message: str) -> bool:
+    """Detecta consultas informativas — pedem dados/info, nao execucao.
+
+    Exemplos: 'pesquise suas skills', 'quais sao suas funcoes',
+    'liste seus recursos', 'me diga o que voce faz'.
+    Devem usar tools de leitura se necessario, mas com LIMITE e SEMPRE
+    responder com texto ao final.
+    """
+    msg = message.strip()
+    if len(msg) > 500:
+        return False
+    return bool(INFORMATIONAL_PATTERNS.search(msg))
+
+
 def is_simple_question(message: str) -> bool:
     """Detecta perguntas simples que so precisam de resposta em texto."""
     msg = message.strip()
@@ -464,6 +491,7 @@ def orchestrate(
     session_id: str = "",
 ) -> dict[str, Any]:
     conversational = False
+    informational = False
     needs_tools = True
 
     if isinstance(user_message, str):
@@ -473,8 +501,16 @@ def orchestrate(
         elif is_simple_question(user_message):
             conversational = True
             needs_tools = False
+        elif is_informational_query(user_message):
+            informational = True
+            needs_tools = True  # pode precisar de leitura, mas com limite
 
     model, model_reason = ModelRouter.route(user_message, context_messages, has_error_context)
+
+    # Consultas informativas: usar chat model (rapido), nao reasoner
+    if informational and model == config.DEEPSEEK_REASONER_MODEL:
+        model = config.CLOW_MODEL
+        model_reason = "informational-query"
 
     agent = None
     agent_context = ""
@@ -496,8 +532,8 @@ def orchestrate(
     log_action(
         "orchestrate",
         f"model={model} reason={model_reason} conv={conversational} "
-        f"agent={agent} domains={tool_domains} tools={needs_tools} "
-        f"tokens~{est_tokens} compress={needs_compress}",
+        f"info={informational} agent={agent} domains={tool_domains} "
+        f"tools={needs_tools} tokens~{est_tokens} compress={needs_compress}",
         session_id=session_id,
     )
 
@@ -505,6 +541,7 @@ def orchestrate(
         "model": model,
         "model_reason": model_reason,
         "is_conversational": conversational,
+        "is_informational": informational,
         "agent": agent,
         "agent_context": agent_context,
         "tool_domains": tool_domains,

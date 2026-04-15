@@ -558,6 +558,23 @@ class Agent:
                         "content": sys_content + agent_ctx,
                     }
 
+            # Consultas informativas: injetar instrucao para ser objetivo
+            if self._orchestration.get("is_informational") and self.session.messages:
+                info_ctx = (
+                    "\n[MODO CONSULTA] O usuario fez uma PERGUNTA informativa. "
+                    "Use no maximo 3-4 ferramentas de leitura para coletar dados, "
+                    "depois responda com um texto claro e organizado. "
+                    "NAO faca mais de 5 chamadas de ferramentas. "
+                    "A RESPOSTA EM TEXTO e OBRIGATORIA ao final."
+                )
+                if self.session.messages[0].get("role") == "system":
+                    sys_content = self.session.messages[0].get("content", "")
+                    if "[MODO CONSULTA]" not in sys_content:
+                        self.session.messages[0] = {
+                            "role": "system",
+                            "content": sys_content + info_ctx,
+                        }
+
         self.session.messages.append({"role": "user", "content": user_message})
         log_action("turn_start", msg_text[:80], session_id=self.session.id)
 
@@ -567,7 +584,9 @@ class Agent:
 
         turn = Turn(user_message=user_message)
         full_response_text = []
-        max_iterations = 20
+        # Consultas informativas: limite menor de iteracoes (nao precisa de 20)
+        is_info = self._orchestration.get("is_informational", False) if self._orchestration else False
+        max_iterations = 6 if is_info else 20
         iteration = 0
         auto_correct_attempts = 0
         cache_hit_total = 0
@@ -785,20 +804,28 @@ class Agent:
                 for fpath in extracted:
                     log_action("auto_extract", f"arquivo salvo: {fpath}", session_id=self.session.id)
 
-        # ── Forca resposta final se houve tool calls sem texto conclusivo ──
-        had_tool_calls = any(
+        # ── GARANTIA: sempre responder ao usuario ──
+        # Se houve tool calls NESTE turno mas nenhum texto final, forca sintese
+        turn_had_tools = any(
             msg.get("role") == "assistant" and msg.get("tool_calls")
-            for msg in self.session.messages
+            for msg in self.session.messages[_error_watermark:]
         )
-        last_text = full_response_text[-1].strip() if full_response_text else ""
-        # Se houve tools mas a ultima resposta e vazia/curta, forca sintese
-        if had_tool_calls and len(last_text) < 30 and iteration < max_iterations:
+        final_text = "\n".join(full_response_text).strip()
+        needs_synthesis = (
+            (turn_had_tools and len(final_text) < 30)  # tools sem resposta
+            or (not final_text and iteration > 1)       # multiplas iteracoes sem texto
+            or (not final_text)                         # nenhum texto gerado
+        )
+        if needs_synthesis:
             try:
                 self.session.messages.append({
                     "role": "user",
-                    "content": "[Sistema] Responda em 2-3 linhas: o que foi feito e o link do resultado. Sem explicacoes longas.",
+                    "content": (
+                        "[Sistema] OBRIGATORIO: voce usou ferramentas mas NAO respondeu ao usuario. "
+                        "Sintetize AGORA uma resposta completa baseada em tudo que voce encontrou. "
+                        "Responda de forma clara e organizada. O usuario PRECISA receber uma resposta."
+                    ),
                 })
-                # Usa chat model para sintese (rapido e barato)
                 saved_model = self.model
                 self.model = config.CLOW_MODEL
                 synth_text, synth_tools, synth_usage = self._stream_call()
@@ -813,6 +840,11 @@ class Agent:
                 log_action("forced_synthesis", "gerou resposta final apos tools", session_id=self.session.id)
             except Exception as e:
                 log_action("forced_synthesis_error", str(e)[:100], level="warning", session_id=self.session.id)
+                # Fallback absoluto: se nem a sintese funcionar, gera mensagem de erro
+                if not "\n".join(full_response_text).strip():
+                    fallback_msg = "Desculpe, houve um erro ao processar sua solicitacao. Por favor, tente novamente."
+                    full_response_text.append(fallback_msg)
+                    self.on_text_done(fallback_msg)
 
         # Count errors this turn only (watermark-based error scoping)
         turn_errors = sum(
