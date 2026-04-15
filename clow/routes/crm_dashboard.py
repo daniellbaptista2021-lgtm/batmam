@@ -64,12 +64,22 @@ def register_crm_dashboard_routes(app) -> None:
         c = _get("contacts?page=1")
         p = _get("conversations?status=pending&page=1")
         r = _get("conversations?status=resolved&page=1")
+        # Count active WhatsApp bots
+        bots_count = 0
+        try:
+            from ..whatsapp_agent import get_wa_manager
+            mgr = get_wa_manager()
+            all_instances = mgr.get_instances("admin")
+            bots_count = len([i for i in all_instances if i.get("active")])
+        except Exception:
+            pass
         return _JR({
             "ok": True,
             "open": o["data"]["meta"]["all_count"] if o and "data" in o else 0,
             "contacts": c["meta"]["count"] if c and "meta" in c else 0,
             "pending": p["data"]["meta"]["all_count"] if p and "data" in p else 0,
             "resolved": r["data"]["meta"]["all_count"] if r and "data" in r else 0,
+            "bots": bots_count,
         })
 
 
@@ -100,29 +110,41 @@ def register_crm_dashboard_routes(app) -> None:
         if not sess:
             return RedirectResponse("/login")
 
-        from ..database import get_user_by_id
-        from ..billing import PLANS
-        user = get_user_by_id(_tenant(sess))
-        plan_id = user.get("plan", "lite") if user else "byok_free"
-        if plan_id in ("free", "basic", "byok_free", "unlimited"):
-            plan_id = "lite"
-        plan = PLANS.get(plan_id, PLANS["lite"])
-        if not plan.get("crm_enabled", False) and not sess.get("is_admin"):
-            return _HR("<html><head><meta charset='UTF-8'><title>CRM</title><style>body{background:#050510;color:#e4e4e7;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}a{color:#7c5cfc}</style></head><body><div><h2>CRM disponivel nos planos pagos</h2><p>A partir do plano Lite (R$ 169/mes)</p><a href='/app/settings'>Fazer upgrade</a> | <a href='/'>Voltar</a></div></body></html>")
+        # Chatwoot URL - use external URL for iframe (localhost won't work in browser)
+        chatwoot_url = os.getenv("CHATWOOT_URL", "http://localhost:3000")
+        # If it's localhost, try the external domain
+        if "localhost" in chatwoot_url or "127.0.0.1" in chatwoot_url:
+            chatwoot_url = "https://ads.pvcorretor01.com.br"
 
-        infra = _get_infra(_tenant(sess))
-        if not infra or not infra.get("chatwoot_url"):
-            tpl = _TPL_DIR / "crm_setup.html"
-            if tpl.exists():
-                return _HR(tpl.read_text(encoding="utf-8"))
-            return RedirectResponse("/setup")
-
-        tpl = _TPL_DIR / "crm_dashboard.html"
-        if tpl.exists():
-            html = tpl.read_text(encoding="utf-8")
-            html = html.replace("{{CHATWOOT_URL}}", infra["chatwoot_url"])
-            return _HR(html)
-        return _HR("<h1>CRM Dashboard</h1>")
+        html = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#050510">
+<link rel="icon" type="image/png" href="/static/brand/favicon.png">
+<title>CRM \u2014 Clow</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{background:#050510;font-family:system-ui,-apple-system,sans-serif;height:100vh;display:flex;flex-direction:column}}
+.top-bar{{display:flex;align-items:center;gap:10px;padding:8px 16px;background:#0a0a1a;border-bottom:1px solid #1a1a2e;height:44px;flex-shrink:0}}
+.top-bar img{{height:22px}}
+.top-bar .label{{font-weight:700;font-size:14px;color:#9B59FC}}
+.top-bar a{{color:#71717a;font-size:13px;text-decoration:none;transition:color .2s}}
+.top-bar a:hover{{color:#e4e4e7}}
+iframe{{flex:1;width:100%;border:none}}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <a href="/">&larr; Voltar ao Clow</a>
+  <img src="/static/brand/logo-sidebar.png" alt="Clow">
+  <span class="label">CRM</span>
+</div>
+<iframe src="{chatwoot_url}" allow="microphone;camera;clipboard-write"></iframe>
+</body>
+</html>"""
+        return _HR(html)
 
     # ── API de metricas ──
 

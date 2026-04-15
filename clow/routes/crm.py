@@ -58,10 +58,50 @@ def register_crm_routes(app) -> None:
         sess = _auth(request)
         if not sess:
             return RedirectResponse("/login")
-        tpl = _TPL_DIR / "crm.html"
-        if tpl.exists():
-            return _HR(tpl.read_text(encoding="utf-8"))
-        return _HR("<h1>CRM em construcao</h1>")
+        tid = _tenant(sess)
+        
+        # Check per-tenant Chatwoot config
+        from ..infra_setup import get_tenant_infra
+        infra = get_tenant_infra(tid)
+        
+        if infra and infra.get("chatwoot_url"):
+            chatwoot_url = infra["chatwoot_url"]
+        else:
+            # Admin fallback
+            import os as _os
+            default_url = _os.getenv("CHATWOOT_URL", "")
+            if default_url and ("localhost" in default_url or "127.0.0.1" in default_url):
+                default_url = "https://ads.pvcorretor01.com.br"
+            if sess.get("is_admin") and default_url:
+                chatwoot_url = default_url
+            else:
+                # Show setup page
+                tpl = _TPL_DIR / "crm_setup.html"
+                if tpl.exists():
+                    return _HR(tpl.read_text(encoding="utf-8"))
+                return _HR("<h1>Configure seu CRM</h1><p>Pergunte ao Clow como configurar o Chatwoot.</p>")
+        
+        html = ("<!DOCTYPE html><html lang='pt-BR'><head><meta charset='UTF-8'>"
+            "<meta name='viewport' content='width=device-width,initial-scale=1.0,viewport-fit=cover'>"
+            "<meta name='theme-color' content='#050510'>"
+            "<link rel='icon' type='image/png' href='/static/brand/favicon.png'>"
+            "<title>CRM - Clow</title>"
+            "<style>*{margin:0;padding:0;box-sizing:border-box}"
+            "body{background:#050510;font-family:system-ui,-apple-system,sans-serif;height:100vh;display:flex;flex-direction:column}"
+            ".top-bar{display:flex;align-items:center;gap:10px;padding:8px 16px;background:#0a0a1a;border-bottom:1px solid #1a1a2e;height:44px;flex-shrink:0}"
+            ".top-bar img{height:22px}"
+            ".top-bar .label{font-weight:700;font-size:14px;color:#9B59FC}"
+            ".top-bar a{color:#71717a;font-size:13px;text-decoration:none}"
+            "iframe{flex:1;width:100%;border:none}"
+            "</style></head><body>"
+            "<div class='top-bar'>"
+            "<a href='/'>&larr; Voltar ao Clow</a>"
+            "<img src='/static/brand/logo-sidebar.png' alt='Clow'>"
+            "<span class='label'>CRM</span>"
+            "</div>"
+            "<iframe src='" + chatwoot_url + "' allow='microphone;camera;clipboard-write'></iframe>"
+            "</body></html>")
+        return _HR(html)
 
     # ══════════════════════════════════════════════════════════
     # LEADS

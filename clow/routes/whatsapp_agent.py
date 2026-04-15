@@ -483,57 +483,7 @@ def register_whatsapp_agent_routes(app) -> None:
             "avg_response_time_seconds": 3,
         })
 
-        # ── Blast Campaign Routes ────────────────────────────────
-
-    @app.get("/api/v1/whatsapp/blast/templates", tags=["blast"])
-    async def list_blast_templates(request: _Req):
-        sess = _get_user_session(request)
-        if not sess or not sess.get("is_admin"):
-            return _JR({"error": "Acesso negado"}, status_code=403)
-        from ..blast_sender import list_templates
-        return _JR({"templates": list_templates()})
-
-    @app.get("/api/v1/whatsapp/blast/campaigns", tags=["blast"])
-    async def list_blast_campaigns(request: _Req):
-        sess = _get_user_session(request)
-        if not sess or not sess.get("is_admin"):
-            return _JR({"error": "Acesso negado"}, status_code=403)
-        from ..blast_sender import list_campaigns
-        return _JR({"campaigns": list_campaigns(sess["user_id"])})
-
-    @app.post("/api/v1/whatsapp/blast/campaigns", tags=["blast"])
-    async def create_blast_campaign(request: _Req):
-        sess = _get_user_session(request)
-        if not sess or not sess.get("is_admin"):
-            return _JR({"error": "Acesso negado"}, status_code=403)
-        body = await request.json()
-        from ..blast_sender import create_campaign
-        return _JR(create_campaign(sess["user_id"], body.get("name",""), body.get("template_name",""), body.get("contacts",[])))
-
-    @app.post("/api/v1/whatsapp/blast/campaigns/{cid}/start", tags=["blast"])
-    async def start_blast(cid: str, request: _Req):
-        sess = _get_user_session(request)
-        if not sess or not sess.get("is_admin"):
-            return _JR({"error": "Acesso negado"}, status_code=403)
-        from ..blast_sender import start_campaign
-        return _JR(start_campaign(cid))
-
-    @app.get("/api/v1/whatsapp/blast/campaigns/{cid}/progress", tags=["blast"])
-    async def blast_progress(cid: str, request: _Req):
-        sess = _get_user_session(request)
-        if not sess:
-            return _JR({"error": "Nao autenticado"}, status_code=401)
-        from ..blast_sender import get_campaign_progress
-        return _JR(get_campaign_progress(cid))
-
-    @app.post("/api/v1/whatsapp/blast/campaigns/{cid}/pause", tags=["blast"])
-    async def pause_blast(cid: str, request: _Req):
-        sess = _get_user_session(request)
-        if not sess or not sess.get("is_admin"):
-            return _JR({"error": "Acesso negado"}, status_code=403)
-        from ..blast_sender import pause_campaign
-        return _JR(pause_campaign(cid))
-
+    # Blast/mass messaging routes removed - feature disabled
 
     # Meta API Webhook - Generic (no connection_id)
     @app.get("/api/v1/whatsapp/meta/webhook", tags=["whatsapp"], include_in_schema=False)
