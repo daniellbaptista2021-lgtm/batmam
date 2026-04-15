@@ -141,11 +141,12 @@ def register_settings_routes(app) -> None:
         if not sess:
             return _JR({"error": "Nao autenticado"}, status_code=401)
         from ..database import get_db
-        rows = get_db().__enter__().execute(
-            "SELECT date(created_at,'unixepoch') as day, SUM(input_tokens) as inp, SUM(output_tokens) as out, COUNT(*) as reqs "
-            "FROM usage_log WHERE user_id=? AND created_at>=? GROUP BY day ORDER BY day DESC LIMIT 7",
-            (sess["user_id"], time.time() - 7 * 86400),
-        ).fetchall()
+        with get_db() as db:
+            rows = db.execute(
+                "SELECT date(created_at,'unixepoch') as day, SUM(input_tokens) as inp, SUM(output_tokens) as out, COUNT(*) as reqs "
+                "FROM usage_log WHERE user_id=? AND created_at>=? GROUP BY day ORDER BY day DESC LIMIT 7",
+                (sess["user_id"], time.time() - 7 * 86400),
+            ).fetchall()
         return _JR({"days": [{"date": r[0], "input": r[1] or 0, "output": r[2] or 0, "requests": r[3]} for r in rows]})
 
     # ── Preferences ───────────────────────────────────────────

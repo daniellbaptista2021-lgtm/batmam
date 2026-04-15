@@ -51,7 +51,7 @@
     ctx = canvas.getContext('2d');
   }
 
-  /* ── Cursor glow (div CSS — mais leve que canvas) ──────────── */
+  /* Cursor glow (div CSS - mais leve que canvas) */
   function createCursorGlow() {
     glowEl = document.createElement('div');
     glowEl.id = 'clow-cursor-glow';
@@ -62,7 +62,7 @@
       mouseY = e.clientY;
       glowEl.style.left = mouseX + 'px';
       glowEl.style.top  = mouseY + 'px';
-    }, { passive: true });
+    }, { passive: true });ive: true });
   }
 
   /* ── Resize ───────────────────────────────────────────────── */

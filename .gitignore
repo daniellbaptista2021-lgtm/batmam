@@ -30,6 +30,12 @@ deploy/deploy.log
 *.xls
 workspace/
 app_temp.py
+temp_creds/
+.clow/
+AGENTS.md
+CLAUDE.md
+check_whatsapp.py
+clow/orchestrator.py.backup
 
 # Arquivos de teste soltos na raiz
 test_*.py
