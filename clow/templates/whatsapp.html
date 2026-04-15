@@ -230,6 +230,30 @@ a{color:var(--p);text-decoration:none}
         <button class="btn btn-wa" onclick="saveNewInst()" id="btnSave" style="flex:1">Salvar e Conectar</button>
       </div>
       <div id="addResult" style="margin-top:10px;font-size:13px"></div>
+
+      <div id="webhookSuccess" style="display:none">
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:40px;margin-bottom:8px">&#9989;</div>
+          <div style="font-size:16px;font-weight:700;color:var(--green)">Numero conectado!</div>
+          <div style="font-size:13px;color:var(--t2);margin-top:4px">Agora configure o Webhook no painel do seu provedor</div>
+        </div>
+        <div class="field">
+          <label>Webhook URL (copie e cole no seu provedor)</label>
+          <div style="display:flex;gap:6px">
+            <input id="webhookUrl" readonly style="flex:1;font-family:var(--mono);font-size:11px;background:var(--bg);cursor:text">
+            <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('webhookUrl').value);toast('URL copiada!','ok')" style="flex-shrink:0">Copiar</button>
+          </div>
+        </div>
+        <div id="webhookVerifyToken" style="display:none" class="field">
+          <label>Verify Token (para Meta API)</label>
+          <div style="display:flex;gap:6px">
+            <input id="webhookVT" readonly style="flex:1;font-family:var(--mono);font-size:11px;background:var(--bg);cursor:text">
+            <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('webhookVT').value);toast('Token copiado!','ok')" style="flex-shrink:0">Copiar</button>
+          </div>
+        </div>
+        <div id="webhookInstructions" style="margin-top:12px;padding:12px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--t2);line-height:1.7"></div>
+        <button class="btn btn-wa" onclick="closeAddModal()" style="width:100%;margin-top:16px">Fechar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -310,8 +334,10 @@ function renderInstances(){
     html+='</div>';
 
     // Webhook info
-    html+='<div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--t3)">';
-    html+='Webhook: <span style="color:var(--t2);font-family:var(--mono);font-size:10px;user-select:all">https://clow.pvcorretor01.com.br/api/v1/whatsapp/meta/webhook/'+inst.id+'</span>';
+    var wUrl = prov==='meta' ? 'https://clow.pvcorretor01.com.br/api/v1/whatsapp/meta/webhook/'+inst.id : 'https://clow.pvcorretor01.com.br/api/v1/whatsapp/webhook/'+inst.id;
+    html+='<div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--t3);display:flex;align-items:center;justify-content:space-between;gap:8px">';
+    html+='<div>Webhook: <span style="color:var(--t2);font-family:var(--mono);font-size:10px;user-select:all;word-break:break-all">'+wUrl+'</span></div>';
+    html+='<button class="btn btn-outline" style="padding:3px 8px;font-size:10px;flex-shrink:0" onclick="navigator.clipboard.writeText(\''+wUrl+'\');toast(\'Copiado!\',\'ok\')">Copiar</button>';
     html+='</div>';
 
     html+='</div></div>';
@@ -357,6 +383,9 @@ async function removeInstance(id,name){
 
 /* Modal */
 function openAddModal(){
+  $('webhookSuccess').style.display='none';
+  $('webhookVerifyToken').style.display='none';
+  document.querySelectorAll('#addOverlay .field, #addOverlay .providers, #addOverlay .row, #addOverlay #metaFields, #addOverlay #btnTest, #addOverlay #btnSave, #addOverlay #addResult').forEach(function(el){ el.style.display=''; });
   $('newName').value='';
   $('newMetaToken').value='';
   $('newMetaPhoneId').value='';
@@ -417,12 +446,54 @@ async function saveNewInst(){
       body.zapi_token=$('newZapiToken').value.trim();
       if(!body.zapi_instance_id||!body.zapi_token){toast('Preencha Instance ID e Token','err');$('btnSave').disabled=false;$('btnSave').textContent='Salvar e Conectar';return;}
       body.provider='zapi';
-      
+
     }
     var r=await api('/api/v1/whatsapp/instances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(r.success){
+      // Show webhook info
+      var instId = r.instance ? r.instance.id : '';
+      var baseUrl = 'https://clow.pvcorretor01.com.br';
+      var webhookUrl = '';
+      var verifyToken = '';
+      var instructions = '';
+
+      if(STATE.provider === 'meta'){
+        webhookUrl = baseUrl + '/api/v1/whatsapp/meta/webhook/' + instId;
+        verifyToken = body.meta_verify_token || '';
+        instructions = '<strong>No Meta Business Suite:</strong><br>' +
+          '1. Acesse <a href="https://developers.facebook.com" target="_blank" style="color:var(--wa)">developers.facebook.com</a><br>' +
+          '2. Seu App &rarr; WhatsApp &rarr; Configuracao<br>' +
+          '3. Em <strong>Webhooks</strong>, clique Editar<br>' +
+          '4. Cole a <strong>Webhook URL</strong> acima<br>' +
+          '5. Cole o <strong>Verify Token</strong> acima<br>' +
+          '6. Clique Verificar e Salvar<br>' +
+          '7. Assine o campo <strong>messages</strong>';
+      } else if(STATE.provider === 'evolution'){
+        webhookUrl = baseUrl + '/api/v1/whatsapp/webhook/' + instId;
+        instructions = '<strong>No painel do Evolution API:</strong><br>' +
+          '1. Acesse as configuracoes da sua instancia<br>' +
+          '2. Em <strong>Webhook</strong>, cole a URL acima<br>' +
+          '3. Ative os eventos: <strong>MESSAGES_UPSERT</strong><br>' +
+          '4. Salve as configuracoes';
+      } else {
+        webhookUrl = baseUrl + '/api/v1/whatsapp/webhook/' + instId;
+        instructions = '<strong>No painel da Z-API (painel.z-api.io):</strong><br>' +
+          '1. Acesse sua instancia<br>' +
+          '2. Va em <strong>Webhooks</strong><br>' +
+          '3. Em "URL para recebimento", cole a URL acima<br>' +
+          '4. Ative o webhook e salve';
+      }
+
+      // Hide form, show webhook panel
+      document.querySelectorAll('#addOverlay .field, #addOverlay .providers, #addOverlay .row, #addOverlay #metaFields, #addOverlay #evoFields, #addOverlay #zapiFields, #addOverlay #btnTest, #addOverlay #btnSave, #addOverlay #addResult, #addOverlay label[style]').forEach(function(el){ el.style.display='none'; });
+      $('webhookSuccess').style.display='block';
+      $('webhookUrl').value = webhookUrl;
+      if(verifyToken){
+        $('webhookVerifyToken').style.display='block';
+        $('webhookVT').value = verifyToken;
+      }
+      $('webhookInstructions').innerHTML = instructions;
       toast('Numero conectado!','ok');
-      closeAddModal();
     }else{toast(r.error||'Erro ao conectar','err');}
   }catch(e){toast('Erro: '+e.message,'err');}
   $('btnSave').disabled=false;$('btnSave').textContent='Salvar e Conectar';
