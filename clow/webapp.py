@@ -137,6 +137,11 @@ def _setup_middleware():
 if HAS_FASTAPI:
     _setup_middleware()
 
+    # ── Monitoring & APM ──
+    from .monitoring import init_monitoring, PerformanceMiddleware
+    init_monitoring()
+    app.add_middleware(PerformanceMiddleware)
+
     # Register all route modules
     from .routes.pages import register_page_routes
     from .routes.api import register_api_routes

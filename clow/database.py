@@ -1,4 +1,9 @@
-"""Clow Database — SQLite para users, usage e conversations."""
+"""Clow Database — SQLite ou PostgreSQL para users, usage e conversations.
+
+Backend selecionado via env var CLOW_DB_BACKEND:
+  - "sqlite" (default): arquivo local em data/clow.db
+  - "postgres": PostgreSQL via DATABASE_URL
+"""
 from __future__ import annotations
 import sqlite3
 import hashlib
@@ -10,8 +15,14 @@ import json
 from pathlib import Path
 from contextlib import contextmanager
 
+# ── Backend selection ──
+_DB_BACKEND = os.getenv("CLOW_DB_BACKEND", "sqlite").lower()
+
 DB_PATH = Path(__file__).parent.parent / "data" / "clow.db"
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+if _DB_BACKEND == "postgres":
+    from .db_postgres import get_db as _pg_get_db, init_db as _pg_init_db
 
 # Planos pagos (sem plano gratuito). Planos reais em billing.py
 PLANS = {
@@ -64,13 +75,12 @@ def _init_pool():
 
 
 @contextmanager
-def get_db():
+def _sqlite_get_db():
     _init_pool()
     conn = None
     try:
         conn = _db_pool.get(timeout=10)
     except _queue.Empty:
-        # Pool exhausted — create a temporary connection
         conn = _create_connection()
 
     try:
@@ -85,7 +95,6 @@ def get_db():
     finally:
         if conn is not None:
             try:
-                # Test if connection is still valid before returning to pool
                 conn.execute("SELECT 1")
                 _db_pool.put_nowait(conn)
             except (_queue.Full, Exception):
@@ -95,10 +104,24 @@ def get_db():
                     pass
 
 
+@contextmanager
+def get_db():
+    """Get database connection (SQLite or PostgreSQL based on CLOW_DB_BACKEND)."""
+    if _DB_BACKEND == "postgres":
+        with _pg_get_db() as conn:
+            yield conn
+    else:
+        with _sqlite_get_db() as conn:
+            yield conn
+
+
 def init_db():
-    """Inicializa o banco via migrations.py (schema centralizado)."""
-    from .migrations import run_migrations
-    run_migrations()
+    """Inicializa o banco via migrations (SQLite ou PostgreSQL)."""
+    if _DB_BACKEND == "postgres":
+        _pg_init_db()
+    else:
+        from .migrations import run_migrations
+        run_migrations()
 
 
 # ── Users ────────────────────────────────────────────────────────

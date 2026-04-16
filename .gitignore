@@ -1,4 +1,5 @@
 .env
+node_modules/
 __pycache__/
 *.pyc
 *.pyo
@@ -8,6 +9,7 @@ nohup.out
 .venv/
 venv/
 dist/
+static/dist/
 build/
 *.egg-info/
 sessions/*.json
