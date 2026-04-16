@@ -374,7 +374,7 @@ function renderInstances(){
     html+='<div class="inst-name" onclick="toggleCard(\''+inst.id+'\')" style="cursor:pointer;flex:1"><span class="inst-status '+(active?'on':'off')+'"></span>'+inst.name+'<span class="inst-badge '+provClass+'">'+provLabel+'</span></div>';
     html+='<div style="display:flex;align-items:center;gap:12px">';
     html+='<span style="font-size:11px;color:var(--t3)">'+(inst.stats?inst.stats.messages_today||0:0)+' msgs hoje</span>';
-    html+='<label class="sw" title="'+(active?'Bot ativo':'Bot inativo')+'" onclick="event.stopPropagation()"><input type="checkbox" '+(active?'checked':'')+' onchange="toggleActive(\''+inst.id+'\',' +'+(!active)+')" id="sw-'+inst.id+'"><span class="slider"></span></label>';
+    html+='<label class="sw" title="'+(active?'Bot ativo':'Bot inativo')+'" onclick="event.stopPropagation()"><input type="checkbox" '+(active?'checked':'')+' onchange="toggleActive(\''+inst.id+'\','+(!active)+')" id="sw-'+inst.id+'"><span class="slider"></span></label>';
     html+='<span class="chevron" onclick="toggleCard(\''+inst.id+'\')" style="cursor:pointer">&#9660;</span>';
     html+='</div>';
     html+='</div>';
