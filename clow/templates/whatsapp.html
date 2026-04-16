@@ -371,7 +371,7 @@ function renderInstances(){
     var provClass=prov==='meta'?'meta':prov==='evolution'?'evo':'zapi';
     html+='<div class="inst-card" id="card-'+inst.id+'">';
     html+='<div class="inst-header">';
-    html+='<div class="inst-name" onclick="toggleCard(\''+inst.id+'\')" style="cursor:pointer;flex:1"><span class="inst-status '+(active?'on':'off')+'"></span>'+inst.name+'<span class="inst-badge '+provClass+'">'+provLabel+'</span></div>';
+    html+='<div class="inst-name" onclick="toggleCard(\''+inst.id+'\')" style="cursor:pointer;flex:1"><span class="inst-status '+(active?'on':'off')+'"></span>'+inst.name+'<span class="inst-badge '+provClass+'">'+provLabel+'</span>'+(inst.zapi_instance_id&&inst.zapi_instance_id.indexOf('meta-')!==0&&inst.zapi_instance_id.indexOf('evo-')!==0?' <span style="font-size:10px;color:var(--t3);font-family:var(--mono)">'+inst.zapi_instance_id.substring(0,8)+'...</span>':'')+'</div>';
     html+='<div style="display:flex;align-items:center;gap:12px">';
     html+='<span style="font-size:11px;color:var(--t3)">'+(inst.stats?inst.stats.messages_today||0:0)+' msgs hoje</span>';
     html+='<label class="sw" title="'+(active?'Bot ativo':'Bot inativo')+'" onclick="event.stopPropagation()"><input type="checkbox" '+(active?'checked':'')+' onchange="toggleActive(\''+inst.id+'\','+(!active)+')" id="sw-'+inst.id+'"><span class="slider"></span></label>';

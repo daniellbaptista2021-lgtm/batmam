@@ -431,7 +431,12 @@ class WhatsAppAgentManager:
         try:
             url = f"https://api.z-api.io/instances/{inst.zapi_instance_id}/token/{inst.zapi_token}/send-text"
             data = json.dumps({"phone": phone, "message": message}).encode()
-            req = Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
+            headers = {"Content-Type": "application/json"}
+            # Z-API requires Client-Token header
+            client_token = getattr(inst, "zapi_client_token", "") or os.getenv("ZAPI_CLIENT_TOKEN", "")
+            if client_token:
+                headers["Client-Token"] = client_token
+            req = Request(url, data=data, headers=headers, method="POST")
             urlopen(req, timeout=30)
             return True
         except Exception as e:
