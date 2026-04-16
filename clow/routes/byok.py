@@ -235,7 +235,7 @@ def register_byok_routes(app) -> None:
         resp.set_cookie(
             "clow_session", token,
             max_age=_SESSION_TTL, httponly=True,
-            samesite="lax", secure=False, path="/",
+            samesite="lax", secure=True, path="/",
         )
         return resp
 

@@ -209,14 +209,16 @@ def update_lead(lead_id: str, tenant_id: str, **kwargs) -> dict | None:
         updates["custom_fields"] = json.dumps(updates["custom_fields"])
 
     updates["updated_at"] = _now()
-    set_clause = ", ".join(f"{k}=?" for k in updates)
-    values = list(updates.values()) + [lead_id, tenant_id]
-
+    # Build SET clause safely — field names from hardcoded whitelist only
+    set_parts = []
+    values = []
+    for field_name in sorted(updates):
+        set_parts.append(f"{field_name}=?")
+        values.append(updates[field_name])
+    values.extend([lead_id, tenant_id])
+    sql = "UPDATE leads SET " + ", ".join(set_parts) + " WHERE id=? AND tenant_id=?"
     with get_db() as db:
-        db.execute(
-            f"UPDATE leads SET {set_clause} WHERE id=? AND tenant_id=?",
-            values,
-        )
+        db.execute(sql, values)
     return get_lead(lead_id, tenant_id)
 
 
@@ -392,13 +394,15 @@ def update_campaign(campaign_id: str, tenant_id: str, **kwargs) -> dict | None:
     if not updates:
         return campaign
 
-    set_clause = ", ".join(f"{k}=?" for k in updates)
-    values = list(updates.values()) + [campaign_id, tenant_id]
+    set_parts = []
+    values = []
+    for field_name in sorted(updates):
+        set_parts.append(f"{field_name}=?")
+        values.append(updates[field_name])
+    values.extend([campaign_id, tenant_id])
+    sql = "UPDATE email_campaigns SET " + ", ".join(set_parts) + " WHERE id=? AND tenant_id=?"
     with get_db() as db:
-        db.execute(
-            f"UPDATE email_campaigns SET {set_clause} WHERE id=? AND tenant_id=?",
-            values,
-        )
+        db.execute(sql, values)
     return get_campaign(campaign_id, tenant_id)
 
 
@@ -429,15 +433,18 @@ def list_campaigns(tenant_id: str, status: str = "") -> list[dict]:
 
 def update_campaign_status(campaign_id: str, tenant_id: str, status: str, **extra) -> None:
     """Atualiza status da campanha com campos extras (sent_at, sent_count, etc)."""
+    _ALLOWED_EXTRA = {"sent_at", "sent_count", "error_count", "failed_count"}
     fields = {"status": status}
-    fields.update(extra)
-    set_clause = ", ".join(f"{k}=?" for k in fields)
-    values = list(fields.values()) + [campaign_id, tenant_id]
+    fields.update({k: v for k, v in extra.items() if k in _ALLOWED_EXTRA})
+    set_parts = []
+    values = []
+    for field_name in sorted(fields):
+        set_parts.append(f"{field_name}=?")
+        values.append(fields[field_name])
+    values.extend([campaign_id, tenant_id])
+    sql = "UPDATE email_campaigns SET " + ", ".join(set_parts) + " WHERE id=? AND tenant_id=?"
     with get_db() as db:
-        db.execute(
-            f"UPDATE email_campaigns SET {set_clause} WHERE id=? AND tenant_id=?",
-            values,
-        )
+        db.execute(sql, values)
 
 
 def create_email_send(campaign_id: str, lead_id: str, email: str) -> int:
@@ -452,14 +459,19 @@ def create_email_send(campaign_id: str, lead_id: str, email: str) -> int:
 
 def update_email_send(send_id: int, **kwargs) -> None:
     """Atualiza status de um envio."""
-    allowed = {"status", "sent_at", "opened_at"}
-    updates = {k: v for k, v in kwargs.items() if k in allowed}
+    _ALLOWED = {"status", "sent_at", "opened_at"}
+    updates = {k: v for k, v in kwargs.items() if k in _ALLOWED}
     if not updates:
         return
-    set_clause = ", ".join(f"{k}=?" for k in updates)
-    values = list(updates.values()) + [send_id]
+    set_parts = []
+    values = []
+    for field_name in sorted(updates):
+        set_parts.append(f"{field_name}=?")
+        values.append(updates[field_name])
+    values.append(send_id)
+    sql = "UPDATE email_sends SET " + ", ".join(set_parts) + " WHERE id=?"
     with get_db() as db:
-        db.execute(f"UPDATE email_sends SET {set_clause} WHERE id=?", values)
+        db.execute(sql, values)
 
 
 def get_campaign_sends(campaign_id: str) -> list[dict]:
@@ -503,17 +515,19 @@ def get_appointment(apt_id: str, tenant_id: str) -> dict | None:
 
 
 def update_appointment(apt_id: str, tenant_id: str, **kwargs) -> dict | None:
-    allowed = {"status", "notes", "meeting_link", "name", "email", "phone"}
-    updates = {k: v for k, v in kwargs.items() if k in allowed}
+    _ALLOWED = {"status", "notes", "meeting_link", "name", "email", "phone"}
+    updates = {k: v for k, v in kwargs.items() if k in _ALLOWED}
     if not updates:
         return get_appointment(apt_id, tenant_id)
-    set_clause = ", ".join(f"{k}=?" for k in updates)
-    values = list(updates.values()) + [apt_id, tenant_id]
+    set_parts = []
+    values = []
+    for field_name in sorted(updates):
+        set_parts.append(f"{field_name}=?")
+        values.append(updates[field_name])
+    values.extend([apt_id, tenant_id])
+    sql = "UPDATE appointments SET " + ", ".join(set_parts) + " WHERE id=? AND tenant_id=?"
     with get_db() as db:
-        db.execute(
-            f"UPDATE appointments SET {set_clause} WHERE id=? AND tenant_id=?",
-            values,
-        )
+        db.execute(sql, values)
     return get_appointment(apt_id, tenant_id)
 
 
@@ -561,18 +575,20 @@ def get_scheduling_link(slug: str) -> dict | None:
 
 
 def update_scheduling_link(slug: str, tenant_id: str, **kwargs) -> dict | None:
-    allowed = {"title", "duration_minutes", "available_days", "available_start",
-               "available_end", "blocked_times", "active"}
-    updates = {k: v for k, v in kwargs.items() if k in allowed}
+    _ALLOWED = {"title", "duration_minutes", "available_days", "available_start",
+                "available_end", "blocked_times", "active"}
+    updates = {k: v for k, v in kwargs.items() if k in _ALLOWED}
     if not updates:
         return get_scheduling_link(slug)
-    set_clause = ", ".join(f"{k}=?" for k in updates)
-    values = list(updates.values()) + [slug, tenant_id]
+    set_parts = []
+    values = []
+    for field_name in sorted(updates):
+        set_parts.append(f"{field_name}=?")
+        values.append(updates[field_name])
+    values.extend([slug, tenant_id])
+    sql = "UPDATE scheduling_links SET " + ", ".join(set_parts) + " WHERE id=? AND tenant_id=?"
     with get_db() as db:
-        db.execute(
-            f"UPDATE scheduling_links SET {set_clause} WHERE id=? AND tenant_id=?",
-            values,
-        )
+        db.execute(sql, values)
     return get_scheduling_link(slug)
 
 

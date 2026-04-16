@@ -12,9 +12,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         path = request.url.path
         if path in ("/crm", "/app/crm"):
+            # CRM needs iframe embedding and inline styles/scripts for widgets
             response.headers["Content-Security-Policy"] = (
-                "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; "
-                "frame-src *"
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+                "font-src 'self' https://fonts.gstatic.com; "
+                "img-src 'self' data: blob: https:; "
+                "connect-src 'self' wss: ws: https:; "
+                "frame-src 'self' https:; "
+                "media-src 'self' blob:; "
+                "base-uri 'self'; "
+                "form-action 'self'"
             )
             if "X-Frame-Options" in response.headers:
                 del response.headers["X-Frame-Options"]

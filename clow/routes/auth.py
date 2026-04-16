@@ -109,8 +109,8 @@ def _create_session(user: dict) -> str:
                 "INSERT OR REPLACE INTO web_sessions (token, email, user_id, is_admin, plan, created) VALUES (?,?,?,?,?,?)",
                 (token, sess["email"], sess["user_id"], int(sess["is_admin"]), sess["plan"], sess["created"]),
             )
-    except Exception:
-        pass  # Memory fallback
+    except Exception as e:
+        logger.warning("Session DB persist failed (memory fallback): %s", e)
     return token
 
 
@@ -146,8 +146,8 @@ def _validate_session(token: str) -> dict | None:
                     return None
                 _session_cache[token] = sess
                 return sess
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Session DB lookup failed: %s", e)
     return None
 
 
@@ -156,8 +156,8 @@ def _delete_session_db(token: str):
         from ..database import get_db
         with get_db() as db:
             db.execute("DELETE FROM web_sessions WHERE token=?", (token,))
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Session DB delete failed: %s", e)
 
 
 def _get_session_from_request(request: Request) -> str | None:

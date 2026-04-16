@@ -29,19 +29,70 @@ PLANS = {
 ADMIN_EMAIL = os.getenv("CLOW_ADMIN_EMAIL", "")
 
 
-@contextmanager
-def get_db():
-    conn = sqlite3.connect(str(DB_PATH), timeout=30)
+import queue as _queue
+import threading as _threading
+
+_DB_POOL_SIZE = int(os.getenv("CLOW_DB_POOL_SIZE", "5"))
+_db_pool: _queue.Queue = _queue.Queue(maxsize=_DB_POOL_SIZE)
+_db_pool_lock = _threading.Lock()
+_db_pool_initialized = False
+
+
+def _create_connection() -> sqlite3.Connection:
+    """Create a new SQLite connection with optimal pragmas."""
+    conn = sqlite3.connect(str(DB_PATH), timeout=30, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA busy_timeout=30000")
     conn.execute("PRAGMA synchronous=NORMAL")
     conn.execute("PRAGMA cache_size=-64000")  # 64MB cache
+    return conn
+
+
+def _init_pool():
+    """Initialize the connection pool."""
+    global _db_pool_initialized
+    with _db_pool_lock:
+        if _db_pool_initialized:
+            return
+        for _ in range(_DB_POOL_SIZE):
+            try:
+                _db_pool.put_nowait(_create_connection())
+            except _queue.Full:
+                break
+        _db_pool_initialized = True
+
+
+@contextmanager
+def get_db():
+    _init_pool()
+    conn = None
+    try:
+        conn = _db_pool.get(timeout=10)
+    except _queue.Empty:
+        # Pool exhausted — create a temporary connection
+        conn = _create_connection()
+
     try:
         yield conn
         conn.commit()
+    except Exception:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        raise
     finally:
-        conn.close()
+        if conn is not None:
+            try:
+                # Test if connection is still valid before returning to pool
+                conn.execute("SELECT 1")
+                _db_pool.put_nowait(conn)
+            except (_queue.Full, Exception):
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
 
 def init_db():
@@ -125,7 +176,6 @@ def _migrate_byok_columns():
     """Adiciona colunas BYOK se nao existem."""
     try:
         with get_db() as db:
-            # Verifica se coluna ja existe
             cols = [r[1] for r in db.execute("PRAGMA table_info(users)").fetchall()]
             if "anthropic_api_key" not in cols:
                 db.execute("ALTER TABLE users ADD COLUMN anthropic_api_key TEXT DEFAULT ''")
@@ -133,8 +183,9 @@ def _migrate_byok_columns():
                 db.execute("ALTER TABLE users ADD COLUMN byok_enabled INTEGER DEFAULT 0")
             if "api_key_set_at" not in cols:
                 db.execute("ALTER TABLE users ADD COLUMN api_key_set_at REAL DEFAULT 0")
-    except Exception:
-        pass
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning("BYOK columns migration failed: %s", e)
 
 
 # Roda migration na importacao
@@ -216,14 +267,20 @@ def validate_deepseek_key(api_key: str) -> dict:
 
 
 def update_user(uid: str, **kwargs) -> bool:
-    allowed = {"name", "plan", "active", "is_admin"}
-    fields = {k: v for k, v in kwargs.items() if k in allowed}
+    _ALLOWED_USER_FIELDS = {"name", "plan", "active", "is_admin"}
+    fields = {k: v for k, v in kwargs.items() if k in _ALLOWED_USER_FIELDS}
     if not fields:
         return False
-    sets = ", ".join(f"{k}=?" for k in fields)
-    vals = list(fields.values()) + [uid]
+    # Build SET clause safely — field names come from hardcoded whitelist only
+    set_parts = []
+    vals = []
+    for field_name in sorted(fields):
+        set_parts.append(f"{field_name}=?")
+        vals.append(fields[field_name])
+    vals.append(uid)
+    sql = "UPDATE users SET " + ", ".join(set_parts) + " WHERE id=?"
     with get_db() as db:
-        db.execute(f"UPDATE users SET {sets} WHERE id=?", vals)
+        db.execute(sql, vals)
     return True
 
 
@@ -449,26 +506,36 @@ def get_mission(mission_id: str) -> dict | None:
 
 
 def update_mission(mission_id: str, **kwargs):
-    allowed = {"status", "current_step", "error_count", "context_json", "completed_at", "updated_at"}
-    fields = {k: v for k, v in kwargs.items() if k in allowed}
+    _ALLOWED = {"status", "current_step", "error_count", "context_json", "completed_at", "updated_at"}
+    fields = {k: v for k, v in kwargs.items() if k in _ALLOWED}
     if not fields:
         return
     fields["updated_at"] = time.time()
-    sets = ", ".join(f"{k}=?" for k in fields)
-    vals = list(fields.values()) + [mission_id]
+    set_parts = []
+    vals = []
+    for field_name in sorted(fields):
+        set_parts.append(f"{field_name}=?")
+        vals.append(fields[field_name])
+    vals.append(mission_id)
+    sql = "UPDATE missions SET " + ", ".join(set_parts) + " WHERE id=?"
     with get_db() as db:
-        db.execute(f"UPDATE missions SET {sets} WHERE id=?", vals)
+        db.execute(sql, vals)
 
 
 def update_mission_step(mission_id: str, step_number: int, **kwargs):
-    allowed = {"status", "result_json", "error", "attempts", "started_at", "completed_at"}
-    fields = {k: v for k, v in kwargs.items() if k in allowed}
+    _ALLOWED = {"status", "result_json", "error", "attempts", "started_at", "completed_at"}
+    fields = {k: v for k, v in kwargs.items() if k in _ALLOWED}
     if not fields:
         return
-    sets = ", ".join(f"{k}=?" for k in fields)
-    vals = list(fields.values()) + [mission_id, step_number]
+    set_parts = []
+    vals = []
+    for field_name in sorted(fields):
+        set_parts.append(f"{field_name}=?")
+        vals.append(fields[field_name])
+    vals.extend([mission_id, step_number])
+    sql = "UPDATE mission_steps SET " + ", ".join(set_parts) + " WHERE mission_id=? AND step_number=?"
     with get_db() as db:
-        db.execute(f"UPDATE mission_steps SET {sets} WHERE mission_id=? AND step_number=?", vals)
+        db.execute(sql, vals)
 
 
 def list_missions(user_id: str, limit: int = 20) -> list[dict]:

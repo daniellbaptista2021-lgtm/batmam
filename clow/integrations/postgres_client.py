@@ -45,13 +45,38 @@ def list_databases(creds: dict) -> str:
 
 
 def table_info(creds: dict, table: str) -> str:
-    sql = f"SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name='{table}' ORDER BY ordinal_position"
-    return execute_sql(creds, sql)
+    import re
+    # Sanitize table name — allow only alphanumeric and underscores
+    if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', table):
+        return "Nome de tabela invalido."
+    sql = "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name=%s ORDER BY ordinal_position"
+    return execute_sql_parameterized(creds, sql, (table,))
 
 
 def row_count(creds: dict, table: str) -> str:
+    import re
+    if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', table):
+        return "Nome de tabela invalido."
+    # Table names can't be parameterized in SQL, so we validate with regex above
     sql = f"SELECT count(*) as total FROM {table}"
     return execute_sql(creds, sql)
+
+
+def execute_sql_parameterized(creds: dict, sql: str, params: tuple = ()) -> str:
+    """Execute SQL com parametros seguros (previne SQL injection)."""
+    conn = _connect(creds)
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, params)
+        if cur.description:
+            cols = [d[0] for d in cur.description]
+            rows = cur.fetchmany(100)
+            return _format_table(cols, rows, cur.rowcount)
+        else:
+            conn.commit()
+            return f"Query executada. {cur.rowcount} linha(s) afetada(s)."
+    finally:
+        conn.close()
 
 
 def _format_table(cols: list, rows: list, total: int) -> str:

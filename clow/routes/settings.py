@@ -1,11 +1,14 @@
 """Settings routes — painel do cliente estilo Claude.ai."""
 
 from __future__ import annotations
+import logging
 import time
 from pathlib import Path
 
 from fastapi import Request as _Req
 from fastapi.responses import JSONResponse as _JR, HTMLResponse as _HR, RedirectResponse
+
+logger = logging.getLogger(__name__)
 
 
 def register_settings_routes(app) -> None:
@@ -161,7 +164,7 @@ def register_settings_routes(app) -> None:
             try:
                 db.execute("ALTER TABLE users ADD COLUMN preferences TEXT DEFAULT '{}'")
             except Exception:
-                pass
+                pass  # Column already exists — expected
             row = db.execute("SELECT preferences FROM users WHERE id=?", (sess["user_id"],)).fetchone()
         import json
         prefs = json.loads(row[0] or "{}") if row else {}
@@ -189,7 +192,7 @@ def register_settings_routes(app) -> None:
             try:
                 db.execute("ALTER TABLE users ADD COLUMN preferences TEXT DEFAULT '{}'")
             except Exception:
-                pass
+                pass  # Column already exists — expected
             db.execute("UPDATE users SET preferences=? WHERE id=?", (json.dumps(body), sess["user_id"]))
 
         # Sincroniza custom_instructions com CLOW.local.md do usuário

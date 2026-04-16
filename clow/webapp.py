@@ -111,9 +111,8 @@ def _setup_middleware():
     settings = config.load_settings()
     webapp_cfg = settings.get("webapp", {})
 
-    # CORS — env var CLOW_CORS_ORIGINS (comma-separated) com fallback
+    # CORS — env var CLOW_CORS_ORIGINS (comma-separated), settings.json, ou localhost-only default
     _default_origins = [
-        "https://clow.pvcorretor01.com.br",
         "http://localhost:8001",
         "http://127.0.0.1:8001",
     ]

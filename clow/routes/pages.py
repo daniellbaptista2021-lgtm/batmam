@@ -81,7 +81,7 @@ def register_page_routes(app: FastAPI) -> None:
             resp.set_cookie(
                 "clow_session", token,
                 max_age=_SESSION_TTL, httponly=True,
-                samesite="lax", secure=False, path="/",
+                samesite="lax", secure=True, path="/",
             )
             return resp
 
@@ -95,7 +95,7 @@ def register_page_routes(app: FastAPI) -> None:
             del _session_cache[token]
         _delete_session_db(token)
         resp = RedirectResponse("/login", status_code=302)
-        resp.delete_cookie("clow_session")
+        resp.delete_cookie("clow_session", path="/", samesite="lax", secure=True)
         return resp
 
     # ── Mount static assets (CSS/JS extraidos) ─────────────────

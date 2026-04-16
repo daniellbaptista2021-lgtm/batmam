@@ -1,21 +1,34 @@
 [Unit]
 Description=Clow AI Web App
-After=network.target
+After=network.target docker.service
 
 [Service]
 Type=simple
-User=root
-WorkingDirectory=/root/clow
-EnvironmentFile=/root/.clow/app/.env
-Environment=PATH=/root/clow/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=/root/clow/.venv/bin/uvicorn clow.webapp:app --host 0.0.0.0 --port 8001 --log-level info
-Restart=always
-RestartSec=5
+# Security: dedicated non-root user
+# Setup: useradd -r -m -s /bin/bash clow && chown -R clow:clow /opt/clow /home/clow/.clow
+User=clow
+Group=clow
+WorkingDirectory=/opt/clow
+EnvironmentFile=/opt/clow/.env
+Environment=PATH=/opt/clow/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/opt/clow/.venv/bin/uvicorn clow.webapp:app --host 0.0.0.0 --port 8001 --log-level info
+Restart=on-failure
+RestartSec=10
 StartLimitIntervalSec=300
-StartLimitBurst=10
+StartLimitBurst=5
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=clow
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/clow /home/clow/.clow
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
 
 [Install]
 WantedBy=multi-user.target
