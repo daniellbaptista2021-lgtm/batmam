@@ -1,15 +1,18 @@
-"""Clow Memory System — lembra fatos do usuario entre conversas."""
+"""Clow Memory System — lembra fatos do usuario entre conversas.
+
+Usa o mesmo diretório de user_memories do sistema de memória principal,
+garantindo isolamento completo por usuário.
+"""
 from __future__ import annotations
 import json
 import hashlib
 from pathlib import Path
-
-USERS_DIR = Path(__file__).parent.parent / "data" / "users"
+from . import config
 
 
 def _user_mem_path(user_id: str) -> Path:
     safe = hashlib.sha256(user_id.encode()).hexdigest()[:16]
-    d = USERS_DIR / safe
+    d = config.USER_MEMORIES_DIR / safe
     d.mkdir(parents=True, exist_ok=True)
     return d / "memories.json"
 

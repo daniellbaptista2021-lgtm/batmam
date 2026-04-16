@@ -165,13 +165,16 @@ def register_settings_routes(app) -> None:
             row = db.execute("SELECT preferences FROM users WHERE id=?", (sess["user_id"],)).fetchone()
         import json
         prefs = json.loads(row[0] or "{}") if row else {}
+        # Carrega custom_instructions do CLOW.local.md se existir
+        from ..memory import get_user_local_instructions
+        user_instructions = get_user_local_instructions(sess["user_id"])
         return _JR({
             "dark_mode": prefs.get("dark_mode", True),
             "notifications": prefs.get("notifications", True),
             "extended_thinking": prefs.get("extended_thinking", True),
             "language": prefs.get("language", "pt-BR"),
             "agent_type": prefs.get("agent_type", "general"),
-            "custom_instructions": prefs.get("custom_instructions", ""),
+            "custom_instructions": user_instructions or prefs.get("custom_instructions", ""),
         })
 
     @app.put("/api/v1/user/preferences", tags=["settings"])
@@ -188,6 +191,13 @@ def register_settings_routes(app) -> None:
             except Exception:
                 pass
             db.execute("UPDATE users SET preferences=? WHERE id=?", (json.dumps(body), sess["user_id"]))
+
+        # Sincroniza custom_instructions com CLOW.local.md do usuário
+        custom_inst = body.get("custom_instructions", "")
+        if custom_inst is not None:
+            from ..memory import save_user_local_instructions
+            save_user_local_instructions(sess["user_id"], custom_inst)
+
         return _JR({"success": True})
 
     # ── API Key ───────────────────────────────────────────────

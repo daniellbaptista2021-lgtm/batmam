@@ -27,11 +27,13 @@ if not _loaded_env:
 CLOW_HOME = Path.home() / ".clow"
 SESSIONS_DIR = CLOW_HOME / "sessions"
 MEMORY_DIR = CLOW_HOME / "memory"
+USER_MEMORIES_DIR = CLOW_HOME / "user_memories"
 CONFIG_FILE = CLOW_HOME / "settings.json"
 
 CLOW_HOME.mkdir(parents=True, exist_ok=True)
 SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
 MEMORY_DIR.mkdir(parents=True, exist_ok=True)
+USER_MEMORIES_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── API ──────────────────────────────���──────────────────────
 # ── DeepSeek (unico provider — compativel com OpenAI SDK) ────

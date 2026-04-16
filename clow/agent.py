@@ -23,7 +23,10 @@ from .tools.base import ToolRegistry, create_default_registry
 from .permissions import needs_confirmation, format_confirmation_prompt
 from .prompts import get_system_prompt
 from .session import save_session
-from .memory import load_memory_context, save_memory
+from .memory import (
+    load_memory_context, save_memory,
+    load_user_memory_context, save_user_memory, get_user_local_instructions,
+)
 from .context import load_project_context
 from .hooks import HookRunner
 from .mcp import MCPManager
@@ -350,9 +353,11 @@ class Agent:
         on_rate_limit: Callable[[int, int, int], None] | None = None,
         auto_approve: bool = False,
         is_subagent: bool = False,
+        user_id: str | None = None,
     ):
         self.cwd = cwd or os.getcwd()
         self.model = model or config.CLOW_MODEL
+        self.user_id = user_id
         self.registry: ToolRegistry = create_default_registry()
 
         # Configura agent_tool com referencia ao agente pai
@@ -443,9 +448,18 @@ class Agent:
             dynamic_parts.append("\n# Instrucoes do Projeto\n" + instructions)
 
         if not self.is_subagent:
-            memory_ctx = load_memory_context()
+            if self.user_id:
+                memory_ctx = load_user_memory_context(self.user_id)
+            else:
+                memory_ctx = load_memory_context()
             if memory_ctx:
                 dynamic_parts.append("\n# Memoria\n" + memory_ctx)
+
+            # Instruções personalizadas do usuário (CLOW.local.md)
+            if self.user_id:
+                user_instructions = get_user_local_instructions(self.user_id)
+                if user_instructions:
+                    dynamic_parts.append("\n# Instrucoes do Usuario\n" + user_instructions)
 
         self._system_dynamic = "\n".join(dynamic_parts)
 
@@ -881,7 +895,7 @@ class Agent:
 
         # Auto-save (nao salva sub-agents)
         if not self.is_subagent:
-            save_session(self.session)
+            save_session(self.session, user_id=self.user_id)
 
             # JSONL persistence (Claude Code architecture Ep.09)
             try:
@@ -1946,18 +1960,31 @@ class Agent:
     # ── Auto-Memory ────────────────────────────────────────────
 
     def _check_auto_memory(self, user_message: str) -> None:
-        """Detecta correcoes/confirmacoes e salva na memoria automaticamente."""
+        """Detecta correcoes/confirmacoes e salva na memoria automaticamente.
+
+        Se user_id está definido, salva na memória isolada do usuário.
+        Caso contrário, salva na memória global (fallback).
+        """
         msg_lower = user_message.lower()
+        _save = save_user_memory if self.user_id else save_memory
 
         # Verifica correcoes
         for pattern in CORRECTION_PATTERNS:
             if re.search(pattern, msg_lower):
                 try:
-                    save_memory(
-                        f"feedback_{int(time.time())}",
-                        f"Correcao do usuario: {user_message[:200]}",
-                        memory_type="feedback",
-                    )
+                    if self.user_id:
+                        _save(
+                            self.user_id,
+                            f"feedback_{int(time.time())}",
+                            f"Correcao do usuario: {user_message[:200]}",
+                            memory_type="feedback",
+                        )
+                    else:
+                        _save(
+                            f"feedback_{int(time.time())}",
+                            f"Correcao do usuario: {user_message[:200]}",
+                            memory_type="feedback",
+                        )
                 except Exception:
                     pass
                 return
@@ -1973,11 +2000,19 @@ class Agent:
 
                 if last_assistant:
                     try:
-                        save_memory(
-                            f"confirmed_{int(time.time())}",
-                            f"Abordagem confirmada pelo usuario.\nContexto: {last_assistant}",
-                            memory_type="feedback",
-                        )
+                        if self.user_id:
+                            save_user_memory(
+                                self.user_id,
+                                f"confirmed_{int(time.time())}",
+                                f"Abordagem confirmada pelo usuario.\nContexto: {last_assistant}",
+                                memory_type="feedback",
+                            )
+                        else:
+                            save_memory(
+                                f"confirmed_{int(time.time())}",
+                                f"Abordagem confirmada pelo usuario.\nContexto: {last_assistant}",
+                                memory_type="feedback",
+                            )
                     except Exception:
                         pass
                 return

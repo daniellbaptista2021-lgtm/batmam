@@ -577,8 +577,9 @@ def register_chat_routes(app: FastAPI) -> None:
             if is_admin:
                 # Admin tem acesso total — auto_approve permite todas as ferramentas
                 agent = Agent(
-                    cwd=os.getcwd(), model=model_id, api_key=user_api_key or None, 
-                    auto_approve=True, session=session_obj
+                    cwd=os.getcwd(), model=model_id, api_key=user_api_key or None,
+                    auto_approve=True, session=session_obj,
+                    user_id=user_id,
                 )
             else:
                 # Usuarios tem acesso total as ferramentas de criacao
@@ -586,7 +587,8 @@ def register_chat_routes(app: FastAPI) -> None:
                 # Sessoes sao efemeras (limpas diariamente).
                 agent = Agent(
                     cwd=os.getcwd(), model=model_id, api_key=user_api_key or None,
-                    auto_approve=True, session=session_obj
+                    auto_approve=True, session=session_obj,
+                    user_id=user_id,
                 )
             _http_sessions[session_key] = {"agent": agent, "last_used": time.time()}
 
