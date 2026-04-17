@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Clow — Configurar seu Assistente</title>
+<link rel="icon" href="/static/brand/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050510;--bg2:#0A0A1A;--bg3:#0F0F24;--bg4:#14142E;--bd:rgba(100,100,180,.1);--bdf:rgba(155,89,252,.4);--p:#9B59FC;--bl:#4A9EFF;--gp:linear-gradient(135deg,#9B59FC,#4A9EFF);--g:#34D399;--r:#F87171;--t1:#E8E8F0;--t2:#9898B8;--tm:#585878;--sans:'DM Sans',sans-serif;--mono:'JetBrains Mono',monospace}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
+.w{width:100%;max-width:560px;padding:20px}
+.logo{text-align:center;margin-bottom:20px}
+.logo img{height:40px}
+.bar{display:flex;gap:6px;margin-bottom:24px;justify-content:center}
+.bar .d{flex:1;max-width:120px;height:4px;border-radius:2px;background:var(--bg4);transition:background .4s}
+.bar .d.on{background:var(--p)}
+.bar .d.ok{background:var(--g)}
+.c{background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:28px;min-height:260px}
+.c h2{font-size:1.2rem;margin-bottom:6px}
+.c .sub{color:var(--t2);font-size:.88rem;margin-bottom:20px;line-height:1.5}
+.sp{display:inline-block;width:18px;height:18px;border:2px solid var(--tm);border-top-color:var(--p);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hide{display:none}
+.center{text-align:center}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.78rem;font-weight:600;color:var(--t2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px}
+.field input,.field select{width:100%;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;color:var(--t1);font-family:var(--sans);font-size:.9rem;outline:none}
+.field input:focus{border-color:var(--bdf)}
+.field input::placeholder{color:var(--tm)}
+.field textarea{width:100%;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;color:var(--t1);font-family:var(--mono);font-size:.82rem;resize:vertical;min-height:120px;outline:none;line-height:1.5}
+.field textarea:focus{border-color:var(--bdf)}
+.tgl{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:.88rem;color:var(--t2)}
+.tgl label{position:relative;width:38px;height:20px;cursor:pointer;flex-shrink:0}
+.tgl input{display:none}
+.tgl .sl{position:absolute;inset:0;background:var(--bg4);border:1px solid var(--bd);border-radius:10px;transition:background .2s}
+.tgl .sl::after{content:'';position:absolute;left:2px;top:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:transform .2s}
+.tgl input:checked+.sl{background:var(--p);border-color:var(--p)}
+.tgl input:checked+.sl::after{transform:translateX(18px)}
+.btn{padding:10px 24px;border-radius:8px;font-weight:600;cursor:pointer;font-family:var(--sans);font-size:.9rem;border:none;transition:opacity .15s}
+.btn-p{background:var(--gp);color:#fff}
+.btn-p:hover{opacity:.9}
+.btn-p:disabled{opacity:.4;cursor:not-allowed}
+.skip{background:none;color:var(--tm);border:none;cursor:pointer;font-size:.85rem;margin-left:auto}
+.err{color:var(--r);font-size:.85rem;margin-top:8px}
+.ok-msg{color:var(--g);font-size:.85rem;margin-top:8px}
+.row{display:flex;gap:10px;align-items:center;margin-top:12px}
+
+/* Provider cards */
+.providers{display:flex;gap:14px;margin-bottom:16px}
+.prov{flex:1;background:var(--bg3);border:2px solid var(--bd);border-radius:12px;padding:20px 16px;cursor:pointer;text-align:center;transition:all .2s}
+.prov:hover{border-color:rgba(155,89,252,.3)}
+.prov.selected{border-color:var(--p);background:rgba(155,89,252,.06)}
+.prov .icon{font-size:2rem;margin-bottom:8px}
+.prov .name{font-weight:600;font-size:.95rem;margin-bottom:4px}
+.prov .desc{font-size:.78rem;color:var(--tm);line-height:1.4}
+.form-section{display:none;margin-top:16px}
+.form-section.active{display:block}
+.check{font-size:3rem;margin:16px 0}
+</style>
+</head>
+<body>
+<div class="w">
+  <div class="logo"><img src="/static/brand/logo-sidebar.png" alt="Clow"></div>
+  <div class="bar"><div class="d on" id="d1"></div><div class="d" id="d2"></div><div class="d" id="d3"></div></div>
+
+  <!-- STEP 1: Auto-provision -->
+  <div class="c" id="s1">
+    <h2>Configurando seu Clow...</h2>
+    <p class="sub">Estamos criando seu espaco de atendimento. Isso leva alguns segundos.</p>
+    <div class="center" style="padding:40px 0">
+      <div class="sp" style="width:40px;height:40px;border-width:3px"></div>
+      <p style="margin-top:16px;color:var(--t2)" id="s1msg">Criando conta...</p>
+    </div>
+    <div id="s1err" class="err hide"></div>
+  </div>
+
+  <!-- STEP 2: Connect WhatsApp -->
+  <div class="c hide" id="s2">
+    <h2>Conecte seu WhatsApp</h2>
+    <p class="sub">Escolha como quer conectar seu numero ao Clow.</p>
+
+    <div class="providers">
+      <div class="prov" id="provZapi" onclick="selectProvider('zapi')">
+        <div class="icon">&#x1F4F1;</div>
+        <div class="name">Z-API</div>
+        <div class="desc">WhatsApp pessoal ou empresarial. Precisa de conta na Z-API.</div>
+      </div>
+      <div class="prov" id="provMeta" onclick="selectProvider('meta')">
+        <div class="icon">&#x1F310;</div>
+        <div class="name">Meta Oficial</div>
+        <div class="desc">WhatsApp Business API. Para empresas com numero verificado.</div>
+      </div>
+    </div>
+
+    <!-- Z-API form -->
+    <div class="form-section" id="formZapi">
+      <div class="field"><label>Instance ID</label><input type="text" id="zapiId" placeholder="3EF47A29C3407180CF13C22309410E11"></div>
+      <div class="field"><label>Token</label><input type="text" id="zapiToken" placeholder="3F58BF302142429BA7FAD499"></div>
+      <div id="zapiErr" class="err hide"></div>
+      <div id="zapiOk" class="ok-msg hide"></div>
+      <div class="row">
+        <button class="btn btn-p" id="btnTestZapi" onclick="testZapi()">Testar Conexao</button>
+      </div>
+    </div>
+
+    <!-- Meta form -->
+    <div class="form-section" id="formMeta">
+      <div class="field"><label>Phone Number ID</label><input type="text" id="metaPhoneId" placeholder="819930417873928"></div>
+      <div class="field"><label>Access Token (permanente)</label><input type="text" id="metaToken" placeholder="EAAMETracZAmMBO..."></div>
+      <div id="metaErr" class="err hide"></div>
+      <div id="metaOk" class="ok-msg hide"></div>
+      <div class="row">
+        <button class="btn btn-p" id="btnTestMeta" onclick="testMeta()">Testar Conexao</button>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:16px"><button class="skip" onclick="skipToStep3()">Pular por agora</button></div>
+  </div>
+
+  <!-- STEP 3: Configure Bot -->
+  <div class="c hide" id="s3">
+    <h2>Configure seu assistente IA</h2>
+    <p class="sub">Defina as instrucoes do seu assistente. Voce pode alterar depois em Gerenciar WhatsApp.</p>
+    <div class="field">
+      <label>Instrucoes do assistente</label>
+      <textarea id="prompt" placeholder="Voce e o assistente da [Sua Empresa]. Atenda clientes de forma profissional e encaminhe para o vendedor quando houver interesse..."></textarea>
+    </div>
+    <div class="tgl">
+      <label><input type="checkbox" id="handoff" checked><span class="sl"></span></label>
+      Pausar bot quando cliente pedir atendimento humano
+    </div>
+    <div class="row" style="margin-top:16px">
+      <button class="btn btn-p" id="btnFinish" onclick="finish()">Ativar Assistente</button>
+      <button class="skip" onclick="skipFinish()">Pular por agora</button>
+    </div>
+    <div id="s3err" class="err hide"></div>
+  </div>
+
+  <!-- DONE -->
+  <div class="c hide center" id="s4">
+    <div class="check">&#x2705;</div>
+    <h2>Tudo pronto!</h2>
+    <p class="sub">Seu assistente esta configurado. As credenciais foram salvas e o Clow esta pronto para responder automaticamente pelas conversas do seu CRM.</p>
+    <a href="/" class="btn btn-p" style="text-decoration:none;display:inline-block;margin-top:12px">Ir para o Chat</a>
+  </div>
+</div>
+
+<script>
+let selectedType='';
+
+function setStep(n){
+  for(let i=1;i<=4;i++)document.getElementById('s'+i).classList.toggle('hide',i!==n);
+  for(let i=1;i<=3;i++){const d=document.getElementById('d'+i);d.classList.remove('on','ok');if(i<n)d.classList.add('ok');if(i===n)d.classList.add('on')}
+}
+
+function selectProvider(type){
+  selectedType=type;
+  document.getElementById('provZapi').classList.toggle('selected',type==='zapi');
+  document.getElementById('provMeta').classList.toggle('selected',type==='meta');
+  document.getElementById('formZapi').classList.toggle('active',type==='zapi');
+  document.getElementById('formMeta').classList.toggle('active',type==='meta');
+}
+
+// STEP 1
+async function step1(){
+  setStep(1);
+  try{
+    const r=await fetch('/api/v1/onboarding/chatwoot/setup',{method:'POST'});
+    const d=await r.json();
+    if(d.error){document.getElementById('s1err').textContent=d.error;document.getElementById('s1err').classList.remove('hide');return}
+    document.getElementById('s1msg').textContent='Pronto! Avancando...';
+    setTimeout(()=>setStep(2),800);
+  }catch(e){
+    document.getElementById('s1err').textContent='Erro: '+e.message;
+    document.getElementById('s1err').classList.remove('hide');
+  }
+}
+
+// STEP 2 — Z-API
+async function testZapi(){
+  const btn=document.getElementById('btnTestZapi');
+  const err=document.getElementById('zapiErr');
+  const ok=document.getElementById('zapiOk');
+  err.classList.add('hide');ok.classList.add('hide');
+  btn.disabled=true;btn.innerHTML='<span class="sp"></span> Testando...';
+  const iid=document.getElementById('zapiId').value.trim();
+  const tok=document.getElementById('zapiToken').value.trim();
+  if(!iid||!tok){err.textContent='Preencha Instance ID e Token';err.classList.remove('hide');btn.disabled=false;btn.textContent='Testar Conexao';return}
+  try{
+    const r=await fetch('/api/v1/onboarding/whatsapp/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'zapi',instance_id:iid,token:tok})});
+    const d=await r.json();
+    if(d.ok){
+      ok.textContent='Conectado! Criando inbox...';ok.classList.remove('hide');
+      const sr=await fetch('/api/v1/onboarding/whatsapp/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'zapi',instance_id:iid,token:tok})});
+      const sd=await sr.json();
+      if(sd.webhook_url){
+        ok.innerHTML='Inbox criada! Configure o webhook da Z-API:<br><code style="font-size:.8rem;color:var(--bl);user-select:all">'+sd.webhook_url+'</code><br><span style="font-size:.78rem;color:var(--tm)">No painel Z-API: webhook de recebimento</span>';
+      }
+      setTimeout(()=>setStep(3),3000);
+    }else{
+      err.textContent='Credenciais invalidas ou WhatsApp desconectado. Verifique na Z-API.';err.classList.remove('hide');
+    }
+  }catch(e){err.textContent='Erro: '+e.message;err.classList.remove('hide')}
+  btn.disabled=false;btn.textContent='Testar Conexao';
+}
+
+// STEP 2 — Meta
+async function testMeta(){
+  const btn=document.getElementById('btnTestMeta');
+  const err=document.getElementById('metaErr');
+  const ok=document.getElementById('metaOk');
+  err.classList.add('hide');ok.classList.add('hide');
+  btn.disabled=true;btn.innerHTML='<span class="sp"></span> Testando...';
+  const pid=document.getElementById('metaPhoneId').value.trim();
+  const tok=document.getElementById('metaToken').value.trim();
+  if(!pid||!tok){err.textContent='Preencha Phone Number ID e Access Token';err.classList.remove('hide');btn.disabled=false;btn.textContent='Testar Conexao';return}
+  try{
+    const r=await fetch('/api/v1/onboarding/whatsapp/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'meta',phone_number_id:pid,access_token:tok})});
+    const d=await r.json();
+    if(d.ok){
+      ok.textContent='Conectado! '+(d.name||'')+' '+(d.phone||'')+' Criando inbox...';ok.classList.remove('hide');
+      const sr=await fetch('/api/v1/onboarding/whatsapp/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'meta',phone_number_id:pid,access_token:tok})});
+      const sd=await sr.json();
+      if(sd.webhook_url){
+        ok.innerHTML='Inbox criada! Configure o webhook da Meta:<br><code style="font-size:.8rem;color:var(--bl);user-select:all">'+sd.webhook_url+'</code><br><span style="font-size:.78rem;color:var(--tm)">No Meta Business: webhook de mensagens</span>';
+      }
+      setTimeout(()=>setStep(3),3000);
+    }else{
+      err.textContent=d.error||'Token ou Phone Number ID invalido.';err.classList.remove('hide');
+    }
+  }catch(e){err.textContent='Erro: '+e.message;err.classList.remove('hide')}
+  btn.disabled=false;btn.textContent='Testar Conexao';
+}
+
+function skipToStep3(){setStep(3)}
+
+// STEP 3
+async function finish(){
+  const btn=document.getElementById('btnFinish');
+  btn.disabled=true;btn.innerHTML='<span class="sp"></span> Salvando...';
+  try{
+    await fetch('/api/v1/onboarding/bot/configure',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      system_prompt:document.getElementById('prompt').value,
+      human_handoff:document.getElementById('handoff').checked,
+      model:'deepseek-chat',
+    })});
+    await fetch('/api/v1/onboarding/complete',{method:'POST'});
+    setStep(4);
+  }catch(e){
+    document.getElementById('s3err').textContent='Erro: '+e.message;
+    document.getElementById('s3err').classList.remove('hide');
+    btn.disabled=false;btn.textContent='Ativar Assistente';
+  }
+}
+
+async function skipFinish(){
+  await fetch('/api/v1/onboarding/complete',{method:'POST'});
+  window.location.href='/';
+}
+
+// Init — check status
+(async()=>{
+  try{
+    const r=await fetch('/api/v1/onboarding/status');
+    const d=await r.json();
+    if(d.onboarding_completed){window.location.href='/';return}
+    if(d.bot_configured){setStep(4);return}
+    if(d.whatsapp_connected){setStep(3);return}
+    if(d.chatwoot_connected){setStep(2);return}
+    step1();
+  }catch(e){step1()}
+})();
+</script>
+</body>
+</html>

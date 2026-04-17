@@ -399,3 +399,23 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 .copy-toast.show{opacity:1}
 /* Turn done indicator */
 .turn-done{font-size:11px;color:var(--tm);padding:8px 0 2px;letter-spacing:.05em;opacity:.5}
+
+/* ── SIDEBAR TOGGLE ── */
+#sbToggle{position:absolute;top:12px;right:-10px;z-index:35;width:20px;height:32px;background:var(--bg-1);border:1px solid var(--bd);border-radius:0 6px 6px 0;color:rgba(255,255,255,0.5);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:background .2s,color .2s;padding:0;line-height:1}
+#sbToggle:hover{background:var(--bg-3);color:#fff}
+.sb{position:relative}
+.sb.collapsed{width:0;overflow:hidden;min-width:0;padding:0;border:none}
+.sb.collapsed #sbToggle{right:-20px;border-radius:0 6px 6px 0}
+@media(min-width:769px){body.sb-is-collapsed .ham{display:block}}
+@media(max-width:768px){#sbToggle{display:none}}
+/* ── RECENTES ── */
+.sb-section-label{display:block;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--tm);padding:12px 4px 6px;user-select:none}
+.conv-card{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(155,89,252,.06);border:1px solid rgba(155,89,252,.12);border-radius:10px;cursor:pointer;margin:3px 0;transition:all .2s;text-decoration:none}
+.conv-card:hover{background:rgba(155,89,252,.12)}
+.conv-card-icon{font-size:14px;flex-shrink:0;width:16px;text-align:center;color:var(--p);line-height:1}
+.conv-card-info{flex:1;min-width:0}
+.conv-card-title{font-size:12px;font-weight:600;color:var(--p);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv-card-date{font-size:10px;color:var(--p);opacity:.5;margin-top:1px}
+.conv-card-del{background:transparent;border:none;color:rgba(155,89,252,.4);cursor:pointer;font-size:14px;padding:4px;opacity:0;transition:opacity .15s;flex-shrink:0}
+.conv-card:hover .conv-card-del{opacity:1}
+.conv-card-del:hover{color:#ff6b6b}

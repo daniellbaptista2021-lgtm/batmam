@@ -114,8 +114,16 @@ def register_page_routes(app: FastAPI) -> None:
     # ── Protected routes ─────────────────────────────────────────
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
-        if not _get_session_from_request(request):
+        sess = _get_user_session(request)
+        if not sess:
             return RedirectResponse("/login", status_code=302)
+        # Redirect to onboarding if first login and not admin
+        if not sess.get("is_admin") and sess.get("user_id"):
+            from ..database import get_db
+            with get_db() as db:
+                user = db.execute("SELECT onboarding_completed, first_login FROM users WHERE id=?", (sess["user_id"],)).fetchone()
+            if user and not user["onboarding_completed"] and user["first_login"]:
+                return RedirectResponse("/app/onboarding", status_code=302)
         return _webapp_html()
 
     @app.get("/dashboard", response_class=HTMLResponse)
@@ -130,6 +138,27 @@ def register_page_routes(app: FastAPI) -> None:
         if not sess or not sess.get("is_admin"):
             return RedirectResponse("/login", status_code=302)
         return _admin_html()
+
+    @app.get("/app/chatwoot-bot", response_class=HTMLResponse)
+    async def chatwoot_bot_page(request: Request):
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return RedirectResponse("/login", status_code=302)
+        return _get_template("chatwoot_bot.html")
+
+    @app.get("/app/admin/infrastructure", response_class=HTMLResponse)
+    async def admin_infra_page(request: Request):
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return RedirectResponse("/", status_code=302)
+        return _get_template("admin_infra.html")
+
+    @app.get("/app/setup", response_class=HTMLResponse)
+    async def chatwoot_setup_page(request: Request):
+        sess = _get_user_session(request)
+        if not sess:
+            return RedirectResponse("/login", status_code=302)
+        return _get_template("chatwoot_setup.html")
 
     # ── PWA Routes (System Clow App) ──────────────────────────────
     @app.get("/pwa", response_class=HTMLResponse)

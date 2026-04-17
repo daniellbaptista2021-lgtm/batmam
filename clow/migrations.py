@@ -673,3 +673,114 @@ MIGRATIONS.append((
     CREATE INDEX IF NOT EXISTS idx_blast_contacts_status ON blast_contacts(status);
     """,
 ))
+
+MIGRATIONS.append((
+    13,
+    "Create chatwoot_bot_configs table for Chatwoot bot integration per inbox",
+    """
+    CREATE TABLE IF NOT EXISTS chatwoot_bot_configs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        inbox_id INTEGER NOT NULL UNIQUE,
+        inbox_name TEXT DEFAULT '',
+        system_prompt TEXT DEFAULT '',
+        active INTEGER DEFAULT 1,
+        model TEXT DEFAULT 'deepseek-chat',
+        max_tokens INTEGER DEFAULT 1024,
+        context_size INTEGER DEFAULT 20,
+        created_at REAL NOT NULL,
+        updated_at REAL NOT NULL
+    );
+    """,
+))
+
+MIGRATIONS.append((
+    14,
+    "Add human_handoff column to chatwoot_bot_configs",
+    """
+    ALTER TABLE chatwoot_bot_configs ADD COLUMN human_handoff INTEGER DEFAULT 1;
+    """,
+))
+
+MIGRATIONS.append((
+    15,
+    "Multi-tenant Chatwoot: chatwoot_connections table + user_id in bot_configs",
+    """
+    CREATE TABLE IF NOT EXISTS chatwoot_connections (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        chatwoot_url TEXT NOT NULL,
+        chatwoot_token TEXT NOT NULL,
+        chatwoot_account_id INTEGER DEFAULT 1,
+        webhook_token TEXT NOT NULL UNIQUE,
+        webhook_id INTEGER DEFAULT 0,
+        active INTEGER DEFAULT 1,
+        connected_at REAL NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_chatwoot_conn_user ON chatwoot_connections(user_id);
+    CREATE INDEX IF NOT EXISTS idx_chatwoot_conn_token ON chatwoot_connections(webhook_token);
+
+    ALTER TABLE chatwoot_bot_configs ADD COLUMN user_id TEXT DEFAULT '';
+    """,
+))
+
+MIGRATIONS.append((
+    16,
+    "Multi-tenant Evolution: add columns to chatwoot_connections + evolution_instances table",
+    """
+    CREATE TABLE IF NOT EXISTS evolution_instances (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        instance_name TEXT NOT NULL UNIQUE,
+        phone TEXT DEFAULT '',
+        status TEXT DEFAULT 'disconnected',
+        chatwoot_inbox_id INTEGER DEFAULT 0,
+        chatwoot_account_id INTEGER DEFAULT 0,
+        created_at REAL NOT NULL,
+        connected_at REAL DEFAULT 0,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_evo_inst_user ON evolution_instances(user_id);
+
+    ALTER TABLE chatwoot_connections ADD COLUMN chatwoot_user_token TEXT DEFAULT '';
+    ALTER TABLE chatwoot_connections ADD COLUMN evolution_instance TEXT DEFAULT '';
+    """,
+))
+
+MIGRATIONS.append((
+    17,
+    "Create whatsapp_credentials table for Z-API and Meta connections",
+    """
+    CREATE TABLE IF NOT EXISTS whatsapp_credentials (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT 'zapi',
+        instance_id TEXT DEFAULT '',
+        token TEXT DEFAULT '',
+        phone_number_id TEXT DEFAULT '',
+        access_token TEXT DEFAULT '',
+        status TEXT DEFAULT 'pending',
+        created_at REAL NOT NULL,
+        updated_at REAL NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_wa_creds_user ON whatsapp_credentials(user_id);
+    """,
+))
+
+MIGRATIONS.append((
+    18,
+    "Add chatwoot_inbox_id and webhook_token to whatsapp_credentials",
+    """
+    ALTER TABLE whatsapp_credentials ADD COLUMN chatwoot_inbox_id INTEGER DEFAULT 0;
+    ALTER TABLE whatsapp_credentials ADD COLUMN webhook_token TEXT DEFAULT '';
+    """,
+))
+
+MIGRATIONS.append((
+    19,
+    "Add has_system_clow flag to users for premium addon gating",
+    """
+    ALTER TABLE users ADD COLUMN has_system_clow INTEGER DEFAULT 0;
+    """,
+))

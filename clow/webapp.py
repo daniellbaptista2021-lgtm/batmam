@@ -215,6 +215,14 @@ if HAS_FASTAPI:
     from .routes.bootstrap import register_bootstrap_routes
     register_bootstrap_routes(app)
 
+    # ── Addons (System Clow e outros produtos premium) ────────
+    from .routes.addons import register_addon_routes
+    register_addon_routes(app)
+
+    # ── Website Cloner (clone de sites/landing pages) ─────────
+    from .routes.clone import register_clone_routes
+    register_clone_routes(app)
+
     # ── Proteger /docs e /openapi.json (admin only) ──────────────
     from starlette.middleware.base import BaseHTTPMiddleware
     from fastapi.responses import JSONResponse as _DocsJR

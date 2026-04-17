@@ -72,6 +72,33 @@ Acesso via assinatura — sem plano gratuito, sem período de teste.
 - Imagens via IA (sem custo adicional)
 - Copies para anúncios e redes sociais
 
+### Website Cloner
+Clona qualquer site, landing page ou hotsite gerando um **projeto Next.js modular completo** com pipeline de 5 fases usando DeepSeek-reasoner.
+
+**Como usar:**
+```
+clona esse site: https://exemplo.com.br
+/clone https://exemplo.com.br
+clow clone https://exemplo.com.br
+```
+
+**O que faz:**
+- Captura screenshots desktop (1440px) e mobile (390px) com Playwright
+- Extrai design tokens reais via `getComputedStyle` (cores, fontes, Google Fonts)
+- Mapeia topologia DOM e gera spec markdown auditável por seção
+- Gera componentes React/TSX (1 por seção) com Tailwind v3 + shadcn/ui
+- Valida `npx tsc --noEmit` com retry automático até 3x
+- Roda `npm run build` para garantir compilação
+
+**Output em `~/.clow/clones/<dominio>/`:**
+- Projeto Next.js 15 + React 19 pronto pra `npm run dev`
+- `docs/research/` com specs auditáveis, screenshots e topology
+- Assets baixados (imagens, fontes, ícones) em `public/`
+
+**API REST:** `POST /api/v1/clone` + `GET /api/v1/clone/jobs/{id}`
+
+**Pré-requisitos:** Playwright + DEEPSEEK_API_KEY + Node.js 20+ (opcional)
+
 ---
 
 ## Segurança

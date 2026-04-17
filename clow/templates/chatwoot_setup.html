@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Clow — Configurar Chatwoot</title>
+<link rel="icon" href="/static/brand/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050510;--bg2:#0A0A1A;--bg3:#0F0F24;--bg4:#14142E;--bd:rgba(100,100,180,.1);--bdf:rgba(155,89,252,.4);--p:#9B59FC;--bl:#4A9EFF;--gp:linear-gradient(135deg,#9B59FC,#4A9EFF);--g:#34D399;--r:#F87171;--t1:#E8E8F0;--t2:#9898B8;--tm:#585878;--sans:'DM Sans',sans-serif;--mono:'JetBrains Mono',monospace}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased}
+.wizard{width:100%;max-width:600px;padding:20px}
+.logo{text-align:center;margin-bottom:24px}
+.logo img{height:40px}
+.steps{display:flex;gap:8px;margin-bottom:28px;justify-content:center}
+.step-dot{width:32px;height:4px;border-radius:2px;background:var(--bg4);transition:background .3s}
+.step-dot.active{background:var(--p)}
+.step-dot.done{background:var(--g)}
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:28px;min-height:300px}
+.card h2{font-size:1.2rem;margin-bottom:6px}
+.card .sub{color:var(--t2);font-size:.88rem;margin-bottom:20px;line-height:1.5}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.8rem;font-weight:600;color:var(--t2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px}
+.field input,.field select{width:100%;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;color:var(--t1);font-family:var(--sans);font-size:.9rem;outline:none}
+.field input:focus{border-color:var(--bdf)}
+.field input::placeholder{color:var(--tm)}
+.field textarea{width:100%;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;color:var(--t1);font-family:var(--mono);font-size:.82rem;resize:vertical;min-height:100px;outline:none;line-height:1.5}
+.field textarea:focus{border-color:var(--bdf)}
+.actions{display:flex;gap:10px;margin-top:20px}
+.btn{padding:10px 24px;border-radius:8px;font-weight:600;cursor:pointer;font-family:var(--sans);font-size:.9rem;border:none;transition:opacity .15s}
+.btn-primary{background:var(--gp);color:#fff}
+.btn-primary:hover{opacity:.9}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-secondary{background:var(--bg4);color:var(--t2);border:1px solid var(--bd)}
+.btn-secondary:hover{color:var(--t1)}
+.btn-skip{background:none;color:var(--tm);border:none;cursor:pointer;font-size:.85rem;margin-left:auto}
+.error{color:var(--r);font-size:.85rem;margin-top:8px}
+.success{color:var(--g);font-size:.85rem;margin-top:8px}
+.inbox-list{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.inbox-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;cursor:pointer;transition:border-color .15s}
+.inbox-item:hover{border-color:rgba(155,89,252,.2)}
+.inbox-item.selected{border-color:var(--p);background:rgba(155,89,252,.06)}
+.inbox-item input[type=checkbox]{accent-color:var(--p);width:16px;height:16px}
+.inbox-item .name{flex:1;font-size:.9rem}
+.inbox-item .type{font-size:.72rem;color:var(--tm);font-family:var(--mono)}
+.prompt-section{margin-bottom:16px;padding:14px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px}
+.prompt-section .inbox-label{font-weight:600;font-size:.88rem;margin-bottom:8px;color:var(--bl)}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--tm);border-top-color:var(--p);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="wizard">
+  <div class="logo"><img src="/static/brand/logo-sidebar.png" alt="Clow"></div>
+  <div class="steps">
+    <div class="step-dot active" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+    <div class="step-dot" id="dot3"></div>
+  </div>
+
+  <!-- STEP 1: Connect Chatwoot -->
+  <div class="card" id="step1">
+    <h2>Conectar Chatwoot</h2>
+    <p class="sub">Informe os dados do seu Chatwoot para o Clow se conectar e responder automaticamente.</p>
+    <div class="field">
+      <label>URL do Chatwoot</label>
+      <input type="url" id="cwUrl" placeholder="https://seucrm.com.br">
+    </div>
+    <div class="field">
+      <label>API Token (api_access_token)</label>
+      <input type="text" id="cwToken" placeholder="Encontre em Configuracoes > Conta > Access Token">
+    </div>
+    <div class="field">
+      <label>Account ID</label>
+      <input type="number" id="cwAccountId" value="1" min="1">
+    </div>
+    <div id="step1Error" class="error hide"></div>
+    <div id="step1Success" class="success hide"></div>
+    <div class="actions">
+      <button class="btn btn-primary" id="btnTest" onclick="testConnection()">Testar Conexao</button>
+      <a href="/" class="btn-skip">Pular por agora</a>
+    </div>
+  </div>
+
+  <!-- STEP 2: Select Inboxes -->
+  <div class="card hide" id="step2">
+    <h2>Escolher Inboxes</h2>
+    <p class="sub">Selecione quais inboxes o bot deve atender automaticamente.</p>
+    <div class="inbox-list" id="inboxList"></div>
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="goStep(1)">Voltar</button>
+      <button class="btn btn-primary" id="btnNext2" onclick="goStep(3)">Configurar Bot</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Configure Prompts -->
+  <div class="card hide" id="step3">
+    <h2>Configurar o Bot</h2>
+    <p class="sub">Defina o comportamento do bot para cada inbox selecionada.</p>
+    <div id="promptSections"></div>
+    <div id="step3Error" class="error hide"></div>
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="goStep(2)">Voltar</button>
+      <button class="btn btn-primary" id="btnFinish" onclick="finish()">Finalizar e Ativar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let inboxes=[];
+let selectedInboxes=[];
+let connectionData=null;
+
+function goStep(n){
+  document.getElementById('step1').classList.toggle('hide',n!==1);
+  document.getElementById('step2').classList.toggle('hide',n!==2);
+  document.getElementById('step3').classList.toggle('hide',n!==3);
+  for(let i=1;i<=3;i++){
+    const d=document.getElementById('dot'+i);
+    d.classList.remove('active','done');
+    if(i<n)d.classList.add('done');
+    if(i===n)d.classList.add('active');
+  }
+  if(n===3)renderPrompts();
+}
+
+async function testConnection(){
+  const btn=document.getElementById('btnTest');
+  const err=document.getElementById('step1Error');
+  const suc=document.getElementById('step1Success');
+  err.classList.add('hide');suc.classList.add('hide');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Testando...';
+  const url=document.getElementById('cwUrl').value.trim();
+  const token=document.getElementById('cwToken').value.trim();
+  const accId=parseInt(document.getElementById('cwAccountId').value)||1;
+  if(!url||!token){err.textContent='Preencha URL e Token';err.classList.remove('hide');btn.disabled=false;btn.textContent='Testar Conexao';return}
+  try{
+    const r=await fetch('/api/v1/chatwoot/connection',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chatwoot_url:url,chatwoot_token:token,chatwoot_account_id:accId})});
+    const d=await r.json();
+    if(d.error){err.textContent=d.error;err.classList.remove('hide');btn.disabled=false;btn.textContent='Testar Conexao';return}
+    connectionData=d.connection;
+    inboxes=d.inboxes||[];
+    suc.textContent='Conectado! '+inboxes.length+' inboxes encontradas.';
+    suc.classList.remove('hide');
+    btn.disabled=false;btn.textContent='Testar Conexao';
+    renderInboxes();
+    setTimeout(()=>goStep(2),800);
+  }catch(e){
+    err.textContent='Erro de rede: '+e.message;err.classList.remove('hide');
+    btn.disabled=false;btn.textContent='Testar Conexao';
+  }
+}
+
+function renderInboxes(){
+  const el=document.getElementById('inboxList');
+  el.innerHTML=inboxes.map(ib=>{
+    const isWa=ib.channel_type&&ib.channel_type.toLowerCase().includes('whatsapp');
+    return `<label class="inbox-item" id="ib_${ib.id}">
+      <input type="checkbox" value="${ib.id}" onchange="updateSelected()">
+      <span class="name">${esc(ib.name)}</span>
+      <span class="type">${isWa?'WhatsApp':'API'} #${ib.id}</span>
+    </label>`;
+  }).join('');
+}
+
+function updateSelected(){
+  selectedInboxes=[];
+  document.querySelectorAll('.inbox-item input:checked').forEach(cb=>{
+    const id=parseInt(cb.value);
+    const ib=inboxes.find(x=>x.id===id);
+    if(ib)selectedInboxes.push(ib);
+  });
+  document.querySelectorAll('.inbox-item').forEach(el=>{
+    const cb=el.querySelector('input');
+    el.classList.toggle('selected',cb.checked);
+  });
+}
+
+function renderPrompts(){
+  const el=document.getElementById('promptSections');
+  if(!selectedInboxes.length){el.innerHTML='<p style="color:var(--tm)">Nenhuma inbox selecionada. Volte e selecione pelo menos uma.</p>';return}
+  el.innerHTML=selectedInboxes.map(ib=>`
+    <div class="prompt-section">
+      <div class="inbox-label">${esc(ib.name)} (#${ib.id})</div>
+      <div class="field"><textarea id="sp_${ib.id}" placeholder="System prompt para esta inbox..."></textarea></div>
+    </div>
+  `).join('');
+}
+
+async function finish(){
+  const btn=document.getElementById('btnFinish');
+  const err=document.getElementById('step3Error');
+  err.classList.add('hide');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Salvando...';
+  try{
+    // Save bot configs
+    for(const ib of selectedInboxes){
+      const prompt=document.getElementById('sp_'+ib.id).value;
+      await fetch('/api/v1/chatwoot/bot/configs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        inbox_id:ib.id,inbox_name:ib.name,system_prompt:prompt,active:true,human_handoff:true,model:'deepseek-chat',max_tokens:1024,context_size:20
+      })});
+    }
+    // Register webhook
+    await fetch('/api/v1/chatwoot/connection/register-webhook',{method:'POST',headers:{'Content-Type':'application/json'}});
+    // Redirect
+    window.location.href='/app/whatsapp?setup=done';
+  }catch(e){
+    err.textContent='Erro: '+e.message;err.classList.remove('hide');
+    btn.disabled=false;btn.textContent='Finalizar e Ativar';
+  }
+}
+
+function esc(s){if(!s)return'';const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+// Check if already connected
+(async()=>{
+  try{
+    const r=await fetch('/api/v1/chatwoot/connection');
+    const d=await r.json();
+    if(d.connected){
+      connectionData=d.connection;
+      // Pre-fill fields
+      document.getElementById('cwUrl').value=d.connection.chatwoot_url||'';
+      document.getElementById('cwAccountId').value=d.connection.chatwoot_account_id||1;
+      document.getElementById('step1Success').textContent='Ja conectado. Clique em Testar para atualizar.';
+      document.getElementById('step1Success').classList.remove('hide');
+    }
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

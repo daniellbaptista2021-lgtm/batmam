@@ -11,7 +11,7 @@ async function init(){
     initMod(me.plan,me.is_admin);
     _loadPlanBadge();
   }catch(e){}
-  loadConvs();connectWS();_setupMobileViewport();
+  loadConvs();connectWS();_setupMobileViewport();initSidebarToggle();
 }
 async function _loadPlanBadge(){
   try{
@@ -53,6 +53,20 @@ async function _loadPlanBadge(){
 function initMod(plan,adm){const s=document.getElementById('modSel');selMod='deepseek-chat';if(s)s.style.display='none'}
 function onMod(){}
 function toggleSB(){document.getElementById('sb').classList.toggle('open');document.getElementById('sbOv').classList.toggle('show')}
+function initSidebarToggle(){
+  var btn=document.getElementById('sbToggle');
+  var sb=document.getElementById('sb');
+  if(!btn||!sb){console.error('sbToggle ou sidebar nao encontrado',btn,sb);return}
+  var stored=localStorage.getItem('clow_sidebar_open');
+  if(stored==='false'){sb.classList.add('collapsed');document.body.classList.add('sb-collapsed');btn.innerHTML='\u276F'}
+  btn.addEventListener('click',function(){
+    var isOpen=!sb.classList.contains('collapsed');
+    sb.classList.toggle('collapsed',isOpen);
+    document.body.classList.toggle('sb-collapsed',isOpen);
+    btn.innerHTML=isOpen?'\u276F':'\u276E';
+    localStorage.setItem('clow_sidebar_open',String(!isOpen));
+  });
+}
 function togDrop(){document.getElementById('hdrDrop').classList.toggle('show')}
 function clsDrop(){document.getElementById('hdrDrop').classList.remove('show')}
 document.addEventListener('click',e=>{if(!e.target.closest('.hdr-menu'))clsDrop()});
@@ -98,38 +112,25 @@ function showWelc(){
   if(wm)wm.classList.add('empty');
 }
 
+function relTime(ts){
+  var s=Math.floor(Date.now()/1000-ts);
+  if(s<60)return'agora';
+  var m=Math.floor(s/60);if(m<60)return m+(m===1?' min':' min');
+  var h=Math.floor(m/60);if(h<24)return'ha '+h+(h===1?' hora':' horas');
+  var d=Math.floor(h/24);if(d===1)return'ontem';
+  return'ha '+d+' dias';
+}
 async function loadConvs(){try{
   const r=await fetch('/api/v1/conversations');const d=await r.json();
   const el=document.getElementById('convList');
   allConvsCache=d.conversations||[];
   const pinned=allConvsCache.filter(c=>pinnedConvs.includes(c.id));
   const unpinned=allConvsCache.filter(c=>!pinnedConvs.includes(c.id));
-  // Show search icon if 3+ conversations
-  document.getElementById('convSearchWrap').style.display=allConvsCache.length>=3?'block':'none';
+  const recent=unpinned.slice(0,6);
+  document.getElementById('convSearchWrap').style.display=(pinned.length+recent.length)>=1?'block':'none';
   let h='';
-  // PINNED
-  if(pinned.length){
-    h+='<div class="sb-grp-label">FIXADAS</div>';
-    pinned.forEach(c=>{h+=convBtn(c,true)});
-  }
-  // GROUP BY DATE
-  const groups={};
-  const maxShow=showAllPast?unpinned.length:10;
-  unpinned.slice(0,maxShow).forEach(c=>{
-    const g=getDateGroup(c.updated_at||c.created_at);
-    if(!groups[g])groups[g]=[];
-    groups[g].push(c);
-  });
-  const order=['Hoje','Ontem','Ultimos 7 dias','Anteriores'];
-  order.forEach(g=>{
-    if(groups[g]&&groups[g].length){
-      h+='<div class="sb-grp-label">'+g+'</div>';
-      groups[g].forEach(c=>{h+=convBtn(c,false)});
-    }
-  });
-  if(!showAllPast&&unpinned.length>10){
-    h+='<button class="sb-conv-more" onclick="showAllPast=true;loadConvs()">Ver anteriores ('+unpinned.length+')</button>';
-  }
+  pinned.forEach(c=>{h+=convBtn(c,true)});
+  recent.forEach(c=>{h+=convBtn(c,false)});
   el.innerHTML=h||'<div style="padding:12px 8px;color:var(--tm);font-size:12px;text-align:center">Nenhuma conversa</div>';
   bindConvEvents();
 }catch(e){}}
@@ -137,35 +138,29 @@ async function loadConvs(){try{
 function convBtn(c,isPinned){
   const t=smartTitle(c.title);
   const isAct=c.id===cid;
+  const date=relTime(c.updated_at||c.created_at);
   return '<div class="sb-conv-item'+(isAct?' act':'')+'" data-id="'+c.id+'" data-title="'+esc(c.title)+'">'
-    +'<span class="conv-icon">'+(isPinned?'':'&#x1F4AC;')+'</span>'
-    +(isPinned?'<span class="conv-pin-static">&#x1F4CC;</span>':'')
-    +'<span class="conv-title">'+esc(t)+'</span>'
+    +'<span class="conv-icon">'+(isPinned?'&#x1F4CC;':'&#x1F4AC;')+'</span>'
+    +'<div class="conv-info"><span class="conv-title">'+esc(t)+'</span><span class="conv-date">'+date+'</span></div>'
     +'<span class="conv-actions">'
-    +'<button class="ca-btn ca-pin" data-cid="'+c.id+'" data-pinned="'+(isPinned?'1':'0')+'" title="'+(isPinned?'Desafixar':'Fixar')+'" aria-label="'+(isPinned?'Desafixar conversa':'Fixar conversa')+'">&#x1F4CC;</button>'
-    +'<button class="ca-btn ca-menu" data-cid="'+c.id+'" data-pinned="'+(isPinned?'1':'0')+'" title="Menu" aria-label="Opções da conversa">\u22EF</button>'
+    +'<button class="ca-btn ca-del" data-cid="'+c.id+'" title="Apagar" aria-label="Apagar conversa">&#x1F5D1;</button>'
     +'</span></div>';
 }
 function bindConvEvents(){
-  // Bind click on conv items (load conversation)
   document.querySelectorAll('.sb-conv-item').forEach(function(el){
     el.addEventListener('click',function(e){
-      if(e.target.closest('.ca-btn'))return; // Don't load if clicking action buttons
+      if(e.target.closest('.ca-btn'))return;
       loadConv(el.getAttribute('data-id'));
     });
   });
-  // Bind pin buttons
-  document.querySelectorAll('.ca-pin').forEach(function(btn){
+  document.querySelectorAll('.ca-del').forEach(function(btn){
     btn.addEventListener('click',function(e){
       e.stopPropagation();
-      togglePin(btn.getAttribute('data-cid'));
-    });
-  });
-  // Bind menu buttons
-  document.querySelectorAll('.ca-menu').forEach(function(btn){
-    btn.addEventListener('click',function(e){
-      e.stopPropagation();
-      showCtxMenu(e,btn.getAttribute('data-cid'),btn.getAttribute('data-pinned')==='1');
+      var id=btn.getAttribute('data-cid');
+      fetch('/api/v1/conversations/'+id,{method:'DELETE'}).then(function(){
+        if(id===cid){cid=null;hSid='';T.innerHTML='';showWelc()}
+        loadConvs();
+      }).catch(function(){});
     });
   });
 }
@@ -286,7 +281,7 @@ async function showAllConvs(){showAllPast=true;loadConvs()}
 async function ensureConv(){if(cid)return cid;try{const r=await fetch('/api/v1/conversations',{method:'POST'});const d=await r.json();cid=d.id;hSid='';convMsgCount=0;loadConvs();return cid}catch(e){return ''}}
 
 async function newConv(){try{const r=await fetch('/api/v1/conversations',{method:'POST'});const d=await r.json();cid=d.id;hSid='';convMsgCount=0;T.innerHTML='';showWelc();document.getElementById('hdrT').textContent='Nova conversa';loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
-async function loadConv(id){cid=id;hSid='';T.innerHTML='';try{const r=await fetch(`/api/v1/conversations/${id}/messages`);const d=await r.json();d.messages.forEach(m=>{if(m.role==='user')addUser(m.content,false);else{curMsg=null;curBody=null;appendTxt(m.content);finishTxt();curMsg=null;curBody=null}});const cs=await(await fetch('/api/v1/conversations')).json();const c=cs.conversations.find(x=>x.id===id);if(c)document.getElementById('hdrT').textContent=c.title;loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){}}
+async function loadConv(id){cid=id;hSid='';convMsgCount=0;curMsg=null;curBody=null;raw='';T.innerHTML='';try{const r=await fetch(`/api/v1/conversations/${id}/messages`);const d=await r.json();(d.messages||[]).forEach(m=>{if(m.role==='user')addUser(m.content,false);else{curMsg=null;curBody=null;appendTxt(m.content);finishTxt();curMsg=null;curBody=null}});const cs=await(await fetch('/api/v1/conversations')).json();const c=(cs.conversations||[]).find(x=>x.id===id);if(c)document.getElementById('hdrT').textContent=c.title;loadConvs();if(window.innerWidth<769)toggleSB()}catch(e){console.error('loadConv:',e)}}
 function connectWS(){const pr=location.protocol==='https:'?'wss:':'ws:';try{ws=new WebSocket(`${pr}//${location.host}/ws`)}catch(e){http=true;setOn('http');return}const to=setTimeout(()=>{if(!ws||ws.readyState!==1){try{ws.close()}catch(e){}http=true;setOn('http')}},10000);ws.onopen=()=>{clearTimeout(to);http=false;setOn('online');rA=0};ws.onmessage=e=>hMsg(JSON.parse(e.data));ws.onclose=()=>{clearTimeout(to);if(rA>=3){http=true;setOn('http');return}setOn('offline');setTimeout(()=>{rA++;connectWS()},Math.min(1000*rA,5000))};ws.onerror=()=>setOn('offline')}
 function setOn(s){const b=document.getElementById('onBdg'),l=document.getElementById('onLbl');b.style.color=s==='offline'?'var(--r)':'var(--g)';l.textContent=s}
 function hMsg(m){switch(m.type){case'thinking_start':showThink();break;case'thinking_end':hideThink();break;case'text_delta':appendTxt(m.content);break;case'text_done':finishTxt();break;case'tool_call':showTool(m.name,m.args);break;case'tool_result':showToolR(m.name,m.status,m.output);break;case'turn_complete':finishTurn();break;case'error':showErr(m.content);break}}
@@ -510,7 +505,7 @@ function showToast(msg,type){
 }
 
 toggleInputBtns();
-init();
+if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init)}else{init()}
 // ── Particles ──
 (function(){
   const isMobile=window.innerWidth<769;

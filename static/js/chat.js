@@ -59,41 +59,68 @@ function showWelc(){
   if(wm)wm.classList.add('empty');
 }
 
-async function loadConvs(){try{
-  const r=await fetch('/api/v1/conversations');const d=await r.json();
-  const el=document.getElementById('convList');
-  allConvsCache=d.conversations||[];
-  const pinned=allConvsCache.filter(c=>pinnedConvs.includes(c.id));
-  const unpinned=allConvsCache.filter(c=>!pinnedConvs.includes(c.id));
-  // Show search icon if 3+ conversations
-  document.getElementById('convSearchWrap').style.display=allConvsCache.length>=3?'block':'none';
-  let h='';
-  // PINNED
-  if(pinned.length){
-    h+='<div class="sb-grp-label">FIXADAS</div>';
-    pinned.forEach(c=>{h+=convBtn(c,true)});
-  }
-  // GROUP BY DATE
-  const groups={};
-  const maxShow=showAllPast?unpinned.length:10;
-  unpinned.slice(0,maxShow).forEach(c=>{
-    const g=getDateGroup(c.updated_at||c.created_at);
-    if(!groups[g])groups[g]=[];
-    groups[g].push(c);
+async function loadConvs(){
+  var list=document.getElementById('convList');
+  var wrap=document.getElementById('convSearchWrap');
+  if(!list||!wrap)return;
+  try{
+    var res=await fetch('/api/v1/conversations',{credentials:'include'});
+    if(!res.ok)return;
+    var data=await res.json();
+    var convs=Array.isArray(data)?data:(data.conversations||data.data||[]);
+    allConvsCache=convs;
+    var cutoff=Date.now()/1000-3*24*60*60;
+    var recent=convs.filter(function(c){return(c.updated_at||c.created_at)>cutoff}).slice(0,20);
+    if(!recent.length){wrap.style.display='none';return}
+    wrap.style.display='';
+    list.innerHTML='';
+    recent.forEach(function(c){
+      var rawTitle=c.title||'Conversa';
+      var title=rawTitle.length>40?rawTitle.slice(0,40)+'...':rawTitle;
+      var date=relTime(c.updated_at||c.created_at);
+      var card=document.createElement('div');
+      card.className='conv-card';
+      card.innerHTML='<span class="conv-card-icon">\uD83D\uDCAC</span><div class="conv-card-info"><div class="conv-card-title">'+esc(title)+'</div><div class="conv-card-date">'+date+'</div></div><button class="conv-card-del" title="Apagar">&#x1F5D1;</button>';
+      card.querySelector('.conv-card-del').addEventListener('click',function(e){
+        e.stopPropagation();
+        if(!confirm('Apagar esta conversa?'))return;
+        fetch('/api/v1/conversations/'+c.id,{method:'DELETE',credentials:'include'}).then(function(){
+          card.remove();
+          allConvsCache=allConvsCache.filter(function(x){return x.id!==c.id});
+          if(!list.children.length)wrap.style.display='none';
+          if(c.id===cid){cid=null;hSid='';T.innerHTML='';showWelc()}
+        });
+      });
+      card.addEventListener('click',function(){loadConv(c.id)});
+      list.appendChild(card);
+    });
+  }catch(e){console.error('loadConvs:',e)}
+}
+function relTime(ts){
+  var diff=Date.now()/1000-ts;
+  var m=Math.floor(diff/60);
+  if(m<1)return'agora';
+  if(m<60)return'há '+m+' min';
+  var h=Math.floor(m/60);
+  if(h<24)return'há '+h+(h===1?' hora':' horas');
+  var d=Math.floor(h/24);
+  if(d===1)return'ontem';
+  return'há '+d+' dias';
+}
+function initSidebarToggle(){
+  var btn=document.getElementById('sbToggle');
+  var sb=btn?btn.closest('.sb'):null;
+  if(!btn||!sb)return;
+  var stored=localStorage.getItem('clow_sidebar_open');
+  if(stored==='false'){sb.classList.add('collapsed');btn.innerHTML='\u203A';document.body.classList.add('sb-is-collapsed')}
+  btn.addEventListener('click',function(){
+    var isOpen=!sb.classList.contains('collapsed');
+    sb.classList.toggle('collapsed',isOpen);
+    btn.innerHTML=isOpen?'\u203A':'\u2039';
+    document.body.classList.toggle('sb-is-collapsed',isOpen);
+    localStorage.setItem('clow_sidebar_open',String(!isOpen));
   });
-  const order=['Hoje','Ontem','Ultimos 7 dias','Anteriores'];
-  order.forEach(g=>{
-    if(groups[g]&&groups[g].length){
-      h+='<div class="sb-grp-label">'+g+'</div>';
-      groups[g].forEach(c=>{h+=convBtn(c,false)});
-    }
-  });
-  if(!showAllPast&&unpinned.length>10){
-    h+='<button class="sb-conv-more" onclick="showAllPast=true;loadConvs()">Ver anteriores ('+unpinned.length+')</button>';
-  }
-  el.innerHTML=h||'<div style="padding:12px 8px;color:var(--tm);font-size:12px;text-align:center">Nenhuma conversa</div>';
-  bindConvEvents();
-}catch(e){}}
+}
 
 function convBtn(c,isPinned){
   const t=smartTitle(c.title);
@@ -609,7 +636,7 @@ function showToast(msg,type){
 }
 
 toggleInputBtns();
-init();
+init();initSidebarToggle();
 // ── Particles ──
 (function(){
   const isMobile=window.innerWidth<769;

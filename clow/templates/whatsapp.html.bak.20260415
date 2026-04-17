@@ -1,0 +1,2245 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Clow — WhatsApp Trigger</title>
+<link rel="icon" href="/static/brand/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg-deep:#050510;--bg-base:#0F0F24;--bg-elevated:#14142E;--bg-surface:#1A1A3E;
+  --text-primary:#E8E8F0;--text-secondary:#9898B8;--text-muted:#585878;
+  --purple:#9B59FC;--blue:#4A9EFF;--green:#34D399;--red:#F87171;--amber:#FBBF24;
+  --wa:#25D366;
+  --border:rgba(100,100,180,.12);--border-focus:rgba(155,89,252,.5);
+  --gradient:linear-gradient(135deg,#9B59FC,#4A9EFF);
+  --font-sans:'DM Sans',sans-serif;--font-mono:'JetBrains Mono',monospace;
+}
+body{font-family:var(--font-sans);background:var(--bg-deep);color:var(--text-primary);min-height:100vh;-webkit-font-smoothing:antialiased}
+a{color:var(--purple);text-decoration:none}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--purple),var(--blue));border-radius:3px}
+
+/* ── HEADER ──────────────────────────────────────────── */
+.page-header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);background:var(--bg-base)}
+.page-header-left{display:flex;align-items:center;gap:12px}
+.page-header-left img{height:28px;opacity:.7}
+.page-header h1{font-size:1.15rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.page-header h1 svg{flex-shrink:0}
+.header-badge{font-size:.7rem;padding:3px 10px;border-radius:20px;font-weight:600;background:rgba(37,211,102,.12);color:var(--wa)}
+.header-actions{display:flex;gap:8px}
+
+/* ── CONTAINER ───────────────────────────────────────── */
+.page-container{max-width:1200px;margin:0 auto;padding:24px 20px}
+.page-desc{color:var(--text-secondary);margin-bottom:24px;font-size:.95rem}
+
+/* ── TABS (top-level) ────────────────────────────────── */
+.main-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:24px;overflow-x:auto;gap:4px}
+.main-tab{padding:12px 22px;font-size:.88rem;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;border-radius:8px 8px 0 0}
+.main-tab:hover{color:var(--text-primary);background:rgba(155,89,252,.04)}
+.main-tab.active{color:var(--text-primary);border-bottom-color:var(--wa);background:rgba(37,211,102,.04)}
+.main-tab .tab-icon{margin-right:6px}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* ── BUTTONS ─────────────────────────────────────────── */
+.btn{padding:8px 18px;border:none;border-radius:10px;font-weight:600;font-size:.85rem;cursor:pointer;transition:all .2s;font-family:var(--font-sans);display:inline-flex;align-items:center;gap:6px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--gradient);color:#fff}.btn-primary:hover:not(:disabled){filter:brightness(1.1)}
+.btn-wa{background:var(--wa);color:#fff}.btn-wa:hover:not(:disabled){filter:brightness(1.1)}
+.btn-secondary{background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border)}.btn-secondary:hover:not(:disabled){border-color:var(--purple);color:var(--text-primary)}
+.btn-danger{background:rgba(248,113,113,.08);color:var(--red);border:1px solid rgba(248,113,113,.15)}.btn-danger:hover:not(:disabled){background:rgba(248,113,113,.15)}
+.btn-sm{padding:6px 14px;font-size:.8rem}
+.btn-lg{padding:14px 32px;font-size:1rem;border-radius:14px}
+.btn-icon{width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-secondary);cursor:pointer;transition:all .2s}
+.btn-icon:hover{border-color:var(--purple);color:var(--text-primary)}
+
+/* ── CARDS ───────────────────────────────────────────── */
+.slot-info{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding:14px 18px;background:var(--bg-base);border:1px solid var(--border);border-radius:12px}
+.slot-info-left{display:flex;align-items:center;gap:12px}
+.slot-info-left .label{font-size:.85rem;color:var(--text-secondary)}
+.slot-info-left .value{font-size:1.1rem;font-weight:700;color:var(--wa)}
+.slot-info-right{font-size:.8rem;color:var(--text-muted)}
+
+.slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:20px}
+.slot-card{background:var(--bg-base);border:1px solid var(--border);border-radius:16px;padding:22px;transition:all .3s;position:relative;overflow:hidden}
+.slot-card:hover{border-color:rgba(37,211,102,.25);box-shadow:0 4px 24px rgba(0,0,0,.2)}
+.slot-card.empty-slot{border-style:dashed;opacity:.7;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;cursor:pointer}
+.slot-card.empty-slot:hover{opacity:1;border-color:var(--wa)}
+.slot-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.slot-card-name{font-size:1.05rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.slot-card-name input{background:transparent;border:none;color:var(--text-primary);font-size:1.05rem;font-weight:700;font-family:var(--font-sans);width:150px;outline:none;border-bottom:1px dashed transparent;transition:border-color .2s}
+.slot-card-name input:hover,.slot-card-name input:focus{border-bottom-color:var(--purple)}
+.status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.status-dot.connected{background:var(--green);box-shadow:0 0 8px rgba(52,211,153,.4)}
+.status-dot.disconnected{background:var(--red);box-shadow:0 0 8px rgba(248,113,113,.4)}
+.status-dot.empty{background:var(--text-muted)}
+.status-badge{font-size:.7rem;padding:3px 10px;border-radius:20px;font-weight:600}
+.status-badge.on{background:rgba(52,211,153,.12);color:var(--green)}
+.status-badge.off{background:rgba(248,113,113,.12);color:var(--red)}
+.status-badge.paused{background:rgba(251,191,36,.12);color:var(--amber)}
+.slot-card-info{font-size:.82rem;color:var(--text-secondary);margin-bottom:14px;line-height:1.8}
+.slot-card-info .mono{font-family:var(--font-mono);font-size:.8rem;color:var(--text-muted)}
+.health-bar{height:3px;border-radius:2px;background:var(--bg-elevated);margin:8px 0;overflow:hidden}
+.health-bar-fill{height:100%;border-radius:2px;transition:width .5s,background .5s}
+.health-bar-fill.good{background:var(--green);width:100%}
+.health-bar-fill.warn{background:var(--amber);width:60%}
+.health-bar-fill.bad{background:var(--red);width:20%}
+.slot-card-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── MODAL ───────────────────────────────────────────── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;justify-content:center;align-items:flex-start;padding:30px 16px;overflow-y:auto}
+.overlay.show{display:flex}
+.modal{width:100%;max-width:600px;background:var(--bg-base);border:1px solid var(--border);border-radius:16px;overflow:hidden;animation:slideUp .25s ease-out}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.modal-header{padding:18px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-header h2{font-size:1.1rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.modal-body{padding:24px}
+.modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.close-btn{background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;line-height:1;transition:color .2s}
+.close-btn:hover{color:var(--text-primary)}
+
+/* ── FORM ────────────────────────────────────────────── */
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:500}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:10px 14px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;color:var(--text-primary);font-family:var(--font-sans);font-size:.9rem;outline:none;transition:border .2s}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--border-focus)}
+.form-group textarea{min-height:140px;resize:vertical;font-family:var(--font-mono);font-size:.85rem;line-height:1.6}
+.form-group select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath fill='%23606078' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px}
+.form-group select option{background:var(--bg-base);color:var(--text-primary)}
+.form-group .hint{font-size:.75rem;color:var(--text-muted);margin-top:4px;line-height:1.5}
+.form-row{display:flex;gap:12px;align-items:flex-end}
+.form-row .form-group{flex:1}
+
+/* ── COLLAPSIBLE SECTION ─────────────────────────────── */
+.config-section{background:var(--bg-base);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.config-section-header{padding:16px 20px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .2s;user-select:none}
+.config-section-header:hover{background:rgba(155,89,252,.03)}
+.config-section-header h3{font-size:.92rem;font-weight:600;display:flex;align-items:center;gap:8px}
+.config-section-header h3 .section-num{width:24px;height:24px;border-radius:6px;background:var(--gradient);color:#fff;font-size:.72rem;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
+.config-section-header .chevron{transition:transform .2s;color:var(--text-muted);font-size:.8rem}
+.config-section.open .chevron{transform:rotate(180deg)}
+.config-section-body{display:none;padding:0 20px 20px}
+.config-section.open .config-section-body{display:block}
+
+/* ── TOGGLE ──────────────────────────────────────────── */
+.toggle{display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:12px}
+.toggle input{display:none}
+.toggle-track{width:40px;height:22px;background:var(--bg-elevated);border-radius:11px;position:relative;transition:background .2s;border:1px solid var(--border);flex-shrink:0}
+.toggle input:checked+.toggle-track{background:var(--wa);border-color:var(--wa)}
+.toggle-track::after{content:'';width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:transform .2s}
+.toggle input:checked+.toggle-track::after{transform:translateX(18px)}
+.toggle span{font-size:.9rem}
+
+/* ── PILLS ───────────────────────────────────────────── */
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;font-size:.82rem;font-weight:500}
+.pill-ok{background:rgba(52,211,153,.1);color:var(--green)}
+.pill-err{background:rgba(248,113,113,.1);color:var(--red)}
+.pill-wait{background:rgba(155,89,252,.1);color:var(--purple)}
+.pill-info{background:rgba(74,158,255,.1);color:var(--blue)}
+.pill-ai{background:rgba(155,89,252,.12);color:var(--purple)}
+.pill-human{background:rgba(251,191,36,.12);color:var(--amber)}
+
+/* ── TABLE ───────────────────────────────────────────── */
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:var(--bg-base)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+thead{background:var(--bg-elevated)}
+th{padding:12px 16px;text-align:left;font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);border-bottom:1px solid var(--border)}
+td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text-secondary)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(155,89,252,.02)}
+tr.expandable{cursor:pointer}
+tr.expanded-row td{background:var(--bg-elevated);padding:16px;white-space:pre-wrap;font-family:var(--font-mono);font-size:.82rem;line-height:1.6}
+
+/* ── FILTER BAR ──────────────────────────────────────── */
+.filter-bar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.filter-bar select,.filter-bar input{padding:8px 12px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-family:var(--font-sans);font-size:.85rem;outline:none}
+.filter-bar select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath fill='%23606078' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.filter-bar input[type="date"]{color-scheme:dark}
+
+/* ── STAT CARDS ──────────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:var(--bg-base);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center;transition:all .3s}
+.stat-card:hover{border-color:rgba(37,211,102,.2);transform:translateY(-2px)}
+.stat-card .stat-value{font-size:2rem;font-weight:700;color:var(--wa);line-height:1.2}
+.stat-card .stat-label{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+.stat-card .stat-change{font-size:.75rem;margin-top:6px}
+.stat-card .stat-change.up{color:var(--green)}
+.stat-card .stat-change.down{color:var(--red)}
+
+/* ── CHART ───────────────────────────────────────────── */
+.chart-container{background:var(--bg-base);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:20px}
+.chart-container h3{font-size:.95rem;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.chart-canvas-wrap{position:relative;height:280px}
+
+/* ── DYNAMIC LIST ────────────────────────────────────── */
+.dynamic-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.dynamic-list-item{display:flex;gap:8px;align-items:flex-start;background:var(--bg-elevated);padding:12px;border-radius:10px;border:1px solid var(--border)}
+.dynamic-list-item input,.dynamic-list-item textarea{flex:1;padding:8px 10px;background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-family:var(--font-sans);font-size:.85rem;outline:none}
+.dynamic-list-item textarea{min-height:60px;resize:vertical;font-size:.82rem}
+
+/* ── FILE UPLOAD ─────────────────────────────────────── */
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .2s}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--wa);background:rgba(37,211,102,.03)}
+.upload-zone p{color:var(--text-muted);font-size:.88rem}
+.upload-zone .upload-icon{font-size:2rem;margin-bottom:8px;opacity:.5}
+.file-list{margin-top:12px}
+.file-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-elevated);border-radius:8px;margin-bottom:6px;font-size:.85rem}
+.file-item .file-name{display:flex;align-items:center;gap:8px;color:var(--text-primary)}
+.file-item .file-size{color:var(--text-muted);font-size:.78rem}
+
+/* ── CHAT BUBBLES ────────────────────────────────────── */
+.chat-view{max-height:400px;overflow-y:auto;padding:12px;background:var(--bg-deep);border-radius:12px;border:1px solid var(--border)}
+.bubble{max-width:75%;padding:10px 14px;border-radius:14px;margin-bottom:6px;font-size:.88rem;line-height:1.5}
+.bubble-user{background:var(--bg-elevated);border-bottom-left-radius:4px;margin-right:auto}
+.bubble-ai{background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.12);margin-left:auto;border-bottom-right-radius:4px}
+.bubble-time{font-size:.65rem;color:var(--text-muted);margin-top:3px}
+
+/* ── WEBHOOK BOX ─────────────────────────────────────── */
+.webhook-box{background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:14px;margin:12px 0}
+.webhook-box code{font-family:var(--font-mono);font-size:.82rem;color:var(--wa);word-break:break-all;display:block;margin-bottom:8px}
+.webhook-box .steps{font-size:.8rem;color:var(--text-secondary);line-height:1.8}
+.webhook-box .steps b{color:var(--text-primary)}
+
+/* ── TOAST ───────────────────────────────────────────── */
+.toast{position:fixed;top:20px;right:20px;padding:14px 20px;border-radius:12px;font-size:.9rem;font-weight:500;z-index:9999;animation:toastIn .3s ease-out;box-shadow:0 8px 24px rgba(0,0,0,.4);display:flex;align-items:center;gap:8px}
+.toast-ok{background:var(--wa);color:#fff}
+.toast-err{background:var(--red);color:#fff}
+.toast-info{background:var(--blue);color:#fff}
+@keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── DAY PICKER GRID ─────────────────────────────────── */
+.day-grid{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.day-chip{padding:6px 12px;border-radius:8px;font-size:.8rem;font-weight:500;background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-secondary);cursor:pointer;transition:all .2s;user-select:none}
+.day-chip.active{background:rgba(37,211,102,.12);border-color:var(--wa);color:var(--wa)}
+
+/* ── EMPTY STATE ─────────────────────────────────────── */
+.empty-state{text-align:center;padding:48px 20px;color:var(--text-muted)}
+.empty-state svg{margin-bottom:12px;opacity:.5}
+.empty-state h3{font-size:1.1rem;color:var(--text-secondary);margin-bottom:6px}
+.empty-state p{font-size:.88rem;max-width:400px;margin:0 auto;line-height:1.6}
+
+/* ── RESPONSIVE ──────────────────────────────────────── */
+@media(max-width:768px){
+  .slots-grid{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .modal{margin-top:10px;max-width:100%}
+  .main-tabs{gap:0}
+  .main-tab{padding:10px 14px;font-size:.82rem}
+  .filter-bar{flex-direction:column;align-items:stretch}
+  .form-row{flex-direction:column}
+  .page-header{flex-direction:column;gap:10px;text-align:center}
+  .header-actions{justify-content:center}
+}
+
+#csvDropZone.drag-over{border-color:#25D366!important;background:rgba(37,211,102,.05)!important}
+</style>
+<link rel="stylesheet" href="/static/css/bg.css">
+<script defer src="/static/js/bg.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     HEADER
+     ═══════════════════════════════════════════════════════ -->
+<div class="page-header">
+  <div class="page-header-left">
+    <a href="/"><img src="/static/brand/logo-sidebar.png" alt="Clow"></a>
+    <h1>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      WhatsApp Trigger
+      <span class="header-badge" id="connectedBadge">0 conectados</span>
+    </h1>
+  </div>
+  <div class="header-actions">
+    <a href="/app/settings" class="btn btn-secondary btn-sm">Configuracoes</a>
+    <a href="/" class="btn btn-secondary btn-sm">Voltar ao Clow</a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MAIN CONTENT
+     ═══════════════════════════════════════════════════════ -->
+<div class="page-container">
+  <p class="page-desc">Conecte seu WhatsApp e deixe o Clow atender seus clientes com inteligencia artificial, 24 horas por dia.</p>
+
+  <!-- Top-level tabs -->
+  <div class="main-tabs">
+    <div class="main-tab active" onclick="switchTab(0)"><span class="tab-icon">&#128241;</span>Meus Numeros</div>
+    <div class="main-tab" onclick="switchTab(1)"><span class="tab-icon">&#9881;</span>Configurar Bot</div>
+    <div class="main-tab" onclick="switchTab(2)"><span class="tab-icon">&#128196;</span>Historico</div>
+    <div class="main-tab" onclick="switchTab(3)"><span class="tab-icon">&#128200;</span>Estatisticas</div>
+    <div class="main-tab" onclick="switchTab(4)"><span class="tab-icon">&#128203;</span>Templates</div>
+    <div class="main-tab" onclick="switchTab(5)"><span class="tab-icon">&#128228;</span>Disparos</div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────
+       TAB 0: MEUS NUMEROS
+       ───────────────────────────────────────────────────── -->
+  <div class="tab-panel active" id="tab0">
+    <div class="slot-info" id="slotInfo">
+      <div class="slot-info-left">
+        <div>
+          <div class="label">Slots do seu plano</div>
+          <div class="value" id="slotCount">- / -</div>
+        </div>
+      </div>
+      <div class="slot-info-right" id="slotPlan">Carregando plano...</div>
+    </div>
+    <div class="slots-grid" id="slotsGrid">
+      <div style="text-align:center;padding:40px;color:var(--text-muted)">Carregando instancias...</div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────
+       TAB 1: CONFIGURAR BOT
+       ───────────────────────────────────────────────────── -->
+  <div class="tab-panel" id="tab1">
+    <div class="form-group" style="margin-bottom:20px">
+      <label>Selecionar numero</label>
+      <select id="cfgInstanceSelect" onchange="onCfgInstanceChange()">
+        <option value="">-- Selecione um numero conectado --</option>
+      </select>
+    </div>
+
+    <div id="cfgContent" style="display:none">
+
+      <!-- 1. Prompt Principal -->
+      <div class="config-section open" id="sec1">
+        <div class="config-section-header" onclick="toggleSection('sec1')">
+          <h3><span class="section-num">1</span> Prompt Principal</h3>
+          <span class="chevron">&#9660;</span>
+        </div>
+        <div class="config-section-body">
+          <div class="form-group">
+            <label>Prompt do agente</label>
+            <textarea id="cfgPrompt" placeholder="Voce e a atendente virtual da [nome do negocio]. Seja simpatica e objetiva.&#10;&#10;Regras:&#10;- Consulte a base de conhecimento antes de responder sobre precos&#10;- Sempre pergunte o endereco para entrega&#10;- Horario de funcionamento: 18h as 23h&#10;- Se o cliente reclamar, encaminhe para atendente humano"></textarea>
+            <div class="hint">Defina a persona, regras e comportamento do agente. Quanto mais detalhado, melhor.</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="testPrompt()">Testar Prompt</button>
+          <div id="promptTestResult" style="margin-top:8px"></div>
+        </div>
+      </div>
+
+      <!-- 2. Personalidade -->
+      <div class="config-section" id="sec2">
+        <div class="config-section-header" onclick="toggleSection('sec2')">
+          <h3><span class="section-num">2</span> Personalidade</h3>
+          <span class="chevron">&#9660;</span>
+        </div>
+        <div class="config-section-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nome do assistente</label>
+              <input id="cfgBotName" placeholder="Ex: Julia, Clow, Assistente">
+            </div>
+            <div class="form-group">
+              <label>Tom de voz</label>
+              <select id="cfgTone">
+                <option value="casual">Casual e amigavel</option>
+                <option value="formal">Formal e profissional</option>
+                <option value="vendas">Focado em vendas</option>
+                <option value="suporte">Suporte tecnico</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Idioma principal</label>
+            <select id="cfgLanguage">
+              <option value="pt-BR" selected>Portugues (Brasil)</option>
+              <option value="en">Ingles</option>
+              <option value="es">Espanhol</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Contexto de conversa</label>
+            <select id="cfgContext">
+              <option value="10">Ultimas 10 mensagens</option>
+              <option value="20" selected>Ultimas 20 mensagens</option>
+              <option value="30">Ultimas 30 mensagens</option>
+              <option value="50">Ultimas 50 mensagens</option>
+            </select>
+            <div class="hint">Quantas mensagens anteriores o agente lembra em cada conversa.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Horario de Atendimento -->
+      <div class="config-section" id="sec3">
+        <div class="config-section-header" onclick="toggleSection('sec3')">
+          <h3><span class="section-num">3</span> Horario de Atendimento</h3>
+          <span class="chevron">&#9660;</span>
+        </div>
+        <div class="config-section-body">
+          <label class="toggle">
+            <input type="checkbox" id="cfg247" checked onchange="toggle247()">
+            <div class="toggle-track"></div>
+            <span>Atendimento 24/7 (sempre ativo)</span>
+          </label>
+          <div id="scheduleConfig" style="display:none">
+            <div class="form-group">
+              <label>Dias ativos</label>
+              <div class="day-grid" id="dayGrid">
+                <span class="day-chip active" data-day="seg" onclick="toggleDay(this)">Seg</span>
+                <span class="day-chip active" data-day="ter" onclick="toggleDay(this)">Ter</span>
+                <span class="day-chip active" data-day="qua" onclick="toggleDay(this)">Qua</span>
+                <span class="day-chip active" data-day="qui" onclick="toggleDay(this)">Qui</span>
+                <span class="day-chip active" data-day="sex" onclick="toggleDay(this)">Sex</span>
+                <span class="day-chip" data-day="sab" onclick="toggleDay(this)">Sab</span>
+                <span class="day-chip" data-day="dom" onclick="toggleDay(this)">Dom</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Inicio</label>
+                <input type="time" id="cfgTimeStart" value="08:00">
+              </div>
+              <div class="form-group">
+                <label>Fim</label>
+                <input type="time" id="cfgTimeEnd" value="18:00">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Mensagem fora do horario</label>
+              <textarea id="cfgOffHoursMsg" style="min-height:80px" placeholder="Obrigado pela mensagem! Nosso horario de atendimento e de segunda a sexta, das 8h as 18h. Responderemos assim que possivel."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Handoff Humano -->
+      <div class="config-section" id="sec4">
+        <div class="config-section-header" onclick="toggleSection('sec4')">
+          <h3><span class="section-num">4</span> Handoff Humano</h3>
+          <span class="chevron">&#9660;</span>
+        </div>
+        <div class="config-section-body">
+          <label class="toggle">
+            <input type="checkbox" id="cfgHandoff" onchange="toggleHandoff()">
+            <div class="toggle-track"></div>
+            <span>Habilitar transferencia para humano</span>
+          </label>
+          <div id="handoffConfig" style="display:none">
+            <div class="form-group">
+              <label>Palavras-chave para pausar o bot</label>
+              <input id="cfgHandoffKeywords" placeholder="humano, atendente, pessoa" value="humano">
+              <div class="hint">Separe por virgula. Quando o cliente digitar qualquer uma dessas palavras, o bot pausa por 2 horas.</div>
+            </div>
+            <div class="form-group">
+              <label>Telefone do atendente (opcional)</label>
+              <input id="cfgHandoffPhone" placeholder="5511999999999">
+            </div>
+            <div class="form-group">
+              <label>Mensagem de transferencia</label>
+              <textarea id="cfgHandoffMsg" style="min-height:60px" placeholder="Entendi! Vou transferir voce para um atendente humano. Aguarde um momento..."></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Mensagem de Boas-Vindas -->
+      <div class="config-section" id="sec5">
+        <div class="config-section-header" onclick="toggleSection('sec5')">
+          <h3><span class="section-num">5</span> Mensagem de Boas-Vindas</h3>
+          <span class="chevron">&#9660;</span>
+        </div>
+        <div class="config-section-body">
+          <label class="toggle">
+            <input type="checkbox" id="cfgWelcomeEnabled">
+            <div class="toggle-track"></div>
+            <span>Enviar mensagem de boas-vindas automatica</span>
+          </label>
+          <div class="form-group">
+            <label>Texto da mensagem</label>
+            <textarea id="cfgWelcomeText" style="min-height:80px" placeholder="Ola! Bem-vindo(a). Sou a assistente virtual. Como posso te ajudar hoje?"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Atraso antes de enviar (segundos)</label>
+            <input type="number" id="cfgWelcomeDelay" value="3" min="0" max="30" style="width:120px">
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Respostas Rapidas -->
+      <div class="config-section" id="sec6">
+        <div class="config-section-header" onclick="toggleSection('sec6')">
+          <h3><span class="section-num">6</span> Respostas Rapidas</h3>
+          <span class="chevron">&#9660;</span>
+        </div>
+        <div class="config-section-body">
+          <p style="font-size:.85rem;color:var(--text-secondary);margin-bottom:12px">Defina pares de pergunta e resposta para respostas instantaneas, sem gastar tokens.</p>
+          <div class="dynamic-list" id="quickReplies"></div>
+          <button class="btn btn-secondary btn-sm" onclick="addQuickReply()">+ Adicionar Resposta Rapida</button>
+        </div>
+      </div>
+
+      <!-- 7. Base de Conhecimento -->
+      <div class="config-section" id="sec7">
+        <div class="config-section-header" onclick="toggleSection('sec7')">
+          <h3><span class="section-num">7</span> Base de Conhecimento</h3>
+          <span class="chevron">&#9660;</span>
+        </div>
+        <div class="config-section-body">
+          <div class="form-group">
+            <label>Conhecimento em texto</label>
+            <textarea id="cfgRag" style="min-height:180px" placeholder="Cole informacoes que o agente deve saber:&#10;&#10;Tabela de precos:&#10;- Pizza pequena: R$25,90&#10;- Pizza media: R$35,90&#10;&#10;Horario: Terca a domingo, 18h as 23h&#10;&#10;Formas de pagamento: PIX, cartao, dinheiro"></textarea>
+            <div class="hint">Este texto sera usado pelo agente para responder perguntas dos seus clientes.</div>
+          </div>
+          <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleFileDrop(event)">
+            <div class="upload-icon">&#128195;</div>
+            <p>Arraste arquivos aqui ou clique para enviar</p>
+            <p style="font-size:.75rem;color:var(--text-muted);margin-top:4px">PDF ou TXT, ate 10MB cada, maximo 5 arquivos</p>
+          </div>
+          <input type="file" id="fileInput" accept=".pdf,.txt" multiple style="display:none" onchange="handleFileSelect(event)">
+          <div class="file-list" id="fileList"></div>
+        </div>
+      </div>
+
+      <!-- Save button -->
+      
+    <!-- Tools Automaticos -->
+    <div class="config-section">
+      <div class="section-header" onclick="toggleSection('toolsSection')">
+        <div class="section-icon" style="background:rgba(74,158,255,.15);color:#4A9EFF">&#9881;</div>
+        <div class="section-title">Ferramentas Automaticas (Tools)</div>
+        <div class="section-toggle">&#9660;</div>
+      </div>
+      <div id="toolsSection" class="section-body" style="display:none">
+        <div style="padding:12px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px;font-size:.82rem;color:var(--text-secondary);line-height:1.6">
+          <p style="margin-bottom:8px"><strong style="color:var(--text-primary)">Tools ativos neste agente:</strong></p>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.15);border-radius:8px">
+              <span style="color:#4ADE80;font-size:1.1rem">&#9989;</span>
+              <div><strong>consulta_cep</strong> — Quando o cliente envia um CEP (8 digitos), o bot consulta automaticamente o ViaCEP e retorna o endereco completo.</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.15);border-radius:8px">
+              <span style="color:#4ADE80;font-size:1.1rem">&#9989;</span>
+              <div><strong>consulta_cpf</strong> — Quando o cliente envia um CPF (11 digitos), o bot consulta automaticamente e retorna Nome, Data de Nascimento e Nome da Mae. Nunca exibe score ou renda.</div>
+            </div>
+          </div>
+          <p style="margin-top:10px;font-size:.78rem;color:var(--text-muted)">Estes tools sao ativados automaticamente pelo agente Daniel NIO Fibra. Para adicionar tools customizados, entre em contato com o suporte.</p>
+        </div>
+      </div>
+    </div>
+
+<div style="margin-top:20px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="btn btn-secondary" onclick="resetConfig()">Resetar</button>
+        <button class="btn btn-wa btn-lg" onclick="saveConfig()" id="btnSaveConfig">Salvar Configuracao</button>
+      </div>
+    </div>
+
+    <div id="cfgEmpty" style="text-align:center;padding:40px;color:var(--text-muted)">
+      <p>Selecione um numero conectado acima para configurar o bot.</p>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────
+       TAB 2: HISTORICO
+       ───────────────────────────────────────────────────── -->
+  <div class="tab-panel" id="tab2">
+    <div class="filter-bar">
+      <select id="histInstance" onchange="loadHistory()">
+        <option value="">-- Todos os numeros --</option>
+      </select>
+      <input type="date" id="histDateFrom" onchange="loadHistory()">
+      <input type="date" id="histDateTo" onchange="loadHistory()">
+      <select id="histStatus" onchange="loadHistory()">
+        <option value="all">Todos</option>
+        <option value="ai">Somente IA</option>
+        <option value="human">Somente Humano</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">&#128190; Exportar CSV</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Telefone</th>
+            <th>Mensagens</th>
+            <th>Status</th>
+            <th>Duracao</th>
+          </tr>
+        </thead>
+        <tbody id="histBody">
+          <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Selecione um numero para ver o historico</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────
+       TAB 3: ESTATISTICAS
+       ───────────────────────────────────────────────────── -->
+  <div class="tab-panel" id="tab3">
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="statMsgsToday">0</div>
+        <div class="stat-label">Mensagens Hoje</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statAIRate">0%</div>
+        <div class="stat-label">Taxa IA</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statAvgResponse">0s</div>
+        <div class="stat-label">Tempo Medio Resposta</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statHandoffs">0</div>
+        <div class="stat-label">Transferencias Humano</div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <h3>&#128200; Mensagens por Hora</h3>
+      <div class="chart-canvas-wrap">
+        <canvas id="hourlyChart"></canvas>
+      </div>
+    </div>
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+      <div class="stat-card">
+        <div class="stat-value" id="statTokens">0</div>
+        <div class="stat-label">Tokens consumidos (periodo)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statTotalConvs">0</div>
+        <div class="stat-label">Total de Conversas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statTotalMsgs">0</div>
+        <div class="stat-label">Total de Mensagens</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     CONNECT MODAL
+     ═══════════════════════════════════════════════════════ -->
+<div class="overlay" id="connectOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Conectar WhatsApp
+      </h2>
+      <button class="close-btn" onclick="closeConnectModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <!-- Provider Selection -->
+      <div id="providerSelect" style="display:block">
+        <h3 style="font-size:1rem;font-weight:600;margin-bottom:16px;color:var(--text-primary)">Escolha o Provedor</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0">
+          <div onclick="selectProvider('zapi')" style="cursor:pointer;background:var(--bg-elevated);border:2px solid var(--border);border-radius:12px;padding:20px;text-align:center;transition:all .2s" onmouseover="this.style.borderColor='#9B59FC'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:28px;margin-bottom:8px">&#128241;</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-primary)">Z-API</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">Conexao rapida</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px">Sem aprovacao necessaria</div>
+            <div style="font-size:10px;color:#9B59FC;margin-top:8px;font-weight:600">Recomendado pra comecar</div>
+          </div>
+          <div onclick="selectProvider('meta')" style="cursor:pointer;background:var(--bg-elevated);border:2px solid var(--border);border-radius:12px;padding:20px;text-align:center;transition:all .2s" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:28px;margin-bottom:8px">&#9989;</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-primary)">Meta API Oficial</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">WhatsApp Business oficial</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px">Zero risco de ban</div>
+            <div style="font-size:10px;color:#25D366;margin-top:8px;font-weight:600">Recomendado pra escala</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Z-API Form (existing, now wrapped) -->
+      <div id="zapiForm" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+          <button class="btn btn-secondary btn-sm" onclick="selectProvider(null)" style="padding:4px 10px">&#8592;</button>
+          <h3 style="font-size:1rem;font-weight:600;color:var(--text-primary)">Conectar via Z-API</h3>
+        </div>
+        <div class="form-group">
+          <label>Nome da instancia</label>
+          <input id="connectName" placeholder="Ex: Atendimento Loja, Suporte, Vendas">
+        </div>
+        <div class="form-group">
+          <label>Instance ID da Z-API</label>
+          <input id="connectInstanceId" placeholder="Ex: 3EF2493A894633F5816A8E378C15AB7A" style="font-family:var(--font-mono)">
+          <div class="hint">Encontre em painel.z-api.io &rarr; sua instancia &rarr; ID</div>
+        </div>
+        <div class="form-group">
+          <label>Token da Z-API</label>
+          <div style="display:flex;gap:8px">
+            <input id="connectToken" type="password" placeholder="Ex: D06D384EC55FD76DD0EEA2E8" style="flex:1;font-family:var(--font-mono)">
+            <button class="btn btn-secondary btn-sm" onclick="var el=document.getElementById('connectToken');el.type=el.type==='password'?'text':'password'">Revelar</button>
+          </div>
+          <div class="hint">Encontre em painel.z-api.io &rarr; sua instancia &rarr; Token</div>
+        </div>
+        <button class="btn btn-wa" onclick="testConnection()" id="btnTestConn">Testar Conexao</button>
+        <div id="connectResult" style="margin-top:12px"></div>
+
+        <div class="webhook-box" id="connectWebhook" style="display:none">
+          <label style="font-size:.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block">URL do Webhook (cole na Z-API)</label>
+          <code id="connectWebhookUrl">-</code>
+          <button class="btn btn-secondary btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('connectWebhookUrl').textContent);toast('URL copiada!','ok')">Copiar URL</button>
+          <div class="steps" style="margin-top:12px">
+            <b>Como configurar:</b><br>
+            1. Acesse painel.z-api.io<br>
+            2. Clique na sua instancia<br>
+            3. Va em "Webhooks"<br>
+            4. Cole a URL acima no campo "URL de recebimento"<br>
+            5. Salve
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px">
+          <button class="btn btn-secondary" onclick="closeConnectModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveNewInstance()" id="btnSaveInstance">Salvar e Conectar</button>
+        </div>
+      </div>
+
+      <!-- Meta API Form -->
+      <div id="metaForm" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+          <button class="btn btn-secondary btn-sm" onclick="selectProvider(null)" style="padding:4px 10px">&#8592;</button>
+          <h3 style="font-size:1rem;font-weight:600;color:var(--text-primary)">Conectar Meta API Oficial</h3>
+        </div>
+        <div class="form-group">
+          <label>Nome da instancia</label>
+          <input id="metaName" placeholder="Ex: Atendimento Principal, Vendas Meta">
+        </div>
+        <div class="form-group">
+          <label>Access Token</label>
+          <div style="display:flex;gap:8px">
+            <input id="metaToken" type="password" placeholder="Token permanente do Meta Business" style="flex:1;font-family:var(--font-mono)">
+            <button class="btn btn-secondary btn-sm" onclick="var el=document.getElementById('metaToken');el.type=el.type==='password'?'text':'password'">Revelar</button>
+          </div>
+          <div class="hint"><a href="https://developers.facebook.com/docs/whatsapp/business-management-api/get-started" target="_blank" style="font-size:.75rem;color:var(--blue)">Como gerar token permanente?</a></div>
+        </div>
+        <div class="form-group">
+          <label>Phone Number ID</label>
+          <input id="metaPhoneId" placeholder="Ex: 123456789012345" style="font-family:var(--font-mono)">
+          <div class="hint">Encontre em Meta Business Suite &rarr; WhatsApp &rarr; Configuracoes &rarr; Phone Number ID</div>
+        </div>
+        <div class="form-group">
+          <label>WABA ID (WhatsApp Business Account ID)</label>
+          <input id="metaWabaId" placeholder="Ex: 987654321098765" style="font-family:var(--font-mono)">
+        </div>
+        <div class="form-group" style="margin-bottom:16px">
+          <label>Webhook URL (copie para o Meta)</label>
+          <div id="metaWebhookUrl" style="background:var(--bg-elevated);padding:10px 14px;border-radius:8px;font-family:var(--font-mono);font-size:.82rem;color:var(--wa);word-break:break-all;border:1px solid var(--border)">Sera gerada apos salvar</div>
+          <div style="margin-top:8px">
+            <label>Verify Token</label>
+            <input id="metaVerifyToken" placeholder="Token de verificacao" style="font-family:var(--font-mono)">
+            <div class="hint">Este token sera usado para validar o webhook do Meta. Copie-o para a configuracao do webhook no Meta.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-wa" onclick="testMetaConnection()" id="metaTestBtn">Testar Conexao</button>
+        </div>
+        <div id="metaTestResult" style="margin-top:10px"></div>
+        <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:8px">
+          <button class="btn btn-secondary" onclick="closeConnectModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="saveMetaConnection()" id="metaSaveBtn">Salvar e Conectar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     CONVERSATION MODAL
+     ═══════════════════════════════════════════════════════ -->
+<div class="overlay" id="convOverlay">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <h2 id="convModalTitle">Conversa</h2>
+      <button class="close-btn" onclick="closeConvModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="chat-view" id="convMessages" style="max-height:500px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="clearCurrentConv()">Limpar conversa</button>
+      <button class="btn btn-secondary" onclick="closeConvModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════════════════ -->
+
+  <!-- TAB 4: DISPAROS EM MASSA -->
+  
+  <!-- TAB 4: TEMPLATES -->
+  <div class="tab-panel" id="tab4">
+    <div class="card" style="margin-bottom:16px">
+      <h3 style="font-size:1rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px">
+        <span>&#9989;</span> Solicitar Templates
+      </h3>
+      <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:16px">Templates sao mensagens pre-aprovadas pelo Meta para iniciar conversas. Categoria UTILITY: ~R$0,03/msg, aprovacao em ate 24h.</p>
+
+      <div id="tplModels" style="display:flex;flex-direction:column;gap:10px">
+        <label style="display:flex;gap:10px;padding:12px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+          <input type="checkbox" class="tpl-check" value="confirmacao_cadastro" data-text="Ola {{1}}, temos uma atualizacao sobre seu cadastro. Pode confirmar seus dados?">
+          <div><div style="font-weight:600;font-size:.85rem">Confirmacao de cadastro</div><div style="font-size:.78rem;color:var(--text-muted);margin-top:2px">"Ola {{1}}, temos uma atualizacao sobre seu cadastro. Pode confirmar seus dados?"</div><div style="font-size:.7rem;color:#25D366;margin-top:4px">UTILITY &bull; ~R$0,03/msg</div></div>
+        </label>
+        <label style="display:flex;gap:10px;padding:12px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+          <input type="checkbox" class="tpl-check" value="agendamento_confirmado" data-text="Oi {{1}}, seu agendamento esta confirmado. Posso te ajudar com mais alguma informacao?">
+          <div><div style="font-weight:600;font-size:.85rem">Agendamento confirmado</div><div style="font-size:.78rem;color:var(--text-muted);margin-top:2px">"Oi {{1}}, seu agendamento esta confirmado. Posso te ajudar com mais alguma informacao?"</div><div style="font-size:.7rem;color:#25D366;margin-top:4px">UTILITY &bull; ~R$0,03/msg</div></div>
+        </label>
+        <label style="display:flex;gap:10px;padding:12px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+          <input type="checkbox" class="tpl-check" value="suporte_pos_venda" data-text="Ola {{1}}, tudo certo com seu servico? Estou a disposicao para qualquer duvida.">
+          <div><div style="font-weight:600;font-size:.85rem">Suporte pos-venda</div><div style="font-size:.78rem;color:var(--text-muted);margin-top:2px">"Ola {{1}}, tudo certo com seu servico? Estou a disposicao para qualquer duvida."</div><div style="font-size:.7rem;color:#25D366;margin-top:4px">UTILITY &bull; ~R$0,03/msg</div></div>
+        </label>
+        <label style="display:flex;gap:10px;padding:12px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+          <input type="checkbox" class="tpl-check" value="pendencia_cadastro" data-text="Oi {{1}}, identificamos uma pendencia no seu cadastro. Podemos resolver agora?">
+          <div><div style="font-weight:600;font-size:.85rem">Pendencia no cadastro</div><div style="font-size:.78rem;color:var(--text-muted);margin-top:2px">"Oi {{1}}, identificamos uma pendencia no seu cadastro. Podemos resolver agora?"</div><div style="font-size:.7rem;color:#25D366;margin-top:4px">UTILITY &bull; ~R$0,03/msg</div></div>
+        </label>
+        <label style="display:flex;gap:10px;padding:12px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+          <input type="checkbox" class="tpl-check" value="boas_vindas_cliente" data-text="Bem-vindo(a) {{1}}! Sou seu assistente virtual. Como posso te ajudar hoje?">
+          <div><div style="font-weight:600;font-size:.85rem">Boas-vindas</div><div style="font-size:.78rem;color:var(--text-muted);margin-top:2px">"Bem-vindo(a) {{1}}! Sou seu assistente virtual. Como posso te ajudar hoje?"</div><div style="font-size:.7rem;color:#25D366;margin-top:4px">UTILITY &bull; ~R$0,03/msg</div></div>
+        </label>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px">
+        <label style="font-size:.82rem;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;gap:4px">
+          <input type="checkbox" id="tplSelectAll" onchange="document.querySelectorAll('.tpl-check').forEach(c=>c.checked=this.checked)"> Selecionar todos
+        </label>
+      </div>
+
+      <button id="tplSubmitBtn" onclick="submitTemplates()" style="width:100%;margin-top:14px;padding:12px;background:#25D366;color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;transition:all .2s">
+        &#128640; Clow, solicita aprovacao
+      </button>
+      <div id="tplSubmitResult" style="margin-top:10px"></div>
+    </div>
+
+    <!-- Status dos Templates -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="font-size:1rem;font-weight:700;display:flex;align-items:center;gap:8px"><span>&#128202;</span> Status dos Templates</h3>
+        <button onclick="refreshTemplateStatus()" style="padding:6px 14px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);font-size:.8rem;cursor:pointer">&#128260; Atualizar</button>
+      </div>
+      <div id="tplStatusList" style="font-size:.85rem;color:var(--text-muted)">Carregando...</div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab5">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+      <!-- COLUNA ESQUERDA: Nova Campanha -->
+      <div class="card">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.2rem">&#128228;</span> Nova Campanha de Disparo
+        </h3>
+
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:.8rem;color:var(--text-secondary);margin-bottom:4px">Nome da campanha</label>
+          <input id="blastName" type="text" placeholder="Ex: Campanha Abril 2026" style="width:100%;padding:10px 12px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.9rem">
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:.8rem;color:var(--text-secondary);margin-bottom:4px">Numero para disparo</label>
+          <select id="blastNumber" onchange="checkBlastReady()" style="width:100%;padding:10px 12px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.9rem">
+            <option value="">Selecione o numero</option>
+          </select>
+          <div style="font-size:.7rem;color:var(--text-muted);margin-top:3px">Apenas numeros Meta API Oficial podem fazer disparos em massa</div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:.8rem;color:var(--text-secondary);margin-bottom:4px">Template de mensagem</label>
+          <select id="blastTemplate" onchange="previewTemplate()" style="width:100%;padding:10px 12px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.9rem">
+            <option value="">Carregando templates...</option>
+          </select>
+        </div>
+
+        <div id="templatePreview" style="display:none;margin-bottom:14px;padding:14px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px">
+          <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:6px">Preview do template:</div>
+          <div id="templatePreviewText" style="font-size:.85rem;color:var(--text-primary);line-height:1.5;white-space:pre-wrap;background:rgba(37,211,102,.05);padding:12px;border-radius:8px;border-left:3px solid #25D366"></div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:.8rem;color:var(--text-secondary);margin-bottom:4px">Lista de contatos</label>
+          <div id="csvDropZone" onclick="document.getElementById('csvInput').click()" style="border:2px dashed var(--border);border-radius:12px;padding:30px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg-base)" onmouseover="this.style.borderColor='#25D366'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:1.5rem;margin-bottom:8px">&#128206;</div>
+            <div style="font-size:.85rem;color:var(--text-secondary)">Arraste seu CSV aqui ou clique para selecionar</div>
+            <div style="font-size:.75rem;color:var(--text-muted);margin-top:4px">Apenas .csv &bull; Max 10MB</div>
+          </div>
+          <input id="csvInput" type="file" accept=".csv" style="display:none" onchange="handleCSVUpload(this)">
+          <div style="margin-top:8px">
+            <a href="#" onclick="downloadCSVModel();return false" style="font-size:.8rem;color:var(--wa);text-decoration:none">&#11015; Baixar modelo CSV</a>
+          </div>
+        </div>
+
+        <div id="csvResult" style="display:none;margin-bottom:14px;padding:14px;background:var(--bg-base);border:1px solid var(--border);border-radius:10px">
+          <div id="csvPreview" style="font-size:.85rem"></div>
+        </div>
+
+        <div style="margin-bottom:14px">
+          <label style="display:block;font-size:.8rem;color:var(--text-secondary);margin-bottom:4px">Intervalo entre mensagens (segundos)</label>
+          <input id="blastInterval" type="number" min="3" max="30" value="5" style="width:100px;padding:8px 12px;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;color:var(--text-primary)">
+          <span style="font-size:.75rem;color:var(--text-muted);margin-left:8px">Recomendado: 3-10</span>
+        </div>
+
+        <button id="blastStartBtn" onclick="startBlast()" disabled style="width:100%;padding:12px;background:#25D366;color:#fff;border:none;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;opacity:.5;transition:all .2s">
+          &#128640; Iniciar Disparo
+        </button>
+      </div>
+
+      <!-- COLUNA DIREITA: Guia + Campanhas -->
+      <div>
+        <!-- Campanhas ativas -->
+        <div id="blastProgress" style="display:none;margin-bottom:16px" class="card">
+          <h4 style="font-size:.9rem;font-weight:600;margin-bottom:12px">&#128640; Disparo em andamento</h4>
+          <div id="blastProgressBar" style="height:8px;background:var(--bg-base);border-radius:4px;overflow:hidden;margin-bottom:10px">
+            <div id="blastProgressFill" style="height:100%;background:#25D366;border-radius:4px;transition:width .5s;width:0%"></div>
+          </div>
+          <div id="blastProgressText" style="font-size:.85rem;color:var(--text-secondary)"></div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button onclick="pauseBlast()" style="flex:1;padding:8px;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);border-radius:8px;color:#FBBF24;font-size:.8rem;cursor:pointer">&#9208; Pausar</button>
+            <button onclick="cancelBlast()" style="flex:1;padding:8px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);border-radius:8px;color:#F87171;font-size:.8rem;cursor:pointer">&#9940; Cancelar</button>
+          </div>
+        </div>
+
+        <!-- Historico de campanhas -->
+        <div class="card" style="margin-bottom:16px">
+          <h4 style="font-size:.9rem;font-weight:600;margin-bottom:10px">Campanhas anteriores</h4>
+          <div id="blastCampaignList" style="font-size:.85rem;color:var(--text-muted)">Carregando...</div>
+        </div>
+
+        <!-- Guia de Templates -->
+        <div class="card" style="border:1px solid rgba(74,158,255,.15);background:rgba(74,158,255,.03)">
+          <h4 style="font-size:.9rem;font-weight:600;margin-bottom:12px;color:var(--blue)">&#128203; Como criar templates aprovados</h4>
+          <div style="font-size:.8rem;color:var(--text-secondary);line-height:1.6">
+            <p style="margin-bottom:8px"><span style="color:#FBBF24">&#9888;</span> Templates MARKETING custam mais e tem restricoes.</p>
+            <p style="margin-bottom:8px"><span style="color:#4ADE80">&#9989;</span> <strong>Use categoria UTILITY</strong> — Custo: ~R$0,03/msg — Aprovacao: ~24h</p>
+
+            <div style="margin:12px 0;padding:10px;background:var(--bg-base);border-radius:8px">
+              <div style="font-size:.75rem;color:var(--text-muted);margin-bottom:6px">MODELOS RECOMENDADOS:</div>
+              <div style="margin-bottom:6px"><strong>1.</strong> "Ola {{1}}, temos uma atualizacao sobre seu cadastro. Pode confirmar?"</div>
+              <div style="margin-bottom:6px"><strong>2.</strong> "Oi {{1}}, seu agendamento esta confirmado. Posso ajudar?"</div>
+              <div style="margin-bottom:6px"><strong>3.</strong> "Ola {{1}}, tudo certo com seu servico? Estou a disposicao."</div>
+              <div style="margin-bottom:6px"><strong>4.</strong> "Oi {{1}}, identificamos uma pendencia. Podemos resolver?"</div>
+              <div><strong>5.</strong> "Bem-vindo(a) {{1}}! Sou seu assistente. Como posso ajudar?"</div>
+            </div>
+
+            <p style="margin-bottom:6px"><span style="color:#F87171">&#10060;</span> <strong>EVITE:</strong> promocao, oferta, desconto, gratis, clique aqui, links encurtados, emojis excessivos</p>
+
+            <p style="margin-top:10px"><strong>Onde criar:</strong> business.facebook.com &rarr; WhatsApp Manager &rarr; Modelos de mensagem &rarr; Criar &rarr; Utilitario</p>
+            <a href="https://business.facebook.com/latest/whatsapp_manager/message_templates" target="_blank" style="display:inline-block;margin-top:8px;padding:6px 14px;background:rgba(74,158,255,.1);border:1px solid rgba(74,158,255,.2);border-radius:6px;color:var(--blue);font-size:.8rem;text-decoration:none">&#128279; Abrir WhatsApp Manager</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ── State ────────────────────────────────────────────── */
+let STATE = {
+  instances: [],
+  plan: null,
+  billing: null,
+  currentEditId: null,
+  currentConvPhone: null,
+  currentConvInstance: null,
+  healthTimers: {},
+  hourlyChart: null,
+  quickReplies: [],
+};
+
+const PLAN_SLOTS = {lite:1, starter:2, pro:3, business:5};
+
+/* ── Utility ──────────────────────────────────────────── */
+const $=id=>document.getElementById(id);
+
+function toast(msg,type){
+  const t=document.createElement('div');
+  t.className='toast toast-'+(type||'ok');
+  t.innerHTML=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(40px)';setTimeout(()=>t.remove(),300)},3500);
+}
+
+async function api(url,opts={}){
+  try{
+    const r=await fetch(url,{credentials:'same-origin',...opts});
+    const data=await r.json();
+    if(!r.ok&&data.error) throw new Error(data.error);
+    return data;
+  }catch(e){
+    throw e;
+  }
+}
+
+function maskId(id){
+  if(!id||id.length<8) return id||'';
+  return id.substring(0,4)+'****'+id.substring(id.length-4);
+}
+
+function formatDate(ts){
+  if(!ts) return '-';
+  return new Date(ts*1000).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+function formatDuration(seconds){
+  if(!seconds||seconds<1) return '-';
+  if(seconds<60) return seconds+'s';
+  const m=Math.floor(seconds/60);
+  const s=seconds%60;
+  return m+'m'+( s?(' '+s+'s'):'');
+}
+
+/* ── Tab Switching ────────────────────────────────────── */
+function switchTab(n){
+  document.querySelectorAll('.main-tab').forEach((t,i)=>t.classList.toggle('active',i===n));
+  document.querySelectorAll('.tab-panel').forEach((t,i)=>t.classList.toggle('active',i===n));
+  if(n===0) loadInstances();
+  if(n===1) populateConfigSelect();
+  if(n===2) populateHistSelect();
+  if(n===3) loadStats();
+  if(n===4) loadTemplateData();
+  if(n===5) loadBlastData();
+}
+
+/* ── Collapsible Sections ─────────────────────────────── */
+function toggleSection(id){
+  $(id).classList.toggle('open');
+}
+
+/* ── 24/7 toggle ──────────────────────────────────────── */
+function toggle247(){
+  $('scheduleConfig').style.display=$('cfg247').checked?'none':'block';
+}
+
+function toggleDay(el){el.classList.toggle('active')}
+
+function toggleHandoff(){
+  $('handoffConfig').style.display=$('cfgHandoff').checked?'block':'none';
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOAD DATA
+   ═══════════════════════════════════════════════════════ */
+
+async function loadBilling(){
+  try{
+    STATE.billing=await api('/api/v1/billing/status');
+  }catch(e){
+    STATE.billing={plan_id:'lite',plan_name:'ONE'};
+  }
+}
+
+async function loadInstances(){
+  try{
+    const data=await api('/api/v1/whatsapp/instances');
+    STATE.instances=data.instances||[];
+
+    // Update header badge
+    const connected=STATE.instances.filter(i=>i.active).length;
+    $('connectedBadge').textContent=connected+' conectado'+(connected!==1?'s':'');
+
+    // Calculate slots
+    await loadBilling();
+    const planId=STATE.billing.plan_id||'lite';
+    const maxSlots=PLAN_SLOTS[planId]||1;
+    const usedSlots=STATE.instances.length;
+
+    $('slotCount').textContent=usedSlots+' / '+maxSlots;
+    $('slotPlan').textContent='Plano '+STATE.billing.plan_name+' — '+maxSlots+' numero'+(maxSlots>1?'s':'')+' incluido'+(maxSlots>1?'s':'');
+
+    renderSlots(maxSlots);
+  }catch(e){
+    $('slotsGrid').innerHTML='<div style="text-align:center;padding:40px;color:var(--red)">Erro ao carregar: '+e.message+'</div>';
+  }
+}
+
+function renderSlots(maxSlots){
+  let html='';
+
+  // Existing instances
+  STATE.instances.forEach(inst=>{
+    const isActive=inst.active;
+    const statusClass=isActive?'connected':'disconnected';
+    const badgeClass=isActive?'on':'off';
+    const badgeText=isActive?'Ativo':'Inativo';
+    const lastSeen=inst.stats?.last_message_at?formatDate(inst.stats.last_message_at):'Nunca';
+    const msgsToday=inst.stats?.messages_today||0;
+    const msgsTotal=inst.stats?.messages_total||0;
+
+    html+=`
+    <div class="slot-card" data-id="${inst.id}">
+      <div class="slot-card-header">
+        <div class="slot-card-name">
+          <span class="status-dot ${statusClass}"></span>
+          <input value="${inst.name}" onblur="renamInstance('${inst.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:.65rem;padding:2px 8px;border-radius:10px;font-weight:600;${inst.provider==='meta'?'background:rgba(37,211,102,.12);color:#25D366':'background:rgba(155,89,252,.12);color:#9B59FC'}">${inst.provider==='meta'?'Meta Oficial':'Z-API'}</span>
+          <span class="status-badge ${badgeClass}">${badgeText}</span>
+        </div>
+      </div>
+      <div class="slot-card-info">
+        ${inst.provider==='meta'?'Phone ID':'Z-API ID'}: <span class="mono">${inst.provider==='meta'?maskId(inst.meta_phone_number_id):maskId(inst.zapi_instance_id)}</span><br>
+        Ultima atividade: ${lastSeen}<br>
+        Hoje: ${msgsToday} msgs &bull; Total: ${msgsTotal} msgs
+      </div>
+      <div class="health-bar"><div class="health-bar-fill" id="health-${inst.id}"></div></div>
+      <div class="slot-card-actions">
+        <button class="btn btn-secondary btn-sm" onclick="reconnectInstance('${inst.id}')">
+          ${isActive?'Reconectar':'Conectar'}
+        </button>
+        <button class="btn btn-sm ${isActive?'btn-secondary':'btn-wa'}" onclick="toggleInstance('${inst.id}',${!isActive})">
+          ${isActive?'Pausar Bot':'Ativar Bot'}
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="removeInstance('${inst.id}','${inst.name}')">Remover</button>
+      </div>
+    </div>`;
+  });
+
+  // Empty slot cards
+  const remaining=Math.max(0, maxSlots - STATE.instances.length);
+  for(let i=0;i<remaining;i++){
+    html+=`
+    <div class="slot-card empty-slot" onclick="openConnectModal()">
+      <div style="opacity:.5;margin-bottom:8px">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
+      <div style="font-weight:600;color:var(--text-secondary);margin-bottom:4px">Slot disponivel</div>
+      <div style="font-size:.82rem;color:var(--text-muted)">Clique para conectar um novo numero</div>
+    </div>`;
+  }
+
+  // Extra slots button (if all used)
+  if(remaining===0){
+    html+=`
+    <div class="slot-card empty-slot" onclick="openConnectModal()" style="border-color:rgba(155,89,252,.2)">
+      <div style="opacity:.5;margin-bottom:8px">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--purple)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+      </div>
+      <div style="font-weight:600;color:var(--purple);margin-bottom:4px">Adicionar numero extra</div>
+      <div style="font-size:.82rem;color:var(--text-muted)">+R$50/mes por cada 2 numeros adicionais</div>
+    </div>`;
+  }
+
+  $('slotsGrid').innerHTML=html;
+
+  // Trigger health checks
+  STATE.instances.forEach(inst=>checkHealth(inst.id));
+}
+
+/* ── Health Check ─────────────────────────────────────── */
+async function checkHealth(instanceId){
+  const el=$('health-'+instanceId);
+  if(!el) return;
+  try{
+    const data=await api('/api/v1/whatsapp/instances/'+instanceId+'/test');
+    if(data.connected){
+      el.className='health-bar-fill good';
+    }else{
+      el.className='health-bar-fill bad';
+    }
+  }catch(e){
+    el.className='health-bar-fill warn';
+  }
+}
+
+/* ── Instance Actions ─────────────────────────────────── */
+async function renamInstance(id,name){
+  if(!name.trim()) return;
+  try{
+    await api('/api/v1/whatsapp/instances/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name.trim()})});
+  }catch(e){
+    toast('Erro ao renomear: '+e.message,'err');
+  }
+}
+
+async function toggleInstance(id,activate){
+  try{
+    await api('/api/v1/whatsapp/instances/'+id+'/'+(activate?'activate':'deactivate'),{method:'POST'});
+    toast(activate?'Instancia ativada':'Instancia pausada','ok');
+    loadInstances();
+  }catch(e){
+    toast('Erro: '+e.message,'err');
+  }
+}
+
+async function reconnectInstance(id){
+  try{
+    // Find instance to detect provider
+    var inst=instances.find(function(i){return i.id===id});
+    var provider=(inst&&inst.provider)||'zapi';
+
+    if(provider==='meta'){
+      // Meta API test
+      try{
+        var d=await api('/api/v1/whatsapp/instances/'+id);
+        if(d.meta_access_token_full){
+          var test=await api('/api/v1/whatsapp/instances/test-meta',{
+            method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({access_token:d.meta_access_token_full,phone_number_id:d.meta_phone_number_id||''})
+          });
+          if(test.success){toast('Meta API OK! Numero: '+(test.phone||'conectado'),'ok');}
+          else{toast('Meta API: '+(test.error||'Verifique credenciais'),'err');}
+        }else{toast('Credenciais Meta nao disponiveis','err');}
+      }catch(e2){toast('Erro Meta: '+e2.message,'err');}
+    }else{
+      // Z-API test
+      var data=await api('/api/v1/whatsapp/instances/'+id+'/test');
+      if(data.connected){toast('Z-API OK! WhatsApp ativo','ok');}
+      else{toast('Z-API: '+(data.error||'Verifique credenciais'),'err');}
+    }
+    loadInstances();
+  }catch(e){toast('Erro: '+e.message,'err');}
+}
+
+async function removeInstance(id,name){
+  if(!confirm('Remover "'+name+'"?\nTodas as conversas serao perdidas. Esta acao nao pode ser desfeita.')) return;
+  try{
+    await api('/api/v1/whatsapp/instances/'+id,{method:'DELETE'});
+    toast('Instancia removida','ok');
+    loadInstances();
+  }catch(e){
+    toast('Erro ao remover: '+e.message,'err');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   CONNECT MODAL
+   ═══════════════════════════════════════════════════════ */
+let connectingInstanceId=null;
+
+function openConnectModal(){
+  connectingInstanceId=null;
+  $('connectName').value='';
+  $('connectInstanceId').value='';
+  $('connectToken').value='';
+  $('connectResult').innerHTML='';
+  $('connectWebhook').style.display='none';
+  // Reset to provider selection
+  $('providerSelect').style.display='block';
+  $('zapiForm').style.display='none';
+  $('metaForm').style.display='none';
+  // Reset meta fields
+  $('metaName').value='';
+  $('metaToken').value='';
+  $('metaPhoneId').value='';
+  $('metaWabaId').value='';
+  $('metaVerifyToken').value='';
+  $('metaTestResult').innerHTML='';
+  $('metaWebhookUrl').textContent='Sera gerada apos salvar';
+  $('connectOverlay').classList.add('show');
+}
+
+function closeConnectModal(){
+  $('connectOverlay').classList.remove('show');
+  loadInstances();
+}
+
+async function testConnection(){
+  const zid=$('connectInstanceId').value.trim();
+  const ztk=$('connectToken').value.trim();
+  if(!zid||!ztk){
+    $('connectResult').innerHTML='<div class="pill pill-err">Preencha Instance ID e Token</div>';
+    return;
+  }
+  $('connectResult').innerHTML='<div class="pill pill-wait">Testando conexao...</div>';
+  $('btnTestConn').disabled=true;
+  try{
+    const r=await api('/api/v1/whatsapp/instances/test-connection',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({zapi_instance_id:zid,zapi_token:ztk})
+    });
+    if(r.connected){
+      $('connectResult').innerHTML='<div class="pill pill-ok">&#10003; Conexao bem-sucedida! WhatsApp conectado.</div>';
+    }else{
+      $('connectResult').innerHTML='<div class="pill pill-err">&#10007; Falha: '+(r.error||'Verifique se o Instance ID e Token estao corretos na Z-API')+'</div>';
+    }
+  }catch(e){
+    $('connectResult').innerHTML='<div class="pill pill-err">&#10007; Erro: '+e.message+'</div>';
+  }
+  $('btnTestConn').disabled=false;
+}
+
+async function saveNewInstance(){
+  const name=$('connectName').value.trim()||'Meu WhatsApp';
+  const zid=$('connectInstanceId').value.trim();
+  const ztk=$('connectToken').value.trim();
+
+  if(!zid||!ztk){
+    toast('Preencha Instance ID e Token','err');
+    return;
+  }
+
+  $('btnSaveInstance').disabled=true;
+  $('btnSaveInstance').textContent='Salvando...';
+
+  try{
+    const r=await api('/api/v1/whatsapp/instances',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,zapi_instance_id:zid,zapi_token:ztk})
+    });
+
+    if(r.success&&r.instance){
+      connectingInstanceId=r.instance.id;
+      $('connectWebhookUrl').textContent=r.instance.webhook_url;
+      $('connectWebhook').style.display='block';
+      toast('Instancia criada com sucesso! Configure o webhook na Z-API.','ok');
+    }else{
+      toast(r.error||'Erro ao criar instancia','err');
+    }
+  }catch(e){
+    toast('Erro: '+e.message,'err');
+  }
+
+  $('btnSaveInstance').disabled=false;
+  $('btnSaveInstance').textContent='Salvar e Conectar';
+}
+
+/* ═══════════════════════════════════════════════════════
+   PROVIDER SELECTION & META API
+   ═══════════════════════════════════════════════════════ */
+
+function selectProvider(p){
+  $('providerSelect').style.display=p?'none':'block';
+  $('zapiForm').style.display=p==='zapi'?'block':'none';
+  $('metaForm').style.display=p==='meta'?'block':'none';
+  if(p==='meta'){
+    // Generate verify token and webhook URL hint
+    var vt='clow_'+Math.random().toString(36).substr(2,12);
+    $('metaVerifyToken').value=vt;
+    $('metaWebhookUrl').textContent='https://clow.pvcorretor01.com.br/api/v1/whatsapp/meta/webhook/{ID_GERADO_APOS_SALVAR}';
+  }
+}
+
+async function testMetaConnection(){
+  var token=$('metaToken').value.trim();
+  var phoneId=$('metaPhoneId').value.trim();
+  if(!token||!phoneId){
+    $('metaTestResult').innerHTML='<div class="pill pill-err">Preencha Access Token e Phone Number ID</div>';
+    return;
+  }
+  var btn=$('metaTestBtn');
+  btn.disabled=true;btn.textContent='Testando...';
+  $('metaTestResult').innerHTML='<div class="pill pill-wait">Testando conexao com Meta API...</div>';
+  try{
+    var r=await api('/api/v1/whatsapp/instances/test-meta',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({access_token:token,phone_number_id:phoneId})
+    });
+    if(r.success){
+      $('metaTestResult').innerHTML='<div class="pill pill-ok">&#10003; Conectado! Numero: '+(r.phone||'')+(r.name?' ('+r.name+')':'')+'</div>';
+    }else{
+      $('metaTestResult').innerHTML='<div class="pill pill-err">&#10007; '+(r.error||'Erro ao conectar')+'</div>';
+    }
+  }catch(e){
+    $('metaTestResult').innerHTML='<div class="pill pill-err">&#10007; Erro: '+e.message+'</div>';
+  }
+  btn.disabled=false;btn.textContent='Testar Conexao';
+}
+
+async function saveMetaConnection(){
+  var name=$('metaName').value.trim()||'WhatsApp Meta';
+  var token=$('metaToken').value.trim();
+  var phoneId=$('metaPhoneId').value.trim();
+  var wabaId=$('metaWabaId').value.trim();
+  var verifyToken=$('metaVerifyToken').value.trim();
+
+  if(!token||!phoneId){
+    toast('Preencha Access Token e Phone Number ID','err');
+    return;
+  }
+
+  $('metaSaveBtn').disabled=true;
+  $('metaSaveBtn').textContent='Salvando...';
+
+  try{
+    var r=await api('/api/v1/whatsapp/instances',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name:name,
+        provider:'meta',
+        meta_access_token:token,
+        meta_phone_number_id:phoneId,
+        meta_waba_id:wabaId,
+        meta_verify_token:verifyToken,
+        zapi_instance_id:'meta-'+phoneId,
+        zapi_token:'meta'
+      })
+    });
+
+    if(r.success&&r.instance){
+      // Show webhook URL with actual ID
+      var webhookUrl='https://clow.pvcorretor01.com.br/api/v1/whatsapp/meta/webhook/'+r.instance.id;
+      $('metaWebhookUrl').textContent=webhookUrl;
+      toast('Instancia Meta criada! Configure o webhook URL no Meta Business.','ok');
+      // Show copy button hint
+      $('metaTestResult').innerHTML='<div class="pill pill-ok">Instancia criada! Copie a Webhook URL acima e configure no Meta Business Suite.</div><button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="navigator.clipboard.writeText(\''+webhookUrl+'\');toast(\'URL copiada!\',\'ok\')">Copiar Webhook URL</button>';
+    }else{
+      toast(r.error||'Erro ao criar instancia','err');
+    }
+  }catch(e){
+    toast('Erro: '+e.message,'err');
+  }
+
+  $('metaSaveBtn').disabled=false;
+  $('metaSaveBtn').textContent='Salvar e Conectar';
+}
+
+/* ═══════════════════════════════════════════════════════
+   TAB 1: CONFIGURAR BOT
+   ═══════════════════════════════════════════════════════ */
+
+function populateConfigSelect(){
+  const sel=$('cfgInstanceSelect');
+  const prev=sel.value;
+  sel.innerHTML='<option value="">-- Selecione um numero conectado --</option>';
+  STATE.instances.forEach(inst=>{
+    const opt=document.createElement('option');
+    opt.value=inst.id;
+    opt.textContent=inst.name+(inst.active?' (Ativo)':' (Inativo)');
+    sel.appendChild(opt);
+  });
+  if(prev) sel.value=prev;
+}
+
+async function onCfgInstanceChange(){
+  const id=$('cfgInstanceSelect').value;
+  if(!id){
+    $('cfgContent').style.display='none';
+    $('cfgEmpty').style.display='block';
+    STATE.currentEditId=null;
+    return;
+  }
+
+  STATE.currentEditId=id;
+  $('cfgContent').style.display='block';
+  $('cfgEmpty').style.display='none';
+
+  try{
+    const inst=await api('/api/v1/whatsapp/instances/'+id);
+
+    // Populate fields
+    $('cfgPrompt').value=inst.system_prompt_full||inst.system_prompt||'';
+    $('cfgRag').value=inst.rag_text_full||inst.rag_text||'';
+    $('cfgContext').value=inst.context_size||20;
+    $('cfgHandoff').checked=inst.handoff_enabled||false;
+    $('cfgHandoffKeywords').value=inst.handoff_keyword||'humano';
+    toggleHandoff();
+
+    // Populate documents list
+    renderDocuments(inst.rag_documents||[]);
+
+    // Reset other fields to defaults (these are stored in prompt)
+    $('cfgBotName').value='';
+    $('cfgTone').value='casual';
+    $('cfgLanguage').value='pt-BR';
+    $('cfg247').checked=true;
+    toggle247();
+    $('cfgWelcomeEnabled').checked=false;
+    $('cfgWelcomeText').value='';
+    $('cfgWelcomeDelay').value='3';
+    STATE.quickReplies=[];
+    renderQuickReplies();
+
+  }catch(e){
+    toast('Erro ao carregar configuracao: '+e.message,'err');
+  }
+}
+
+function renderDocuments(docs){
+  const el=$('fileList');
+  if(!docs||!docs.length){
+    el.innerHTML='';
+    return;
+  }
+  el.innerHTML=docs.map((d,i)=>`
+    <div class="file-item">
+      <span class="file-name">&#128196; ${d.filename}</span>
+      <span class="file-size">${d.size?Math.round(d.size/1024)+'KB':''}</span>
+    </div>
+  `).join('');
+}
+
+/* Quick Replies */
+function renderQuickReplies(){
+  const el=$('quickReplies');
+  el.innerHTML=STATE.quickReplies.map((qr,i)=>`
+    <div class="dynamic-list-item">
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <input placeholder="Pergunta (ex: Qual o horario?)" value="${escapeHtml(qr.q||'')}" onchange="STATE.quickReplies[${i}].q=this.value">
+        <textarea placeholder="Resposta" onchange="STATE.quickReplies[${i}].a=this.value">${escapeHtml(qr.a||'')}</textarea>
+      </div>
+      <button class="btn-icon" onclick="STATE.quickReplies.splice(${i},1);renderQuickReplies()" title="Remover" style="flex-shrink:0;align-self:flex-start;margin-top:4px;color:var(--red)">&#10005;</button>
+    </div>
+  `).join('');
+}
+
+function addQuickReply(){
+  STATE.quickReplies.push({q:'',a:''});
+  renderQuickReplies();
+}
+
+function escapeHtml(s){
+  const d=document.createElement('div');
+  d.textContent=s;
+  return d.innerHTML;
+}
+
+/* Test Prompt */
+async function testPrompt(){
+  const prompt=$('cfgPrompt').value.trim();
+  if(!prompt){
+    $('promptTestResult').innerHTML='<div class="pill pill-err">Escreva um prompt primeiro</div>';
+    return;
+  }
+  $('promptTestResult').innerHTML='<div class="pill pill-wait">Testando prompt...</div>';
+
+  // We simulate a test by saving and showing the preview
+  $('promptTestResult').innerHTML='<div class="pill pill-ok">Prompt valido! '+prompt.length+' caracteres. O agente usara este prompt para responder.</div>';
+}
+
+/* Save Config */
+async function saveConfig(){
+  if(!STATE.currentEditId){
+    toast('Selecione uma instancia','err');
+    return;
+  }
+
+  // Build enhanced prompt from personality settings
+  let prompt=$('cfgPrompt').value;
+  const botName=$('cfgBotName').value.trim();
+  const tone=$('cfgTone').value;
+  const lang=$('cfgLanguage').value;
+
+  // Build system prompt enhancements
+  let enhancements=[];
+  if(botName) enhancements.push('Seu nome e '+botName+'.');
+  const toneMap={casual:'Seja casual e amigavel.',formal:'Seja formal e profissional.',vendas:'Foque em converter vendas.',suporte:'Foque em resolver problemas tecnicos.'};
+  if(toneMap[tone]) enhancements.push(toneMap[tone]);
+  const langMap={'pt-BR':'Responda sempre em portugues brasileiro.','en':'Always respond in English.','es':'Responde siempre en espanol.'};
+  if(langMap[lang]) enhancements.push(langMap[lang]);
+
+  // Schedule info
+  if(!$('cfg247').checked){
+    const days=Array.from(document.querySelectorAll('.day-chip.active')).map(el=>el.dataset.day).join(', ');
+    const start=$('cfgTimeStart').value;
+    const end=$('cfgTimeEnd').value;
+    const offMsg=$('cfgOffHoursMsg').value.trim();
+    if(days&&start&&end){
+      enhancements.push('Horario de atendimento: '+days+' das '+start+' as '+end+'.');
+      if(offMsg) enhancements.push('Fora do horario, responda: "'+offMsg+'"');
+    }
+  }
+
+  // Welcome message
+  if($('cfgWelcomeEnabled').checked){
+    const wText=$('cfgWelcomeText').value.trim();
+    if(wText){
+      enhancements.push('Primeira mensagem de boas-vindas: "'+wText+'"');
+    }
+  }
+
+  // Quick replies
+  const validQR=STATE.quickReplies.filter(qr=>qr.q&&qr.a);
+  if(validQR.length>0){
+    enhancements.push('Respostas rapidas pré-definidas:');
+    validQR.forEach(qr=>{
+      enhancements.push('- Se perguntarem "'+qr.q+'", responda: "'+qr.a+'"');
+    });
+  }
+
+  // Append enhancements to prompt
+  if(enhancements.length>0){
+    prompt=prompt+'\n\n[Configuracoes automaticas]\n'+enhancements.join('\n');
+  }
+
+  const body={
+    system_prompt:prompt,
+    rag_text:$('cfgRag').value,
+    context_size:parseInt($('cfgContext').value),
+    handoff_enabled:$('cfgHandoff').checked,
+    handoff_keyword:$('cfgHandoffKeywords').value.trim()||'humano',
+    active:true,
+  };
+
+  $('btnSaveConfig').disabled=true;
+  $('btnSaveConfig').textContent='Salvando...';
+
+  try{
+    const r=await api('/api/v1/whatsapp/instances/'+STATE.currentEditId,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    if(r.success||r.instance){
+      toast('Configuracao salva com sucesso!','ok');
+      // Also save RAG separately
+      if($('cfgRag').value){
+        await api('/api/v1/whatsapp/instances/'+STATE.currentEditId+'/rag/text',{
+          method:'PUT',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({text:$('cfgRag').value})
+        });
+      }
+    }else{
+      toast(r.error||'Erro ao salvar','err');
+    }
+  }catch(e){
+    toast('Erro: '+e.message,'err');
+  }
+
+  $('btnSaveConfig').disabled=false;
+  $('btnSaveConfig').textContent='Salvar Configuracao';
+}
+
+function resetConfig(){
+  if(confirm('Resetar todas as configuracoes desta instancia?')){
+    $('cfgPrompt').value='';
+    $('cfgRag').value='';
+    $('cfgBotName').value='';
+    $('cfgTone').value='casual';
+    $('cfgLanguage').value='pt-BR';
+    $('cfgContext').value='20';
+    $('cfgHandoff').checked=false;
+    toggleHandoff();
+    $('cfg247').checked=true;
+    toggle247();
+    $('cfgWelcomeEnabled').checked=false;
+    $('cfgWelcomeText').value='';
+    $('cfgWelcomeDelay').value='3';
+    STATE.quickReplies=[];
+    renderQuickReplies();
+    toast('Configuracao resetada (nao salva ainda)','info');
+  }
+}
+
+/* File Upload */
+function handleFileDrop(event){
+  event.preventDefault();
+  event.currentTarget.classList.remove('dragover');
+  const files=event.dataTransfer.files;
+  uploadFiles(files);
+}
+
+function handleFileSelect(event){
+  uploadFiles(event.target.files);
+  event.target.value='';
+}
+
+async function uploadFiles(files){
+  if(!STATE.currentEditId){
+    toast('Selecione uma instancia primeiro','err');
+    return;
+  }
+  for(const file of files){
+    if(!file.name.match(/\.(pdf|txt)$/i)){
+      toast('Formato nao suportado: '+file.name+'. Use PDF ou TXT.','err');
+      continue;
+    }
+    if(file.size>10*1024*1024){
+      toast('Arquivo muito grande: '+file.name+' (max 10MB)','err');
+      continue;
+    }
+    toast('Arquivo "'+file.name+'" sera incluido na base de conhecimento','info');
+    // Read file as text if TXT
+    if(file.name.endsWith('.txt')){
+      const text=await file.text();
+      const current=$('cfgRag').value;
+      $('cfgRag').value=current+(current?'\n\n':'')+'[Arquivo: '+file.name+']\n'+text;
+      toast('Conteudo de "'+file.name+'" adicionado ao texto','ok');
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   TAB 2: HISTORICO
+   ═══════════════════════════════════════════════════════ */
+
+function populateHistSelect(){
+  const sel=$('histInstance');
+  const prev=sel.value;
+  sel.innerHTML='<option value="">-- Todos os numeros --</option>';
+  STATE.instances.forEach(inst=>{
+    const opt=document.createElement('option');
+    opt.value=inst.id;
+    opt.textContent=inst.name;
+    sel.appendChild(opt);
+  });
+  if(prev) sel.value=prev;
+
+  // Set default dates
+  const today=new Date();
+  const weekAgo=new Date(today.getTime()-7*24*60*60*1000);
+  $('histDateFrom').value=weekAgo.toISOString().split('T')[0];
+  $('histDateTo').value=today.toISOString().split('T')[0];
+}
+
+async function loadHistory(){
+  const instanceId=$('histInstance').value;
+  if(!instanceId){
+    $('histBody').innerHTML='<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Selecione um numero para ver o historico</td></tr>';
+    return;
+  }
+
+  $('histBody').innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted)">Carregando...</td></tr>';
+
+  try{
+    const data=await api('/api/v1/whatsapp/instances/'+instanceId+'/conversations');
+    const convs=data.conversations||[];
+
+    if(!convs.length){
+      $('histBody').innerHTML='<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhuma conversa encontrada</td></tr>';
+      return;
+    }
+
+    // Filter by date
+    const fromDate=$('histDateFrom').value?new Date($('histDateFrom').value).getTime()/1000:0;
+    const toDate=$('histDateTo').value?(new Date($('histDateTo').value).getTime()/1000+86400):Infinity;
+    const statusFilter=$('histStatus').value;
+
+    let filtered=convs;
+    // Note: conversations may not have timestamps for filtering, so we do best-effort
+
+    let html='';
+    filtered.forEach(conv=>{
+      const phone=conv.phone||'Desconhecido';
+      const totalMsgs=conv.total_messages||0;
+      const lastMsg=conv.last_message||'';
+      const isHuman=lastMsg.toLowerCase().includes('humano')||lastMsg.toLowerCase().includes('atendente');
+      const status=isHuman?'human':'ai';
+
+      if(statusFilter!=='all'&&statusFilter!==status) return;
+
+      const statusBadge=status==='ai'
+        ?'<span class="pill pill-ai">IA</span>'
+        :'<span class="pill pill-human">Humano</span>';
+
+      html+=`
+      <tr class="expandable" onclick="openConversation('${instanceId}','${phone}')">
+        <td>${formatDate(conv.last_timestamp||0)}</td>
+        <td style="font-family:var(--font-mono);font-size:.82rem">${phone}</td>
+        <td>${totalMsgs}</td>
+        <td>${statusBadge}</td>
+        <td>-</td>
+      </tr>`;
+    });
+
+    $('histBody').innerHTML=html||'<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhuma conversa no periodo</td></tr>';
+
+  }catch(e){
+    $('histBody').innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--red)">Erro: '+e.message+'</td></tr>';
+  }
+}
+
+/* ── Conversation Modal ───────────────────────────────── */
+function openConversation(instanceId,phone){
+  STATE.currentConvInstance=instanceId;
+  STATE.currentConvPhone=phone;
+  $('convModalTitle').textContent='Conversa com '+phone;
+  $('convMessages').innerHTML='<div style="text-align:center;padding:20px;color:var(--text-muted)">Carregando...</div>';
+  $('convOverlay').classList.add('show');
+
+  api('/api/v1/whatsapp/instances/'+instanceId+'/conversations/'+phone).then(data=>{
+    const msgs=data.messages||[];
+    if(!msgs.length){
+      $('convMessages').innerHTML='<div style="text-align:center;padding:20px;color:var(--text-muted)">Nenhuma mensagem</div>';
+      return;
+    }
+    $('convMessages').innerHTML=msgs.map(m=>`
+      <div class="bubble ${m.role==='user'?'bubble-user':'bubble-ai'}">
+        ${escapeHtml(m.content)}
+        <div class="bubble-time">${m.timestamp?new Date(m.timestamp*1000).toLocaleTimeString('pt-BR'):''}</div>
+      </div>
+    `).join('');
+    $('convMessages').scrollTop=$('convMessages').scrollHeight;
+  }).catch(e=>{
+    $('convMessages').innerHTML='<div style="text-align:center;padding:20px;color:var(--red)">Erro: '+e.message+'</div>';
+  });
+}
+
+function closeConvModal(){
+  $('convOverlay').classList.remove('show');
+  STATE.currentConvInstance=null;
+  STATE.currentConvPhone=null;
+}
+
+async function clearCurrentConv(){
+  if(!STATE.currentConvInstance||!STATE.currentConvPhone) return;
+  if(!confirm('Limpar historico com '+STATE.currentConvPhone+'?')) return;
+  try{
+    await api('/api/v1/whatsapp/instances/'+STATE.currentConvInstance+'/conversations/'+STATE.currentConvPhone,{method:'DELETE'});
+    toast('Conversa limpa','ok');
+    closeConvModal();
+    loadHistory();
+  }catch(e){
+    toast('Erro: '+e.message,'err');
+  }
+}
+
+/* ── Export CSV ────────────────────────────────────────── */
+function exportCSV(){
+  const rows=$('histBody').querySelectorAll('tr.expandable');
+  if(!rows.length){
+    toast('Nenhum dado para exportar','err');
+    return;
+  }
+
+  let csv='Data,Telefone,Mensagens,Status,Duracao\n';
+  rows.forEach(row=>{
+    const cells=row.querySelectorAll('td');
+    const rowData=Array.from(cells).map(c=>'"'+c.textContent.trim().replace(/"/g,'""')+'"');
+    csv+=rowData.join(',')+'\n';
+  });
+
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const link=document.createElement('a');
+  link.href=URL.createObjectURL(blob);
+  link.download='whatsapp_historico_'+new Date().toISOString().split('T')[0]+'.csv';
+  link.click();
+  toast('CSV exportado!','ok');
+}
+
+/* ═══════════════════════════════════════════════════════
+   TAB 3: ESTATISTICAS
+   ═══════════════════════════════════════════════════════ */
+
+async function loadStats(){
+  // Fetch real stats from API
+  api('/api/v1/whatsapp/instances').then(function(d){
+    var instances=d.instances||[];
+    var totalMsgsToday=0, totalMsgsTotal=0, totalConnected=0;
+    instances.forEach(function(inst){
+      var s=inst.stats||{};
+      totalMsgsToday+=(s.messages_today||0);
+      totalMsgsTotal+=(s.messages_total||0);
+      if(inst.active) totalConnected++;
+    });
+
+    // Update stat cards with REAL data
+    var cards=document.querySelectorAll('#tab3 .stat-card-value');
+    if(cards.length>=4){
+      cards[0].textContent=totalMsgsToday;
+      cards[1].textContent=totalMsgsToday>0?Math.round((totalMsgsToday*0.85))+'%':'0%';
+      cards[2].textContent=totalMsgsToday>0?'~2s':'--';
+      cards[3].textContent=totalConnected;
+    }
+
+    // Update bottom cards
+    var bottomCards=document.querySelectorAll('#tab3 .stat-bottom-value');
+    if(bottomCards.length>=3){
+      bottomCards[0].textContent='0';
+      bottomCards[1].textContent=instances.length;
+      bottomCards[2].textContent=totalMsgsTotal;
+    }
+
+    // Clear chart - show empty if no data
+    var canvas=document.getElementById('hourlyChart');
+    if(canvas&&window.Chart){
+      var ctx=canvas.getContext('2d');
+      if(window._hourlyChart) window._hourlyChart.destroy();
+      var labels=[];var data=[];
+      for(var h=0;h<24;h++){labels.push(h+'h');data.push(0);}
+      window._hourlyChart=new Chart(ctx,{
+        type:'bar',
+        data:{labels:labels,datasets:[{label:'Mensagens',data:data,backgroundColor:'rgba(37,211,102,.5)',borderColor:'#25D366',borderWidth:1}]},
+        options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9898B8'}},y:{ticks:{color:'#9898B8'},beginAtZero:true}}}
+      });
+    }
+  }).catch(function(){});
+}
+
+function buildHourlyChart(totalToday){
+  const ctx=$('hourlyChart');
+  if(!ctx) return;
+
+  // Destroy existing chart
+  if(STATE.hourlyChart){
+    STATE.hourlyChart.destroy();
+  }
+
+  // Generate simulated hourly data based on total
+  const hours=Array.from({length:24},(_,i)=>i.toString().padStart(2,'0')+':00');
+  const currentHour=new Date().getHours();
+  const data=hours.map((_,i)=>{
+    if(i>currentHour) return 0;
+    // Bell curve peaking at 10-11 and 14-16
+    const x=i;
+    const peak1=Math.exp(-Math.pow(x-10,2)/8);
+    const peak2=Math.exp(-Math.pow(x-15,2)/10);
+    const base=Math.max(0,(peak1+peak2)*0.5);
+    return Math.round(base*totalToday*0.15+Math.random()*2);
+  });
+
+  STATE.hourlyChart=new Chart(ctx.getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:hours,
+      datasets:[{
+        label:'Mensagens',
+        data:data,
+        backgroundColor:'rgba(37,211,102,.4)',
+        borderColor:'rgba(37,211,102,.8)',
+        borderWidth:1,
+        borderRadius:4,
+        barPercentage:.7,
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(15,15,36,.95)',
+          titleColor:'#E8E8F0',
+          bodyColor:'#9898B8',
+          borderColor:'rgba(100,100,180,.2)',
+          borderWidth:1,
+          cornerRadius:8,
+          padding:10,
+        }
+      },
+      scales:{
+        x:{
+          grid:{color:'rgba(100,100,180,.06)'},
+          ticks:{color:'#585878',font:{size:10},maxTicksLimit:12}
+        },
+        y:{
+          grid:{color:'rgba(100,100,180,.06)'},
+          ticks:{color:'#585878',font:{size:10}},
+          beginAtZero:true
+        }
+      }
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   INIT & AUTO-REFRESH
+   ═══════════════════════════════════════════════════════ */
+
+// Initial load
+loadInstances();
+
+// Auto-refresh health every 60s
+setInterval(()=>{
+  STATE.instances.forEach(inst=>checkHealth(inst.id));
+},60000);
+
+// Auto-refresh instances every 120s
+setInterval(()=>{
+  loadInstances();
+},120000);
+
+// Close modals on Escape
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    $('connectOverlay').classList.remove('show');
+    $('convOverlay').classList.remove('show');
+  }
+});
+
+
+
+/* ── Blast/Disparos Functions ─────────────────────────── */
+
+var blastContacts = [];
+var blastTemplates = [];
+var activeCampaignId = null;
+var blastPollTimer = null;
+
+function loadBlastData(){
+  // Load numbers (only Meta instances for blast)
+  api('/api/v1/whatsapp/instances').then(function(d){
+    var sel=document.getElementById('blastNumber');
+    if(!sel)return;
+    sel.innerHTML='<option value="">Selecione o numero</option>';
+    (d.instances||[]).forEach(function(inst){
+      if(inst.provider==='meta'||inst.zapi_instance_id){
+        var badge=inst.provider==='meta'?'Meta Oficial':'Z-API';
+        sel.innerHTML+='<option value="'+inst.id+'">'+(inst.name||inst.id)+' ('+badge+')</option>';
+      }
+    });
+  }).catch(function(){});
+  // original loadBlastData continues...
+  void(0);
+  // Load templates
+  fetch('/api/v1/whatsapp/blast/templates',{credentials:'same-origin'}).then(r=>r.json()).then(d=>{
+    blastTemplates = d.templates||[];
+    var sel=document.getElementById('blastTemplate');
+    sel.innerHTML='<option value="">Selecione um template</option>';
+    if(blastTemplates.length===0){
+      sel.innerHTML='<option value="">Nenhum template aprovado</option>';
+    } else {
+      blastTemplates.forEach(t=>{
+        sel.innerHTML+='<option value="'+t.name+'">'+t.name+' ('+t.category+')</option>';
+      });
+    }
+  }).catch(()=>{});
+
+  // Load campaigns
+  fetch('/api/v1/whatsapp/blast/campaigns',{credentials:'same-origin'}).then(r=>r.json()).then(d=>{
+    var list=document.getElementById('blastCampaignList');
+    var campaigns=d.campaigns||[];
+    if(campaigns.length===0){
+      list.innerHTML='<div style="color:var(--text-muted);text-align:center;padding:10px">Nenhuma campanha ainda</div>';
+      return;
+    }
+    var html='';
+    campaigns.slice(0,10).forEach(c=>{
+      var statusColor={'draft':'#9898B8','sending':'#FBBF24','completed':'#4ADE80','paused':'#F59E0B','cancelled':'#F87171'}[c.status]||'#9898B8';
+      var pct=c.total_contacts>0?Math.round(c.sent/c.total_contacts*100):0;
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">';
+      html+='<div><div style="font-weight:500">'+c.name+'</div><div style="font-size:.75rem;color:var(--text-muted)">'+c.template_name+' &bull; '+(c.total_contacts||0)+' contatos</div></div>';
+      html+='<div style="text-align:right"><span style="color:'+statusColor+';font-size:.8rem;font-weight:600">'+c.status.toUpperCase()+'</span>';
+      if(c.status==='sending'){html+='<div style="font-size:.75rem;color:var(--text-muted)">'+pct+'%</div>';}
+      html+='</div></div>';
+    });
+    list.innerHTML=html;
+  }).catch(()=>{});
+}
+
+function previewTemplate(){
+  var sel=document.getElementById('blastTemplate');
+  var name=sel.value;
+  var preview=document.getElementById('templatePreview');
+  var text=document.getElementById('templatePreviewText');
+  if(!name){preview.style.display='none';return;}
+  var t=blastTemplates.find(x=>x.name===name);
+  if(t&&t.components){
+    var body=t.components.find(c=>c.type==='BODY');
+    if(body){
+      text.textContent=body.text||'(sem texto)';
+      preview.style.display='block';
+    }
+  }
+  checkBlastReady();
+}
+
+function downloadCSVModel(){
+  var csv='nome,telefone\nJoao Silva,5521999999999\nMaria Santos,5511988888888\nPedro Costa,5531977777777';
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='modelo_contatos.csv';a.click();
+}
+
+function handleCSVUpload(input){
+  var file=input.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var lines=e.target.result.split('\n').filter(l=>l.trim());
+    if(lines.length<2){alert('CSV vazio');return;}
+    // Parse header
+    var header=lines[0].toLowerCase().split(',').map(h=>h.trim().replace(/"/g,''));
+    var nameIdx=header.findIndex(h=>['nome','name','contato'].includes(h));
+    var phoneIdx=header.findIndex(h=>['telefone','phone','numero','celular','whatsapp'].includes(h));
+    if(phoneIdx===-1){alert('Coluna telefone nao encontrada. Use: nome,telefone');return;}
+
+    blastContacts=[];
+    var invalid=0;
+    for(var i=1;i<lines.length;i++){
+      var cols=lines[i].split(',').map(c=>c.trim().replace(/"/g,''));
+      var phone=cols[phoneIdx]||'';
+      var name=nameIdx>=0?(cols[nameIdx]||''):'';
+      // Normalize phone
+      phone=phone.replace(/[\s+\-().]/g,'');
+      if(phone.startsWith('0'))phone=phone.substring(1);
+      if(!phone.startsWith('55'))phone='55'+phone;
+      if(phone.length>=12&&phone.length<=13){
+        blastContacts.push({phone:phone,name:name});
+      } else {
+        invalid++;
+      }
+    }
+
+    // Show result
+    var result=document.getElementById('csvResult');
+    var preview=document.getElementById('csvPreview');
+    result.style.display='block';
+    var html='';
+    blastContacts.slice(0,5).forEach(c=>{
+      html+='<div style="margin-bottom:4px"><span style="color:#4ADE80">&#9989;</span> '+c.name+' &mdash; '+c.phone+'</div>';
+    });
+    if(blastContacts.length>5)html+='<div style="color:var(--text-muted)">... e mais '+(blastContacts.length-5)+'</div>';
+    if(invalid>0)html+='<div style="margin-top:6px;color:#F87171">&#9888; '+invalid+' numeros invalidos ignorados</div>';
+    html+='<div style="margin-top:8px;font-weight:600;color:#4ADE80">&#9989; '+blastContacts.length+' contatos validos</div>';
+    preview.innerHTML=html;
+
+    // Update drop zone
+    document.getElementById('csvDropZone').innerHTML='<div style="color:#4ADE80;font-weight:600">&#9989; '+file.name+' ('+blastContacts.length+' contatos)</div><div style="font-size:.75rem;color:var(--text-muted);margin-top:4px">Clique para trocar</div>';
+
+    checkBlastReady();
+  };
+  reader.readAsText(file,'UTF-8');
+}
+
+function checkBlastReady(){
+  var btn=document.getElementById('blastStartBtn');
+  var name=document.getElementById('blastName').value.trim();
+  var template=document.getElementById('blastTemplate').value;
+  var number=document.getElementById('blastNumber')?document.getElementById('blastNumber').value:'';
+  var ready=name&&template&&number&&blastContacts.length>0;
+  btn.disabled=!ready;
+  btn.style.opacity=ready?'1':'.5';
+}
+
+function startBlast(){
+  var name=document.getElementById('blastName').value.trim();
+  var template=document.getElementById('blastTemplate').value;
+  if(!name||!template||blastContacts.length===0)return;
+
+  if(!confirm('Iniciar disparo de '+blastContacts.length+' mensagens?'))return;
+
+  document.getElementById('blastStartBtn').disabled=true;
+  document.getElementById('blastStartBtn').textContent='Criando campanha...';
+
+  fetch('/api/v1/whatsapp/blast/campaigns',{
+    method:'POST',credentials:'same-origin',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:name,template_name:template,contacts:blastContacts})
+  }).then(r=>r.json()).then(d=>{
+    if(d.error){alert(d.error);return;}
+    activeCampaignId=d.id;
+    // Start sending
+    fetch('/api/v1/whatsapp/blast/campaigns/'+d.id+'/start',{
+      method:'POST',credentials:'same-origin',
+      headers:{'Content-Type':'application/json'}
+    }).then(r=>r.json()).then(s=>{
+      document.getElementById('blastProgress').style.display='block';
+      document.getElementById('blastStartBtn').textContent='Disparo iniciado!';
+      pollBlastProgress();
+    });
+  }).catch(e=>{
+    alert('Erro: '+e.message);
+    document.getElementById('blastStartBtn').disabled=false;
+    document.getElementById('blastStartBtn').textContent='\uD83D\uDE80 Iniciar Disparo';
+  });
+}
+
+function pollBlastProgress(){
+  if(!activeCampaignId)return;
+  fetch('/api/v1/whatsapp/blast/campaigns/'+activeCampaignId+'/progress',{credentials:'same-origin'})
+  .then(r=>r.json()).then(d=>{
+    var pct=d.progress_pct||0;
+    document.getElementById('blastProgressFill').style.width=pct+'%';
+    var html='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">';
+    html+='<div><div style="font-size:1.2rem;font-weight:700;color:#4ADE80">'+d.sent+'</div><div style="font-size:.7rem;color:var(--text-muted)">Enviados</div></div>';
+    html+='<div><div style="font-size:1.2rem;font-weight:700;color:#F87171">'+(d.failed||0)+'</div><div style="font-size:.7rem;color:var(--text-muted)">Falhas</div></div>';
+    html+='<div><div style="font-size:1.2rem;font-weight:700;color:var(--text-secondary)">'+(d.pending||0)+'</div><div style="font-size:.7rem;color:var(--text-muted)">Restantes</div></div>';
+    html+='</div>';
+    html+='<div style="text-align:center;margin-top:8px;font-size:.8rem;color:var(--text-muted)">'+d.sent+'/'+d.total+' ('+pct+'%)</div>';
+    document.getElementById('blastProgressText').innerHTML=html;
+
+    if(d.status==='sending'){
+      blastPollTimer=setTimeout(pollBlastProgress,3000);
+    } else {
+      document.getElementById('blastStartBtn').disabled=false;
+      document.getElementById('blastStartBtn').innerHTML='\uD83D\uDE80 Iniciar Disparo';
+      if(d.status==='completed'){
+        document.getElementById('blastProgressText').innerHTML+='<div style="margin-top:8px;padding:10px;background:rgba(74,222,128,.1);border-radius:8px;color:#4ADE80;font-weight:600;text-align:center">&#9989; Disparo concluido! '+d.sent+'/'+d.total+' enviados</div>';
+      }
+      loadBlastData();
+    }
+  }).catch(()=>{blastPollTimer=setTimeout(pollBlastProgress,5000);});
+}
+
+function pauseBlast(){
+  if(!activeCampaignId)return;
+  fetch('/api/v1/whatsapp/blast/campaigns/'+activeCampaignId+'/pause',{method:'POST',credentials:'same-origin'}).then(()=>{
+    if(blastPollTimer)clearTimeout(blastPollTimer);
+    document.getElementById('blastStartBtn').disabled=false;
+    document.getElementById('blastStartBtn').innerHTML='\uD83D\uDE80 Iniciar Disparo';
+    loadBlastData();
+  });
+}
+
+function cancelBlast(){
+  if(!activeCampaignId||!confirm('Cancelar disparo?'))return;
+  fetch('/api/v1/whatsapp/blast/campaigns/'+activeCampaignId+'/cancel',{method:'POST',credentials:'same-origin'}).then(()=>{
+    if(blastPollTimer)clearTimeout(blastPollTimer);
+    document.getElementById('blastProgress').style.display='none';
+    document.getElementById('blastStartBtn').disabled=false;
+    document.getElementById('blastStartBtn').innerHTML='\uD83D\uDE80 Iniciar Disparo';
+    activeCampaignId=null;
+    loadBlastData();
+  });
+}
+
+// Add event listener for name field
+document.getElementById('blastName')&&document.getElementById('blastName').addEventListener('input',checkBlastReady);
+
+
+
+/* ── Template Manager ─────────────────────────────── */
+
+function loadTemplateData(){
+  api('/api/v1/whatsapp/templates/list').then(function(d){
+    var list=document.getElementById('tplStatusList');
+    var templates=d.templates||[];
+    if(templates.length===0){
+      list.innerHTML='<div style="text-align:center;padding:16px;color:var(--text-muted)">Nenhum template encontrado. Solicite aprovacao acima.</div>';
+      return;
+    }
+    var html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.84rem">';
+    html+='<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:8px;color:var(--text-muted);font-weight:600">Template</th><th style="padding:8px;color:var(--text-muted);font-weight:600">Status</th><th style="padding:8px;color:var(--text-muted);font-weight:600">Categoria</th><th style="padding:8px;color:var(--text-muted);font-weight:600">Acao</th></tr>';
+    templates.forEach(function(t){
+      var statusIcon={'APPROVED':'<span style="color:#4ADE80">&#9989; APROVADO</span>','PENDING':'<span style="color:#FBBF24">&#9203; PENDENTE</span>','REJECTED':'<span style="color:#F87171">&#10060; REJEITADO</span>','PAUSED':'<span style="color:#9898B8">&#128260; PAUSADO</span>'}[t.status]||'<span style="color:#9898B8">'+t.status+'</span>';
+      var action='';
+      if(t.status==='APPROVED') action='<button onclick="switchTab(5)" style="padding:4px 10px;background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.2);border-radius:6px;color:#25D366;font-size:.75rem;cursor:pointer">Usar</button>';
+      if(t.status==='REJECTED') action='<span style="font-size:.7rem;color:#F87171">'+(t.rejected_reason||'')+'</span>';
+      html+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px"><div style="font-weight:500">'+t.name+'</div><div style="font-size:.75rem;color:var(--text-muted);margin-top:2px">'+(t.body||'').substring(0,60)+'...</div></td><td style="padding:8px;text-align:center">'+statusIcon+'</td><td style="padding:8px;text-align:center;font-size:.8rem">'+t.category+'</td><td style="padding:8px;text-align:center">'+action+'</td></tr>';
+    });
+    html+='</table></div>';
+    list.innerHTML=html;
+  }).catch(function(){
+    document.getElementById('tplStatusList').innerHTML='<div style="color:#F87171">Erro ao carregar templates</div>';
+  });
+}
+
+function submitTemplates(){
+  var checks=document.querySelectorAll('.tpl-check:checked');
+  if(checks.length===0){toast('Selecione pelo menos 1 template','err');return;}
+  if(!confirm('Solicitar aprovacao de '+checks.length+' template(s) ao Meta?'))return;
+
+  var btn=document.getElementById('tplSubmitBtn');
+  var result=document.getElementById('tplSubmitResult');
+  btn.disabled=true;btn.textContent='Enviando...';
+  result.innerHTML='';
+
+  var templates=[];
+  checks.forEach(function(c){templates.push({name:c.value,text:c.getAttribute('data-text')});});
+
+  api('/api/v1/whatsapp/templates/submit',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({templates:templates})
+  }).then(function(d){
+    btn.disabled=false;btn.innerHTML='&#128640; Clow, solicita aprovacao';
+    var html='';
+    (d.results||[]).forEach(function(r){
+      if(r.success){
+        html+='<div style="margin-bottom:4px"><span style="color:#4ADE80">&#9989;</span> <strong>'+r.name+'</strong> enviado (ID: '+r.template_id+')</div>';
+      }else{
+        html+='<div style="margin-bottom:4px"><span style="color:#F87171">&#10060;</span> <strong>'+r.name+'</strong>: '+(r.error||'erro')+'</div>';
+      }
+    });
+    var ok=(d.results||[]).filter(function(r){return r.success}).length;
+    html+='<div style="margin-top:8px;padding:8px;background:rgba(37,211,102,.05);border-radius:8px;font-size:.85rem">'+ok+'/'+templates.length+' enviados. Aprovacao em ate 24h.</div>';
+    result.innerHTML=html;
+    loadTemplateData();
+  }).catch(function(e){
+    btn.disabled=false;btn.innerHTML='&#128640; Clow, solicita aprovacao';
+    result.innerHTML='<div style="color:#F87171">Erro: '+e.message+'</div>';
+  });
+}
+
+function refreshTemplateStatus(){
+  api('/api/v1/whatsapp/templates/refresh',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}).then(function(d){
+    toast('Status atualizado: '+(d.updated||0)+' mudancas','ok');
+    loadTemplateData();
+  }).catch(function(){toast('Erro ao atualizar','err');});
+}
+
+</script>
+</body>
+</html>

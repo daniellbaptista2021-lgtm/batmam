@@ -49,19 +49,20 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 .sb-conv-search input:focus{border-color:var(--p)}
 .sb-conv-search input::placeholder{color:var(--tm)}
 .sb-conv-search .search-icon{position:absolute;left:18px;top:50%;transform:translateY(-50%);color:var(--tm);font-size:12px;pointer-events:none;padding-bottom:8px}
-.sb-grp-label{padding:6px 8px 4px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--tm);user-select:none}
-.sb-conv-item{display:flex;align-items:center;padding:8px 10px;border-radius:6px;cursor:pointer;transition:background .15s ease;position:relative;gap:8px;margin:1px 0}
-.sb-conv-item:hover{background:rgba(155,89,252,.06)}
-.sb-conv-item.act{background:rgba(155,89,252,.1);border-left:2px solid;border-image:var(--gp) 1;padding-left:8px}
-.sb-conv-item .conv-icon{font-size:13px;flex-shrink:0;color:var(--tm);width:16px;text-align:center}
+.sb-grp-label{padding:12px 4px 6px;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--tm);user-select:none}
+.sb-conv-item{display:flex;align-items:center;padding:10px 14px;border-radius:10px;cursor:pointer;transition:all .2s;position:relative;gap:8px;margin:3px 0;background:rgba(155,89,252,.06);border:1px solid rgba(155,89,252,.12)}
+.sb-conv-item:hover{background:rgba(155,89,252,.12)}
+.sb-conv-item.act{background:rgba(155,89,252,.12);border-color:rgba(155,89,252,.25)}
+.sb-conv-item .conv-icon{font-size:14px;flex-shrink:0;color:var(--p);width:16px;text-align:center}
 .sb-conv-item.act .conv-icon{color:var(--p)}
-.sb-conv-item .conv-title{flex:1;font-size:13px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--sans);line-height:1.3}
-.sb-conv-item.act .conv-title{color:var(--t1);font-weight:500}
-.sb-conv-item .conv-pin-static{font-size:10px;color:var(--tm);flex-shrink:0;margin-right:2px}
+.sb-conv-item .conv-info{flex:1;min-width:0;display:flex;flex-direction:column}
+.sb-conv-item .conv-title{font-size:12px;font-weight:600;color:var(--p);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--sans);line-height:1.3}
+.sb-conv-item.act .conv-title{color:var(--p);font-weight:600}
+.sb-conv-item .conv-date{font-size:10px;color:var(--p);opacity:.5;line-height:1.2}
 .sb-conv-item .conv-actions{display:flex;align-items:center;gap:2px;opacity:0;transition:opacity .15s ease;flex-shrink:0}
 .sb-conv-item:hover .conv-actions{opacity:1}
-.sb-conv-item .conv-actions .ca-btn{background:none;border:none;cursor:pointer;padding:3px 4px;border-radius:4px;font-size:12px;color:var(--tm);transition:all .15s;display:flex;align-items:center;justify-content:center;line-height:1}
-.sb-conv-item .conv-actions .ca-btn:hover{background:var(--bg-3);color:var(--t1)}
+.sb-conv-item .conv-actions .ca-btn{background:none;border:none;cursor:pointer;padding:3px 4px;border-radius:4px;font-size:12px;color:rgba(155,89,252,.4);transition:all .15s;display:flex;align-items:center;justify-content:center;line-height:1}
+.sb-conv-item .conv-actions .ca-btn:hover{background:rgba(248,113,113,.1);color:var(--r)}
 /* Context menu */
 .conv-ctx-menu{position:fixed;background:var(--bg-3);border:1px solid rgba(100,100,180,.15);border-radius:8px;padding:4px;min-width:180px;z-index:999;box-shadow:0 10px 30px rgba(0,0,0,.4);transform-origin:top left;animation:ctxIn .15s ease}
 @keyframes ctxIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
@@ -422,3 +423,23 @@ body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-inde
 .copy-toast.show{opacity:1}
 /* Turn done indicator */
 .turn-done{font-size:11px;color:var(--tm);padding:8px 0 2px;letter-spacing:.05em;opacity:.5}
+
+/* ── SIDEBAR TOGGLE (edge button) ── */
+#sbToggle{position:fixed;top:50%;left:var(--sw);transform:translateY(-50%);z-index:9999;width:18px;height:44px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-left:none;border-radius:0 6px 6px 0;color:rgba(255,255,255,0.5);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:left .3s,background .2s;padding:0}
+#sbToggle:hover{background:rgba(255,255,255,0.14);color:#fff}
+body.sb-collapsed #sbToggle{left:0}
+.sb.collapsed{width:0 !important;overflow:hidden !important;min-width:0 !important;padding:0 !important;border:none !important}
+@media(min-width:769px){body.sb-collapsed .ham{display:block}}
+@media(max-width:768px){#sbToggle{display:none}}
+
+/* ── RECENTES (conv cards) ── */
+.sb-section-label{display:block;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--tm);padding:12px 4px 6px;user-select:none}
+.conv-card{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(155,89,252,.06);border:1px solid rgba(155,89,252,.12);border-radius:10px;cursor:pointer;margin:3px 0;transition:all .2s;text-decoration:none}
+.conv-card:hover{background:rgba(155,89,252,.12)}
+.conv-card-icon{font-size:14px;flex-shrink:0;width:16px;text-align:center;color:var(--p);line-height:1}
+.conv-card-info{flex:1;min-width:0}
+.conv-card-title{font-size:12px;font-weight:600;color:var(--p);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conv-card-date{font-size:10px;color:var(--p);opacity:.5;margin-top:1px}
+.conv-card-del{background:transparent;border:none;color:rgba(155,89,252,.4);cursor:pointer;font-size:14px;padding:4px;opacity:0;transition:opacity .15s;flex-shrink:0}
+.conv-card:hover .conv-card-del{opacity:1}
+.conv-card-del:hover{color:#ff6b6b}

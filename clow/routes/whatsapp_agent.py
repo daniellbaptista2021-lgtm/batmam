@@ -12,6 +12,25 @@ from fastapi.responses import JSONResponse as _JR, HTMLResponse as _HR, Redirect
 
 logger = logging.getLogger("clow.routes.whatsapp_agent")
 
+# Sensitive fields to strip from API responses for non-admin users
+_SENSITIVE_FIELDS = {
+    "chatwoot_url", "chatwoot_token", "chatwoot_user_token", "chatwoot_account_id",
+    "webhook_token", "webhook_id", "evolution_instance", "api_access_token",
+    "zapi_token", "zapi_instance_id", "meta_access_token", "meta_verify_token",
+}
+_SENSITIVE_SUFFIXES = ("_key", "_token", "_secret", "_password")
+
+def _sanitize(data, is_admin: bool = False):
+    """Remove sensitive fields from API response for non-admin users."""
+    if is_admin:
+        return data
+    if isinstance(data, dict):
+        return {k: _sanitize(v, is_admin) for k, v in data.items()
+                if k not in _SENSITIVE_FIELDS and not k.endswith(_SENSITIVE_SUFFIXES)}
+    if isinstance(data, list):
+        return [_sanitize(item, is_admin) for item in data]
+    return data
+
 # Debounce buffers: {instance_id:phone -> [messages]}
 _debounce_buffers: dict[str, list[str]] = {}
 _debounce_timers: dict[str, threading.Timer] = {}
@@ -27,6 +46,28 @@ _meta_contact_names = {}
 def _process_meta_carol(instance_id, phone, message):
     import json as _j, logging
     _log = logging.getLogger("clow.meta")
+
+    # ── Chatwoot handoff check — skip AI if "humano" label is active ──
+    try:
+        cw_url = _os_meta.getenv("CHATWOOT_URL", "")
+        cw_token = _os_meta.getenv("CHATWOOT_API_TOKEN", "")
+        if cw_url and cw_token:
+            from ..chatwoot_integration import (
+                get_chatwoot_client,
+                get_or_create_chatwoot_conversation,
+                check_handoff_label,
+            )
+            handoff_label = _os_meta.getenv("CHATWOOT_HANDOFF_LABEL", "humano")
+            inbox_id = int(_os_meta.getenv("CHATWOOT_NIO_INBOX_ID", "4"))
+            cw_client = get_chatwoot_client("nio")
+            if cw_client:
+                cw_convo_id = get_or_create_chatwoot_conversation(cw_client, "meta-nio", phone, inbox_id)
+                if cw_convo_id and check_handoff_label(cw_client, cw_convo_id, handoff_label):
+                    _log.info(f"Handoff active for meta {instance_id}:{phone[-4:]}, skipping AI")
+                    return
+    except Exception as e:
+        _log.warning(f"Chatwoot handoff check error (non-blocking): {e}")
+
     name = _meta_contact_names.get(phone, "")
     try:
         from .._carol_nio_agent_module import process_daniel_message
@@ -764,33 +805,484 @@ def register_whatsapp_agent_routes(app) -> None:
 
     # ── Chatwoot Webhook (receives Chatwoot events) ───────────
 
-    @app.post("/api/v1/chatwoot/webhook", tags=["chatwoot"], include_in_schema=False)
-    async def chatwoot_webhook(request: _Req):
-        """Receive Chatwoot events — detect label changes for handoff control."""
-        try:
-            body = await request.json()
-        except Exception:
-            return _JR({"status": "invalid"}, status_code=400)
+    # ── Chatwoot Webhook (multi-tenant) ─────────────────────────
 
+    def _handle_chatwoot_event(body: dict, user_id: str = ""):
+        """Core logic for processing a Chatwoot webhook event. Returns status string."""
         event = body.get("event", "")
 
         if event == "conversation_updated":
             convo = body.get("conversation", {})
             convo_id = convo.get("id")
             labels = convo.get("labels", [])
-
-            # If "humano" label was removed, reactivate bot
-            # We track this by checking if bot label is missing and humano is missing
             if "humano" not in labels and convo_id:
                 try:
-                    from ..chatwoot_integration import get_chatwoot_client, reactivate_bot
-                    client = get_chatwoot_client("global")
+                    if user_id:
+                        from ..chatwoot_integration import get_chatwoot_client_for_user
+                        client = get_chatwoot_client_for_user(user_id)
+                    else:
+                        from ..chatwoot_integration import get_chatwoot_client
+                        client = get_chatwoot_client("global")
                     if client and "bot" not in labels:
+                        from ..chatwoot_integration import reactivate_bot
                         reactivate_bot(client, convo_id, send_greeting=True)
                 except Exception as e:
                     logger.warning(f"Chatwoot webhook reactivate_bot error: {e}")
+            return "ok"
+
+        if event == "message_created":
+            msg_type = body.get("message_type")
+            if msg_type != "incoming":
+                return "not_incoming"
+            sender = body.get("sender", {})
+            if sender.get("type") != "contact":
+                return "not_contact"
+            content = body.get("content", "").strip()
+            if not content:
+                return "empty"
+            convo = body.get("conversation", {})
+            conv_id = convo.get("id")
+            labels = convo.get("labels", [])
+            inbox = body.get("inbox", {})
+            inbox_id = inbox.get("id")
+            if not conv_id or not inbox_id:
+                return "missing_ids"
+
+            from ..database import get_chatwoot_bot_config
+            bot_cfg = get_chatwoot_bot_config(inbox_id, user_id)
+            if not bot_cfg or not bot_cfg.get("active"):
+                return "bot_disabled"
+
+            if bot_cfg.get("human_handoff", 1):
+                handoff_label = os.getenv("CHATWOOT_HANDOFF_LABEL", "humano")
+                if handoff_label in labels:
+                    logger.info(f"Chatwoot bot: handoff conv={conv_id} user={user_id or 'global'}")
+                    return "handoff"
+
+            def _bg():
+                try:
+                    _chatwoot_bot_reply(conv_id, content, bot_cfg, user_id=user_id)
+                except Exception as e:
+                    logger.error(f"Chatwoot bot error conv={conv_id}: {e}")
+
+            threading.Thread(target=_bg, daemon=True).start()
+            return "processing"
+
+        return "ok"
+
+    @app.post("/api/v1/chatwoot/webhook", tags=["chatwoot"], include_in_schema=False)
+    async def chatwoot_webhook_global(request: _Req):
+        """Legacy webhook — routes to admin user."""
+        try:
+            body = await request.json()
+        except Exception:
+            return _JR({"status": "invalid"}, status_code=400)
+        # Resolve admin user_id
+        admin_uid = ""
+        try:
+            from ..database import get_user_by_email
+            admin = get_user_by_email(os.getenv("CLOW_ADMIN_EMAIL", ""))
+            if admin:
+                admin_uid = admin["id"]
+        except Exception:
+            pass
+        status = _handle_chatwoot_event(body, user_id=admin_uid)
+        return _JR({"status": status})
+
+    @app.post("/api/v1/chatwoot/webhook/{user_token}", tags=["chatwoot"], include_in_schema=False)
+    async def chatwoot_webhook_tenant(user_token: str, request: _Req):
+        """Multi-tenant webhook — identifies user by token."""
+        try:
+            body = await request.json()
+        except Exception:
+            return _JR({"status": "invalid"}, status_code=400)
+        from ..database import get_chatwoot_connection_by_token
+        conn = get_chatwoot_connection_by_token(user_token)
+        if not conn:
+            return _JR({"status": "invalid_token"}, status_code=404)
+        status = _handle_chatwoot_event(body, user_id=conn["user_id"])
+        return _JR({"status": status})
+
+    # ── Chatwoot Connection API ──────────────────────────────────
+
+    @app.get("/api/v1/chatwoot/connection", tags=["chatwoot"])
+    async def chatwoot_connection_get(request: _Req):
+        from .auth import _get_user_session
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autorizado"}, status_code=403)
+        from ..database import get_chatwoot_connection_by_user
+        conn = get_chatwoot_connection_by_user(sess["user_id"])
+        if conn:
+            safe = _sanitize(conn, sess.get("is_admin", False))
+            return _JR({"connected": True, "connection": safe})
+        return _JR({"connected": False})
+
+    @app.post("/api/v1/chatwoot/connection", tags=["chatwoot"])
+    async def chatwoot_connection_create(request: _Req):
+        from .auth import _get_user_session
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autorizado"}, status_code=403)
+        body = await request.json()
+        url = (body.get("chatwoot_url") or "").strip().rstrip("/")
+        token = (body.get("chatwoot_token") or "").strip()
+        account_id = int(body.get("chatwoot_account_id", 1))
+        if not url or not token:
+            return _JR({"error": "URL e Token obrigatorios"}, status_code=400)
+        # Test connection
+        from ..chatwoot_integration import ChatwootClient
+        test_client = ChatwootClient(url, account_id, token)
+        inboxes = test_client.get_inboxes()
+        if isinstance(inboxes, dict) and inboxes.get("error"):
+            return _JR({"error": f"Falha na conexao: {inboxes.get('message', inboxes.get('error'))}"}, status_code=400)
+        # Save
+        from ..database import get_chatwoot_connection_by_user, create_chatwoot_connection, update_chatwoot_connection
+        from ..chatwoot_integration import invalidate_user_client
+        existing = get_chatwoot_connection_by_user(sess["user_id"])
+        if existing:
+            update_chatwoot_connection(sess["user_id"], chatwoot_url=url, chatwoot_token=token, chatwoot_account_id=account_id)
+            invalidate_user_client(sess["user_id"])
+            conn = get_chatwoot_connection_by_user(sess["user_id"])
+        else:
+            conn = create_chatwoot_connection(sess["user_id"], url, token, account_id)
+        return _JR({"ok": True, "connection": _sanitize(conn, sess.get("is_admin", False)), "inboxes": inboxes})
+
+    @app.post("/api/v1/chatwoot/connection/register-webhook", tags=["chatwoot"])
+    async def chatwoot_register_webhook(request: _Req):
+        from .auth import _get_user_session
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autorizado"}, status_code=403)
+        from ..database import get_chatwoot_connection_by_user, update_chatwoot_connection
+        conn = get_chatwoot_connection_by_user(sess["user_id"])
+        if not conn:
+            return _JR({"error": "Chatwoot nao conectado"}, status_code=400)
+        from ..chatwoot_integration import ChatwootClient
+        client = ChatwootClient(conn["chatwoot_url"], conn["chatwoot_account_id"], conn["chatwoot_token"])
+        webhook_url = f"https://clow.pvcorretor01.com.br/api/v1/chatwoot/webhook/{conn['webhook_token']}"
+        # Check if webhook already exists
+        existing_hooks = client._api("GET", "webhooks")
+        hooks = existing_hooks.get("payload", {}).get("webhooks", [])
+        for h in hooks:
+            if conn["webhook_token"] in h.get("url", ""):
+                update_chatwoot_connection(sess["user_id"], webhook_id=h["id"])
+                return _JR({"ok": True, "webhook_id": h["id"], "already_existed": True})
+        # Create
+        result = client._api("POST", "webhooks", {"url": webhook_url, "subscriptions": ["message_created", "conversation_updated"]})
+        wh = result.get("payload", {}).get("webhook", {})
+        wh_id = wh.get("id", 0)
+        if wh_id:
+            update_chatwoot_connection(sess["user_id"], webhook_id=wh_id)
+        return _JR({"ok": True, "webhook_id": wh_id, "webhook_url": webhook_url})
+
+    # ── Chatwoot Bot Config API (multi-tenant) ───────────────────
+
+    @app.get("/api/v1/chatwoot/inboxes", tags=["chatwoot"])
+    async def chatwoot_inboxes_proxy(request: _Req):
+        from .auth import _get_user_session
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autorizado"}, status_code=403)
+        try:
+            from ..chatwoot_integration import get_chatwoot_client_for_user, get_chatwoot_client
+            client = get_chatwoot_client_for_user(sess["user_id"])
+            if not client:
+                client = get_chatwoot_client("bot")
+            if not client:
+                return _JR({"inboxes": [], "error": "Chatwoot nao configurado"})
+            inboxes = client.get_inboxes()
+            return _JR({"inboxes": inboxes})
+        except Exception as e:
+            return _JR({"inboxes": [], "error": str(e)})
+
+    @app.get("/api/v1/chatwoot/bot/configs", tags=["chatwoot"])
+    async def chatwoot_bot_list(request: _Req):
+        from .auth import _get_user_session
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autorizado"}, status_code=403)
+        from ..database import list_chatwoot_bot_configs
+        return _JR({"configs": list_chatwoot_bot_configs(sess["user_id"])})
+
+    @app.post("/api/v1/chatwoot/bot/configs", tags=["chatwoot"])
+    async def chatwoot_bot_upsert(request: _Req):
+        from .auth import _get_user_session
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autorizado"}, status_code=403)
+        body = await request.json()
+        inbox_id = body.get("inbox_id")
+        if not inbox_id:
+            return _JR({"error": "inbox_id obrigatorio"}, status_code=400)
+        from ..database import upsert_chatwoot_bot_config
+        cfg = upsert_chatwoot_bot_config(
+            inbox_id=int(inbox_id),
+            inbox_name=body.get("inbox_name", ""),
+            system_prompt=body.get("system_prompt", ""),
+            active=body.get("active", True),
+            model="deepseek-chat",
+            max_tokens=body.get("max_tokens", 1024),
+            context_size=body.get("context_size", 20),
+            human_handoff=body.get("human_handoff", True),
+            user_id=sess["user_id"],
+        )
+        return _JR({"ok": True, "config": cfg})
+
+    @app.delete("/api/v1/chatwoot/bot/configs/{inbox_id}", tags=["chatwoot"])
+    async def chatwoot_bot_delete(inbox_id: int, request: _Req):
+        from .auth import _get_user_session
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autorizado"}, status_code=403)
+        from ..database import delete_chatwoot_bot_config
+        delete_chatwoot_bot_config(inbox_id, sess["user_id"])
+        return _JR({"ok": True})
+
+    # ── Z-API Webhook (per-user) ────────────────────────────
+
+    @app.post("/api/v1/zapi/webhook/{user_token}", tags=["zapi"], include_in_schema=False)
+    async def zapi_webhook_tenant(user_token: str, request: _Req):
+        """Receive Z-API messages and forward to user's Chatwoot inbox."""
+        try:
+            body = await request.json()
+        except Exception:
+            return _JR({"status": "invalid"}, status_code=400)
+
+        phone = body.get("phone", "")
+        message = body.get("body", "") or (body.get("text", {}).get("message", "") if isinstance(body.get("text"), dict) else body.get("text", ""))
+        from_me = body.get("fromMe", False)
+        is_group = body.get("isGroup", False)
+
+        if from_me or is_group or not message or not phone:
+            return _JR({"status": "ignored"})
+
+        from ..database import get_chatwoot_connection_by_token, get_whatsapp_credentials
+        conn = get_chatwoot_connection_by_token(user_token)
+        if not conn:
+            return _JR({"status": "invalid_token"}, status_code=404)
+
+        creds = get_whatsapp_credentials(conn["user_id"])
+        if not creds or not creds.get("chatwoot_inbox_id"):
+            return _JR({"status": "no_inbox"})
+
+        # Forward to user's Chatwoot as incoming message
+        try:
+            from ..chatwoot_integration import ChatwootClient
+            cw_token = conn.get("chatwoot_user_token") or conn["chatwoot_token"]
+            client = ChatwootClient(conn["chatwoot_url"], conn["chatwoot_account_id"], cw_token)
+            # Find or create contact + conversation
+            contact = client.find_or_create_contact(phone)
+            if contact and contact.get("id"):
+                convo = client.find_or_create_conversation(contact["id"], creds["chatwoot_inbox_id"])
+                if convo and convo.get("id"):
+                    client.send_message(convo["id"], message, message_type="incoming")
+        except Exception as e:
+            logger.error(f"Z-API webhook forward error: {e}")
 
         return _JR({"status": "ok"})
+
+    # ── Meta Webhook (per-user) ───────────────────────────────
+
+    @app.get("/api/v1/meta/webhook/{user_token}", tags=["meta"], include_in_schema=False)
+    async def meta_webhook_verify(user_token: str, request: _Req):
+        """Meta webhook verification challenge."""
+        mode = request.query_params.get("hub.mode", "")
+        token = request.query_params.get("hub.verify_token", "")
+        challenge = request.query_params.get("hub.challenge", "")
+        # Accept any verify_token for now (the user_token in URL is the auth)
+        if mode == "subscribe" and challenge:
+            from fastapi.responses import PlainTextResponse
+            return PlainTextResponse(challenge)
+        return _JR({"status": "invalid"}, status_code=403)
+
+    @app.post("/api/v1/meta/webhook/{user_token}", tags=["meta"], include_in_schema=False)
+    async def meta_webhook_tenant(user_token: str, request: _Req):
+        """Receive Meta WhatsApp messages and forward to user's Chatwoot inbox."""
+        try:
+            body = await request.json()
+        except Exception:
+            return _JR({"status": "invalid"}, status_code=400)
+
+        try:
+            entry = body.get("entry", [{}])[0]
+            changes = entry.get("changes", [{}])[0]
+            value = changes.get("value", {})
+            messages = value.get("messages", [])
+            if not messages:
+                return _JR({"status": "no_messages"})
+
+            from ..database import get_chatwoot_connection_by_token, get_whatsapp_credentials
+            conn = get_chatwoot_connection_by_token(user_token)
+            if not conn:
+                return _JR({"status": "invalid_token"}, status_code=404)
+
+            creds = get_whatsapp_credentials(conn["user_id"])
+            if not creds or not creds.get("chatwoot_inbox_id"):
+                return _JR({"status": "no_inbox"})
+
+            from ..chatwoot_integration import ChatwootClient
+            cw_token = conn.get("chatwoot_user_token") or conn["chatwoot_token"]
+            client = ChatwootClient(conn["chatwoot_url"], conn["chatwoot_account_id"], cw_token)
+
+            for msg in messages:
+                phone = msg.get("from", "")
+                msg_type = msg.get("type", "")
+                text = ""
+                if msg_type == "text":
+                    text = msg.get("text", {}).get("body", "")
+                elif msg_type in ("image", "audio", "video", "document"):
+                    text = f"[{msg_type} recebido]"
+                if not phone or not text:
+                    continue
+
+                contact = client.find_or_create_contact(phone)
+                if contact and contact.get("id"):
+                    convo = client.find_or_create_conversation(contact["id"], creds["chatwoot_inbox_id"])
+                    if convo and convo.get("id"):
+                        client.send_message(convo["id"], text, message_type="incoming")
+
+            return _JR({"status": "ok"})
+        except Exception as e:
+            logger.error(f"Meta webhook error: {e}")
+            return _JR({"status": "error"})
+
+    # ── Admin Infrastructure API ─────────────────────────────
+
+    @app.get("/api/v1/admin/infrastructure", tags=["admin"])
+    async def admin_infrastructure(request: _Req):
+        from .auth import _get_user_session
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return _JR({"error": "Acesso negado"}, status_code=403)
+        import subprocess
+        services = {}
+        # Clow
+        services["Clow App"] = {"url": "https://clow.pvcorretor01.com.br", "port": "8001", "status": "ok"}
+        # Chatwoot
+        try:
+            from ..chatwoot_integration import get_chatwoot_client
+            cl = get_chatwoot_client("admin-check")
+            inboxes = cl.get_inboxes() if cl else []
+            services["Chatwoot"] = {
+                "url": os.getenv("CHATWOOT_URL", ""),
+                "external_url": os.getenv("CHATWOOT_EXTERNAL_URL", ""),
+                "account_id": os.getenv("CHATWOOT_ACCOUNT_ID", ""),
+                "api_token": os.getenv("CHATWOOT_API_TOKEN", "")[:8] + "...",
+                "platform_token": os.getenv("CHATWOOT_PLATFORM_TOKEN", "")[:8] + "...",
+                "inboxes": len(inboxes) if isinstance(inboxes, list) else 0,
+                "status": "ok" if isinstance(inboxes, list) else "error",
+            }
+        except Exception as e:
+            services["Chatwoot"] = {"status": "error", "error": str(e)[:100]}
+        # Evolution API
+        try:
+            from urllib.request import urlopen, Request as Req
+            evo_url = "http://localhost:8080"  # Always localhost for server-to-server
+            evo_key = os.getenv("EVOLUTION_API_KEY", "")
+            req = Req(f"{evo_url}/instance/fetchInstances", headers={"apikey": evo_key})
+            with urlopen(req, timeout=5) as resp:
+                import json
+                instances = json.loads(resp.read().decode())
+            services["Evolution API"] = {
+                "url": evo_url,
+                "api_key": evo_key[:8] + "...",
+                "instances": len(instances),
+                "status": "ok",
+            }
+        except Exception as e:
+            services["Evolution API"] = {"status": "error", "error": str(e)[:100]}
+        # Bridge
+        try:
+            from urllib.request import urlopen
+            with urlopen("http://localhost:4000/health", timeout=3) as resp:
+                services["Bridge (Z-API)"] = {"port": "4000", "status": "ok"}
+        except Exception:
+            services["Bridge (Z-API)"] = {"port": "4000", "status": "offline"}
+        # Env summary (masked)
+        env_summary = {}
+        for k in sorted(os.environ.keys()):
+            if any(s in k.upper() for s in ["CHATWOOT", "EVOLUTION", "DEEPSEEK", "META", "STRIPE", "CLOW"]):
+                v = os.getenv(k, "")
+                if any(s in k.lower() for s in ["key", "token", "secret", "password"]):
+                    env_summary[k] = v[:8] + "..." if len(v) > 8 else v
+                else:
+                    env_summary[k] = v
+        return _JR({"services": services, "env": env_summary})
+
+
+def _chatwoot_bot_reply(conv_id: int, user_message: str, bot_cfg: dict, user_id: str = ""):
+    """Fetch conversation history from Chatwoot, call DeepSeek, reply via Chatwoot API."""
+    from ..chatwoot_integration import get_chatwoot_client_for_user, get_chatwoot_client
+    from .. import config as _cfg
+
+    cw_client = None
+    if user_id:
+        cw_client = get_chatwoot_client_for_user(user_id)
+    if not cw_client:
+        cw_client = get_chatwoot_client("bot")
+    if not cw_client:
+        logger.error("Chatwoot bot: no client available")
+        return
+
+    # Fetch conversation history
+    raw_msgs = cw_client.get_messages(conv_id)
+    context_size = bot_cfg.get("context_size", 20)
+
+    # Build LLM messages from Chatwoot history
+    history = []
+    for m in raw_msgs:
+        msg_type = m.get("message_type")
+        content = (m.get("content") or "").strip()
+        if not content:
+            continue
+        if msg_type == 0:  # incoming = user
+            history.append({"role": "user", "content": content})
+        elif msg_type == 1 and not m.get("private"):  # outgoing non-private = assistant
+            history.append({"role": "assistant", "content": content})
+    # Keep last N messages
+    history = history[-(context_size):]
+
+    # System prompt
+    system_prompt = bot_cfg.get("system_prompt", "").strip()
+    if not system_prompt:
+        system_prompt = "Voce e um assistente virtual profissional. Responda de forma clara e objetiva em portugues."
+    system_prompt += "\n\nVoce esta respondendo via WhatsApp/chat. Seja conciso e objetivo."
+
+    # Build LLM request
+    llm_msgs = [{"role": "system", "content": system_prompt}]
+    llm_msgs.extend(history)
+    # Ensure last message is the current user message (history may not include it yet)
+    if not llm_msgs or llm_msgs[-1].get("content") != user_message:
+        llm_msgs.append({"role": "user", "content": user_message})
+
+    # Call DeepSeek
+    from openai import OpenAI
+    client = OpenAI(**_cfg.get_deepseek_client_kwargs())
+    model = bot_cfg.get("model", "deepseek-chat")
+    max_tokens = bot_cfg.get("max_tokens", 1024)
+
+    response = client.chat.completions.create(
+        model=model,
+        messages=llm_msgs,
+        max_tokens=max_tokens,
+    )
+    reply = response.choices[0].message.content if response.choices else ""
+    if not reply:
+        return
+
+    # Track usage
+    inp_tokens = response.usage.prompt_tokens if response.usage else 0
+    out_tokens = response.usage.completion_tokens if response.usage else 0
+    try:
+        from ..metrics_collector import record_request
+        record_request("chatwoot_bot", "admin", inp_tokens, out_tokens, source="chatwoot_bot")
+    except Exception:
+        pass
+
+    # Reply in Chatwoot
+    cw_client.send_message(conv_id, reply, message_type="outgoing", private=False)
+    logger.info(f"Chatwoot bot replied conv={conv_id} tokens={inp_tokens}+{out_tokens}")
 
 
 def _process_with_chatwoot(instance_id: str, phone: str, combined_message: str):
@@ -828,9 +1320,8 @@ def _process_with_chatwoot(instance_id: str, phone: str, combined_message: str):
                     cw_client, instance_id, phone, inbox_id
                 )
 
-                # Send the incoming message to Chatwoot
-                if cw_convo_id:
-                    cw_client.send_message(cw_convo_id, combined_message, message_type="incoming")
+                # NOTE: Do NOT send incoming message here — bridge.js already creates it in Chatwoot.
+                # Sending here would duplicate the message.
 
                 # Check if handoff is active — if so, skip AI processing entirely
                 if cw_convo_id and check_handoff_label(cw_client, cw_convo_id, handoff_label):
@@ -843,12 +1334,11 @@ def _process_with_chatwoot(instance_id: str, phone: str, combined_message: str):
     # --- Normal AI processing ---
     reply = get_wa_manager().process_incoming(instance_id, phone, combined_message)
 
-    # --- Chatwoot post-processing (send AI reply, check labels) ---
+    # --- Chatwoot post-processing (check labels — messages are synced by bridge.js) ---
     if cw_client and cw_convo_id:
         try:
-            # Send AI response to Chatwoot as outgoing message
-            if reply:
-                cw_client.send_message(cw_convo_id, "[Bot] " + reply, message_type="outgoing", private=True)
+            # NOTE: Do NOT send outgoing reply here — bridge.js already syncs the Z-API
+            # fromMe message to Chatwoot. Sending here would duplicate the bot reply.
 
             # Check for handoff keywords in user message
             handoff_keywords = ["humano", "atendente", "pessoa", "gerente", "falar com alguem"]

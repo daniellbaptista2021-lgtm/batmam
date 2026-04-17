@@ -167,6 +167,24 @@
         "montar site"
       ],
       "path": "imported/design/SKILL.md"
+    },
+    {
+      "id": "clone",
+      "name": "Website Cloner",
+      "category": "integration",
+      "trigger_words": [
+        "/clone",
+        "/clone-website",
+        "clonar site",
+        "clone site",
+        "clone website",
+        "clonar landing",
+        "clonar pagina",
+        "website cloner",
+        "clone esse site",
+        "clona esse site"
+      ],
+      "path": "imported/clone/SKILL.md"
     }
   ]
 }

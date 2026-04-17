@@ -1495,6 +1495,37 @@ def run_repl(args: argparse.Namespace) -> None:
             continue
 
 
+def _handle_clone_command(argv: list[str]) -> int:
+    """Subcommand `clow clone <url> [flags]` — pipeline website_cloner."""
+    sub = argparse.ArgumentParser(
+        prog="clow clone",
+        description="Clona um site/landing page gerando projeto Next.js completo (deepseek-reasoner)",
+    )
+    sub.add_argument("url", help="URL alvo (http:// ou https://)")
+    sub.add_argument("-o", "--output", default="", help="Diretorio de output (default: ~/.clow/clones/<dominio>)")
+    sub.add_argument("--skip-qa", action="store_true", help="Pula a fase 5 (QA)")
+    sub.add_argument("--skip-build", action="store_true", help="Pula npm install + build")
+    args = sub.parse_args(argv)
+
+    from .skills.website_cloner import clone_site, format_result
+
+    def _on_progress(phase: str, status: str, info: dict):
+        info_str = " ".join(f"{k}={v}" for k, v in info.items()) if info else ""
+        console.print(f"  [cyan]{status:>7}[/]  {phase}  [dim]{info_str}[/]")
+
+    console.print(f"\n[bold]Clonando[/] {args.url}\n")
+    result = clone_site(
+        url=args.url,
+        output_dir=args.output,
+        skip_qa=args.skip_qa,
+        skip_build=args.skip_build,
+        progress_cb=_on_progress,
+    )
+    console.print()
+    console.print(format_result(result))
+    return 0 if result.get("status") == "ok" else 1
+
+
 def main() -> None:
     from .bootstrap import profile_checkpoint, init, setup, is_fast_path, get_state, preconnect_api
     profile_checkpoint("cli_entry")
@@ -1504,6 +1535,12 @@ def main() -> None:
     if fast == "version":
         print(f"Clow v{__version__}")
         return
+
+    # Subcommand: clow clone <url> ...
+    if len(sys.argv) > 1 and sys.argv[1] == "clone":
+        init()
+        rc = _handle_clone_command(sys.argv[2:])
+        sys.exit(rc)
 
     # Full startup: init bootstrap + preconnect API (fire-and-forget TCP+TLS)
     init()

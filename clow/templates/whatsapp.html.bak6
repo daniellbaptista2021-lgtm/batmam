@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Clow — WhatsApp</title>
+<link rel="icon" href="/static/brand/favicon.png">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050510;--bg2:#0a0a1a;--bg3:#0f0f1e;--border:#1a1a2e;--border2:#2a2a4e;
+  --t1:#e4e4e7;--t2:#71717a;--t3:#52525b;
+  --p:#9B59FC;--wa:#25D366;--red:#F87171;--green:#4ADE80;--blue:#4A9EFF;
+  --font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'Courier New',monospace;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--t1);min-height:100vh}
+a{color:var(--p);text-decoration:none}
+
+/* Top bar */
+.top{display:flex;align-items:center;gap:10px;padding:10px 20px;background:var(--bg2);border-bottom:1px solid var(--border);height:48px}
+.top img{height:22px}
+.top .label{font-weight:700;font-size:14px;color:var(--wa);display:flex;align-items:center;gap:6px}
+.top .back{color:var(--t2);font-size:13px;transition:color .2s}
+.top .back:hover{color:var(--t1)}
+
+/* Main */
+.main{max-width:900px;margin:0 auto;padding:24px 20px}
+.main>p{color:var(--t2);font-size:14px;margin-bottom:20px}
+
+/* Instance cards */
+.instances{display:flex;flex-direction:column;gap:16px}
+.inst-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.inst-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer}
+.inst-header:hover{background:rgba(155,89,252,.02)}
+.inst-name{font-weight:600;font-size:14px;display:flex;align-items:center;gap:8px}
+.inst-status{width:8px;height:8px;border-radius:50%}
+.inst-status.on{background:var(--green);box-shadow:0 0 6px rgba(74,222,128,.4)}
+.inst-status.off{background:var(--red)}
+.inst-badge{font-size:10px;padding:2px 8px;border-radius:8px;font-weight:600}
+.inst-badge.meta{background:rgba(37,211,102,.12);color:var(--wa)}
+.inst-badge.evo{background:rgba(74,158,255,.12);color:var(--blue)}
+.inst-badge.zapi{background:rgba(155,89,252,.12);color:var(--p)}
+.inst-actions{display:flex;gap:6px}
+.inst-body{padding:18px;display:none}
+.inst-card.open .inst-body{display:block}
+.chevron{color:var(--t3);font-size:12px;transition:transform .2s}
+.inst-card.open .chevron{transform:rotate(180deg)}
+
+/* Form */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;font-weight:600}
+.field input,.field textarea,.field select{width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--t1);font-family:var(--font);font-size:13px;outline:none;transition:border .2s}
+.field input:focus,.field textarea:focus{border-color:var(--p)}
+.field textarea{min-height:120px;resize:vertical;font-size:12px;line-height:1.6}
+.field .hint{font-size:11px;color:var(--t3);margin-top:3px}
+.row{display:flex;gap:12px}
+.row .field{flex:1}
+
+/* Toggle */
+.toggle{display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:14px}
+.toggle input{display:none}
+.ttrack{width:36px;height:20px;background:var(--bg);border-radius:10px;position:relative;border:1px solid var(--border);flex-shrink:0;transition:background .2s}
+.toggle input:checked+.ttrack{background:var(--wa);border-color:var(--wa)}
+.ttrack::after{content:'';width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;top:2px;left:2px;transition:transform .2s}
+.toggle input:checked+.ttrack::after{transform:translateX(16px)}
+.toggle span{font-size:13px}
+
+/* Buttons */
+.btn{padding:8px 16px;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;font-family:var(--font);transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-wa{background:var(--wa);color:#fff}.btn-wa:hover:not(:disabled){filter:brightness(1.1)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-outline{background:transparent;color:var(--t2);border:1px solid var(--border)}.btn-outline:hover{border-color:var(--p);color:var(--t1)}
+.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(248,113,113,.2)}.btn-danger:hover{background:rgba(248,113,113,.08)}
+
+/* Add button */
+.add-card{border:2px dashed var(--border);border-radius:12px;padding:30px;text-align:center;cursor:pointer;transition:all .2s}
+.add-card:hover{border-color:var(--wa);background:rgba(37,211,102,.02)}
+.add-card .plus{font-size:28px;color:var(--t3);margin-bottom:6px}
+.add-card p{font-size:13px;color:var(--t2)}
+
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;justify-content:center;align-items:flex-start;padding:40px 16px;overflow-y:auto}
+.overlay.show{display:flex}
+.modal{width:100%;max-width:500px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;animation:slideUp .2s}
+@keyframes slideUp{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.modal-head h2{font-size:15px;font-weight:700}
+.modal-body{padding:20px}
+.close-x{background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer;line-height:1}
+.close-x:hover{color:var(--t1)}
+
+/* Provider cards */
+.providers{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.prov-card{display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .2s}
+.prov-card:hover{border-color:var(--wa)}
+.prov-card.selected{border-color:var(--wa);background:rgba(37,211,102,.04)}
+.prov-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.prov-name{font-weight:600;font-size:13px}
+.prov-desc{font-size:11px;color:var(--t2);margin-top:1px}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:200;animation:slideUp .2s;max-width:300px}
+.toast-ok{background:#065F46;color:#A7F3D0;border:1px solid #10B981}
+.toast-err{background:#7F1D1D;color:#FCA5A5;border:1px solid #EF4444}
+
+@media(max-width:640px){
+  .main{padding:16px 12px}
+  .row{flex-direction:column;gap:0}
+  .modal{max-width:100%}
+}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <a href="/" class="back">&larr; Voltar ao Clow</a>
+  <img src="/static/brand/logo-sidebar.png" alt="Clow">
+  <span class="label">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+    WhatsApp
+  </span>
+</div>
+
+<div class="main">
+  <p>Conecte seus numeros e configure o chatbot com IA para atender seus clientes 24/7.</p>
+
+  <div class="instances" id="instances">
+    <div style="text-align:center;padding:40px;color:var(--t2)">Carregando...</div>
+  </div>
+
+  <div class="add-card" onclick="openAddModal()" style="margin-top:16px" id="addCard">
+    <div class="plus">+</div>
+    <p>Conectar novo numero</p>
+  </div>
+</div>
+
+<!-- Add Instance Modal -->
+<div class="overlay" id="addOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Conectar WhatsApp</h2>
+      <button class="close-x" onclick="closeAddModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label>Nome da instancia</label>
+        <input id="newName" placeholder="Ex: Atendimento Principal">
+      </div>
+
+      <label style="display:block;font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:600">Provedor</label>
+      <div class="providers" id="provList">
+        <div class="prov-card selected" onclick="selectProv('meta',this)">
+          <div class="prov-icon" style="background:rgba(37,211,102,.1)">&#x1F7E2;</div>
+          <div>
+            <div class="prov-name">Meta API Oficial</div>
+            <div class="prov-desc">WhatsApp Business Platform — zero risco de ban</div>
+          </div>
+        </div>
+        <div class="prov-card" onclick="selectProv('evolution',this)">
+          <div class="prov-icon" style="background:rgba(74,158,255,.1)">&#x1F535;</div>
+          <div>
+            <div class="prov-name">Evolution API</div>
+            <div class="prov-desc">API open-source, conecte via QR Code</div>
+          </div>
+        </div>
+        <div class="prov-card" onclick="selectProv('zapi',this)">
+          <div class="prov-icon" style="background:rgba(155,89,252,.1)">&#x1F7E3;</div>
+          <div>
+            <div class="prov-name">Z-API</div>
+            <div class="prov-desc">Conexao rapida via Z-API, sem aprovacao</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Meta fields -->
+      <div id="metaFields">
+        <div class="field">
+          <label>Access Token</label>
+          <input id="newMetaToken" placeholder="EAAxxxxxxx...">
+          <div class="hint">Meta Business &rarr; WhatsApp &rarr; Configuracao da API &rarr; Token temporario ou permanente</div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Phone Number ID</label>
+            <input id="newMetaPhoneId" placeholder="123456789...">
+          </div>
+          <div class="field">
+            <label>WABA ID (opcional)</label>
+            <input id="newMetaWabaId" placeholder="123456789...">
+          </div>
+        </div>
+        <div style="margin-top:14px;padding:14px;background:rgba(37,211,102,.04);border:1px solid rgba(37,211,102,.12);border-radius:10px">
+          <div style="font-size:12px;font-weight:700;color:var(--wa);margin-bottom:8px">&#128279; Configuracao do Webhook</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7;margin-bottom:10px">
+            <strong style="color:var(--t1)">Apos salvar, copie a Webhook URL gerada e configure no Meta:</strong><br>
+            1. Acesse <a href="https://developers.facebook.com" target="_blank" style="color:var(--wa)">developers.facebook.com</a><br>
+            2. Seu App &rarr; WhatsApp &rarr; Configuracao<br>
+            3. Em <strong>Webhooks</strong>, clique Editar<br>
+            4. Cole a <strong>Webhook URL</strong> e o <strong>Verify Token</strong><br>
+            5. Assine o campo <strong>messages</strong>
+          </div>
+          <div style="font-size:11px;color:var(--t3)">&#128274; O Webhook URL sera gerado automaticamente apos clicar em "Salvar e Conectar"</div>
+        </div>
+      </div>
+
+      <!-- Evolution fields -->
+      <div id="evoFields" style="display:none">
+        <div class="field">
+          <label>URL do Evolution API</label>
+          <input id="newEvoUrl" placeholder="https://evolution.seudominio.com">
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>API Key</label>
+            <input id="newEvoKey" placeholder="sua-api-key">
+          </div>
+          <div class="field">
+            <label>Nome da instancia</label>
+            <input id="newEvoInstance" placeholder="clow-bot">
+          </div>
+        </div>
+        <div style="margin-top:14px;padding:14px;background:rgba(74,158,255,.04);border:1px solid rgba(74,158,255,.12);border-radius:10px">
+          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px">&#128279; Configuracao do Webhook</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7;margin-bottom:10px">
+            <strong style="color:var(--t1)">Apos salvar, copie a Webhook URL e configure no Evolution API:</strong><br>
+            1. Acesse o painel do seu Evolution API<br>
+            2. Configuracoes da instancia &rarr; <strong>Webhook</strong><br>
+            3. Cole a URL gerada<br>
+            4. Ative o evento <strong>MESSAGES_UPSERT</strong>
+          </div>
+          <div style="font-size:11px;color:var(--t3)">&#128274; O Webhook URL sera gerado automaticamente apos clicar em "Salvar e Conectar"</div>
+        </div>
+      </div>
+
+      <!-- Z-API fields -->
+      <div id="zapiFields" style="display:none">
+        <div class="field">
+          <label>Instance ID</label>
+          <input id="newZapiId" placeholder="Seu Instance ID da Z-API">
+          <div class="hint">Encontre em painel.z-api.io &rarr; sua instancia &rarr; ID</div>
+        </div>
+        <div class="field">
+          <label>Token</label>
+          <input id="newZapiToken" placeholder="Seu Token da Z-API">
+          <div class="hint">Encontre em painel.z-api.io &rarr; sua instancia &rarr; Token</div>
+        </div>
+        <div style="margin-top:14px;padding:14px;background:rgba(155,89,252,.04);border:1px solid rgba(155,89,252,.12);border-radius:10px">
+          <div style="font-size:12px;font-weight:700;color:var(--p);margin-bottom:8px">&#128279; Configuracao do Webhook</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7;margin-bottom:10px">
+            <strong style="color:var(--t1)">Apos salvar, copie a Webhook URL e configure na Z-API:</strong><br>
+            1. Acesse <a href="https://painel.z-api.io" target="_blank" style="color:var(--p)">painel.z-api.io</a><br>
+            2. Sua instancia &rarr; <strong>Webhooks</strong><br>
+            3. Em "URL para recebimento", cole a URL gerada<br>
+            4. Ative o webhook e salve
+          </div>
+          <div style="font-size:11px;color:var(--t3)">&#128274; O Webhook URL sera gerado automaticamente apos clicar em "Salvar e Conectar"</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn btn-outline" onclick="testNewConn()" id="btnTest">Testar Conexao</button>
+        <button class="btn btn-wa" onclick="saveNewInst()" id="btnSave" style="flex:1">Salvar e Conectar</button>
+      </div>
+      <div id="addResult" style="margin-top:10px;font-size:13px"></div>
+
+      <div id="webhookSuccess" style="display:none">
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:40px;margin-bottom:8px">&#9989;</div>
+          <div style="font-size:16px;font-weight:700;color:var(--green)">Numero conectado!</div>
+          <div style="font-size:13px;color:var(--t2);margin-top:4px">Agora configure o Webhook no painel do seu provedor</div>
+        </div>
+        <div class="field">
+          <label>Webhook URL (copie e cole no seu provedor)</label>
+          <div style="display:flex;gap:6px">
+            <input id="webhookUrl" readonly style="flex:1;font-family:var(--mono);font-size:11px;background:var(--bg);cursor:text">
+            <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('webhookUrl').value);toast('URL copiada!','ok')" style="flex-shrink:0">Copiar</button>
+          </div>
+        </div>
+        <div id="webhookVerifyToken" style="display:none" class="field">
+          <label>Verify Token (para Meta API)</label>
+          <div style="display:flex;gap:6px">
+            <input id="webhookVT" readonly style="flex:1;font-family:var(--mono);font-size:11px;background:var(--bg);cursor:text">
+            <button class="btn btn-outline btn-sm" onclick="navigator.clipboard.writeText(document.getElementById('webhookVT').value);toast('Token copiado!','ok')" style="flex-shrink:0">Copiar</button>
+          </div>
+        </div>
+        <div id="webhookInstructions" style="margin-top:12px;padding:12px;background:var(--bg);border-radius:8px;font-size:12px;color:var(--t2);line-height:1.7"></div>
+        <button class="btn btn-wa" onclick="closeAddModal()" style="width:100%;margin-top:16px">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var STATE = {instances:[], provider:'meta'};
+
+function $(id){return document.getElementById(id)}
+
+function toast(msg,type){
+  var t=document.createElement('div');
+  t.className='toast toast-'+(type||'ok');
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){t.style.opacity='0';setTimeout(function(){t.remove()},300)},3000);
+}
+
+async function api(url,opts){
+  opts=opts||{};
+  var r=await fetch(url,Object.assign({credentials:'same-origin'},opts));
+  var d=await r.json();
+  if(!r.ok&&d.error)throw new Error(d.error);
+  return d;
+}
+
+/* Provider selection */
+function selectProv(p,el){
+  STATE.provider=p;
+  document.querySelectorAll('.prov-card').forEach(function(c){c.classList.remove('selected')});
+  el.classList.add('selected');
+  $('metaFields').style.display=p==='meta'?'block':'none';
+  $('evoFields').style.display=p==='evolution'?'block':'none';
+  $('zapiFields').style.display=p==='zapi'?'block':'none';
+}
+
+/* Load instances */
+async function loadInstances(){
+  try{
+    var d=await api('/api/v1/whatsapp/instances');
+    STATE.instances=d.instances||[];
+    renderInstances();
+  }catch(e){
+    $('instances').innerHTML='<div style="text-align:center;padding:30px;color:var(--red)">Erro: '+e.message+'</div>';
+  }
+}
+
+function renderInstances(){
+  if(STATE.instances.length===0){
+    $('instances').innerHTML='<div style="text-align:center;padding:30px;color:var(--t2)">Nenhum numero conectado ainda. Clique abaixo para adicionar.</div>';
+    return;
+  }
+  var html='';
+  STATE.instances.forEach(function(inst){
+    var active=inst.active;
+    var prov=inst.provider||'zapi';
+    var provLabel=prov==='meta'?'Meta Oficial':prov==='evolution'?'Evolution API':prov==='zapi'?'Z-API':'API';
+    var provClass=prov==='meta'?'meta':prov==='evolution'?'evo':'zapi';
+    html+='<div class="inst-card" id="card-'+inst.id+'">';
+    html+='<div class="inst-header" onclick="toggleCard(\''+inst.id+'\')">';
+    html+='<div class="inst-name"><span class="inst-status '+(active?'on':'off')+'"></span>'+inst.name+'<span class="inst-badge '+provClass+'">'+provLabel+'</span></div>';
+    html+='<div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--t3)">'+(inst.stats?inst.stats.messages_today||0:0)+' msgs hoje</span><span class="chevron">&#9660;</span></div>';
+    html+='</div>';
+    html+='<div class="inst-body">';
+
+    // Prompt field
+    html+='<div class="field"><label>Prompt do Assistente</label>';
+    html+='<textarea id="prompt-'+inst.id+'" placeholder="Voce e a assistente virtual da [empresa]. Seja simpatica, objetiva...">'+(inst.system_prompt||'')+'</textarea>';
+    html+='<div class="hint">Defina a personalidade e regras do chatbot.</div></div>';
+
+    // Handoff toggle
+    html+='<label class="toggle"><input type="checkbox" id="handoff-'+inst.id+'" '+(inst.handoff_enabled?'checked':'')+'><div class="ttrack"></div><span>Handoff humano (pausar bot quando cliente pedir atendente)</span></label>';
+
+    // Actions
+    html+='<div style="display:flex;gap:8px;flex-wrap:wrap">';
+    html+='<button class="btn btn-wa btn-sm" onclick="saveInstance(\''+inst.id+'\')">Salvar</button>';
+    html+='<button class="btn btn-outline btn-sm" onclick="toggleActive(\''+inst.id+'\','+(!active)+')">'+(active?'Pausar Bot':'Ativar Bot')+'</button>';
+    html+='<button class="btn btn-danger btn-sm" onclick="removeInstance(\''+inst.id+'\',\''+inst.name+'\')">Remover</button>';
+    html+='</div>';
+
+    // Webhook info
+    var wUrl = prov==='meta' ? 'https://clow.pvcorretor01.com.br/api/v1/whatsapp/meta/webhook/'+inst.id : 'https://clow.pvcorretor01.com.br/api/v1/whatsapp/webhook/'+inst.id;
+    html+='<div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;font-size:11px;color:var(--t3);display:flex;align-items:center;justify-content:space-between;gap:8px">';
+    html+='<div>Webhook: <span style="color:var(--t2);font-family:var(--mono);font-size:10px;user-select:all;word-break:break-all">'+wUrl+'</span></div>';
+    html+='<button class="btn btn-outline" style="padding:3px 8px;font-size:10px;flex-shrink:0" onclick="navigator.clipboard.writeText(\''+wUrl+'\');toast(\'Copiado!\',\'ok\')">Copiar</button>';
+    html+='</div>';
+
+    html+='</div></div>';
+  });
+  $('instances').innerHTML=html;
+}
+
+function toggleCard(id){
+  var card=$('card-'+id);
+  if(card)card.classList.toggle('open');
+}
+
+/* Save instance config */
+async function saveInstance(id){
+  var prompt=$('prompt-'+id).value;
+  var handoff=$('handoff-'+id).checked;
+  try{
+    await api('/api/v1/whatsapp/instances/'+id,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({system_prompt:prompt,handoff_enabled:handoff})
+    });
+    toast('Configuracao salva!','ok');
+  }catch(e){toast('Erro: '+e.message,'err');}
+}
+
+async function toggleActive(id,activate){
+  try{
+    await api('/api/v1/whatsapp/instances/'+id+'/'+(activate?'activate':'deactivate'),{method:'POST'});
+    toast(activate?'Bot ativado':'Bot pausado','ok');
+    loadInstances();
+  }catch(e){toast('Erro: '+e.message,'err');}
+}
+
+async function removeInstance(id,name){
+  if(!confirm('Remover "'+name+'"? Todas as conversas serao perdidas.'))return;
+  try{
+    await api('/api/v1/whatsapp/instances/'+id,{method:'DELETE'});
+    toast('Removido','ok');
+    loadInstances();
+  }catch(e){toast('Erro: '+e.message,'err');}
+}
+
+/* Modal */
+function openAddModal(){
+  $('webhookSuccess').style.display='none';
+  $('webhookVerifyToken').style.display='none';
+  document.querySelectorAll('#addOverlay .field, #addOverlay .providers, #addOverlay .row, #addOverlay #metaFields, #addOverlay #btnTest, #addOverlay #btnSave, #addOverlay #addResult').forEach(function(el){ el.style.display=''; });
+  $('newName').value='';
+  $('newMetaToken').value='';
+  $('newMetaPhoneId').value='';
+  $('newMetaWabaId').value='';
+  $('addResult').innerHTML='';
+  STATE.provider='meta';
+  document.querySelectorAll('.prov-card').forEach(function(c,i){c.classList.toggle('selected',i===0)});
+  $('metaFields').style.display='block';
+  $('evoFields').style.display='none';
+  $('zapiFields').style.display='none';
+  $('addOverlay').classList.add('show');
+}
+
+function closeAddModal(){
+  $('addOverlay').classList.remove('show');
+  loadInstances();
+}
+
+async function testNewConn(){
+  $('addResult').innerHTML='<span style="color:var(--blue)">Testando...</span>';
+  $('btnTest').disabled=true;
+  try{
+    if(STATE.provider==='meta'){
+      var token=$('newMetaToken').value.trim();
+      var phoneId=$('newMetaPhoneId').value.trim();
+      if(!token||!phoneId){$('addResult').innerHTML='<span style="color:var(--red)">Preencha Access Token e Phone Number ID</span>';$('btnTest').disabled=false;return;}
+      var r=await api('/api/v1/whatsapp/instances/test-meta',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({access_token:token,phone_number_id:phoneId})});
+      if(r.success){$('addResult').innerHTML='<span style="color:var(--green)">Conectado! Numero: '+(r.phone||'OK')+'</span>';}
+      else{$('addResult').innerHTML='<span style="color:var(--red)">'+(r.error||'Falha na conexao')+'</span>';}
+    }else{
+      $('addResult').innerHTML='<span style="color:var(--blue)">Conexao sera testada ao salvar</span>';
+    }
+  }catch(e){$('addResult').innerHTML='<span style="color:var(--red)">Erro: '+e.message+'</span>';}
+  $('btnTest').disabled=false;
+}
+
+async function saveNewInst(){
+  var name=$('newName').value.trim()||'WhatsApp';
+  $('btnSave').disabled=true;$('btnSave').textContent='Salvando...';
+  try{
+    var body={name:name,provider:STATE.provider};
+    if(STATE.provider==='meta'){
+      body.meta_access_token=$('newMetaToken').value.trim();
+      body.meta_phone_number_id=$('newMetaPhoneId').value.trim();
+      body.meta_waba_id=$('newMetaWabaId').value.trim();
+      body.meta_verify_token='clow_'+Math.random().toString(36).substr(2,12);
+      body.zapi_instance_id='meta-'+body.meta_phone_number_id;
+      body.zapi_token='meta';
+      if(!body.meta_access_token||!body.meta_phone_number_id){toast('Preencha Access Token e Phone Number ID','err');$('btnSave').disabled=false;$('btnSave').textContent='Salvar e Conectar';return;}
+    }else if(STATE.provider==='evolution'){
+      body.meta_access_token=$('newEvoKey').value.trim();
+      body.meta_phone_number_id=$('newEvoInstance').value.trim();
+      body.meta_waba_id=$('newEvoUrl').value.trim();
+      body.zapi_instance_id='evo-'+Date.now();
+      body.zapi_token='evolution';
+    }else{
+      body.zapi_instance_id=$('newZapiId').value.trim();
+      body.zapi_token=$('newZapiToken').value.trim();
+      if(!body.zapi_instance_id||!body.zapi_token){toast('Preencha Instance ID e Token','err');$('btnSave').disabled=false;$('btnSave').textContent='Salvar e Conectar';return;}
+      body.provider='zapi';
+
+    }
+    var r=await api('/api/v1/whatsapp/instances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(r.success){
+      // Show webhook info
+      var instId = r.instance ? r.instance.id : '';
+      var baseUrl = 'https://clow.pvcorretor01.com.br';
+      var webhookUrl = '';
+      var verifyToken = '';
+      var instructions = '';
+
+      if(STATE.provider === 'meta'){
+        webhookUrl = baseUrl + '/api/v1/whatsapp/meta/webhook/' + instId;
+        verifyToken = body.meta_verify_token || '';
+        instructions = '<strong>No Meta Business Suite:</strong><br>' +
+          '1. Acesse <a href="https://developers.facebook.com" target="_blank" style="color:var(--wa)">developers.facebook.com</a><br>' +
+          '2. Seu App &rarr; WhatsApp &rarr; Configuracao<br>' +
+          '3. Em <strong>Webhooks</strong>, clique Editar<br>' +
+          '4. Cole a <strong>Webhook URL</strong> acima<br>' +
+          '5. Cole o <strong>Verify Token</strong> acima<br>' +
+          '6. Clique Verificar e Salvar<br>' +
+          '7. Assine o campo <strong>messages</strong>';
+      } else if(STATE.provider === 'evolution'){
+        webhookUrl = baseUrl + '/api/v1/whatsapp/webhook/' + instId;
+        instructions = '<strong>No painel do Evolution API:</strong><br>' +
+          '1. Acesse as configuracoes da sua instancia<br>' +
+          '2. Em <strong>Webhook</strong>, cole a URL acima<br>' +
+          '3. Ative os eventos: <strong>MESSAGES_UPSERT</strong><br>' +
+          '4. Salve as configuracoes';
+      } else {
+        webhookUrl = baseUrl + '/api/v1/whatsapp/webhook/' + instId;
+        instructions = '<strong>No painel da Z-API (painel.z-api.io):</strong><br>' +
+          '1. Acesse sua instancia<br>' +
+          '2. Va em <strong>Webhooks</strong><br>' +
+          '3. Em "URL para recebimento", cole a URL acima<br>' +
+          '4. Ative o webhook e salve';
+      }
+
+      // Hide form, show webhook panel
+      document.querySelectorAll('#addOverlay .field, #addOverlay .providers, #addOverlay .row, #addOverlay #metaFields, #addOverlay #evoFields, #addOverlay #zapiFields, #addOverlay #btnTest, #addOverlay #btnSave, #addOverlay #addResult, #addOverlay label[style]').forEach(function(el){ el.style.display='none'; });
+      $('webhookSuccess').style.display='block';
+      $('webhookUrl').value = webhookUrl;
+      if(verifyToken){
+        $('webhookVerifyToken').style.display='block';
+        $('webhookVT').value = verifyToken;
+      }
+      $('webhookInstructions').innerHTML = instructions;
+      toast('Numero conectado!','ok');
+    }else{toast(r.error||'Erro ao conectar','err');}
+  }catch(e){toast('Erro: '+e.message,'err');}
+  $('btnSave').disabled=false;$('btnSave').textContent='Salvar e Conectar';
+}
+
+/* Init */
+loadInstances();
+</script>
+</body>
+</html>

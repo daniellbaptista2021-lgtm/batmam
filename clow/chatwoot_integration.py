@@ -165,6 +165,27 @@ def get_chatwoot_client(tenant_id: str) -> ChatwootClient | None:
     return client
 
 
+def get_chatwoot_client_for_user(user_id: str) -> ChatwootClient | None:
+    """Get Chatwoot client using the user's own credentials from chatwoot_connections."""
+    cache_key = f"user:{user_id}"
+    if cache_key in _clients:
+        return _clients[cache_key]
+
+    from .database import get_chatwoot_connection_by_user
+    conn = get_chatwoot_connection_by_user(user_id)
+    if not conn:
+        return None
+
+    client = ChatwootClient(conn["chatwoot_url"], conn["chatwoot_account_id"], conn["chatwoot_token"])
+    _clients[cache_key] = client
+    return client
+
+
+def invalidate_user_client(user_id: str):
+    """Remove cached client when user reconnects."""
+    _clients.pop(f"user:{user_id}", None)
+
+
 # Conversation ID cache: {instance_id:phone -> chatwoot_conversation_id}
 _conversation_cache: dict[str, int] = {}
 

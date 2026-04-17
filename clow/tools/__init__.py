@@ -49,6 +49,7 @@ from .workflow_tool import WorkflowTool
 from .task_output import TaskOutputTool
 from .config_tool import ConfigTool
 from .memory_tools import MemoryReadTool, MemoryWriteTool, MemoryDeleteTool
+from .clone_tool import CloneWebsiteTool
 
 from .base import BaseTool, ToolRegistry
 
@@ -117,6 +118,8 @@ ONDEMAND_TOOLS = [
     "canva_template", "design_generate",
     # Git (2)
     "git_advanced", "git_ops",
+    # Website Cloner (1)
+    "clone_website",
 ]
 
 # All tool classes for easy import
@@ -151,6 +154,8 @@ CLAUDE_CODE_TOOL_CLASSES = [
     RemoteTriggerTool,
     # Memory
     MemoryReadTool, MemoryWriteTool, MemoryDeleteTool,
+    # Website Cloner
+    CloneWebsiteTool,
 ]
 
 __all__ = [
@@ -212,6 +217,8 @@ __all__ = [
     "MemoryReadTool",
     "MemoryWriteTool",
     "MemoryDeleteTool",
+    # Website Cloner
+    "CloneWebsiteTool",
     # Lists
     "CORE_TOOLS",
     "CLAUDE_CODE_TOOLS",

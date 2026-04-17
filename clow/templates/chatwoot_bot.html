@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Clow — Bot Chatwoot</title>
+<link rel="icon" href="/static/brand/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050510;--bg2:#0F0F24;--bg3:#14142E;--bd:rgba(100,100,180,.12);--bdf:rgba(155,89,252,.5);--p:#9B59FC;--bl:#4A9EFF;--gp:linear-gradient(135deg,#9B59FC,#4A9EFF);--g:#34D399;--r:#F87171;--y:#FBBF24;--t1:#E8E8F0;--t2:#9898B8;--tm:#585878;--sans:'DM Sans',sans-serif;--mono:'JetBrains Mono',monospace}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased}
+
+.top{display:flex;align-items:center;gap:12px;padding:16px 24px;border-bottom:1px solid var(--bd);background:var(--bg2)}
+.top img{height:32px}
+.top h1{font-size:1.1rem;font-weight:600}
+.top .back{margin-left:auto;font-size:.85rem;color:var(--t2);text-decoration:none}
+.top .back:hover{color:var(--t1)}
+
+.wrap{max-width:800px;margin:32px auto;padding:0 24px}
+.desc{color:var(--t2);font-size:.9rem;margin-bottom:24px;line-height:1.6}
+
+.add-bar{display:flex;gap:8px;margin-bottom:24px}
+.add-bar input{flex:1;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;color:var(--t1);font-family:var(--sans);font-size:.9rem;outline:none}
+.add-bar input:focus{border-color:var(--bdf)}
+.add-bar input::placeholder{color:var(--tm)}
+.add-bar button{background:var(--gp);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-family:var(--sans);white-space:nowrap}
+.add-bar button:hover{opacity:.9}
+
+.cards{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:20px;transition:border-color .2s}
+.card:hover{border-color:rgba(155,89,252,.2)}
+.card-hdr{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.card-hdr .inbox-name{font-weight:600;font-size:1rem;flex:1}
+.card-hdr .inbox-id{font-size:.75rem;color:var(--tm);font-family:var(--mono)}
+.card-hdr .toggle{position:relative;width:44px;height:24px;cursor:pointer}
+.card-hdr .toggle input{display:none}
+.card-hdr .toggle .slider{position:absolute;inset:0;background:var(--bg3);border-radius:12px;transition:background .2s}
+.card-hdr .toggle .slider::after{content:'';position:absolute;left:3px;top:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s}
+.card-hdr .toggle input:checked+.slider{background:var(--p)}
+.card-hdr .toggle input:checked+.slider::after{transform:translateX(20px)}
+
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.8rem;font-weight:600;color:var(--t2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
+.field textarea{width:100%;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:12px;color:var(--t1);font-family:var(--mono);font-size:.85rem;resize:vertical;min-height:120px;outline:none;line-height:1.5}
+.field textarea:focus{border-color:var(--bdf)}
+.field select,.field input[type=number]{background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:8px 12px;color:var(--t1);font-family:var(--sans);font-size:.85rem;outline:none}
+.field select:focus,.field input[type=number]:focus{border-color:var(--bdf)}
+.row{display:flex;gap:12px}
+.row .field{flex:1}
+
+.card-actions{display:flex;gap:8px;margin-top:14px}
+.btn-save{background:var(--gp);color:#fff;border:none;padding:8px 20px;border-radius:6px;font-weight:600;cursor:pointer;font-family:var(--sans);font-size:.85rem}
+.btn-save:hover{opacity:.9}
+.btn-del{background:none;border:1px solid rgba(248,113,113,.2);color:var(--r);padding:8px 16px;border-radius:6px;cursor:pointer;font-family:var(--sans);font-size:.85rem}
+.btn-del:hover{background:rgba(248,113,113,.1)}
+
+.empty{text-align:center;color:var(--tm);padding:40px;font-size:.95rem}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--bd);color:var(--t1);padding:12px 20px;border-radius:8px;font-size:.85rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:99}
+.toast.show{opacity:1}
+
+.info-box{background:rgba(74,158,255,.06);border:1px solid rgba(74,158,255,.15);border-radius:10px;padding:14px 18px;margin-bottom:24px;font-size:.85rem;color:var(--bl);line-height:1.5}
+</style>
+</head>
+<body>
+<div class="top">
+  <img src="/static/brand/logo-sidebar.png" alt="Clow">
+  <h1>Bot Chatwoot</h1>
+  <a class="back" href="/">Voltar ao Chat</a>
+</div>
+<div class="wrap">
+  <p class="desc">Configure o bot IA por inbox do Chatwoot. Quando uma mensagem chega em uma inbox ativa, o Clow responde automaticamente usando DeepSeek.</p>
+
+  <div class="info-box">
+    Webhook do Chatwoot: <strong id="webhookUrl"></strong><br>
+    Eventos: <strong>message_created, conversation_updated</strong>
+  </div>
+  <script>document.getElementById('webhookUrl').textContent=location.origin+'/api/v1/chatwoot/webhook';</script>
+
+  <div class="add-bar">
+    <input type="number" id="newInboxId" placeholder="Inbox ID (ex: 1)" min="1">
+    <input type="text" id="newInboxName" placeholder="Nome (ex: WhatsApp PV Corretora)" style="flex:2">
+    <button onclick="addInbox()">+ Adicionar Inbox</button>
+  </div>
+
+  <div class="cards" id="cards">
+    <div class="empty" id="emptyMsg">Nenhuma inbox configurada</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API='/api/v1/chatwoot/bot/configs';
+let configs=[];
+
+async function load(){
+  try{
+    const r=await fetch(API);const d=await r.json();
+    configs=d.configs||[];
+    render();
+  }catch(e){console.error(e)}
+}
+
+function render(){
+  const el=document.getElementById('cards');
+  const empty=document.getElementById('emptyMsg');
+  if(!configs.length){el.innerHTML='';el.appendChild(empty);empty.style.display='block';return}
+  empty.style.display='none';
+  el.innerHTML=configs.map(c=>`
+    <div class="card" data-id="${c.inbox_id}">
+      <div class="card-hdr">
+        <span class="inbox-name">${esc(c.inbox_name||'Inbox '+c.inbox_id)}</span>
+        <span class="inbox-id">inbox #${c.inbox_id}</span>
+        <label class="toggle"><input type="checkbox" ${c.active?'checked':''} onchange="toggleActive(${c.inbox_id},this.checked)"><span class="slider"></span></label>
+      </div>
+      <div class="field">
+        <label>System Prompt</label>
+        <textarea id="prompt_${c.inbox_id}" rows="6">${esc(c.system_prompt||'')}</textarea>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Max Tokens</label>
+          <input type="number" id="tokens_${c.inbox_id}" value="${c.max_tokens||1024}" min="100" max="8192">
+        </div>
+        <div class="field">
+          <label>Historico (msgs)</label>
+          <input type="number" id="ctx_${c.inbox_id}" value="${c.context_size||20}" min="1" max="50">
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-save" onclick="save(${c.inbox_id})">Salvar</button>
+        <button class="btn-del" onclick="del_(${c.inbox_id})">Remover</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function save(inboxId){
+  const c=configs.find(x=>x.inbox_id===inboxId);if(!c)return;
+  const body={
+    inbox_id:inboxId,
+    inbox_name:c.inbox_name,
+    system_prompt:document.getElementById('prompt_'+inboxId).value,
+    active:c.active,
+    model:'deepseek-chat',
+    max_tokens:parseInt(document.getElementById('tokens_'+inboxId).value)||1024,
+    context_size:parseInt(document.getElementById('ctx_'+inboxId).value)||20,
+  };
+  await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  toast('Salvo!');load();
+}
+
+async function toggleActive(inboxId,active){
+  const c=configs.find(x=>x.inbox_id===inboxId);if(!c)return;
+  c.active=active;
+  await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...c,active})});
+  toast(active?'Bot ativado':'Bot desativado');
+}
+
+async function del_(inboxId){
+  if(!confirm('Remover esta inbox?'))return;
+  await fetch(API+'/'+inboxId,{method:'DELETE'});
+  toast('Removido');load();
+}
+
+async function addInbox(){
+  const id=parseInt(document.getElementById('newInboxId').value);
+  const name=document.getElementById('newInboxName').value.trim();
+  if(!id){alert('Informe o Inbox ID');return}
+  await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    inbox_id:id,inbox_name:name||'Inbox '+id,system_prompt:'',active:true
+  })});
+  document.getElementById('newInboxId').value='';
+  document.getElementById('newInboxName').value='';
+  toast('Inbox adicionada');load();
+}
+
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
+
+load();
+</script>
+</body>
+</html>

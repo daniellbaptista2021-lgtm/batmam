@@ -88,6 +88,7 @@ def is_conversational(message: str) -> bool:
         "cria", "gera", "faz", "faca", "busca", "mostra",
         "configura", "instala", "deploy", "executa", "roda", "abre",
         "envia", "manda", "deleta", "remove", "atualiza",
+        "clon", "clone", "/clone",
     ]):
         return True
     return False
@@ -294,6 +295,17 @@ TOOL_DOMAIN_MAP = {
             re.IGNORECASE,
         ),
     },
+    "cloning": {
+        "tools": {"clone_website", "scraper", "web_fetch"},
+        "triggers": re.compile(
+            r"(?:/clone(?:-website)?(?:\s|$)|"
+            r"\bclon[ae]r?\s+(?:o\s+|a\s+|um\s+|uma\s+|esse\s+|essa\s+)?"
+            r"(?:site|website|landing|pagina|hotsite)\b|"
+            r"\bclone\s+(?:esse|essa|o|a|um|uma)?\s*(?:site|website|landing|pagina)\b|"
+            r"\bwebsite\s+cloner\b)",
+            re.IGNORECASE,
+        ),
+    },
 }
 
 
@@ -378,6 +390,14 @@ AGENT_SPECIALIZATIONS = {
             r"\b(?:codigo|code|bug|debug|refator|function|classe|"
             r"import|compilar|build|test|lint|typescript|python|"
             r"javascript)\b", re.IGNORECASE),
+    },
+    "cloner": {
+        "description": "Website cloner: gera projeto Next.js completo a partir de URL com fidelidade visual maxima",
+        "triggers": re.compile(
+            r"\b(?:clon[ae]r?\s+(?:o\s+)?site|clon[ae]r?\s+landing|"
+            r"clon[ae]r?\s+pagina|clon[ae]r?\s+hotsite|"
+            r"clone\s+website|website\s+cloner|/clone(?:-website)?)\b",
+            re.IGNORECASE),
     },
 }
 

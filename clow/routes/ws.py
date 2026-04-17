@@ -15,7 +15,7 @@ from .chat import _build_multimodal_message, _greeting_reply, _is_plain_greeting
 from ..webapp import track_action
 from ..rate_limit import limiter as user_limiter
 from ..rag import get_context_for_prompt as _rag_context
-from ..database import check_message_limit
+from ..database import check_message_limit, save_message
 
 
 def register_ws_routes(app: FastAPI) -> None:
@@ -137,8 +137,14 @@ def register_ws_routes(app: FastAPI) -> None:
 
                 track_action("user_message", content[:60])
 
+                # Save user message to DB
+                if conv_id:
+                    save_message(conv_id, "user", content, file_data if file_data else None)
+
                 if not file_data and _is_plain_greeting(content):
                     short_reply = _greeting_reply(content)
+                    if conv_id:
+                        save_message(conv_id, "assistant", short_reply)
                     await websocket.send_json({"type": "text_delta", "content": short_reply})
                     await websocket.send_json({"type": "text_done"})
                     await websocket.send_json({"type": "turn_complete"})
@@ -170,6 +176,9 @@ def register_ws_routes(app: FastAPI) -> None:
 
                     result = await loop.run_in_executor(None, agent.run_turn, user_msg)
                     track_action("agent_response", result[:60] if result else "")
+                    # Save assistant response to DB
+                    if conv_id and result:
+                        save_message(conv_id, "assistant", result)
                 except Exception as e:
                     await websocket.send_json({"type": "thinking_end"})
                     await websocket.send_json({"type": "error", "content": str(e)})

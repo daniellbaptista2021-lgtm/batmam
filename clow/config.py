@@ -111,6 +111,16 @@ CLOW_TEAM_MAX_AGENTS = int(os.getenv("CLOW_TEAM_MAX_AGENTS", "10"))
 # ── Natural Language Automations ──────────────────────────
 CLOW_NL_AUTOMATIONS = os.getenv("CLOW_NL_AUTOMATIONS", "true").lower() in ("true", "1", "yes")
 
+# ── Website Cloner ──────────────────────────────────────
+CLOW_CLONE_ENABLED = os.getenv("CLOW_CLONE_ENABLED", "true").lower() in ("true", "1", "yes")
+CLOW_CLONE_TIMEOUT = int(os.getenv("CLOW_CLONE_TIMEOUT", "600"))  # 10 min total
+CLOW_CLONE_MAX_SECTIONS = int(os.getenv("CLOW_CLONE_MAX_SECTIONS", "12"))
+CLOW_CLONE_BUILD_NEXTJS = os.getenv("CLOW_CLONE_BUILD_NEXTJS", "true").lower() in ("true", "1", "yes")
+CLOW_CLONE_TEMPLATE_DIR = str(Path(__file__).parent / "templates" / "website-cloner-base")
+CLOW_CLONE_OUTPUT_DIR = str(CLOW_HOME / "clones")
+CLOW_CLONE_MODEL = os.getenv("CLOW_CLONE_MODEL", DEEPSEEK_REASONER_MODEL)
+CLOW_CLONE_BUILDER_RETRIES = int(os.getenv("CLOW_CLONE_BUILDER_RETRIES", "3"))
+
 
 # ── Compaction (Claude Code 3-tier) ───────────────
 MICROCOMPACT_KEEP_LAST = 10         # Keep last N tool results full
