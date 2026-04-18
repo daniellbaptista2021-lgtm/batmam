@@ -74,9 +74,9 @@
 
     <!-- System Clow - Premium -->
     <div class="sb-sec" id="systemCodeBtn" style="display:none;padding:0 12px;margin-top:4px">
-      <a href="https://system-clow.pvcorretor01.com.br/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:linear-gradient(135deg,rgba(212,175,55,.12),rgba(255,215,0,.06));border:1px solid rgba(212,175,55,.3);border-radius:12px;text-decoration:none;transition:all .3s;cursor:pointer" onmouseover="this.style.background='linear-gradient(135deg,rgba(212,175,55,.22),rgba(255,215,0,.12))';this.style.borderColor='rgba(212,175,55,.5)';this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 15px rgba(212,175,55,.15)'" onmouseout="this.style.background='linear-gradient(135deg,rgba(212,175,55,.12),rgba(255,215,0,.06))';this.style.borderColor='rgba(212,175,55,.3)';this.style.transform='none';this.style.boxShadow='none'">
-        <img src="/static/brand/systemcode-logo.png" alt="System Clow" style="height:22px;filter:brightness(1.1)">
-      </a>
+      <button type="button" onclick="openSystemClow()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 14px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);border:1px solid rgba(155,89,252,.4);border-radius:12px;cursor:pointer;transition:all .3s;box-shadow:0 4px 14px rgba(155,89,252,.25)" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 8px 22px rgba(155,89,252,.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 14px rgba(155,89,252,.25)'">
+        <img src="/static/brand/system-clow-logo.png" alt="System Clow" style="height:22px;width:auto;filter:brightness(0) invert(1)">
+      </button>
     </div>
 
     <div class="sb-sec" id="admSec" style="display:none">
@@ -131,6 +131,43 @@
   <div class="lightbox" id="lightbox" onclick="closeLightbox()"><button class="lb-close" onclick="closeLightbox()">&times;</button><img id="lbImg" src=""></div>
 </div>
 <div class="modal-bg" id="modalBg" onclick="if(event.target===this)clsModal()" role="dialog" aria-modal="true"><div class="modal" id="modalC"></div></div>
+<!-- System Clow iframe modal -->
+<div id="sysClowModal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(10,10,20,.85);backdrop-filter:blur(6px);padding:24px" role="dialog" aria-modal="true" aria-label="System Clow">
+  <div style="width:100%;height:100%;max-width:1400px;margin:0 auto;background:#0a0a14;border:1px solid rgba(155,89,252,.3);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden">
+    <div style="height:44px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:linear-gradient(135deg,rgba(155,89,252,.15),rgba(74,158,255,.08));border-bottom:1px solid rgba(155,89,252,.2)">
+      <div style="display:flex;align-items:center;gap:10px;color:#e8e4f0;font-size:13px;font-weight:600;letter-spacing:.02em">
+        <span style="width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,#9B59FC,#4A9EFF);box-shadow:0 0 10px rgba(155,89,252,.6)"></span>
+        System Clow
+      </div>
+      <button type="button" onclick="closeSystemClow()" aria-label="Fechar" style="width:30px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#e8e4f0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;transition:background .15s" onmouseover="this.style.background='rgba(196,102,87,.2)'" onmouseout="this.style.background='rgba(255,255,255,.04)'">&times;</button>
+    </div>
+    <iframe id="sysClowFrame" src="about:blank" title="System Clow" style="flex:1;width:100%;border:none;background:#0a0a14" allow="clipboard-read; clipboard-write; microphone; camera"></iframe>
+  </div>
+</div>
+<script>
+(function(){
+  var SYSCLOW_URL='https://system-clow.pvcorretor01.com.br/';
+  window.openSystemClow=function(){
+    var m=document.getElementById('sysClowModal'),f=document.getElementById('sysClowFrame');
+    if(!m||!f)return;
+    if(f.src==='about:blank'||f.getAttribute('src')==='about:blank')f.src=SYSCLOW_URL;
+    m.style.display='block';
+    document.body.style.overflow='hidden';
+  };
+  window.closeSystemClow=function(){
+    var m=document.getElementById('sysClowModal');
+    if(!m)return;
+    m.style.display='none';
+    document.body.style.overflow='';
+  };
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){
+      var m=document.getElementById('sysClowModal');
+      if(m&&m.style.display==='block')window.closeSystemClow();
+    }
+  });
+})();
+</script>
 <script src="/static/js/chat.js?v=20260414a"></script>
 <script>
 /* Menu dropdown — funciona independente do chat.js */
