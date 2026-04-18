@@ -1,8 +1,10 @@
-# Clow
+# Clow — Inteligência Infinita
 
-**Agente de IA para WhatsApp, CRM e automação de negócios.**
+**Agente de IA para WhatsApp, CRM, copywriting e automação de negócios.**
 
-Atenda clientes no WhatsApp com IA 24h, gerencie leads no CRM integrado, crie landing pages e automatize fluxos — tudo em uma plataforma.
+Atenda clientes no WhatsApp com IA 24h, gerencie leads no CRM integrado, crie landing pages, gere conteúdo e automatize fluxos — tudo em uma plataforma única.
+
+> *Inteligência Infinita • Possibilidades Premium*
 
 ---
 
@@ -11,31 +13,35 @@ Atenda clientes no WhatsApp com IA 24h, gerencie leads no CRM integrado, crie la
 | Funcionalidade | Descrição |
 |---|---|
 | **WhatsApp com IA** | Agente que responde clientes 24h com persona, base de conhecimento e handoff humano |
-| **CRM integrado** | Gestão de leads, funil de vendas, histórico de conversas e follow-up automático |
+| **CRM integrado (Chatwoot)** | Gestão de leads, funil de vendas, histórico de conversas e follow-up |
+| **Copywriting** | Textos persuasivos para anúncios, e-mails, propostas e scripts de vendas |
+| **Roteiros de vídeo** | Scripts para Reels, TikTok e YouTube Shorts com estrutura de conversão |
 | **Landing pages** | Geração automática de páginas de conversão via chat |
-| **Automações n8n** | Fluxos prontos de CRM, cobrança, agendamento e marketing |
+| **Automações n8n** | Fluxos prontos de CRM, cobrança, agendamento, relatórios |
 | **Planilhas e documentos** | Criação de Excel, Word e apresentações via conversa |
-| **Chat com IA** | Assistente inteligente para tarefas do negócio |
+| **Website Cloner** | Clona qualquer site em projeto Next.js 15 modular |
+| **Disparos em massa** | Campanhas via templates Meta aprovados, com anti-ban |
 
 ---
 
 ## Planos
 
-| Plano | Preço | Modelo | Inclui |
-|---|---|---|---|
-| **Lite** | R$ 169/mês | Haiku 4.5 | CRM + 8 fluxos n8n + WhatsApp |
-| **Starter** | R$ 298/mês | Sonnet 4 | CRM + 8 fluxos + 3 usuários |
-| **Pro** | R$ 487/mês | Sonnet 4 | 2.000 fluxos + 5 usuários |
-| **Business** | R$ 667/mês | Sonnet 4 | 3.000 fluxos + 10 usuários |
+| Plano | Preço/mês | Tokens/dia | WhatsApp | Usuários | Fluxos n8n | CRM |
+|---|---|---|---|---|---|---|
+| **ONE** | R$ 139,90 | 1M | 1 instância | 1 | — | — |
+| **SMART** | R$ 177,90 | 1,8M | 2 instâncias | 3 | 8 | ✓ |
+| **PROFISSIONAL** | R$ 289,90 | 2,5M | 3 instâncias | 5 | 2.000 | ✓ |
+| **BUSINESS** | R$ 367,90 | 3M | 5 instâncias | 10 | 3.000 | ✓ |
 
-Acesso via assinatura — sem plano gratuito, sem período de teste.
+**Pagamento:** cartão de crédito, boleto ou PIX.
+**Modelo:** assinatura mensal recorrente. Sem plano gratuito, sem período de teste.
 
 ---
 
 ## Como acessar
 
-1. **Assine** um plano em [clow.com.br](https://clow.com.br)
-2. **Receba** suas credenciais de acesso por email
+1. **Assine** um plano em [clow.pvcorretor01.com.br](https://clow.pvcorretor01.com.br)
+2. **Receba** suas credenciais por e-mail
 3. **Faça login** na plataforma web
 4. **Configure** seu WhatsApp, base de conhecimento e funil de vendas
 5. **Comece** a atender clientes com IA
@@ -45,35 +51,43 @@ Acesso via assinatura — sem plano gratuito, sem período de teste.
 ## Funcionalidades detalhadas
 
 ### WhatsApp IA
-- Responde automaticamente com persona configurável
-- Base de conhecimento em texto (preços, FAQ, regras)
+- Integração com **Z-API** e **Meta API Oficial**
+- Persona configurável por negócio
+- Base de conhecimento (preços, FAQ, regras, serviços)
 - Handoff humano: palavra-chave pausa o bot por 2h
-- Histórico completo de conversas no CRM
-- Suporte a múltiplas instâncias
+- Etiquetas no Chatwoot: `humano` silencia, `bot` reativa, `lead-quente` marca interesse
+- Tools automáticas: consulta CEP (ViaCEP) e consulta CPF por regex
+- Mensagem de boas-vindas, horário comercial e respostas rápidas
 
-### CRM
+### CRM (Chatwoot integrado)
 - Funil kanban com etapas customizáveis
-- Importação de leads em massa (CSV)
-- Campanhas de email integradas
+- Importação em massa de leads (CSV)
+- Etiquetas: Lead Quente, Frio, VIP, Follow-up
 - Timeline de atividades por lead
-- Agendamento e links de reunião
+- Campanhas de e-mail, agendamento e links de reunião
+- Auto-assign e auto-label configuráveis
 
 ### Automações (n8n)
-- 8 fluxos prontos inclusos nos planos Starter+
 - Cobrança automática de mensalidades
 - Follow-up de leads por WhatsApp
-- Relatórios diários automáticos
-- Integração com Google Calendar, Supabase, webhooks
+- Relatórios diários
+- Integrações: Google Calendar, Supabase, PostgreSQL, webhooks
+
+### Meta API — templates e disparos
+- Templates pré-aprovados para iniciar conversas (UTILITY a partir de ~R$0,03/msg)
+- CSV com `nome` e `telefone` (DDI+DDD, ex: `5521999999999`)
+- Anti-ban: intervalo 3–10s entre mensagens, máx. 1.000/h no início
+- Pausa automática se a taxa de erro passar de 5%
 
 ### Geração de conteúdo
 - Landing pages responsivas (HTML completo)
 - Planilhas Excel com dados e fórmulas
 - Documentos Word e apresentações
 - Imagens via IA (sem custo adicional)
-- Copies para anúncios e redes sociais
+- Copies para anúncios (Facebook/Instagram/Google) e e-mails
 
 ### Website Cloner
-Clona qualquer site, landing page ou hotsite gerando um **projeto Next.js modular completo** com pipeline de 5 fases usando DeepSeek-reasoner.
+Clona sites, landing pages ou hotsites gerando um **projeto Next.js 15 modular completo** com pipeline de 5 fases.
 
 **Como usar:**
 ```
@@ -90,14 +104,12 @@ clow clone https://exemplo.com.br
 - Valida `npx tsc --noEmit` com retry automático até 3x
 - Roda `npm run build` para garantir compilação
 
-**Output em `~/.clow/clones/<dominio>/`:**
+**Saída em `~/.clow/clones/<dominio>/`:**
 - Projeto Next.js 15 + React 19 pronto pra `npm run dev`
-- `docs/research/` com specs auditáveis, screenshots e topology
+- `docs/research/` com specs, screenshots e topology
 - Assets baixados (imagens, fontes, ícones) em `public/`
 
 **API REST:** `POST /api/v1/clone` + `GET /api/v1/clone/jobs/{id}`
-
-**Pré-requisitos:** Playwright + DEEPSEEK_API_KEY + Node.js 20+ (opcional)
 
 ---
 
@@ -105,15 +117,16 @@ clow clone https://exemplo.com.br
 
 - Autenticação por sessão criptografada
 - Dados isolados por usuário e tenant
-- Sem armazenamento de API keys de terceiros
+- Sem armazenamento de chaves de API de terceiros em texto plano
 - Logs de auditoria de todas as ações
 - Rate limiting por usuário e plano
+- Sessões web efêmeras (histórico resetado diariamente); para memória persistente, use Clow via terminal ou VPS própria
 
 ---
 
 ## Suporte
 
-Em caso de dúvidas ou problemas, entre em contato com o suporte via WhatsApp ou email informado no painel da sua conta.
+Dúvidas ou problemas: fale com o suporte pelo WhatsApp ou e-mail informado no painel da sua conta.
 
 ---
 
