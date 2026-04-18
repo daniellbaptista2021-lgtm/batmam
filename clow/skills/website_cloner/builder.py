@@ -35,22 +35,38 @@ def _call_reasoner(system: str, user_text: str, image_path: str | None = None, m
 
     client = OpenAI(**cfg.get_deepseek_client_kwargs())
 
-    content: list[dict] = []
-    if image_path and Path(image_path).exists():
-        with open(image_path, "rb") as f:
-            b64 = base64.b64encode(f.read()).decode()
-        content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}})
-    content.append({"type": "text", "text": user_text})
-
+    # Criar mensagem com base na versão do SDK OpenAI
     try:
-        resp = client.chat.completions.create(
-            model=cfg.CLOW_CLONE_MODEL,
-            max_tokens=max_tokens,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": content if image_path else user_text},
-            ],
-        )
+        # Para SDK OpenAI >= 1.0.0, a sintaxe mudou
+        if image_path and Path(image_path).exists():
+            with open(image_path, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode()
+            
+            # Nova sintaxe para mensagens multimodais
+            resp = client.chat.completions.create(
+                model=cfg.CLOW_CLONE_MODEL,
+                max_tokens=max_tokens,
+                messages=[
+                    {"role": "system", "content": system},
+                    {
+                        "role": "user", 
+                        "content": [
+                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+                            {"type": "text", "text": user_text}
+                        ]
+                    },
+                ],
+            )
+        else:
+            resp = client.chat.completions.create(
+                model=cfg.CLOW_CLONE_MODEL,
+                max_tokens=max_tokens,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user_text},
+                ],
+            )
+        
         return (resp.choices[0].message.content or "").strip()
     except Exception as e:
         logger.error("builder reasoner call falhou: %s", e)
