@@ -9,9 +9,12 @@ from ..agent_types import get_agent_type, list_agent_types
 class AgentTool(BaseTool):
     name = "agent"
     description = (
-        "Lança um sub-agente tipado para realizar tarefas. "
-        "Tipos: explore (busca rápida), plan (arquitetura), general (tudo), guide (ajuda). "
-        "Suporta run_in_background e isolation='worktree'."
+        "Delega tarefa COMPLEXA a um sub-agente especializado. "
+        "USE APENAS quando a tarefa envolver busca em codebase grande (>100 arquivos), "
+        "planejamento arquitetural detalhado, ou exploracao multi-etapa. "
+        "NAO USE para: tarefas simples, leitura de poucos arquivos, perguntas diretas, "
+        "ou qualquer coisa que voce possa fazer com bash/read/write/grep/glob. "
+        "Tipos: explore, plan, general, guide. Profundidade maxima: 1."
     )
     requires_confirmation = False
 
@@ -65,6 +68,14 @@ class AgentTool(BaseTool):
 
         if self._parent_agent is None:
             return "[ERROR] Sub-agent não configurado (sem agente pai)."
+
+        # Profundidade maxima 1: sub-agent NAO pode spawnar outro sub-agent.
+        # Evita explosao exponencial (agent -> agent -> agent -> ...).
+        if getattr(self._parent_agent, "is_subagent", False):
+            return (
+                "[ERROR] Sub-agentes nao podem spawnar outros sub-agentes. "
+                "Execute a tarefa diretamente com as ferramentas disponiveis."
+            )
 
         # Worktree isolation
         if isolation == "worktree":

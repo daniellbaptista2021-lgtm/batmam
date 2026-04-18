@@ -598,9 +598,12 @@ class Agent:
 
         turn = Turn(user_message=user_message)
         full_response_text = []
-        # Consultas informativas: limite menor de iteracoes (nao precisa de 20)
+        # Limites estilo Claude Code: 5 para info/conv, 10 para execucao
+        # Overrides: CLOW_MAX_ITERATIONS para ajuste global
         is_info = self._orchestration.get("is_informational", False) if self._orchestration else False
-        max_iterations = 6 if is_info else 20
+        is_conv = self._orchestration.get("is_conversational", False) if self._orchestration else False
+        _default_max = 5 if (is_info or is_conv) else 10
+        max_iterations = int(os.getenv("CLOW_MAX_ITERATIONS", str(_default_max)))
         iteration = 0
         auto_correct_attempts = 0
         cache_hit_total = 0
@@ -616,6 +619,7 @@ class Agent:
         _last_responses: list[str] = []  # Conversational repetition detection
         _iterations_without_tools: int = 0  # Track iterations without tool execution
         self._fallback_used_this_turn = False  # Max 1 fallback per turn
+        self._turn_tool_count = 0  # Hard budget de tools por turno (estilo Claude Code)
         try:
             while iteration < max_iterations:
                 iteration += 1
@@ -778,10 +782,29 @@ class Agent:
 
                 # Executa tool calls (com paralelismo para read-only)
                 tool_results = self._execute_tool_calls(tool_calls_data, turn)
+                self._turn_tool_count += len(tool_calls_data)
 
                 # Adiciona resultados ao historico
                 for tr in tool_results:
                     self.session.messages.append(tr.to_message())
+
+                # ── Pressao de sintese: ao atingir budget, injeta lembrete ──
+                _budget = int(os.getenv("CLOW_TOOL_BUDGET", "5"))
+                if self._turn_tool_count >= _budget:
+                    self.session.messages.append({
+                        "role": "user",
+                        "content": (
+                            f"[Sistema] Voce ja executou {self._turn_tool_count} tools neste turno. "
+                            "PARE de chamar tools. Responda AGORA em texto ao usuario com base no que ja coletou. "
+                            "Seja direto e conclusivo."
+                        ),
+                    })
+                    log_action(
+                        "tool_budget_reached",
+                        f"{self._turn_tool_count}/{_budget} — forcando sintese",
+                        level="warning",
+                        session_id=self.session.id,
+                    )
 
                 # ── Auto-correction: detecta erros e injeta correcao ──
                 if config.CLOW_AUTO_CORRECT and auto_correct_attempts < config.CLOW_AUTO_CORRECT_MAX:
@@ -1112,9 +1135,14 @@ class Agent:
         kwargs["stream_options"] = {"include_usage": True}
 
         tools = self._get_active_tools()
-        if tools:
+        # Conta tools ja executadas neste turno (pelo watermark da run_turn)
+        tool_calls_so_far = getattr(self, "_turn_tool_count", 0)
+        _hard_tool_budget = int(os.getenv("CLOW_TOOL_BUDGET", "5"))
+        if tools and tool_calls_so_far < _hard_tool_budget:
             kwargs["tools"] = tools
             kwargs["tool_choice"] = "auto"
+        # Apos budget de tools: NAO envia tools. Forca sintese em texto.
+        # Isso impede o DeepSeek de continuar chamando tools indefinidamente.
 
         # DeepSeek Context Caching: extra_headers para ativar cache de prefixo
         kwargs["extra_headers"] = {"cache-control": "ephemeral"}

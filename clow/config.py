@@ -71,7 +71,7 @@ CLOW_THINKING_BUDGET = int(os.getenv("CLOW_THINKING_BUDGET", "32000"))
 
 # ── Auto-Correction ───────────────────────────────────────
 CLOW_AUTO_CORRECT = os.getenv("CLOW_AUTO_CORRECT", "true").lower() in ("true", "1", "yes")
-CLOW_AUTO_CORRECT_MAX = int(os.getenv("CLOW_AUTO_CORRECT_MAX", "5"))
+CLOW_AUTO_CORRECT_MAX = int(os.getenv("CLOW_AUTO_CORRECT_MAX", "2"))
 
 # ── Vision Feedback Loop ──────────────────────────────────
 CLOW_VISION_FEEDBACK = os.getenv("CLOW_VISION_FEEDBACK", "false").lower() in ("true", "1", "yes")

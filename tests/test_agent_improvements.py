@@ -251,7 +251,7 @@ SyntaxError: unexpected EOF while parsing"""
     def test_max_attempts_respected(self):
         """Auto-correction deve respeitar o limite de tentativas."""
         max_attempts = config.CLOW_AUTO_CORRECT_MAX
-        self.assertEqual(max_attempts, 3)
+        self.assertEqual(max_attempts, 2)
 
         # Simula loop
         auto_correct_attempts = 0
@@ -267,7 +267,7 @@ SyntaxError: unexpected EOF while parsing"""
     def test_config_defaults(self):
         """Configs devem ter defaults corretos."""
         self.assertTrue(config.CLOW_AUTO_CORRECT)
-        self.assertEqual(config.CLOW_AUTO_CORRECT_MAX, 3)
+        self.assertEqual(config.CLOW_AUTO_CORRECT_MAX, 2)
         self.assertTrue(config.CLOW_EXTENDED_THINKING)
         self.assertEqual(config.CLOW_THINKING_BUDGET, 10000)
         print("[OK] Configs: todos os defaults corretos")
