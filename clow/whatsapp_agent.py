@@ -161,11 +161,18 @@ class WhatsAppAgentManager:
                     instances.append(inst.to_dict())
         return instances
 
-    def get_instance(self, instance_id: str, tenant_id: str = "") -> WhatsAppInstance | None:
+    def get_instance(self, instance_id: str, tenant_id: str = "", allow_webhook: bool = False) -> WhatsAppInstance | None:
         if tenant_id:
             path = WA_BASE_DIR / tenant_id / instance_id
             return WhatsAppInstance.load(path)
-        # Search all tenants
+        # Sem tenant_id: so permitido se allow_webhook=True (chamada interna de webhook)
+        if not allow_webhook:
+            import logging
+            logging.getLogger('clow.security').warning(
+                f'WA cross-tenant lookup blocked: instance_id={instance_id} without tenant_id'
+            )
+            return None
+        # Webhook: search com audit log
         for td in WA_BASE_DIR.iterdir():
             if td.is_dir():
                 path = td / instance_id
@@ -189,7 +196,8 @@ class WhatsAppAgentManager:
     # ── Message Processing ────────────────────────────────────
 
     def process_incoming(self, instance_id: str, sender_phone: str, message_text: str) -> str | None:
-        inst = self.get_instance(instance_id)
+        # Webhook interno: deriva tenant_id via scan controlado (marca como trusted)
+        inst = self.get_instance(instance_id, allow_webhook=True)
         if not inst or not inst.active:
             return None
 

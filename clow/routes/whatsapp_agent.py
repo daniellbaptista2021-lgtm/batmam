@@ -169,7 +169,10 @@ def register_whatsapp_agent_routes(app) -> None:
         from ..whatsapp_agent import get_wa_manager
         inst = get_wa_manager().get_instance(instance_id, sess["user_id"])
         if not inst:
+            # Audit: tentativa de acesso a instancia inexistente ou de outro tenant
+            _wa_audit(sess["user_id"], bool(sess.get("is_admin")), False, "not_found_or_forbidden", instance_id, request)
             return _JR({"error": "Nao encontrada"}, status_code=404)
+        _wa_audit(sess["user_id"], bool(sess.get("is_admin")), True, None, instance_id, request)
         # Return full data (including full token for owner)
         d = inst.to_dict()
         d["zapi_token_full"] = inst.zapi_token
