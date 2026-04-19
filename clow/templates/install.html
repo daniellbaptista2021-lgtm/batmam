@@ -38,6 +38,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);min-h
 a.btn{display:inline-block;padding:10px 20px;background:var(--p);color:#fff;border-radius:8px;text-decoration:none;font-size:.85rem;font-weight:600;transition:all .2s}
 a.btn:hover{opacity:.9}
 @media(max-width:640px){.options{grid-template-columns:1fr}}
+
+/* Visivel apenas quando body.is-admin (admin logado renderiza com essa classe) */
+.admin-only { display: none; }
+body.is-admin .admin-only { display: block; }
 </style>
 </head>
 <body>
@@ -95,8 +99,39 @@ a.btn:hover{opacity:.9}
     </div>
   </div>
 
-  <!-- VPS -->
-  <div class="card">
+  <!-- TERMINAL (admin-only) -->
+  <div class="card admin-only">
+    <h2>&#128187; Instalar no Terminal (PC/Mac/VPS)</h2>
+    <p>Para memoria persistente e acesso completo as ferramentas, instale no terminal:</p>
+    <div class="steps">
+      <div class="step">
+        <h3>Instalar</h3>
+        <div class="code">
+          pip install clow
+          <span class="copy" onclick="navigator.clipboard.writeText('pip install clow');this.textContent='Copiado!'">Copiar</span>
+        </div>
+      </div>
+      <div class="step">
+        <h3>Configurar</h3>
+        <div class="code">
+          clow --setup
+          <span class="copy" onclick="navigator.clipboard.writeText('clow --setup');this.textContent='Copiado!'">Copiar</span>
+        </div>
+        <p>Siga as instrucoes para conectar sua conta.</p>
+      </div>
+      <div class="step">
+        <h3>Usar</h3>
+        <div class="code">
+          clow
+          <span class="copy" onclick="navigator.clipboard.writeText('clow');this.textContent='Copiado!'">Copiar</span>
+        </div>
+        <p>Pronto! O Clow abre no terminal com memoria persistente e todas as ferramentas.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- VPS (admin-only) -->
+  <div class="card admin-only">
     <h2>&#9729;&#65039; Instalar numa VPS (servidor 24h)</h2>
     <p>Para rodar o Clow 24 horas com bot WhatsApp ativo mesmo com o celular desligado:</p>
     <div class="steps">

@@ -107,9 +107,22 @@ def register_page_routes(app: FastAPI) -> None:
         app.mount("/static/js", StaticFiles(directory=str(_js_dir)), name="js_static")
 
     # ── Install tutorial (publica, sem login) ─────────────────────
+    # Admin logado ve todas secoes (terminal/VPS). Cliente nao.
     @app.get("/install", response_class=HTMLResponse)
-    async def install_page():
-        return _get_template("install.html")
+    async def install_page(request: Request):
+        html = _get_template("install.html")
+        # Detecta admin via session — se logado e is_admin=1, libera secoes avancadas
+        try:
+            sess = _get_user_session(request)
+            if sess:
+                from ..database import get_db
+                with get_db() as db:
+                    row = db.execute("SELECT is_admin FROM users WHERE id=?", (sess["user_id"],)).fetchone()
+                if row and row[0]:
+                    html = html.replace("<body>", "<body class=\"is-admin\">", 1)
+        except Exception:
+            pass
+        return html
 
     # ── Protected routes ─────────────────────────────────────────
     @app.get("/", response_class=HTMLResponse)
