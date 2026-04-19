@@ -740,15 +740,6 @@ window.clowForceReset = async function(){
 };
 </script>
 
-
-<!-- Botao flutuante de emergencia: aparece SEMPRE no canto, pra qualquer caso -->
-<button type="button" id="clowFixPwaBtn" onclick="clowForceReset()" title="App nao funciona? Clique aqui pra resetar."
-  style="position:fixed;bottom:18px;right:18px;z-index:99999;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;border:none;font-size:20px;cursor:pointer;box-shadow:0 6px 20px rgba(155,89,252,.45);display:flex;align-items:center;justify-content:center;font-family:inherit"
-  onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
-  ↻
-</button>
-
-
 <script>
 // Auto-detect quando iframe da CRM carrega pagina de erro do Chrome (ERR_CONNECTION_REFUSED, etc)
 (function(){
