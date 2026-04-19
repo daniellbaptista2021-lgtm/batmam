@@ -209,4 +209,11 @@ def provision_user(user_id: str, email: str, name: str) -> dict:
             chatwoot_account_id=account_id,
         )
 
-    return {"ok": True, "connection": conn, "chatwoot_account_id": account_id}
+    return {
+        "ok": True,
+        "connection": conn,
+        "chatwoot_account_id": account_id,
+        "chatwoot_login_email": email,
+        "chatwoot_login_password": cw_user.get("chatwoot_password", ""),
+        "chatwoot_login_url": "/app/login",
+    }

@@ -69,9 +69,29 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100
   <div class="c" id="s1">
     <h2>Configurando seu Clow...</h2>
     <p class="sub">Estamos criando seu espaco de atendimento. Isso leva alguns segundos.</p>
-    <div class="center" style="padding:40px 0">
+    <div class="center" id="s1Loading" style="padding:40px 0">
       <div class="sp" style="width:40px;height:40px;border-width:3px"></div>
       <p style="margin-top:16px;color:var(--t2)" id="s1msg">Criando conta...</p>
+    </div>
+    <div id="s1Credentials" class="hide" style="margin-top:20px;padding:20px;background:rgba(155,89,252,.08);border:1px solid rgba(155,89,252,.25);border-radius:12px">
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:10px;color:var(--t1)">Conta CRM criada com sucesso</h3>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.5">Guarde essas credenciais. Voce vai usar pra entrar no CRM depois. A senha nao sera mostrada novamente.</p>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--tm);display:block;margin-bottom:4px">Email</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <code id="cwLoginEmail" style="flex:1;padding:10px 12px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:8px;font-size:13px;color:var(--t1);user-select:all;font-family:var(--mono)"></code>
+          <button type="button" onclick="_cwCopy('cwLoginEmail',this)" style="padding:10px 14px;background:rgba(155,89,252,.12);border:1px solid rgba(155,89,252,.3);border-radius:8px;color:#9B59FC;font-size:12px;font-weight:600;cursor:pointer">Copiar</button>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--tm);display:block;margin-bottom:4px">Senha</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <code id="cwLoginPass" style="flex:1;padding:10px 12px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:8px;font-size:13px;color:var(--t1);user-select:all;font-family:var(--mono)"></code>
+          <button type="button" onclick="_cwCopy('cwLoginPass',this)" style="padding:10px 14px;background:rgba(155,89,252,.12);border:1px solid rgba(155,89,252,.3);border-radius:8px;color:#9B59FC;font-size:12px;font-weight:600;cursor:pointer">Copiar</button>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--tm);margin-top:14px;line-height:1.5">Dica: anote ou envie pra si mesmo no WhatsApp. Usa essa senha quando abrir Ver CRM completo no Clow.</p>
+      <button type="button" onclick="setStep(2)" style="width:100%;margin-top:16px;padding:12px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:14px;cursor:pointer">Continuar para conectar WhatsApp</button>
     </div>
     <div id="s1err" class="err hide"></div>
   </div>
