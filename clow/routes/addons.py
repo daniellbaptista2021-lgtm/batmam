@@ -23,6 +23,32 @@ def register_addon_routes(app) -> None:
 
     # ─── Status do System Clow (legado) ────────────────────────────────
 
+    # ─── CRM Status: bloqueia cliente sem conexao propria ─────────────
+    @app.get("/api/v1/addons/crm/status", tags=["addons"])
+    async def crm_status(request: _Req):
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado", "allow": False}, status_code=401)
+        is_admin = bool(sess.get("is_admin"))
+        from ..database import get_db
+        with get_db() as db:
+            row = db.execute(
+                "SELECT chatwoot_account_id, active FROM chatwoot_connections WHERE user_id=? AND active=1 ORDER BY connected_at DESC LIMIT 1",
+                (sess["user_id"],),
+            ).fetchone()
+        configured = bool(row)
+        # Admin sempre pode abrir. Cliente precisa ter chatwoot_connection ativa.
+        allow = is_admin or configured
+        return _JR({
+            "allow": allow,
+            "configured": configured,
+            "is_admin": is_admin,
+            "account_id": row[0] if row else None,
+            "reason": None if allow else "crm_not_configured",
+            "message": None if allow else "Voce ainda nao configurou seu CRM. Complete o onboarding para liberar o Chatwoot com sua propria instancia WhatsApp.",
+        })
+
+
     @app.get("/api/v1/addons/system-clow/status", tags=["addons"])
     async def system_clow_status(request: _Req):
         sess = _get_user_session(request)

@@ -221,6 +221,18 @@
     var el=document.getElementById('cwLoader');
     if(el)el.classList.toggle('show',!!show);
   }
+  function cwShowNotConfigured(msg){
+    // Modal simples: cliente precisa configurar CRM antes de abrir
+    var existing=document.getElementById('cwNotConfModal');
+    if(existing)existing.remove();
+    var d=document.createElement('div');
+    d.id='cwNotConfModal';
+    d.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(8,8,20,.85);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px';
+    d.innerHTML='<div style="background:#0F0F24;border:1px solid rgba(155,89,252,.3);border-radius:16px;padding:32px;max-width:480px;text-align:center;color:#E8E8F0;box-shadow:0 30px 80px rgba(0,0,0,.6)"><div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#9B59FC,#4A9EFF);display:inline-flex;align-items:center;justify-content:center;margin-bottom:18px;font-size:28px">\u{1F512}</div><h2 style="font-size:20px;font-weight:700;margin-bottom:10px">CRM nao configurado</h2><p style="color:#9898B8;font-size:14px;line-height:1.55;margin-bottom:22px">'+msg+'</p><button onclick="this.closest(\'div#cwNotConfModal\').remove()" style="background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;border:none;border-radius:10px;padding:11px 28px;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit">Entendi</button></div>';
+    d.addEventListener('click',function(e){if(e.target===d)d.remove();});
+    document.body.appendChild(d);
+  }
+
   function cwShowFallback(){
     var fb=document.getElementById('cwFallback');
     var msg=document.getElementById('cwLoaderMsg');
@@ -230,9 +242,30 @@
     if(spin)spin.style.display='none';
     cwShowLoader(true);
   }
-  window.openChatwootModal=function(){
+  window.openChatwootModal=async function(){
     var m=document.getElementById('chatwootModal'),f=document.getElementById('chatwootFrame');
     if(!m||!f)return;
+
+    // ── Isolamento multi-tenant: checar se user pode abrir o CRM ────
+    try{
+      var sr=await fetch('/api/v1/addons/crm/status',{credentials:'same-origin'});
+      if(sr.ok){
+        var sd=await sr.json();
+        if(!sd.allow){
+          // Cliente nao configurou CRM — mostrar modal amigavel, nao abrir iframe
+          cwShowNotConfigured(sd.message || 'Voce ainda nao configurou seu CRM.');
+          return;
+        }
+        // Se NAO e admin, forcar logout do Chatwoot antes de abrir pra nao vazar sessao do admin
+        if(!sd.is_admin && !window._cwForcedLogout){
+          try{ await fetch('/cw/auth/sign_out',{credentials:'same-origin',method:'DELETE'}); }catch(e){}
+          // Limpar iframe src tambem pra garantir
+          if(f.src && f.src!=='about:blank'){ try{ f.src='about:blank'; }catch(e){} }
+          window._cwForcedLogout=true;
+        }
+      }
+    }catch(e){ console.error('CRM status check failed:',e); }
+
     m.style.display='block';
     document.body.style.overflow='hidden';
     cwApplySize();
