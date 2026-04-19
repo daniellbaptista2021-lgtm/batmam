@@ -50,3 +50,18 @@ clow/skills/imported_backup/
 *.key
 *.p12
 *.pfx
+
+# Backups locais (nao versionar)
+*.bak
+*.bak_*
+*.bak-*
+*.bak.*
+
+# SQLite runtime files
+*.db-shm
+*.db-wal
+*.db-journal
+
+# Test artifacts
+/tmp/*.csv
+produtos*.csv
