@@ -1,0 +1,94 @@
+/* theme-light.css — Overrides para modo claro (html.light-mode)
+   Aplica-se a: settings, chat, dashboard, landing, etc. */
+
+html.light-mode {
+  --bg:  #F7F7FB;
+  --bg2: #FFFFFF;
+  --bg3: #EEF0F6;
+  --bd:  rgba(20,20,60,.10);
+  --bdf: rgba(155,89,252,.5);
+  --t1:  #15152A;
+  --t2:  #4A4A66;
+  --tm:  #7A7A96;
+  /* --p, --bl, --gp, --g, --r, --y seguem iguais (cores de acento sobrevivem bem nos dois modos) */
+}
+
+html.light-mode body {
+  background: var(--bg);
+  color: var(--t1);
+}
+
+/* Chat page overrides */
+html.light-mode .sb,
+html.light-mode .sb-head,
+html.light-mode .sb-foot { background: var(--bg2); border-color: var(--bd); }
+html.light-mode .sb-new,
+html.light-mode .sb-btn { background: var(--bg3); color: var(--t1); border-color: var(--bd); }
+html.light-mode .sb-btn:hover { background: rgba(155,89,252,.08); }
+html.light-mode .sb-item { color: var(--t2); }
+html.light-mode .sb-item:hover { color: var(--t1); background: rgba(155,89,252,.06); }
+html.light-mode .sb-item.active { color: var(--t1); background: rgba(155,89,252,.08); }
+html.light-mode .hdr { background: var(--bg2); border-bottom-color: var(--bd); }
+html.light-mode .hdr-t,
+html.light-mode .hdr-mbtn { color: var(--t1); }
+html.light-mode .hdr-drop { background: var(--bg2); border: 1px solid var(--bd); box-shadow: 0 4px 20px rgba(20,20,60,.08); }
+html.light-mode .hdr-drop a,
+html.light-mode .hdr-drop button { color: var(--t1); }
+html.light-mode .hdr-drop a:hover,
+html.light-mode .hdr-drop button:hover { background: var(--bg3); }
+html.light-mode .term,
+html.light-mode .msg-box,
+html.light-mode .msg-wrap { background: var(--bg); color: var(--t1); }
+html.light-mode .msg-ai { background: var(--bg2); border: 1px solid var(--bd); color: var(--t1); }
+html.light-mode .msg-u { background: linear-gradient(135deg, rgba(155,89,252,.14), rgba(74,158,255,.10)); color: var(--t1); border: 1px solid rgba(155,89,252,.25); }
+html.light-mode .in-wrap,
+html.light-mode .in-box { background: var(--bg2); border-color: var(--bd); color: var(--t1); }
+html.light-mode textarea,
+html.light-mode input,
+html.light-mode select { background: var(--bg2); color: var(--t1); border-color: var(--bd); }
+html.light-mode .mod-pill { background: var(--bg3); color: var(--t1); border: 1px solid var(--bd); }
+
+/* Agent selector (segmented) */
+html.light-mode .agent-seg { background: var(--bg3); border-color: var(--bd); }
+html.light-mode .agent-btn { color: var(--t2); }
+html.light-mode .agent-btn:hover { color: var(--t1); }
+html.light-mode .agent-btn.active { color: #fff; }
+
+/* Sonnet modal */
+html.light-mode .sonnet-modal-bg { background: rgba(20,20,40,.45); }
+html.light-mode .sonnet-modal { background: var(--bg2); color: var(--t1); border: 1px solid var(--bd); }
+html.light-mode .sonnet-pkg { background: var(--bg3); border: 1px solid var(--bd); color: var(--t1); }
+html.light-mode .sonnet-pkg.highlight { border-color: var(--p); }
+html.light-mode .sonnet-modal-sub,
+html.light-mode .sonnet-modal-foot,
+html.light-mode .sonnet-pkg-features { color: var(--t2); }
+
+/* Settings page overrides */
+html.light-mode .main { background: var(--bg); }
+html.light-mode .main h2 { color: var(--t1); }
+html.light-mode .card,
+html.light-mode .plan-card,
+html.light-mode .panel { background: var(--bg2); border-color: var(--bd); }
+html.light-mode .fg input,
+html.light-mode .fg textarea,
+html.light-mode .fg select { background: var(--bg2); color: var(--t1); border-color: var(--bd); }
+html.light-mode .toggle-track { background: var(--bg3); border-color: var(--bd); }
+html.light-mode .pbar-track { background: var(--bg3); }
+html.light-mode .btn-secondary { background: var(--bg3); color: var(--t1); border: 1px solid var(--bd); }
+
+/* SVG stroke adjusts */
+html.light-mode svg[stroke='currentColor'],
+html.light-mode .sb-item svg { stroke: currentColor; }
+
+/* Scrollbar */
+html.light-mode ::-webkit-scrollbar-track { background: var(--bg); }
+html.light-mode ::-webkit-scrollbar-thumb { background: rgba(20,20,60,.18); }
+
+/* Welcome / landing elements if present */
+html.light-mode .welc,
+html.light-mode .welc h1,
+html.light-mode .welc p { color: var(--t1); }
+
+/* Code blocks */
+html.light-mode pre,
+html.light-mode code { background: #F3F3F8; color: #15152A; border-color: var(--bd); }

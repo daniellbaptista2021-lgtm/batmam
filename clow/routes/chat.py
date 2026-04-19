@@ -435,8 +435,14 @@ def register_chat_routes(app: FastAPI) -> None:
                 cmd_resp = (
                     f"## Seu Plano: {plan_info['label']}\n\n"
                     f"- Limite diario: **{plan_info['daily_tokens']:,} tokens**\n\n"
-                    "**Planos disponiveis:**\n"
-                    "| Plano | Tokens/dia |\n|-------|------------|\n"
+                    "**Planos disponiveis:**\n\n"
+                    "| Plano | Preco | Tokens/dia | WhatsApp | CRM | Usuarios |\n"
+                    "|-------|-------|------------|----------|-----|----------|\n"
+                    "| ONE | R$ 139,90/mes | 1.000.000 | 1 numero | — | 1 |\n"
+                    "| SMART | R$ 177,90/mes | 1.800.000 | 2 numeros | Sim | 3 |\n"
+                    "| PROFISSIONAL | R$ 289,90/mes | 2.500.000 | 3 numeros | Sim | 5 |\n"
+                    "| BUSINESS | R$ 367,90/mes | 3.000.000 | 5 numeros | Sim | 10 |\n\n"
+                    "Para trocar de plano: **Configuracoes > Meu Plano**."
                 )
 
             if cmd_resp:

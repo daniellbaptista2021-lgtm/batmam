@@ -24,16 +24,16 @@ DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 if _DB_BACKEND == "postgres":
     from .db_postgres import get_db as _pg_get_db, init_db as _pg_init_db
 
-# Planos pagos (sem plano gratuito). Planos reais em billing.py
+# Planos pagos. Espelham billing.py (fonte de verdade para preço e limites).
 PLANS = {
-    "lite": {"label": "Lite — R$169", "daily_tokens": 1_800_000},
-    "starter": {"label": "Starter — R$298", "daily_tokens": 2_150_000},
-    "pro": {"label": "Pro — R$487", "daily_tokens": 3_000_000},
-    "business": {"label": "Business — R$667", "daily_tokens": 4_800_000},
+    "lite":      {"label": "ONE — R$ 139,90", "daily_tokens": 1_000_000},
+    "starter":   {"label": "SMART — R$ 177,90", "daily_tokens": 1_800_000},
+    "pro":       {"label": "PROFISSIONAL — R$ 289,90", "daily_tokens": 2_500_000},
+    "business":  {"label": "BUSINESS — R$ 367,90", "daily_tokens": 3_000_000},
     "unlimited": {"label": "Admin", "daily_tokens": 0},
-    "free": {"label": "Gratuito", "daily_tokens": 500_000},
+    "free":      {"label": "Gratuito", "daily_tokens": 500_000},
     "byok_free": {"label": "Gratuito", "daily_tokens": 500_000},
-    "basic": {"label": "Basico", "daily_tokens": 500_000},
+    "basic":     {"label": "Basico", "daily_tokens": 500_000},
 }
 
 # Admin email via env var (not hardcoded)

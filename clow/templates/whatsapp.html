@@ -2,9 +2,14 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#050510">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Clow WA">
 <title>Clow — WhatsApp</title>
 <link rel="icon" href="/static/brand/favicon.png">
+<link rel="apple-touch-icon" href="/static/brand/icon.png">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -14,18 +19,19 @@
   --font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   --mono:'Courier New',monospace;
 }
-body{font-family:var(--font);background:var(--bg);color:var(--t1);min-height:100vh}
+html{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--t1);min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden}
 a{color:var(--p);text-decoration:none}
 
 /* Top bar */
-.top{display:flex;align-items:center;gap:10px;padding:10px 20px;background:var(--bg2);border-bottom:1px solid var(--border);height:48px}
-.top img{height:22px}
-.top .label{font-weight:700;font-size:14px;color:var(--wa);display:flex;align-items:center;gap:6px}
-.top .back{color:var(--t2);font-size:13px;transition:color .2s}
-.top .back:hover{color:var(--t1)}
+.top{display:flex;align-items:center;gap:10px;padding:10px 20px;padding-top:calc(10px + env(safe-area-inset-top,0px));padding-left:calc(20px + env(safe-area-inset-left,0px));padding-right:calc(20px + env(safe-area-inset-right,0px));background:var(--bg2);border-bottom:1px solid var(--border);min-height:calc(48px + env(safe-area-inset-top,0px));position:sticky;top:0;z-index:100}
+.top img{height:22px;flex-shrink:0}
+.top .label{font-weight:700;font-size:14px;color:var(--wa);display:flex;align-items:center;gap:6px;flex-shrink:0}
+.top .back{color:var(--t2);font-size:13px;transition:color .2s;padding:6px 2px;margin-left:-2px;flex-shrink:0}
+.top .back:hover,.top .back:active{color:var(--t1)}
 
 /* Main */
-.main{max-width:900px;margin:0 auto;padding:24px 20px}
+.main{max-width:900px;margin:0 auto;padding:24px 20px;flex:1;width:100%;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
 .main>p{color:var(--t2);font-size:14px;margin-bottom:20px}
 
 /* Instance cards */
@@ -112,9 +118,10 @@ a{color:var(--p);text-decoration:none}
 .toast-err{background:#7F1D1D;color:#FCA5A5;border:1px solid #EF4444}
 
 @media(max-width:640px){
-  .main{padding:16px 12px}
+  .main{padding:16px 12px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
   .row{flex-direction:column;gap:0}
   .modal{max-width:100%}
+  .top .back{font-size:14px;padding:8px 4px;min-height:36px;display:inline-flex;align-items:center}
 }
 </style>
 </head>

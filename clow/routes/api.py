@@ -453,10 +453,75 @@ def register_api_routes(app: FastAPI) -> None:
             models = ["haiku"]
             if plan in ("pro", "unlimited"):
                 models.append("sonnet")
+        # Flags de primeiro login pra tour guiado
+        first_login = 0
+        try:
+            from ..database import get_db
+            with get_db() as db:
+                row = db.execute(
+                    "SELECT first_login FROM users WHERE id=?",
+                    (sess["user_id"],),
+                ).fetchone()
+                if row:
+                    first_login = int(row["first_login"] or 0)
+        except Exception:
+            pass
         return JSONResponse({
             "email": sess["email"],
             "user_id": sess["user_id"],
             "is_admin": is_admin,
             "plan": plan,
             "available_models": models,
+            "first_login": first_login,
         })
+
+    @app.post("/api/v1/user/mark-tour-done", tags=["user"])
+    async def api_mark_tour_done(request: Request):
+        """Marca tour guiado como concluido (limpa first_login)."""
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        try:
+            from ..database import get_db
+            with get_db() as db:
+                db.execute("UPDATE users SET first_login=0 WHERE id=?", (sess["user_id"],))
+            return JSONResponse({"success": True})
+        except Exception as e:
+            return JSONResponse({"error": str(e)[:200]}, status_code=500)
+
+    @app.get("/api/v1/user/setup-state", tags=["user"])
+    async def api_setup_state(request: Request):
+        """Estado rapido pro chat.html: onboarding, WhatsApp, tour.
+        Independente do /api/v1/onboarding/status que depende de funcoes
+        que nao existem em database.py.
+        """
+        sess = _get_user_session(request)
+        if not sess:
+            return JSONResponse({"error": "Nao autenticado"}, status_code=401)
+        uid = sess["user_id"]
+        try:
+            from ..database import get_db
+            with get_db() as db:
+                u = db.execute(
+                    "SELECT onboarding_completed, first_login, plan FROM users WHERE id=?",
+                    (uid,),
+                ).fetchone()
+                wa = db.execute(
+                    "SELECT status FROM whatsapp_credentials WHERE user_id=? "
+                    "ORDER BY id DESC LIMIT 1",
+                    (uid,),
+                ).fetchone()
+            onboarding_done = bool(u and u["onboarding_completed"])
+            first_login = bool(u and u["first_login"])
+            plan = u["plan"] if u else "free"
+            is_paid = plan in ("lite", "starter", "pro", "business")
+            wa_connected = bool(wa and wa["status"] == "connected")
+            return JSONResponse({
+                "onboarding_completed": onboarding_done,
+                "first_login": first_login,
+                "whatsapp_connected": wa_connected,
+                "plan": plan,
+                "is_paid_plan": is_paid,
+            })
+        except Exception as e:
+            return JSONResponse({"error": str(e)[:200]}, status_code=500)

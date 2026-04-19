@@ -476,28 +476,90 @@ def _handle_checkout_completed(session: dict) -> dict:
 
 
 def _send_welcome_email(email: str, plan_id: str) -> None:
-    """Envia email de boas-vindas com detalhes da assinatura."""
-    stripe = _get_stripe()
-    if not stripe or not email:
+    """Envia email HTML de boas-vindas do Clow com proximos passos.
+
+    Fallback gracioso: se SMTP nao estiver configurado no .env, apenas loga.
+    Stripe continua enviando recibo separadamente.
+    """
+    if not email:
         return
 
     plan = get_plan(plan_id)
+    plan_name = plan.get("name", plan_id.upper())
+    price_brl = plan.get("price_brl", 0)
+    daily_in = plan.get("daily_input_tokens", 0)
+    daily_out = plan.get("daily_output_tokens", 0)
+    daily_total = daily_in + daily_out
+    wa_instances = plan.get("wa_included_instances", 1)
+    max_users = plan.get("max_users", 1)
+    n8n_flows = plan.get("n8n_flows", 0)
+    crm_enabled = plan.get("crm_enabled", False)
+
+    subject = f"Bem-vindo ao Clow — seu plano {plan_name} esta ativo!"
+
+    features_html = "".join([
+        f"<li><b>Limite diario:</b> {daily_total:,} tokens</li>".replace(",", "."),
+        f"<li><b>Numeros WhatsApp:</b> {wa_instances}</li>",
+        f"<li><b>Usuarios:</b> ate {max_users}</li>",
+        (f"<li><b>Automacoes n8n:</b> {n8n_flows} fluxos/mes</li>" if n8n_flows else ""),
+        ("<li><b>CRM Chatwoot:</b> incluso</li>" if crm_enabled else ""),
+    ])
+
+    body_html = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><title>Bem-vindo ao Clow</title></head>
+<body style="margin:0;padding:0;background:#050510;font-family:'Segoe UI',Helvetica,Arial,sans-serif;color:#E8E8F0">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#050510;padding:32px 16px">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F0F24;border-radius:16px;overflow:hidden;border:1px solid rgba(100,100,180,.15)">
+<tr><td style="padding:40px 32px 24px;text-align:center;background:linear-gradient(135deg,rgba(155,89,252,.15),rgba(74,158,255,.08))">
+<img src="https://clow.pvcorretor01.com.br/static/brand/logo.png" alt="Clow" style="height:64px;display:block;margin:0 auto 12px">
+<p style="font-size:11px;letter-spacing:3px;color:#9898B8;text-transform:uppercase;margin:0">INTELIGENCIA INFINITA &bull; POSSIBILIDADES PREMIUM</p>
+</td></tr>
+<tr><td style="padding:32px">
+<h1 style="font-size:24px;font-weight:700;margin:0 0 16px;color:#E8E8F0">Bem-vindo ao Clow! 🎉</h1>
+<p style="font-size:14px;line-height:1.7;color:#9898B8;margin:0 0 20px">Seu pagamento foi confirmado e sua assinatura <b style="color:#fff">{plan_name}</b> (R$ {price_brl:.2f}/mes) esta <b style="color:#4ADE80">ativa</b>.</p>
+<div style="background:#14142E;border:1px solid rgba(155,89,252,.2);border-left:3px solid #9B59FC;border-radius:10px;padding:16px 20px;margin:20px 0">
+<p style="font-size:12px;color:#9898B8;margin:0 0 8px;letter-spacing:1px;text-transform:uppercase">O QUE VOCE TEM</p>
+<ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.9;color:#E8E8F0">{features_html}</ul>
+</div>
+<h2 style="font-size:16px;margin:28px 0 12px;color:#E8E8F0">Proximos passos</h2>
+<ol style="padding-left:20px;font-size:14px;line-height:1.8;color:#9898B8">
+<li><b style="color:#E8E8F0">Configure seu bot</b> — responda a um pequeno wizard e seu atendimento automatico fica pronto em 3 minutos</li>
+<li><b style="color:#E8E8F0">Conecte o WhatsApp</b> — via Z-API ou API oficial da Meta</li>
+<li><b style="color:#E8E8F0">Personalize o prompt</b> — descreva seu negocio e o bot aprende</li>
+<li><b style="color:#E8E8F0">Comece a atender</b> — seus clientes serao atendidos 24/7</li>
+</ol>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:32px 0 8px"><tr><td align="center">
+<a href="https://clow.pvcorretor01.com.br/app/onboarding" style="display:inline-block;background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;padding:14px 36px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;letter-spacing:.3px">Comecar configuracao &rarr;</a>
+</td></tr></table>
+<p style="font-size:12px;color:#585878;text-align:center;margin:24px 0 0">Precisa de ajuda? Responda este email ou use o proprio Clow para tirar duvidas.</p>
+</td></tr>
+<tr><td style="padding:20px 32px;background:#0A0A1A;border-top:1px solid rgba(100,100,180,.08);text-align:center">
+<p style="font-size:11px;color:#585878;margin:0;line-height:1.6">
+<a href="https://clow.pvcorretor01.com.br" style="color:#9B59FC;text-decoration:none">clow.pvcorretor01.com.br</a> &bull;
+<a href="https://clow.pvcorretor01.com.br/app/settings" style="color:#9B59FC;text-decoration:none">Configuracoes</a> &bull;
+<a href="https://clow.pvcorretor01.com.br/usage" style="color:#9B59FC;text-decoration:none">Uso e Franquia</a>
+</p>
+<p style="font-size:10px;color:#3F3F5F;margin:8px 0 0">Voce recebeu este email porque assinou o plano {plan_name} no Clow.</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>"""
 
     try:
-        # Usa Stripe para enviar email (configura no Dashboard: Settings > Emails)
-        # Stripe envia automaticamente: receipt, invoice, payment failed
-        # Aqui registramos que o email deve ser enviado
-        log_action("billing_welcome_email", f"email={email} plan={plan_id}")
-
-        # Se quiser email customizado, pode usar httpx para API de email
-        # Por agora, o Stripe cuida dos emails automaticos:
-        # - Receipt de pagamento
-        # - Invoice mensal
-        # - Aviso de falha de pagamento
-        # - Aviso de cancelamento
-        # Basta ativar em: dashboard.stripe.com/settings/emails
-    except OSError as e:
+        from .integrations.email_sender import send_email
+        result = send_email(to=email, subject=subject, body_html=body_html, from_name="Clow")
+        if result.get("success"):
+            log_action("billing_welcome_email_sent", f"email={email} plan={plan_id}")
+        else:
+            # SMTP nao configurado ou erro — apenas loga, nao bloqueia ativacao
+            log_action("billing_welcome_email_skipped",
+                       f"email={email} plan={plan_id} reason={result.get('error','?')[:80]}")
+    except Exception as e:
         logger.warning("Erro ao enviar email de boas-vindas: %s", e)
+        log_action("billing_welcome_email_error", f"email={email} error={str(e)[:100]}",
+                   level="error")
 
 
 def _handle_subscription_updated(sub: dict) -> dict:

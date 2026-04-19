@@ -1,0 +1,406 @@
+/* ═══════════════════════════════════════════════════════════════════════
+ * Sonnet Selector — UI do seletor de agente, modal Stripe, iframe, badge
+ * Usa a paleta oficial do Clow (--purple #9B59FC, --blue #4A9EFF, --gradient-primary)
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─── Segmented control (CLOW | SYSTEM CLOW SONNET 4) ─── */
+.agent-seg {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border, rgba(100, 100, 180, 0.12));
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+  margin: 0 6px;
+  flex-shrink: 0;
+}
+
+.agent-btn {
+  background: transparent;
+  color: var(--text-secondary, #9898B8);
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-family: var(--font-sans, 'DM Sans'), sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+.agent-btn:hover {
+  color: var(--text-primary, #E8E8F0);
+  background: rgba(155, 89, 252, 0.08);
+}
+.agent-btn.active {
+  background: var(--gradient-primary, linear-gradient(135deg, #9B59FC 0%, #4A9EFF 100%));
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(155, 89, 252, 0.35);
+}
+.agent-btn-icon {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Stack vertically on small screens */
+@media (max-width: 700px) {
+  .agent-btn-label { font-size: 10px; letter-spacing: 0.2px; }
+  .agent-btn { padding: 6px 10px; }
+}
+@media (max-width: 480px) {
+  .agent-btn[data-agent="sonnet"] .agent-btn-label::after {
+    content: "SONNET 4";
+  }
+  .agent-btn[data-agent="sonnet"] .agent-btn-label {
+    font-size: 0;
+  }
+  .agent-btn[data-agent="sonnet"] .agent-btn-label::after {
+    font-size: 10px;
+  }
+}
+
+/* ─── Saldo badge ─── */
+.sonnet-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-sans, 'DM Sans'), sans-serif;
+  font-size: 10.5px;
+  color: var(--text-secondary, #9898B8);
+  background: rgba(155, 89, 252, 0.06);
+  border: 1px solid rgba(155, 89, 252, 0.14);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+.sonnet-badge.hidden { display: none; }
+.sonnet-badge .sb-key { color: var(--purple, #9B59FC); font-weight: 700; }
+.sonnet-badge .sb-warn { color: #FBBF24; font-weight: 600; }
+
+/* ─── Modal de compra de pacotes ─── */
+.sonnet-modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 5, 16, 0.82);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: sonnetFadeIn 0.2s ease;
+}
+@keyframes sonnetFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.sonnet-modal {
+  background: var(--bg-elevated, #0F0F24);
+  border: 1px solid rgba(155, 89, 252, 0.22);
+  border-radius: 20px;
+  padding: 36px 34px 30px;
+  max-width: 820px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.5), 0 0 80px rgba(155, 89, 252, 0.12);
+  animation: sonnetSlideUp 0.25s ease;
+}
+.sonnet-modal.small { max-width: 480px; padding: 32px 28px 26px; }
+@keyframes sonnetSlideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.sonnet-modal-x {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #585878);
+  font-size: 28px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px 10px;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+.sonnet-modal-x:hover { color: var(--text-primary, #E8E8F0); background: rgba(255, 255, 255, 0.05); }
+
+.sonnet-modal-title {
+  font-family: var(--font-sans, 'DM Sans'), sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary, #E8E8F0);
+  margin: 0 0 8px;
+  background: var(--gradient-primary, linear-gradient(135deg, #9B59FC, #4A9EFF));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.3px;
+}
+.sonnet-modal-sub {
+  color: var(--text-secondary, #9898B8);
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0 0 26px;
+}
+.sonnet-modal-foot {
+  color: var(--text-muted, #585878);
+  font-size: 11.5px;
+  margin: 22px 0 0;
+  text-align: center;
+}
+
+/* ─── Cards de pacotes ─── */
+.sonnet-pkgs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+@media (max-width: 680px) {
+  .sonnet-pkgs { grid-template-columns: 1fr; }
+}
+
+.sonnet-pkg {
+  background: var(--bg-surface, #14142E);
+  border: 1px solid var(--border, rgba(100, 100, 180, 0.12));
+  border-radius: 14px;
+  padding: 22px 20px 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+}
+.sonnet-pkg:hover {
+  border-color: rgba(155, 89, 252, 0.3);
+  transform: translateY(-2px);
+}
+.sonnet-pkg.highlight {
+  border-color: var(--purple, #9B59FC);
+  background: linear-gradient(180deg, rgba(155, 89, 252, 0.06), var(--bg-surface, #14142E));
+  box-shadow: 0 12px 40px rgba(155, 89, 252, 0.12);
+}
+.sonnet-pkg-recommended {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--gradient-primary, linear-gradient(135deg, #9B59FC, #4A9EFF));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.sonnet-pkg-name {
+  font-family: var(--font-sans, 'DM Sans'), sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-secondary, #9898B8);
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.sonnet-pkg-price {
+  font-family: var(--font-sans, 'DM Sans'), sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--text-primary, #E8E8F0);
+  margin: 0 0 18px;
+  letter-spacing: -0.5px;
+}
+.sonnet-pkg-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+  flex: 1;
+}
+.sonnet-pkg-features li {
+  color: var(--text-secondary, #9898B8);
+  font-size: 13px;
+  padding: 5px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sonnet-pkg-features li::before {
+  content: '✓';
+  color: var(--purple, #9B59FC);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.sonnet-pkg-features li strong { color: var(--text-primary, #E8E8F0); font-weight: 600; }
+
+.sonnet-pkg-btn {
+  background: var(--bg-elevated, #0F0F24);
+  border: 1px solid rgba(155, 89, 252, 0.3);
+  color: var(--purple, #9B59FC);
+  font-family: var(--font-sans, 'DM Sans'), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  width: 100%;
+}
+.sonnet-pkg.highlight .sonnet-pkg-btn {
+  background: var(--gradient-primary, linear-gradient(135deg, #9B59FC, #4A9EFF));
+  border-color: transparent;
+  color: #fff;
+}
+.sonnet-pkg-btn:hover:not(:disabled) {
+  background: var(--gradient-primary, linear-gradient(135deg, #9B59FC, #4A9EFF));
+  color: #fff;
+  border-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(155, 89, 252, 0.3);
+}
+.sonnet-pkg-btn:disabled { opacity: 0.6; cursor: wait; }
+
+/* ─── Confirm dialog ─── */
+.sonnet-confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+.sonnet-btn-ghost, .sonnet-btn-primary {
+  font-family: var(--font-sans, 'DM Sans'), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.sonnet-btn-ghost {
+  background: transparent;
+  color: var(--text-secondary, #9898B8);
+  border-color: var(--border, rgba(100, 100, 180, 0.12));
+}
+.sonnet-btn-ghost:hover { color: var(--text-primary, #E8E8F0); background: rgba(255, 255, 255, 0.04); }
+.sonnet-btn-primary {
+  background: var(--gradient-primary, linear-gradient(135deg, #9B59FC, #4A9EFF));
+  color: #fff;
+}
+.sonnet-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(155, 89, 252, 0.3); }
+
+/* ─── Iframe overlay do System Clow ─── */
+.sonnet-iframe-wrap {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-deep, #050510);
+  z-index: 9500;
+  display: none;
+  flex-direction: column;
+  height: 100dvh;
+  height: 100vh;
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.sonnet-iframe-wrap.open { display: flex; }
+
+.sonnet-iframe-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+  padding-left: calc(18px + env(safe-area-inset-left, 0px));
+  padding-right: calc(18px + env(safe-area-inset-right, 0px));
+  background: var(--bg-base, #0A0A1A);
+  border-bottom: 1px solid var(--border, rgba(100, 100, 180, 0.12));
+  min-height: 50px;
+  flex-shrink: 0;
+}
+.sonnet-iframe-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-sans, 'DM Sans'), sans-serif;
+  font-size: 14px;
+  color: var(--text-primary, #E8E8F0);
+}
+.sonnet-iframe-title strong { color: var(--text-primary, #E8E8F0); font-weight: 700; }
+.sonnet-iframe-title .sonnet-iframe-sub {
+  background: var(--gradient-primary, linear-gradient(135deg, #9B59FC, #4A9EFF));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+.sonnet-iframe-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green, #4ADE80);
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+}
+.sonnet-iframe-close {
+  background: transparent;
+  border: 1px solid var(--border, rgba(100, 100, 180, 0.12));
+  color: var(--text-secondary, #9898B8);
+  font-size: 22px;
+  line-height: 1;
+  padding: 4px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sonnet-iframe-close:hover { color: var(--text-primary, #E8E8F0); background: rgba(248, 113, 113, 0.1); border-color: rgba(248, 113, 113, 0.4); }
+
+.sonnet-iframe-wrap iframe {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: var(--bg-deep, #050510);
+}
+
+/* ─── Toast ─── */
+.sonnet-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bg-surface, #14142E);
+  color: var(--text-primary, #E8E8F0);
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: 1px solid rgba(155, 89, 252, 0.3);
+  font-family: var(--font-sans, 'DM Sans'), sans-serif;
+  font-size: 13px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 10001;
+  max-width: 90vw;
+}
+.sonnet-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+
+/* ─── Iframe mobile safe-area fix ─── */
+@media (max-width: 600px) {
+  .sonnet-iframe-bar {
+    padding: 10px 14px;
+    padding-top: calc(10px + env(safe-area-inset-top, 0px));
+    min-height: 48px;
+  }
+  .sonnet-iframe-title { font-size: 13px; }
+  .sonnet-iframe-close { padding: 4px 10px; font-size: 20px; }
+}

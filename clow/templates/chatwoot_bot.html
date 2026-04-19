@@ -2,22 +2,34 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<meta name="theme-color" content="#050510">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Clow — Bot Chatwoot</title>
 <link rel="icon" href="/static/brand/favicon.png">
+<link rel="apple-touch-icon" href="/static/brand/icon.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#050510;--bg2:#0F0F24;--bg3:#14142E;--bd:rgba(100,100,180,.12);--bdf:rgba(155,89,252,.5);--p:#9B59FC;--bl:#4A9EFF;--gp:linear-gradient(135deg,#9B59FC,#4A9EFF);--g:#34D399;--r:#F87171;--y:#FBBF24;--t1:#E8E8F0;--t2:#9898B8;--tm:#585878;--sans:'DM Sans',sans-serif;--mono:'JetBrains Mono',monospace}
-body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased}
+html{height:100%}
+body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 
-.top{display:flex;align-items:center;gap:12px;padding:16px 24px;border-bottom:1px solid var(--bd);background:var(--bg2)}
-.top img{height:32px}
+.top{display:flex;align-items:center;gap:12px;padding:16px 24px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-left:calc(24px + env(safe-area-inset-left,0px));padding-right:calc(24px + env(safe-area-inset-right,0px));border-bottom:1px solid var(--bd);background:var(--bg2);position:sticky;top:0;z-index:100}
+.top img{height:32px;flex-shrink:0}
 .top h1{font-size:1.1rem;font-weight:600}
-.top .back{margin-left:auto;font-size:.85rem;color:var(--t2);text-decoration:none}
-.top .back:hover{color:var(--t1)}
+.top .back{margin-left:auto;font-size:.85rem;color:var(--t2);text-decoration:none;padding:6px 2px;flex-shrink:0}
+.top .back:hover,.top .back:active{color:var(--t1)}
+@media(max-width:640px){
+  .top{padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px))}
+  .top img{height:26px}
+  .top h1{font-size:1rem}
+  .top .back{font-size:14px;padding:8px 4px;min-height:36px;display:inline-flex;align-items:center}
+}
 
-.wrap{max-width:800px;margin:32px auto;padding:0 24px}
+.wrap{max-width:800px;margin:32px auto;padding:0 24px;flex:1;width:100%;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+@media(max-width:640px){.wrap{margin:20px auto;padding:0 12px}}
 .desc{color:var(--t2);font-size:.9rem;margin-bottom:24px;line-height:1.6}
 
 .add-bar{display:flex;gap:8px;margin-bottom:24px}

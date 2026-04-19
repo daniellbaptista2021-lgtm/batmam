@@ -223,6 +223,13 @@ if HAS_FASTAPI:
     from .routes.clone import register_clone_routes
     register_clone_routes(app)
 
+    # ── Follow-up scheduler (email lembrando de conectar WhatsApp) ──
+    try:
+        from .followup_scheduler import start as _start_followup
+        _start_followup()
+    except Exception as _e:
+        logging.getLogger("clow.webapp").warning("Followup scheduler skipped: %s", _e)
+
     # ── Proteger /docs e /openapi.json (admin only) ──────────────
     from starlette.middleware.base import BaseHTTPMiddleware
     from fastapi.responses import JSONResponse as _DocsJR

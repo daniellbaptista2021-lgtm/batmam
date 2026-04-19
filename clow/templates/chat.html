@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<script src="/static/js/theme-init.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#050510">
 <meta name="description" content="Clow - AI Code Agent | Inteligência Infinita • Possibilidades Premium. Crie landing pages, planilhas, documentos, apps e muito mais com inteligência artificial.">
@@ -26,9 +27,12 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/css/chat.css?v=20260406">
+<link rel="stylesheet" href="/static/css/chat.css?v=20260418e">
 <link rel="stylesheet" href="/static/css/bg.css">
 <script defer src="/static/js/bg.js"></script>
+
+  <link rel="stylesheet" href="/static/css/sonnet-selector.css?v=7">
+<link rel="stylesheet" href="/static/css/theme-light.css?v=1">
 </head>
 <body>
 <svg style="position:absolute;width:0;height:0"><defs>
@@ -46,12 +50,12 @@
 
     <div class="sb-sec"><button class="sb-new" onclick="newConv()" aria-label="Iniciar nova conversa">+ Nova Conversa</button></div>
 
-    <!-- CRM -->
+    <!-- CRM (abre Chatwoot embutido em modal) -->
     <div class="sb-sec" id="crmBlock" style="padding:0 12px">
-      <a href="/crm" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(155,89,252,.06);border:1px solid rgba(155,89,252,.12);border-radius:10px;color:#9B59FC;font-size:12px;font-weight:600;text-decoration:none;transition:all .2s" onmouseover="this.style.background='rgba(155,89,252,.12)'" onmouseout="this.style.background='rgba(155,89,252,.06)'">
+      <button type="button" onclick="openChatwootModal()" aria-label="Abrir CRM Chatwoot" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(155,89,252,.06);border:1px solid rgba(155,89,252,.12);border-radius:10px;color:#9B59FC;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;transition:all .2s" onmouseover="this.style.background='rgba(155,89,252,.12)'" onmouseout="this.style.background='rgba(155,89,252,.06)'">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9B59FC" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
         Ver CRM completo
-      </a>
+      </button>
     </div>
 
     <!-- WhatsApp -->
@@ -70,13 +74,6 @@
         <a class="sb-btn" href="/app/settings" style="text-decoration:none;color:inherit">Configuracoes</a>
         <a class="sb-btn" href="/usage" style="text-decoration:none;color:inherit">Uso e Consumo</a>
       </div>
-    </div>
-
-    <!-- System Clow - Premium -->
-    <div class="sb-sec" id="systemCodeBtn" style="display:none;padding:0 12px;margin-top:4px">
-      <button type="button" onclick="openSystemClow()" style="width:100%;display:flex;align-items:center;justify-content:center;padding:14px 12px;background:#0a0a14;border:1px solid rgba(155,89,252,.35);border-radius:12px;cursor:pointer;transition:all .25s;box-shadow:0 0 0 0 rgba(155,89,252,0)" onmouseover="this.style.borderColor='rgba(155,89,252,.7)';this.style.background='#14142a';this.style.boxShadow='0 0 18px rgba(155,89,252,.35)'" onmouseout="this.style.borderColor='rgba(155,89,252,.35)';this.style.background='#0a0a14';this.style.boxShadow='0 0 0 0 rgba(155,89,252,0)'">
-        <img src="/static/brand/system-clow-logo.png" alt="System Clow" style="height:20px;width:auto;display:block">
-      </button>
     </div>
 
     <div class="sb-sec" id="admSec" style="display:none">
@@ -147,7 +144,174 @@
   #sysClowModal .sc-bar{height:calc(40px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 12px 0}
   #sysClowModal .sc-box{padding-bottom:env(safe-area-inset-bottom,0px)}
 }
+
+/* ===== Chatwoot Modal (CRM embutido) ===== */
+#chatwootModal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9998;background:rgba(10,10,20,.85);backdrop-filter:blur(6px);padding:24px}
+#chatwootModal .cw-box{width:100%;height:100%;max-width:1400px;margin:0 auto;background:#0a0a14;border:1px solid rgba(155,89,252,.3);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden}
+#chatwootModal .cw-bar{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 12px;gap:8px;min-height:44px;background:linear-gradient(135deg,rgba(155,89,252,.15),rgba(74,158,255,.08));border-bottom:1px solid rgba(155,89,252,.2)}
+#chatwootModal .cw-back{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:#e8e4f0;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
+#chatwootModal .cw-back:hover,#chatwootModal .cw-back:active{background:rgba(155,89,252,.25);border-color:rgba(155,89,252,.45)}
+#chatwootModal .cw-ttl{display:flex;align-items:center;gap:8px;color:#e8e4f0;font-size:13px;font-weight:600;letter-spacing:.02em;flex:1;justify-content:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#chatwootModal .cw-dot{width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,#9B59FC,#4A9EFF);box-shadow:0 0 10px rgba(155,89,252,.6);flex-shrink:0}
+#chatwootModal .cw-x{width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#e8e4f0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;transition:background .15s;flex-shrink:0}
+#chatwootModal .cw-x:hover{background:rgba(196,102,87,.2)}
+#chatwootModal #chatwootFrame{flex:1 1 auto;width:100%;min-height:0;border:none;background:#1f2c34;display:block}
+#chatwootModal .cw-loader{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none;flex-direction:column;align-items:center;gap:14px;color:#e8e4f0;text-align:center;padding:24px;z-index:5}
+#chatwootModal .cw-loader.show{display:flex}
+#chatwootModal .cw-loader .cw-spin{width:40px;height:40px;border:3px solid rgba(155,89,252,.25);border-top-color:#9B59FC;border-radius:50%;animation:cwSpin 1s linear infinite}
+@keyframes cwSpin{to{transform:rotate(360deg)}}
+#chatwootModal .cw-loader .cw-msg{font-size:13px;opacity:.85}
+#chatwootModal .cw-fallback{display:none;flex-direction:column;gap:10px;margin-top:8px;align-items:center}
+#chatwootModal .cw-fallback.show{display:flex}
+#chatwootModal .cw-fallback a{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none}
+#chatwootModal .cw-fallback .cw-hint{font-size:11px;color:#9898B8;max-width:280px;line-height:1.5}
+#chatwootModal .cw-body{position:relative;flex:1 1 auto;display:flex;flex-direction:column;min-height:0;background:#1f2c34}
+@media (max-width:640px){
+  #chatwootModal{padding:0}
+  #chatwootModal .cw-box{height:100%;max-width:none;border-radius:0;border:none}
+  #chatwootModal .cw-bar{padding:env(safe-area-inset-top,0px) calc(10px + env(safe-area-inset-right,0px)) 0 calc(10px + env(safe-area-inset-left,0px));min-height:calc(48px + env(safe-area-inset-top,0px));gap:6px}
+  #chatwootModal .cw-back{padding:8px 12px;font-size:13px;min-height:36px}
+  #chatwootModal .cw-ttl{font-size:12px}
+  #chatwootModal .cw-x{width:36px;height:36px}
+  #chatwootModal #chatwootFrame{padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:content-box}
+}
 </style>
+<div id="chatwootModal" role="dialog" aria-modal="true" aria-label="CRM Chatwoot">
+  <div class="cw-box">
+    <div class="cw-bar">
+      <button type="button" class="cw-back" onclick="closeChatwootModal()" aria-label="Voltar ao Clow">&larr; Clow</button>
+      <div class="cw-ttl"><span class="cw-dot"></span>CRM Chatwoot</div>
+      <button type="button" class="cw-x" onclick="closeChatwootModal()" aria-label="Fechar">&times;</button>
+    </div>
+    <div class="cw-body">
+      <div class="cw-loader" id="cwLoader">
+        <div class="cw-spin"></div>
+        <div class="cw-msg" id="cwLoaderMsg">Carregando CRM Chatwoot...</div>
+        <div class="cw-fallback" id="cwFallback">
+          <a href="/cw/" target="_blank" rel="noopener">Abrir em nova aba &rarr;</a>
+          <div class="cw-hint">O navegador bloqueou o carregamento do CRM dentro do Clow. Clique acima para abrir em uma nova aba.</div>
+        </div>
+      </div>
+      <iframe id="chatwootFrame" src="about:blank" title="CRM Chatwoot" allow="clipboard-read; clipboard-write; microphone; camera; autoplay; fullscreen; geolocation"></iframe>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  // URL same-origin via reverse proxy do nginx (/cw/ → Chatwoot em ads.pvcorretor01.com.br)
+  // Same-origin evita bloqueio de cookies third-party em iOS PWA e Safari ITP.
+  var CHATWOOT_URL='/cw/';
+  var _cwRaf=null, _cwTimeout=null, _cwLoaded=false;
+  function cwApplySize(){
+    var m=document.getElementById('chatwootModal');
+    if(!m||m.style.display!=='block')return;
+    var vv=window.visualViewport;
+    if(vv){
+      m.style.height=vv.height+'px';
+      m.style.top=vv.offsetTop+'px';
+      m.style.left=vv.offsetLeft+'px';
+      m.style.width=vv.width+'px';
+      m.style.bottom='auto';m.style.right='auto';
+    }else{
+      m.style.height=window.innerHeight+'px';
+    }
+  }
+  function cwOnVV(){if(_cwRaf)cancelAnimationFrame(_cwRaf);_cwRaf=requestAnimationFrame(cwApplySize)}
+  function cwShowLoader(show){
+    var el=document.getElementById('cwLoader');
+    if(el)el.classList.toggle('show',!!show);
+  }
+  function cwShowFallback(){
+    var fb=document.getElementById('cwFallback');
+    var msg=document.getElementById('cwLoaderMsg');
+    var spin=document.querySelector('#cwLoader .cw-spin');
+    if(fb)fb.classList.add('show');
+    if(msg)msg.textContent='Nao foi possivel carregar o CRM dentro do app';
+    if(spin)spin.style.display='none';
+    cwShowLoader(true);
+  }
+  window.openChatwootModal=function(){
+    var m=document.getElementById('chatwootModal'),f=document.getElementById('chatwootFrame');
+    if(!m||!f)return;
+    m.style.display='block';
+    document.body.style.overflow='hidden';
+    cwApplySize();
+    // reset fallback ui
+    var fb=document.getElementById('cwFallback');if(fb)fb.classList.remove('show');
+    var msg=document.getElementById('cwLoaderMsg');if(msg)msg.textContent='Carregando CRM Chatwoot...';
+    var spin=document.querySelector('#cwLoader .cw-spin');if(spin)spin.style.display='';
+    cwShowLoader(true);
+    _cwLoaded=false;
+    // Detecta carregamento real: same-origin entao da pra checar contentDocument
+    function cwCheckLoaded(){
+      try{
+        var d=f.contentDocument;
+        if(d && d.readyState==='complete' && d.body && d.body.children.length>0){
+          _cwLoaded=true;
+          cwShowLoader(false);
+          if(_cwTimeout){clearTimeout(_cwTimeout);_cwTimeout=null}
+          return true;
+        }
+      }catch(e){/* cross-origin — marca como carregado tbm */
+        _cwLoaded=true; cwShowLoader(false);
+        if(_cwTimeout){clearTimeout(_cwTimeout);_cwTimeout=null}
+        return true;
+      }
+      return false;
+    }
+    f.onload=function(){
+      // Assim que iframe carrega qualquer conteudo, esconde loader imediatamente
+      _cwLoaded=true;
+      cwShowLoader(false);
+      if(_cwTimeout){clearTimeout(_cwTimeout);_cwTimeout=null}
+    };
+    f.onerror=function(){cwShowFallback()};
+    // Polling curto: cada 500ms, verifica se iframe carregou (redirects internos)
+    var _cwPoll=setInterval(function(){
+      if(cwCheckLoaded() || _cwLoaded){clearInterval(_cwPoll)}
+    },500);
+    // carrega URL se ainda nao carregou
+    if(f.src==='about:blank'||f.getAttribute('src')==='about:blank'||!f.src){
+      f.src=CHATWOOT_URL;
+    }else{
+      // ja tem src — provavelmente ja carregou antes
+      cwShowLoader(false);_cwLoaded=true;clearInterval(_cwPoll);
+    }
+    // Timeout: se em 15s nao tiver carregado, mostra fallback
+    if(_cwTimeout)clearTimeout(_cwTimeout);
+    _cwTimeout=setTimeout(function(){
+      clearInterval(_cwPoll);
+      if(!_cwLoaded)cwShowFallback();
+    },45000);
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize',cwOnVV);
+      window.visualViewport.addEventListener('scroll',cwOnVV);
+    }
+    window.addEventListener('resize',cwOnVV);
+    window.addEventListener('orientationchange',cwOnVV);
+  };
+  window.closeChatwootModal=function(){
+    var m=document.getElementById('chatwootModal');
+    if(!m)return;
+    if(_cwTimeout){clearTimeout(_cwTimeout);_cwTimeout=null}
+    m.style.display='none';
+    m.style.height='';m.style.top='';m.style.left='';m.style.width='';m.style.bottom='';m.style.right='';
+    document.body.style.overflow='';
+    if(window.visualViewport){
+      window.visualViewport.removeEventListener('resize',cwOnVV);
+      window.visualViewport.removeEventListener('scroll',cwOnVV);
+    }
+    window.removeEventListener('resize',cwOnVV);
+    window.removeEventListener('orientationchange',cwOnVV);
+  };
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){
+      var m=document.getElementById('chatwootModal');
+      if(m&&m.style.display==='block')window.closeChatwootModal();
+    }
+  });
+})();
+</script>
 <div id="sysClowModal" role="dialog" aria-modal="true" aria-label="System Clow">
   <div class="sc-box">
     <div class="sc-bar">
@@ -214,7 +378,7 @@
   });
 })();
 </script>
-<script src="/static/js/chat.js?v=20260414a"></script>
+<script src="/static/js/chat.js?v=20260418e"></script>
 <script>
 /* Menu dropdown — funciona independente do chat.js */
 (function(){
@@ -241,18 +405,203 @@
 </script>
 
 
+<!-- Banner unificado: onboarding ou conexao WhatsApp (prioridade WhatsApp) -->
 <script>
-// Onboarding banner
 (function(){
-  fetch('/api/v1/onboarding/progress',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(d){
-    if(d&&!d.completed&&d.current_step===0&&location.pathname==='/app/chat'){
-      var b=document.createElement('div');b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#9B59FC,#4A9EFF);padding:12px 20px;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.3)';
-      b.innerHTML='<span style="color:#fff;font-size:13px">Bem-vindo ao Clow! Configure tudo em minutos.</span><a href="/app/onboarding" style="background:#fff;color:#9B59FC;padding:6px 16px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">Configurar agora</a><button onclick="this.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px">&times;</button>';
+  if(!document.getElementById('term'))return;
+  fetch('/api/v1/user/setup-state',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(d){
+    if(!d)return;
+    // Prioridade 1: onboarding incompleto (mais critico)
+    if(!d.onboarding_completed){
+      if(sessionStorage.getItem('clow_onb_banner_dismissed')==='1')return;
+      var b=document.createElement('div');b.id='onbBanner';
+      b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#9B59FC,#4A9EFF);padding:12px 20px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.3);flex-wrap:wrap';
+      b.innerHTML='<span style="color:#fff;font-size:13px">Bem-vindo ao Clow! Configure tudo em minutos.</span><a href="/app/onboarding" style="background:#fff;color:#9B59FC;padding:6px 16px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">Configurar agora</a><button onclick="sessionStorage.setItem(\'clow_onb_banner_dismissed\',\'1\');this.parentElement.remove()" aria-label="Dispensar" style="background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px">&times;</button>';
       document.body.prepend(b);
+      return;
     }
+    // Prioridade 2: onboarding OK mas WhatsApp nao conectado (so se for plano pago)
+    if(d.whatsapp_connected||!d.is_paid_plan)return;
+    if(sessionStorage.getItem('clow_wa_banner_dismissed')==='1')return;
+    var b=document.createElement('div');b.id='waReminderBanner';
+    b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#25D366,#128C7E);padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,.3);flex-wrap:wrap';
+    b.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="#fff" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg><span style="color:#fff;font-size:13px;font-weight:500">Conecte seu WhatsApp para comecar a atender clientes</span><a href="/app/whatsapp" style="background:#fff;color:#128C7E;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">Conectar agora</a><button onclick="sessionStorage.setItem(\'clow_wa_banner_dismissed\',\'1\');this.parentElement.remove()" aria-label="Dispensar" style="background:none;border:none;color:rgba(255,255,255,.85);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px">&times;</button>';
+    document.body.prepend(b);
   }).catch(function(){});
 })();
 </script>
 
+<!-- Tour guiado (primeiro login) -->
+<style>
+#clowTour{position:fixed;inset:0;z-index:10001;display:none;pointer-events:none}
+#clowTour.show{display:block}
+#clowTour .tour-backdrop{position:absolute;inset:0;background:rgba(5,5,16,.78);backdrop-filter:blur(4px);pointer-events:auto;opacity:0;transition:opacity .3s}
+#clowTour.show .tour-backdrop{opacity:1}
+#clowTour .tour-spot{position:absolute;border-radius:12px;box-shadow:0 0 0 9999px rgba(5,5,16,.78),0 0 0 3px #9B59FC,0 0 30px rgba(155,89,252,.6);transition:all .4s cubic-bezier(.4,0,.2,1);pointer-events:none}
+#clowTour .tour-card{position:absolute;max-width:320px;background:#0F0F24;border:1px solid rgba(155,89,252,.3);border-radius:14px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 40px rgba(155,89,252,.15);pointer-events:auto;animation:tourCardIn .4s cubic-bezier(.4,0,.2,1)}
+@keyframes tourCardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+#clowTour .tour-step{font-size:11px;color:#9B59FC;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px}
+#clowTour .tour-title{font-size:16px;font-weight:700;color:#E8E8F0;margin:0 0 8px}
+#clowTour .tour-text{font-size:13px;color:#9898B8;line-height:1.55;margin:0 0 16px}
+#clowTour .tour-btns{display:flex;gap:8px;justify-content:space-between;align-items:center}
+#clowTour .tour-skip{background:none;border:none;color:#585878;font-size:12px;cursor:pointer;padding:6px 8px;font-family:inherit}
+#clowTour .tour-skip:hover{color:#9898B8}
+#clowTour .tour-next{background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:filter .15s}
+#clowTour .tour-next:hover{filter:brightness(1.15)}
+#clowTour .tour-dots{display:flex;gap:4px;margin-left:auto;margin-right:12px}
+#clowTour .tour-dot{width:6px;height:6px;border-radius:50%;background:rgba(155,89,252,.25);transition:background .2s}
+#clowTour .tour-dot.act{background:#9B59FC;width:16px;border-radius:3px}
+@media(max-width:640px){#clowTour .tour-card{max-width:calc(100vw - 32px);margin:0 16px}}
+</style>
+<div id="clowTour" role="dialog" aria-label="Tour do Clow" aria-modal="true">
+  <div class="tour-backdrop" onclick="window.clowTourSkip&&window.clowTourSkip()"></div>
+  <div class="tour-spot" id="tourSpot"></div>
+  <div class="tour-card" id="tourCard">
+    <div class="tour-step" id="tourStepLabel">Passo 1 de 5</div>
+    <h3 class="tour-title" id="tourTitle">Titulo</h3>
+    <p class="tour-text" id="tourText">Texto</p>
+    <div class="tour-btns">
+      <button class="tour-skip" onclick="window.clowTourSkip()">Pular tour</button>
+      <div class="tour-dots" id="tourDots"></div>
+      <button class="tour-next" id="tourNext" onclick="window.clowTourNext()">Proximo</button>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  if(!document.getElementById('term'))return;
+  fetch('/api/v1/me',{credentials:'same-origin'}).then(function(r){return r.json()}).then(function(me){
+    if(!me||!me.first_login)return;
+    // Delay pequeno pra UI montar
+    setTimeout(startTour, 800);
+  }).catch(function(){});
+
+  var STEPS=[
+    {
+      selector: '#term',
+      title: 'Seu terminal de IA',
+      text: 'Aqui e onde voce conversa com o Clow. Pede para criar landing pages, planilhas, copy de anuncio, roteiros de video — ele faz tudo na hora.',
+      position: 'center'
+    },
+    {
+      selector: '.sb-new',
+      title: 'Comece uma nova conversa',
+      text: 'Cada tarefa pode ser uma conversa nova. As conversas antigas ficam salvas na barra lateral.',
+      position: 'right'
+    },
+    {
+      selector: '#crmBlock',
+      title: 'CRM completo embutido',
+      text: 'Seu Chatwoot com atendimento ao cliente, etiquetas, follow-up e kanban — tudo dentro do Clow.',
+      position: 'right'
+    },
+    {
+      selector: '#waBlock',
+      title: 'Gerenciar seu WhatsApp',
+      text: 'Conecte um numero Z-API ou Meta oficial, configure o bot e comece a atender 24/7 com IA.',
+      position: 'right'
+    },
+    {
+      selector: '#menuBtn',
+      title: 'Configuracoes e comandos',
+      text: 'Seu plano, uso de tokens, memorias, ajuda. Digite /help no chat para ver todos os comandos disponiveis.',
+      position: 'bottom'
+    }
+  ];
+  var idx=0, tourEl=null;
+
+  function startTour(){
+    tourEl=document.getElementById('clowTour');
+    if(!tourEl)return;
+    buildDots();
+    showStep(0);
+    tourEl.classList.add('show');
+  }
+  function buildDots(){
+    var d=document.getElementById('tourDots'); if(!d)return;
+    d.innerHTML='';
+    STEPS.forEach(function(_,i){
+      var s=document.createElement('span'); s.className='tour-dot'+(i===idx?' act':'');
+      d.appendChild(s);
+    });
+  }
+  function updateDots(){
+    var ds=document.querySelectorAll('#tourDots .tour-dot');
+    ds.forEach(function(d,i){d.classList.toggle('act',i===idx)});
+  }
+  function showStep(i){
+    idx=i;
+    var step=STEPS[i]; if(!step)return finishTour();
+    document.getElementById('tourStepLabel').textContent='Passo '+(i+1)+' de '+STEPS.length;
+    document.getElementById('tourTitle').textContent=step.title;
+    document.getElementById('tourText').textContent=step.text;
+    document.getElementById('tourNext').textContent=(i===STEPS.length-1)?'Concluir':'Proximo';
+    updateDots();
+    // Posiciona spot e card
+    var target=document.querySelector(step.selector);
+    var spot=document.getElementById('tourSpot');
+    var card=document.getElementById('tourCard');
+    if(!target || step.position==='center' || !isVisible(target)){
+      // center
+      spot.style.cssText='position:absolute;left:50%;top:50%;width:0;height:0;border-radius:0;box-shadow:0 0 0 9999px rgba(5,5,16,.78)';
+      card.style.cssText='';
+      card.style.left='50%'; card.style.top='50%'; card.style.transform='translate(-50%,-50%)';
+      return;
+    }
+    // Garante sidebar aberta no mobile se o alvo e do sidebar
+    var sb=document.getElementById('sb');
+    if(sb && step.selector.indexOf('sb')>=0 || step.selector.indexOf('crmBlock')>=0 || step.selector.indexOf('waBlock')>=0){
+      if(window.innerWidth<769 && sb && !sb.classList.contains('open')){
+        if(window.toggleSB)window.toggleSB();
+        setTimeout(function(){positionHighlight(target,step);},200);
+        return;
+      }
+    }
+    positionHighlight(target,step);
+  }
+  function positionHighlight(target,step){
+    var r=target.getBoundingClientRect();
+    var pad=8;
+    var spot=document.getElementById('tourSpot');
+    spot.style.left=(r.left-pad)+'px';
+    spot.style.top=(r.top-pad)+'px';
+    spot.style.width=(r.width+pad*2)+'px';
+    spot.style.height=(r.height+pad*2)+'px';
+    var card=document.getElementById('tourCard');
+    card.style.transform='';
+    var cw=Math.min(320, window.innerWidth-32);
+    var ch=card.offsetHeight||200;
+    var pos=step.position||'bottom';
+    var left,top;
+    if(pos==='right' && r.right+cw+20 < window.innerWidth){
+      left=r.right+16; top=Math.max(16,r.top);
+    } else if(pos==='bottom'){
+      left=Math.max(16,Math.min(r.left, window.innerWidth-cw-16));
+      top=r.bottom+16;
+      if(top+ch>window.innerHeight-16) top=r.top-ch-16;
+    } else {
+      // fallback: centro abaixo
+      left=(window.innerWidth-cw)/2; top=r.bottom+16;
+      if(top+ch>window.innerHeight-16) top=Math.max(16,r.top-ch-16);
+    }
+    card.style.left=left+'px'; card.style.top=top+'px';
+  }
+  function isVisible(el){ var r=el.getBoundingClientRect(); return r.width>0 && r.height>0; }
+  window.clowTourNext=function(){
+    if(idx>=STEPS.length-1) return finishTour();
+    showStep(idx+1);
+  };
+  window.clowTourSkip=function(){ finishTour(true); };
+  function finishTour(skipped){
+    if(tourEl)tourEl.classList.remove('show');
+    fetch('/api/v1/user/mark-tour-done',{method:'POST',credentials:'same-origin'}).catch(function(){});
+  }
+  // Reposiciona em resize
+  window.addEventListener('resize',function(){if(tourEl&&tourEl.classList.contains('show'))showStep(idx)});
+})();
+</script>
+
+
+<script src="/static/js/sonnet-selector.js?v=7" defer></script>
 </body>
 </html>

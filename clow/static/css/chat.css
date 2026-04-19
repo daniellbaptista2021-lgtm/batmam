@@ -443,3 +443,10 @@ body.sb-collapsed #sbToggle{left:0}
 .conv-card-del{background:transparent;border:none;color:rgba(155,89,252,.4);cursor:pointer;font-size:14px;padding:4px;opacity:0;transition:opacity .15s;flex-shrink:0}
 .conv-card:hover .conv-card-del{opacity:1}
 .conv-card-del:hover{color:#ff6b6b}
+
+/* ── Conversas: bloco com flex-grow e toggle funcional ───────────── */
+.sb-sec.sb-sec-convs{flex:1 1 0;min-height:120px;display:flex;flex-direction:column;overflow:hidden}
+.sb-sec-convs>.sb-lbl{flex:0 0 auto}
+.sb-sec-convs>.sb-ct{display:none;flex:1 1 auto;flex-direction:column;overflow:hidden;min-height:0;margin:2px 0 2px 6px;padding:6px 0 6px 10px;border-left:1px solid rgba(155,89,252,.1)}
+.sb-sec-convs>.sb-lbl.open+.sb-ct{display:flex}
+.sb-sec-convs .sb-convs{flex:1 1 auto;overflow-y:auto;min-height:0;padding:0 4px}
