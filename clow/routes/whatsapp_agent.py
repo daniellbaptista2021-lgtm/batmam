@@ -147,18 +147,32 @@ def register_whatsapp_agent_routes(app) -> None:
             return _JR({"error": "Nao autenticado"}, status_code=401)
         body = await request.json()
         from ..whatsapp_agent import get_wa_manager
+        provider = body.get("provider", "zapi")
         result = get_wa_manager().create_instance(
             tenant_id=sess["user_id"],
             name=body.get("name", "Meu WhatsApp"),
             zapi_instance_id=body.get("zapi_instance_id", ""),
             zapi_token=body.get("zapi_token", ""),
             system_prompt=body.get("system_prompt", ""),
-            provider=body.get("provider", "zapi"),
+            provider=provider,
             meta_phone_number_id=body.get("meta_phone_number_id", ""),
             meta_waba_id=body.get("meta_waba_id", ""),
             meta_access_token=body.get("meta_access_token", ""),
             meta_verify_token=body.get("meta_verify_token", ""),
         )
+        # Auto-sync com Chatwoot: cria inbox + webhook + bot_config
+        if result.get("success") and result.get("instance"):
+            inst = result["instance"]
+            sync_result = _sync_wa_to_chatwoot(
+                user_id=sess["user_id"],
+                instance_id=inst.get("id", ""),
+                name=inst.get("name", body.get("name", "")),
+                provider=provider,
+                zapi_instance_id=body.get("zapi_instance_id", ""),
+                zapi_token=body.get("zapi_token", ""),
+                meta_phone_number_id=body.get("meta_phone_number_id", ""),
+            )
+            result["chatwoot_sync"] = sync_result
         return _JR(result, status_code=201 if result.get("success") else 400)
 
     @app.get("/api/v1/whatsapp/instances/{instance_id}", tags=["whatsapp"])
@@ -192,6 +206,24 @@ def register_whatsapp_agent_routes(app) -> None:
         allowed = {"name", "zapi_instance_id", "zapi_token", "system_prompt", "rag_text", "active", "context_size", "handoff_enabled", "handoff_keyword", "provider", "meta_phone_number_id", "meta_waba_id", "meta_access_token", "meta_verify_token"}
         updates = {k: v for k, v in body.items() if k in allowed}
         result = get_wa_manager().update_instance(instance_id, sess["user_id"], **updates)
+        # Se prompt ou active mudaram, sincroniza chatwoot_bot_config
+        if result.get("success") and ("system_prompt" in updates or "active" in updates):
+            try:
+                from ..database import get_chatwoot_connection_by_user, upsert_chatwoot_bot_config
+                from ..whatsapp_agent import get_wa_manager as _m
+                inst = _m().get_instance(instance_id, sess["user_id"])
+                conn = get_chatwoot_connection_by_user(sess["user_id"])
+                if inst and conn and conn.get("chatwoot_account_id"):
+                    upsert_chatwoot_bot_config(
+                        user_id=sess["user_id"],
+                        chatwoot_account_id=conn["chatwoot_account_id"],
+                        inbox_id=0,  # todas inboxes do account
+                        system_prompt=inst.system_prompt or "",
+                        active=bool(inst.active and inst.auto_reply_enabled and inst.system_prompt and len(inst.system_prompt) > 10),
+                    )
+                    result["bot_synced"] = True
+            except Exception as e:
+                import logging; logging.getLogger("clow.wa_sync").warning(f"bot_config sync failed: {e}")
         return _JR(result)
 
     @app.delete("/api/v1/whatsapp/instances/{instance_id}", tags=["whatsapp"])
