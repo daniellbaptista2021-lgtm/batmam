@@ -89,10 +89,11 @@ WARNING_EXPIRY_DAYS = 15
 
 # Pricing GLM-5.1 via OpenRouter em USD por 1M tokens (substituiu Sonnet)
 # Ref: https://openrouter.ai/z-ai/glm-5.1
+# Valores reais confirmados em 2026-04-19 (nao confundir com preco Sonnet)
 SONNET_PRICING = {
-    "input_miss_usd_per_1m": 0.60,   # input uncached
-    "input_hit_usd_per_1m": 0.60,    # GLM nao tem prompt cache com desconto
-    "output_usd_per_1m": 2.20,       # output
+    "input_miss_usd_per_1m": 0.95,   # input uncached (real GLM-5.1)
+    "input_hit_usd_per_1m": 0.95,    # GLM nao tem prompt cache com desconto
+    "output_usd_per_1m": 3.15,       # output (real GLM-5.1)
 }
 USD_TO_BRL = 6.0
 
