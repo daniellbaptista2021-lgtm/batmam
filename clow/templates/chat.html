@@ -189,7 +189,9 @@
         <div class="cw-msg" id="cwLoaderMsg">Carregando CRM Chatwoot...</div>
         <div class="cw-fallback" id="cwFallback">
           <a href="/cw/" target="_blank" rel="noopener">Abrir em nova aba &rarr;</a>
-          <div class="cw-hint">O navegador bloqueou o carregamento do CRM dentro do Clow. Clique acima para abrir em uma nova aba.</div>
+          <div class="cw-hint">O navegador bloqueou o carregamento do CRM dentro do Clow.</div>
+          <button type="button" data-clow-reset-btn onclick="clowForceReset()" style="margin-top:14px;padding:10px 20px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">↻ Atualizar CRM (limpar cache do app)</button>
+          <div class="cw-hint" style="font-size:11px;color:#505068;margin-top:8px">Use este botao se o CRM nao abrir mesmo apos recarregar. Vai limpar service workers e caches e recarregar o app.</div>
         </div>
       </div>
       <iframe id="chatwootFrame" src="about:blank" title="CRM Chatwoot" allow="clipboard-read; clipboard-write; microphone; camera; autoplay; fullscreen; geolocation"></iframe>
@@ -200,7 +202,7 @@
 (function(){
   // URL same-origin via reverse proxy do nginx (/cw/ → Chatwoot em ads.pvcorretor01.com.br)
   // Same-origin evita bloqueio de cookies third-party em iOS PWA e Safari ITP.
-  var CHATWOOT_URL='/cw/';
+  var CHATWOOT_URL='/crm-direct/';
   var _cwRaf=null, _cwTimeout=null, _cwLoaded=false;
   function cwApplySize(){
     var m=document.getElementById('chatwootModal');
@@ -672,5 +674,70 @@
 
 
 <script src="/static/js/sonnet-selector.js?v=7" defer></script>
+
+<script>
+// CLOW Self-heal: forca verificacao de update do SW em toda carga da pagina
+// Tambem expoe window.clowForceReset() que faz nuke completo (botao no fallback do CRM)
+(function(){
+  if('serviceWorker' in navigator){
+    // Em toda carga, manda o SW registrado checar update imediatamente
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      regs.forEach(function(r){ try{ r.update(); }catch(e){} });
+    }).catch(function(){});
+    // Escuta mensagens do SW (ex: SW_UPDATED dispara reload transparente)
+    navigator.serviceWorker.addEventListener('message', function(evt){
+      if(evt.data && evt.data.type === 'NUKE_DONE'){
+        try{ location.replace('/?_reset=' + Date.now()); }catch(e){}
+      }
+    });
+  }
+})();
+
+// Botao "Atualizar CRM" — nuke total dentro do proprio app/PWA
+window.clowForceReset = async function(){
+  var btn = document.querySelector('[data-clow-reset-btn]');
+  if(btn){ btn.disabled=true; btn.textContent='Limpando...'; }
+  try{
+    // 1) Desregistra TODOS os SWs
+    if('serviceWorker' in navigator){
+      var regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(function(r){ return r.unregister().catch(function(){}); }));
+    }
+    // 2) Limpa Cache API
+    if('caches' in window){
+      var keys = await caches.keys();
+      await Promise.all(keys.map(function(k){ return caches.delete(k); }));
+    }
+    // 3) Limpa IndexedDB
+    try{
+      if(window.indexedDB && indexedDB.databases){
+        var dbs = await indexedDB.databases();
+        dbs.forEach(function(db){ try{ indexedDB.deleteDatabase(db.name); }catch(e){} });
+      }
+    }catch(e){}
+    // 4) localStorage/sessionStorage
+    try{ localStorage.clear(); }catch(e){}
+    try{ sessionStorage.clear(); }catch(e){}
+    // 5) Cookies visiveis (HttpOnly ficam — mas na proxima request o nginx limpa via Clear-Site-Data)
+    try{
+      document.cookie.split(';').forEach(function(c){
+        var name=c.split('=')[0].trim();
+        if(!name) return;
+        ['/', '/cw/', '/app/'].forEach(function(path){
+          document.cookie = name+'=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path='+path;
+          document.cookie = name+'=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path='+path+'; domain='+location.hostname;
+        });
+      });
+    }catch(e){}
+    // 6) Reload via /reset-cache (pega tbm o header Clear-Site-Data do server)
+    location.replace('/reset-cache');
+  }catch(err){
+    console.error('clowForceReset error', err);
+    if(btn){ btn.disabled=false; btn.textContent='↻ Atualizar CRM (limpar cache do app)'; }
+    alert('Erro ao limpar cache: ' + err.message);
+  }
+};
+</script>
+
 </body>
 </html>

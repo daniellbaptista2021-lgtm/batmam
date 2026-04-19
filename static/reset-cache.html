@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zerando cache do Clow</title>
+<style>
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #08081a;
+  color: #E8E8F0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+  text-align: center;
+}
+.box { max-width: 480px; padding: 32px; }
+h2 {
+  background: linear-gradient(135deg,#9B59FC,#4A9EFF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 26px;
+  margin: 0 0 16px;
+}
+p { color: #9898B8; line-height: 1.6; font-size: 14px; margin: 8px 0; }
+.spin {
+  display: inline-block;
+  width: 36px; height: 36px;
+  border: 3px solid rgba(155,89,252,.25);
+  border-top-color: #9B59FC;
+  border-radius: 50%;
+  animation: r 0.9s linear infinite;
+  margin: 16px 0;
+}
+@keyframes r { to { transform: rotate(360deg); } }
+#detail { color: #4A9EFF; font-size: 12px; margin-top: 24px; opacity: .7; min-height: 18px; }
+.ok { color: #22c55e !important; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="spin" id="spin"></div>
+  <h2>Zerando cache do Clow</h2>
+  <p id="msg">Removendo service workers, caches, cookies e storage...</p>
+  <p id="detail">Aguarde, nao feche esta janela.</p>
+</div>
+<script>
+(async function() {
+  var msg = document.getElementById('msg');
+  var detail = document.getElementById('detail');
+  var spin = document.getElementById('spin');
+  function log(t) { if (detail) detail.textContent = t; }
+
+  // 1. Desregistrar todos os Service Workers (importante pra PWA)
+  try {
+    if ('serviceWorker' in navigator) {
+      log('Desregistrando service workers...');
+      var regs = await navigator.serviceWorker.getRegistrations();
+      for (var i = 0; i < regs.length; i++) {
+        try { await regs[i].unregister(); } catch (e) {}
+      }
+    }
+  } catch (e) { console.warn('SW unregister failed', e); }
+
+  // 2. Limpar Cache API (usado por SW)
+  try {
+    if ('caches' in window) {
+      log('Limpando caches da API...');
+      var keys = await caches.keys();
+      await Promise.all(keys.map(function(k) { return caches.delete(k); }));
+    }
+  } catch (e) { console.warn('caches clear failed', e); }
+
+  // 3. Limpar IndexedDB
+  try {
+    if (window.indexedDB && indexedDB.databases) {
+      log('Limpando IndexedDB...');
+      var dbs = await indexedDB.databases();
+      dbs.forEach(function(db) {
+        try { indexedDB.deleteDatabase(db.name); } catch (e) {}
+      });
+    }
+  } catch (e) { console.warn('IDB clear failed', e); }
+
+  // 4. Limpar localStorage/sessionStorage
+  try { localStorage.clear(); } catch (e) {}
+  try { sessionStorage.clear(); } catch (e) {}
+
+  // 5. Apagar cookies visiveis via JS (HttpOnly sao limpos pelo header Clear-Site-Data do servidor)
+  try {
+    var cookies = document.cookie.split(';');
+    for (var i = 0; i < cookies.length; i++) {
+      var name = cookies[i].split('=')[0].trim();
+      if (!name) continue;
+      var exp = '=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = name + exp + '; path=/';
+      document.cookie = name + exp + '; path=/; domain=' + location.hostname;
+      document.cookie = name + exp + '; path=/; domain=.' + location.hostname;
+      document.cookie = name + exp + '; path=/cw/';
+      document.cookie = name + exp + '; path=/app/';
+    }
+  } catch (e) {}
+
+  // 6. Feedback final + reload com cache-buster
+  msg.innerHTML = '<span class="ok">Tudo limpo!</span>';
+  log('Recarregando em 2 segundos...');
+  if (spin) spin.style.borderTopColor = '#22c55e';
+  setTimeout(function() {
+    // location.replace pra nao manter essa URL no historico
+    location.replace('/?_nocache=' + Date.now());
+  }, 2000);
+})();
+</script>
+</body>
+</html>
