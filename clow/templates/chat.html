@@ -260,6 +260,8 @@
       if(sr.ok){
         var sd=await sr.json();
         window._cwIsAdmin = sd.is_admin === true;
+        window._cwIsRemote = sd.is_remote === true;
+        window._cwRemoteUrl = sd.chatwoot_url || '';
         if(!sd.allow){
           // Cliente nao configurou CRM — mostrar modal amigavel, nao abrir iframe
           cwShowNotConfigured(sd.message || 'Voce ainda nao configurou seu CRM.');
@@ -322,9 +324,17 @@
     var _cwPoll=setInterval(function(){
       if(cwCheckLoaded() || _cwLoaded){clearInterval(_cwPoll)}
     },500);
-    // Cliente (nao admin): abre direto em /app/login pra nao herdar sessao do admin
-    // Admin: mantem CHATWOOT_URL (/cw/) normal
-    var targetUrl = (window._cwIsAdmin === false) ? '/app/login' : CHATWOOT_URL;
+    // Determina URL do iframe baseado no modo de conexao:
+    //  - Admin ou subconta local: /cw/ (proxy local)
+    //  - Remote managed (Chatwoot do cliente gerenciado pelo Clow): URL externa /app/login
+    //  - Remote only (so espelho): URL externa /app/login
+    //  - Cliente nao admin sem modo detectado: /app/login local (fallback seguro)
+    var targetUrl = CHATWOOT_URL;
+    if(window._cwIsRemote && window._cwRemoteUrl){
+      targetUrl = window._cwRemoteUrl.replace(/\/+$/,'') + '/app/login';
+    }else if(window._cwIsAdmin === false){
+      targetUrl = '/app/login';
+    }
     if(f.src==='about:blank'||f.getAttribute('src')==='about:blank'||!f.src){
       f.src=targetUrl;
     }else{

@@ -37,13 +37,29 @@ def register_addon_routes(app) -> None:
                 (sess["user_id"],),
             ).fetchone()
         configured = bool(row)
-        # Admin sempre pode abrir. Cliente precisa ter chatwoot_connection ativa.
+        # Busca dados completos pra determinar se remoto ou subconta local
+        chatwoot_url = None
+        connection_mode = None
+        is_remote = False
+        if configured:
+            with get_db() as db:
+                full = db.execute(
+                    "SELECT chatwoot_account_id, chatwoot_url, connection_mode, is_remote FROM chatwoot_connections WHERE user_id=? AND active=1 ORDER BY connected_at DESC LIMIT 1",
+                    (user_id,),
+                ).fetchone()
+            if full:
+                chatwoot_url = full[1] or ""
+                connection_mode = full[2] or "subconta_pv"
+                is_remote = bool(full[3])
         allow = is_admin or configured
         return _JR({
             "allow": allow,
             "configured": configured,
             "is_admin": is_admin,
             "account_id": row[0] if row else None,
+            "chatwoot_url": chatwoot_url,
+            "connection_mode": connection_mode,
+            "is_remote": is_remote,
             "reason": None if allow else "crm_not_configured",
             "message": None if allow else "Voce ainda nao configurou seu CRM. Complete o onboarding para liberar o Chatwoot com sua propria instancia WhatsApp.",
         })

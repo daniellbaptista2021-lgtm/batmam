@@ -66,7 +66,93 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100
   <div class="bar"><div class="d on" id="d1"></div><div class="d" id="d2"></div><div class="d" id="d3"></div></div>
 
   <!-- STEP 1: Auto-provision -->
-  <div class="c" id="s1">
+  <!-- STEP 0: Escolha de modo de conexao -->
+<div class="c" id="s0">
+  <h2>Como voce quer conectar seu CRM?</h2>
+  <p class="sub" style="margin-bottom:24px">Tres formas — escolhe a que faz sentido pra voce.</p>
+
+  <div style="display:grid;gap:14px">
+    <button type="button" onclick="pickMode('new')" class="mode-card" style="text-align:left;padding:18px 18px;background:rgba(155,89,252,.06);border:1px solid rgba(155,89,252,.2);border-radius:14px;cursor:pointer;color:inherit;font-family:inherit">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px">1</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px;color:#E8E8F0">Criar minha conta nova (recomendado)</div>
+          <div style="font-size:12.5px;color:#9898B8;line-height:1.5">O Clow cria automaticamente sua conta Chatwoot aqui no nosso dominio. Rapido, sem configuracao.</div>
+        </div>
+      </div>
+    </button>
+
+    <button type="button" onclick="pickMode('managed')" class="mode-card" style="text-align:left;padding:18px 18px;background:rgba(74,158,255,.06);border:1px solid rgba(74,158,255,.2);border-radius:14px;cursor:pointer;color:inherit;font-family:inherit">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(74,158,255,.25);border:1px solid rgba(74,158,255,.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;color:#4A9EFF">2</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px;color:#E8E8F0">Conectar meu Chatwoot existente (Clow configura)</div>
+          <div style="font-size:12.5px;color:#9898B8;line-height:1.5">Voce ja tem Chatwoot proprio (outro dominio ou VPS). Fornece o URL e Admin API Token, o Clow configura inbox e webhook automatico.</div>
+        </div>
+      </div>
+    </button>
+
+    <button type="button" onclick="pickMode('login')" class="mode-card" style="text-align:left;padding:18px 18px;background:rgba(148,163,184,.06);border:1px solid rgba(148,163,184,.2);border-radius:14px;cursor:pointer;color:inherit;font-family:inherit">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(148,163,184,.15);border:1px solid rgba(148,163,184,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;color:#94A3B8">3</div>
+        <div style="flex:1">
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px;color:#E8E8F0">So logar no meu Chatwoot ja configurado</div>
+          <div style="font-size:12.5px;color:#9898B8;line-height:1.5">Seu Chatwoot esta 100% pronto, voce so quer usar dentro do Clow como espelho. Entra com URL, email e senha.</div>
+        </div>
+      </div>
+    </button>
+  </div>
+</div>
+
+<!-- STEP B: Conectar Chatwoot existente (modo managed) -->
+<div class="c hide" id="sB">
+  <h2>Conectar seu Chatwoot</h2>
+  <p class="sub">Informe a URL do seu Chatwoot e um Admin API Access Token.</p>
+  <div class="fld">
+    <label>URL do Chatwoot</label>
+    <input type="text" id="bUrl" placeholder="https://chatwoot.suaempresa.com.br">
+  </div>
+  <div class="fld">
+    <label>Admin API Access Token</label>
+    <input type="text" id="bTok" placeholder="Acesse Settings > Profile > Access Token">
+  </div>
+  <div class="fld">
+    <label>Account ID (opcional — deixa vazio pra usar o primeiro)</label>
+    <input type="text" id="bAcc" placeholder="1">
+  </div>
+  <div style="display:flex;gap:10px;margin-top:18px">
+    <button type="button" onclick="setStep(0)" style="padding:12px 20px;background:transparent;color:#9898B8;border:1px solid rgba(255,255,255,.12);border-radius:10px;font-weight:600;cursor:pointer;font-family:inherit">Voltar</button>
+    <button type="button" id="bSubmit" onclick="submitManaged()" style="flex:1;padding:12px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit">Conectar</button>
+  </div>
+  <div id="bErr" class="err hide" style="margin-top:12px"></div>
+  <div id="bOk" class="ok hide" style="margin-top:12px"></div>
+</div>
+
+<!-- STEP C: So login (modo remote_only / espelho) -->
+<div class="c hide" id="sC">
+  <h2>Entrar no seu Chatwoot</h2>
+  <p class="sub">Informe URL, email e senha. O Clow so espelha — seus dados ficam no seu Chatwoot.</p>
+  <div class="fld">
+    <label>URL do Chatwoot</label>
+    <input type="text" id="cUrl" placeholder="https://chatwoot.suaempresa.com.br">
+  </div>
+  <div class="fld">
+    <label>Email</label>
+    <input type="email" id="cEmail" placeholder="voce@email.com">
+  </div>
+  <div class="fld">
+    <label>Senha</label>
+    <input type="password" id="cPass" placeholder="senha">
+  </div>
+  <div style="display:flex;gap:10px;margin-top:18px">
+    <button type="button" onclick="setStep(0)" style="padding:12px 20px;background:transparent;color:#9898B8;border:1px solid rgba(255,255,255,.12);border-radius:10px;font-weight:600;cursor:pointer;font-family:inherit">Voltar</button>
+    <button type="button" id="cSubmit" onclick="submitLogin()" style="flex:1;padding:12px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit">Entrar e conectar</button>
+  </div>
+  <div id="cErr" class="err hide" style="margin-top:12px"></div>
+  <div id="cOk" class="ok hide" style="margin-top:12px"></div>
+</div>
+
+<div class="c hide" id="s1">
     <h2>Configurando seu Clow...</h2>
     <p class="sub">Estamos criando seu espaco de atendimento. Isso leva alguns segundos.</p>
     <div class="center" id="s1Loading" style="padding:40px 0">
@@ -171,8 +257,15 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100
 let selectedType='';
 
 function setStep(n){
-  for(let i=1;i<=4;i++)document.getElementById('s'+i).classList.toggle('hide',i!==n);
-  for(let i=1;i<=3;i++){const d=document.getElementById('d'+i);d.classList.remove('on','ok');if(i<n)d.classList.add('ok');if(i===n)d.classList.add('on')}
+  var ids=['s0','s1','s2','s3','sB','sC'];
+  var target = (typeof n==='number') ? ('s'+n) : ('s'+n);
+  ids.forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el) return;
+    if(id===target) el.classList.remove('hide');
+    else el.classList.add('hide');
+  });
+  window._curStep = n;
 }
 
 function selectProvider(type){
@@ -184,6 +277,46 @@ function selectProvider(type){
 }
 
 // STEP 1
+
+// Modo de conexao escolhido
+function pickMode(mode){
+  window._cwMode = mode;
+  if(mode==='new'){ setStep(0); return; }
+  if(mode==='managed'){ setStep('B'); return; }
+  if(mode==='login'){ setStep('C'); return; }
+}
+
+async function submitManaged(){
+  var btn=document.getElementById('bSubmit'), err=document.getElementById('bErr'), ok=document.getElementById('bOk');
+  err.classList.add('hide'); ok.classList.add('hide'); btn.disabled=true; btn.textContent='Conectando...';
+  var url=document.getElementById('bUrl').value.trim();
+  var tok=document.getElementById('bTok').value.trim();
+  var acc=document.getElementById('bAcc').value.trim();
+  try{
+    var r=await fetch('/api/v1/onboarding/chatwoot/connect-existing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chatwoot_url:url,admin_api_token:tok,account_id:acc||null})});
+    var d=await r.json();
+    if(!r.ok||d.error){ err.textContent=d.error||'Erro'; err.classList.remove('hide'); btn.disabled=false; btn.textContent='Conectar'; return; }
+    ok.textContent='Conectado! Account='+d.account_id+'. Avancando...'; ok.classList.remove('hide');
+    setTimeout(function(){ setStep(2); }, 1200);
+  }catch(e){ err.textContent='Erro: '+e.message; err.classList.remove('hide'); btn.disabled=false; btn.textContent='Conectar'; }
+}
+
+async function submitLogin(){
+  var btn=document.getElementById('cSubmit'), err=document.getElementById('cErr'), ok=document.getElementById('cOk');
+  err.classList.add('hide'); ok.classList.add('hide'); btn.disabled=true; btn.textContent='Entrando...';
+  var url=document.getElementById('cUrl').value.trim();
+  var email=document.getElementById('cEmail').value.trim();
+  var pw=document.getElementById('cPass').value;
+  try{
+    var r=await fetch('/api/v1/onboarding/chatwoot/connect-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chatwoot_url:url,email:email,password:pw})});
+    var d=await r.json();
+    if(!r.ok||d.error){ err.textContent=d.error||'Erro'; err.classList.remove('hide'); btn.disabled=false; btn.textContent='Entrar e conectar'; return; }
+    ok.textContent='Login ok! Conta='+d.account_id+'. Pronto pra usar.'; ok.classList.remove('hide');
+    // Modo C pula WhatsApp (Chatwoot ja configurado)
+    setTimeout(function(){ setStep(3); }, 1200);
+  }catch(e){ err.textContent='Erro: '+e.message; err.classList.remove('hide'); btn.disabled=false; btn.textContent='Entrar e conectar'; }
+}
+
 async function step1(){
   setStep(1);
   try{
@@ -289,7 +422,7 @@ async function skipFinish(){
     if(d.bot_configured){setStep(4);return}
     if(d.whatsapp_connected){setStep(3);return}
     if(d.chatwoot_connected){setStep(2);return}
-    step1();
+    setStep(0);
   }catch(e){step1()}
 })();
 </script>
