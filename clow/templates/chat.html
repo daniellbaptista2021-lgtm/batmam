@@ -222,13 +222,21 @@
     if(el)el.classList.toggle('show',!!show);
   }
   function cwShowNotConfigured(msg){
-    // Modal simples: cliente precisa configurar CRM antes de abrir
     var existing=document.getElementById('cwNotConfModal');
     if(existing)existing.remove();
     var d=document.createElement('div');
     d.id='cwNotConfModal';
-    d.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(8,8,20,.85);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px';
-    d.innerHTML='<div style="background:#0F0F24;border:1px solid rgba(155,89,252,.3);border-radius:16px;padding:32px;max-width:480px;text-align:center;color:#E8E8F0;box-shadow:0 30px 80px rgba(0,0,0,.6)"><div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#9B59FC,#4A9EFF);display:inline-flex;align-items:center;justify-content:center;margin-bottom:18px;font-size:28px">\u{1F512}</div><h2 style="font-size:20px;font-weight:700;margin-bottom:10px">CRM nao configurado</h2><p style="color:#9898B8;font-size:14px;line-height:1.55;margin-bottom:22px">'+msg+'</p><button onclick="this.closest(\'div#cwNotConfModal\').remove()" style="background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;border:none;border-radius:10px;padding:11px 28px;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit">Entendi</button></div>';
+    d.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(8,8,20,.88);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px';
+    d.innerHTML='<div style="background:#0F0F24;border:1px solid rgba(155,89,252,.3);border-radius:16px;padding:36px 32px;max-width:520px;text-align:center;color:#E8E8F0;box-shadow:0 30px 80px rgba(0,0,0,.6)">'+
+      '<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#9B59FC,#4A9EFF);display:inline-flex;align-items:center;justify-content:center;margin-bottom:20px;font-size:32px">\u{1F680}</div>'+
+      '<h2 style="font-size:22px;font-weight:700;margin-bottom:12px">Configure seu CRM</h2>'+
+      '<p style="color:#9898B8;font-size:14px;line-height:1.6;margin-bottom:28px">Para usar o CRM com WhatsApp integrado, voce precisa criar sua conta propria e conectar seu WhatsApp (Z-API ou Meta Cloud API). E rapido e automatico.</p>'+
+      '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">'+
+        '<a href="/app/onboarding" style="background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;border:none;border-radius:10px;padding:13px 28px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-block">Configurar agora \u2192</a>'+
+        '<button onclick="this.closest(\x27div#cwNotConfModal\x27).remove()" style="background:transparent;color:#9898B8;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:13px 22px;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit">Depois</button>'+
+      '</div>'+
+      '<p style="color:#505068;font-size:11px;line-height:1.5;margin-top:22px">\u{1F4A1} Ao configurar, voce recebe sua conta Chatwoot propria, sua instancia WhatsApp, seus contatos e conversas \u2014 tudo isolado dos outros clientes.</p>'+
+    '</div>';
     d.addEventListener('click',function(e){if(e.target===d)d.remove();});
     document.body.appendChild(d);
   }
@@ -251,17 +259,28 @@
       var sr=await fetch('/api/v1/addons/crm/status',{credentials:'same-origin'});
       if(sr.ok){
         var sd=await sr.json();
+        window._cwIsAdmin = sd.is_admin === true;
         if(!sd.allow){
           // Cliente nao configurou CRM — mostrar modal amigavel, nao abrir iframe
           cwShowNotConfigured(sd.message || 'Voce ainda nao configurou seu CRM.');
           return;
         }
-        // Se NAO e admin, forcar logout do Chatwoot antes de abrir pra nao vazar sessao do admin
-        if(!sd.is_admin && !window._cwForcedLogout){
+        // Cliente: limpeza agressiva de qualquer sessao residual do Chatwoot
+        if(!sd.is_admin){
           try{ await fetch('/cw/auth/sign_out',{credentials:'same-origin',method:'DELETE'}); }catch(e){}
-          // Limpar iframe src tambem pra garantir
+          // Expira cookies visiveis via JS (os HttpOnly ja sao limpos pelo nginx via Set-Cookie)
+          try{
+            var cookies = document.cookie.split(';');
+            for(var i=0;i<cookies.length;i++){
+              var name = cookies[i].split('=')[0].trim();
+              if(name && (name.indexOf('cw_')===0 || name.indexOf('_chatwoot')===0)){
+                document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;';
+                document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/cw/;';
+              }
+            }
+          }catch(e){}
+          // Reset iframe
           if(f.src && f.src!=='about:blank'){ try{ f.src='about:blank'; }catch(e){} }
-          window._cwForcedLogout=true;
         }
       }
     }catch(e){ console.error('CRM status check failed:',e); }
@@ -303,9 +322,11 @@
     var _cwPoll=setInterval(function(){
       if(cwCheckLoaded() || _cwLoaded){clearInterval(_cwPoll)}
     },500);
-    // carrega URL se ainda nao carregou
+    // Cliente (nao admin): abre direto em /app/login pra nao herdar sessao do admin
+    // Admin: mantem CHATWOOT_URL (/cw/) normal
+    var targetUrl = (window._cwIsAdmin === false) ? '/app/login' : CHATWOOT_URL;
     if(f.src==='about:blank'||f.getAttribute('src')==='about:blank'||!f.src){
-      f.src=CHATWOOT_URL;
+      f.src=targetUrl;
     }else{
       // ja tem src — provavelmente ja carregou antes
       cwShowLoader(false);_cwLoaded=true;clearInterval(_cwPoll);
