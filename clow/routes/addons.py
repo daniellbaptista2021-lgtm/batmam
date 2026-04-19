@@ -83,6 +83,70 @@ def register_addon_routes(app) -> None:
             "message": None if active else "Nao autorizado — contrate o System Clow",
         })
 
+    # ─── SSO: gerar URL de login automatico no Chatwoot ──────────────
+    @app.get("/api/v1/addons/crm/sso-url", tags=["addons"])
+    async def crm_sso_url(request: _Req):
+        """Usa Platform API do Chatwoot pra gerar sso_auth_token do user.
+        Retorna URL completa que loga direto: /app/login?sso_auth_token=...
+        """
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+
+        from ..database import get_db
+        import os as _os, urllib.request, urllib.error, json as _j
+
+        with get_db() as db:
+            row = db.execute(
+                "SELECT chatwoot_url, chatwoot_account_id, chatwoot_user_id FROM chatwoot_connections WHERE user_id=? AND active=1 ORDER BY connected_at DESC LIMIT 1",
+                (sess["user_id"],),
+            ).fetchone()
+
+        if not row:
+            return _JR({"error": "CRM nao configurado. Complete o onboarding primeiro."}, status_code=404)
+
+        cw_url, account_id, cw_user_id = row[0], row[1], row[2]
+        if not cw_user_id:
+            return _JR({"error": "chatwoot_user_id nao mapeado. Re-faca onboarding."}, status_code=500)
+
+        platform_token = getattr(config, "CHATWOOT_PLATFORM_TOKEN", "") or _os.getenv("CHATWOOT_PLATFORM_TOKEN", "")
+        if not platform_token:
+            return _JR({"error": "CHATWOOT_PLATFORM_TOKEN nao configurado no servidor"}, status_code=500)
+
+        # Chatwoot Platform API: GET /platform/api/v1/users/{id}/login retorna URL de SSO
+        try:
+            req = urllib.request.Request(
+                f"{cw_url.rstrip('/')}/platform/api/v1/users/{cw_user_id}/login",
+                headers={"api_access_token": platform_token},
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = _j.loads(resp.read().decode())
+        except urllib.error.HTTPError as e:
+            return _JR({"error": f"Platform API: {e.code}", "detail": e.read().decode()[:200]}, status_code=500)
+        except Exception as e:
+            return _JR({"error": f"Falha ao gerar SSO: {e}"}, status_code=500)
+
+        sso_url = data.get("url") or ""
+        if not sso_url:
+            return _JR({"error": "Platform API nao retornou URL", "raw": data}, status_code=500)
+
+        # Se SSO URL aponta pro dominio Chatwoot interno (ads.pvcorretor01),
+        # reescreve pra /cw/ (same-origin via nginx) — evita CSP/cookie issues.
+        import re as _re
+        rewritten = _re.sub(
+            r"https?://ads\.pvcorretor01\.com\.br",
+            "https://clow.pvcorretor01.com.br/cw",
+            sso_url,
+        )
+        # Ou se URL ja bate com cw_url, mantem
+        return _JR({
+            "ok": True,
+            "sso_url": rewritten,
+            "account_id": account_id,
+            "chatwoot_user_id": cw_user_id,
+        })
+
+
     # ─── Internal: authz pra nginx auth_request (bloqueio server-side) ───
     # NAO e exposto diretamente — so chamado via subrequest do nginx em /cw/*.
     # Retorna 200 se autorizado, 403 + cookies de logout do Chatwoot se nao.

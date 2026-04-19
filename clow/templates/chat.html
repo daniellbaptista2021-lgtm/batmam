@@ -322,10 +322,24 @@
     var _cwPoll=setInterval(function(){
       if(cwCheckLoaded() || _cwLoaded){clearInterval(_cwPoll)}
     },500);
-    // Todos os clientes usam o Chatwoot no nosso dominio (subconta via /cw/)
-    // Admin: /cw/ com sessao persistente
-    // Cliente: /app/login pra entrar com credenciais proprias (isolamento por account_id)
-    var targetUrl = (window._cwIsAdmin === false) ? '/app/login' : CHATWOOT_URL;
+    // SSO: tenta pegar URL de login automatico via Platform API do Chatwoot
+    // Se obtem sso_url, iframe abre DIRETO na conta do user (sem digitar email/senha)
+    var targetUrl = CHATWOOT_URL;
+    try{
+      var ssoR = await fetch('/api/v1/addons/crm/sso-url',{credentials:'same-origin'});
+      if(ssoR.ok){
+        var ssoD = await ssoR.json();
+        if(ssoD.ok && ssoD.sso_url){
+          targetUrl = ssoD.sso_url;
+        }else if(window._cwIsAdmin === false){
+          targetUrl = '/app/login';
+        }
+      }else if(window._cwIsAdmin === false){
+        targetUrl = '/app/login';
+      }
+    }catch(e){
+      if(window._cwIsAdmin === false){ targetUrl = '/app/login'; }
+    }
     if(f.src==='about:blank'||f.getAttribute('src')==='about:blank'||!f.src){
       f.src=targetUrl;
     }else{

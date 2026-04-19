@@ -194,6 +194,7 @@ def provision_user(user_id: str, email: str, name: str) -> dict:
         return {"error": "Falha ao criar usuario no Chatwoot"}
 
     # 3. Save connection
+    cw_user_id_int = cw_user.get("chatwoot_user_id") or 0
     if existing:
         update_chatwoot_connection(user_id,
             chatwoot_url=_cw_url(),
@@ -208,6 +209,17 @@ def provision_user(user_id: str, email: str, name: str) -> dict:
             chatwoot_token=cw_user["chatwoot_user_token"],
             chatwoot_account_id=account_id,
         )
+    # Persiste chatwoot_user_id (pra SSO)
+    try:
+        from ..database import get_db
+        with get_db() as db:
+            db.execute(
+                "UPDATE chatwoot_connections SET chatwoot_user_id=? WHERE user_id=?",
+                (cw_user_id_int, user_id),
+            )
+            db.commit()
+    except Exception as e:
+        logger.warning(f"provision_user: cw_user_id update failed: {e}")
 
     return {
         "ok": True,

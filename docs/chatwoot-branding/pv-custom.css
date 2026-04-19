@@ -33,3 +33,41 @@ body:not(.embedded):not(.widget) .sidebar-profile__info .profile-item-text::afte
   font-weight: 600;
   letter-spacing: .5px;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+ * Tela de login — esconder logo Chatwoot, pôr CLOW
+ * ═══════════════════════════════════════════════════════════════ */
+
+/* Esconde logo chatwoot na tela de login */
+body.app-auth .login-brand img[src*='chatwoot'],
+.login-page img[alt='chatwoot'],
+.auth-wrap img[alt*='hatwoot'],
+.signup-page img[alt*='hatwoot'],
+img[src*='chatwoot_logo'],
+img[src*='brand_favicon'] {
+  display: none !important;
+}
+
+/* Substitui por texto CLOW no login */
+body.app-auth .login-brand::before,
+.login-page .login-brand::before,
+.auth-container .login-brand::before {
+  content: 'CRM CLOW';
+  display: block;
+  font-size: 28px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #8B5CF6, #6366F1, #2563EB);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+/* Esconde 'Esqueceu-se da sua senha' e 'Nao tem uma conta' pra desencorajar
+   navegacao fora do fluxo SSO */
+a[href*='/app/auth/password/new'],
+a[href*='/app/auth/sign_up'],
+a[href*='/app/auth/reset_password'] {
+  display: none !important;
+}
