@@ -45,7 +45,7 @@ def register_addon_routes(app) -> None:
             with get_db() as db:
                 full = db.execute(
                     "SELECT chatwoot_account_id, chatwoot_url, connection_mode, is_remote FROM chatwoot_connections WHERE user_id=? AND active=1 ORDER BY connected_at DESC LIMIT 1",
-                    (user_id,),
+                    (sess["user_id"],),
                 ).fetchone()
             if full:
                 chatwoot_url = full[1] or ""
