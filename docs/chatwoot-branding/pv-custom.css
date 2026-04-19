@@ -1,0 +1,35 @@
+/* ═══════════════════════════════════════════════════════════════
+ * CLOW — Custom CSS do CRM Chatwoot
+ * Esconde informacoes pessoais do admin pro cliente ver branded CRM CLOW
+ * ═══════════════════════════════════════════════════════════════ */
+
+/* Esconder email no rodape da sidebar (mostra so nome + avatar) */
+.sidebar .current-user .current-user--meta,
+.sidebar-profile__info .current-user--email,
+.sidebar-profile__info small,
+.sidebar-profile__info .text-xxs,
+aside.sidebar .thumbnail-small + div span[title*='@'],
+aside .thumbnail-small ~ * span:not(.name) {
+  display: none !important;
+}
+
+/* Se o Chatwoot renderiza email como texto apos o nome, esconde com truncate */
+.sidebar-profile__info > div:last-child,
+.sidebar .profile__info .sub-block-title,
+.user-thumbnail-small + .text-xs {
+  display: none !important;
+}
+
+/* Alternativa mais segura: mascarar emails em qualquer lugar que nao seja input */
+body:not(.embedded):not(.widget) .sidebar small:has(+ :not(input)),
+body:not(.embedded):not(.widget) .sidebar-profile__info .profile-item-text {
+  font-size: 0 !important;
+}
+
+body:not(.embedded):not(.widget) .sidebar-profile__info .profile-item-text::after {
+  content: 'Powered by CLOW';
+  font-size: 11px;
+  color: #8B5CF6;
+  font-weight: 600;
+  letter-spacing: .5px;
+}
