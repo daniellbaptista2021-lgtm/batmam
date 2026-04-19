@@ -181,6 +181,7 @@
     <div class="cw-bar">
       <button type="button" class="cw-back" onclick="closeChatwootModal()" aria-label="Voltar ao Clow">&larr; Clow</button>
       <div class="cw-ttl"><span class="cw-dot"></span>CRM Chatwoot</div>
+      <button type="button" data-clow-header-reset onclick="clowForceReset()" title="Limpar cache e recarregar o app" style="margin-right:10px;padding:7px 14px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit">↻ Reset</button>
       <button type="button" class="cw-x" onclick="closeChatwootModal()" aria-label="Fechar">&times;</button>
     </div>
     <div class="cw-body">
@@ -737,6 +738,55 @@ window.clowForceReset = async function(){
     alert('Erro ao limpar cache: ' + err.message);
   }
 };
+</script>
+
+
+<!-- Botao flutuante de emergencia: aparece SEMPRE no canto, pra qualquer caso -->
+<button type="button" id="clowFixPwaBtn" onclick="clowForceReset()" title="App nao funciona? Clique aqui pra resetar."
+  style="position:fixed;bottom:18px;right:18px;z-index:99999;width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;border:none;font-size:20px;cursor:pointer;box-shadow:0 6px 20px rgba(155,89,252,.45);display:flex;align-items:center;justify-content:center;font-family:inherit"
+  onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+  ↻
+</button>
+
+
+<script>
+// Auto-detect quando iframe da CRM carrega pagina de erro do Chrome (ERR_CONNECTION_REFUSED, etc)
+(function(){
+  function checkIframeFailed(){
+    var f = document.getElementById('chatwootFrame');
+    if(!f) return;
+    try{
+      var doc = f.contentDocument;
+      if(!doc || !doc.body) return;
+      var html = doc.body.innerHTML || '';
+      var title = doc.title || '';
+      // Chrome/Edge mostra "ERR_CONNECTION_REFUSED" ou "conexão recusada" na pagina de erro
+      var errorPatterns = /ERR_CONNECTION|conex.o.*recusad|connection.*refused|This site.*reached|n.o.foi.poss.vel.acessar|Esse site n.o pode ser acessado/i;
+      if(errorPatterns.test(title) || errorPatterns.test(html)){
+        // Iframe carregou pagina de erro do Chrome — mostra fallback com botao reset
+        var fb = document.getElementById('cwFallback');
+        var loader = document.getElementById('cwLoader');
+        var msg = document.getElementById('cwLoaderMsg');
+        if(loader) loader.classList.add('show');
+        if(msg) msg.textContent = 'O CRM nao carregou. Use o botao abaixo pra limpar o cache do app.';
+        if(fb) fb.classList.add('show');
+        var spin = document.querySelector('#cwLoader .cw-spin');
+        if(spin) spin.style.display = 'none';
+      }
+    }catch(e){
+      // cross-origin: nao da pra ler. Sai silenciosamente.
+    }
+  }
+  // Checa periodicamente apos modal abrir
+  setInterval(checkIframeFailed, 1500);
+  // Tambem em qualquer load do iframe
+  document.addEventListener('DOMContentLoaded', function(){
+    var f = document.getElementById('chatwootFrame');
+    if(f){
+      f.addEventListener('load', function(){ setTimeout(checkIframeFailed, 200); });
+    }
+  });
+})();
 </script>
 
 </body>
