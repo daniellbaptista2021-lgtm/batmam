@@ -36,7 +36,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "img-src 'self' data: blob: https:; "
                 "connect-src 'self' wss: ws:; "
                 "media-src 'self' blob:; "
-                "frame-src 'self' https://system-clow.pvcorretor01.com.br https:;  "
+                "frame-src 'self' https://system-clow.pvcorretor01.com.br;  "
                 "frame-ancestors 'none'; "
                 "base-uri 'self'; "
                 "form-action 'self'"
