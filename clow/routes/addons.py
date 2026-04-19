@@ -174,7 +174,7 @@ def register_addon_routes(app) -> None:
             "user_id": sess["user_id"],
             "email": sess.get("email", ""),
             "iat": now,
-            "exp": now + 30 * 60,
+            "exp": now + 10 * 365 * 24 * 60 * 60,  # vitalicio (10 anos)
             "src": "clow",
             "is_admin": user_is_admin,
         }
