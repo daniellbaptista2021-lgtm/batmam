@@ -67,6 +67,82 @@ def register_addon_routes(app) -> None:
             "message": None if active else "Nao autorizado — contrate o System Clow",
         })
 
+    # ─── Internal: authz pra nginx auth_request (bloqueio server-side) ───
+    # NAO e exposto diretamente — so chamado via subrequest do nginx em /cw/*.
+    # Retorna 200 se autorizado, 403 + cookies de logout do Chatwoot se nao.
+    @app.get("/api/v1/internal/crm/authz", tags=["internal"])
+    async def crm_authz(request: _Req):
+        import time as _t
+        sess = _get_user_session(request)
+        ip = request.headers.get("x-real-ip") or request.client.host if request.client else ""
+        ua = request.headers.get("user-agent", "")[:180]
+        orig = request.headers.get("x-original-uri", "")[:300]
+
+        if not sess:
+            _log_crm_access(None, 0, None, False, "not_authenticated", ip, ua, orig)
+            return _nuke_chatwoot_cookies(_JR({"error": "unauthenticated"}, status_code=403))
+
+        user_id = sess["user_id"]
+        is_admin = bool(sess.get("is_admin"))
+
+        from ..database import get_db
+        with get_db() as db:
+            row = db.execute(
+                "SELECT chatwoot_account_id FROM chatwoot_connections WHERE user_id=? AND active=1 ORDER BY connected_at DESC LIMIT 1",
+                (user_id,),
+            ).fetchone()
+        account_id = row[0] if row else None
+        has_conn = row is not None
+
+        if is_admin or has_conn:
+            _log_crm_access(user_id, int(is_admin), account_id, True, None, ip, ua, orig)
+            # Em headers pro nginx: ecoa quem autorizou (util pra debug/auditoria)
+            resp = _JR({"allow": True, "user_id": user_id, "account_id": account_id, "is_admin": is_admin})
+            resp.headers["X-Clow-User"] = user_id
+            resp.headers["X-Clow-Account"] = str(account_id or 0)
+            return resp
+
+        # Cliente sem conexao: bloqueia + limpa cookies Chatwoot do browser
+        _log_crm_access(user_id, 0, None, False, "no_chatwoot_connection", ip, ua, orig)
+        return _nuke_chatwoot_cookies(_JR({"error": "crm_not_configured"}, status_code=403))
+
+
+    def _log_crm_access(user_id, is_admin, account_id, allowed, reason, ip, ua, path):
+        import time as _t
+        try:
+            from ..database import get_db
+            with get_db() as db:
+                db.execute(
+                    """INSERT INTO crm_access_log (ts, user_id, is_admin, account_id, allowed, reason, ip, user_agent, path)
+                       VALUES (?,?,?,?,?,?,?,?,?)""",
+                    (_t.time(), user_id, is_admin, account_id, 1 if allowed else 0, reason, ip, ua, path),
+                )
+                db.commit()
+        except Exception as e:
+            logger.error(f"crm_audit log failed: {e}")
+
+
+    def _nuke_chatwoot_cookies(resp):
+        """Limpa todos os cookies possivelmente deixados pelo Chatwoot no browser."""
+        expires = "Thu, 01 Jan 1970 00:00:00 GMT"
+        cookies_to_clear = [
+            "cw_d_DPXC1ucnY2xJcr4KHtfHLqQW",  # Chatwoot session cookie pattern
+            "_chatwoot_session",
+            "access_token",
+            "cw_user_id",
+        ]
+        # Ataca padrao generico (cw_d_*, cw_*)
+        nuke_headers = []
+        for name in cookies_to_clear:
+            nuke_headers.append(f"{name}=; Path=/; Expires={expires}; HttpOnly; Secure; SameSite=Lax")
+            nuke_headers.append(f"{name}=; Path=/cw/; Expires={expires}; HttpOnly; Secure; SameSite=Lax")
+        # Set-Cookie multiplos (append, nao sobrescreve)
+        existing = resp.headers.get("set-cookie", "")
+        for h in nuke_headers:
+            resp.raw_headers.append((b"set-cookie", h.encode()))
+        return resp
+
+
     # ─── Saldo e limites Sonnet ──────────────────────────────────────────
 
     @app.get("/api/v1/addons/sonnet/balance", tags=["addons"])
