@@ -94,6 +94,17 @@ def register_addon_routes(app) -> None:
         account_id = row[0] if row else None
         has_conn = row is not None
 
+        # Defense in depth: se path tem /accounts/N/, validar que N bate com account_id do user
+        # (admin pode ver qualquer account, cliente so o proprio)
+        if not is_admin and orig:
+            import re as _re
+            m = _re.search(r"/accounts/(\d+)/", orig)
+            if m:
+                path_account_id = int(m.group(1))
+                if account_id is not None and path_account_id != account_id:
+                    _log_crm_access(user_id, 0, account_id, False, f"cross_account_access:requested={path_account_id}", ip, ua, orig)
+                    return _nuke_chatwoot_cookies(_JR({"error": "cross_account_access_denied", "your_account": account_id, "requested": path_account_id}, status_code=403))
+
         if is_admin or has_conn:
             _log_crm_access(user_id, int(is_admin), account_id, True, None, ip, ua, orig)
             # Em headers pro nginx: ecoa quem autorizou (util pra debug/auditoria)
