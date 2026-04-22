@@ -1433,30 +1433,45 @@ def register_whatsapp_agent_routes(app) -> None:
 
 
 def _send_outgoing_to_zapi(body: dict, user_id: str = "") -> dict:
-    """Quando agent humano envia mensagem no CRM (Chatwoot), envia pro WhatsApp via Z-API.
-    Usa o client_token da instancia do user (ou env fallback).
+    """Quando agent envia mensagem no CRM, despacha pro WhatsApp via Z-API.
+    - Dedup por message_id (Chatwoot as vezes dispara webhook 2x)
+    - Suporta attachments: audio, image, video, document
     """
-    import os, json as _j, urllib.request as _ur, urllib.error as _ue
+    import os, json as _j, time as _t, urllib.request as _ur, urllib.error as _ue
     try:
-        # Anti-loop: ignora msgs enviadas pelo proprio bot/sistema
-        sender = body.get("sender", {}) or {}
-        if sender.get("type") not in ("user", "agent_bot"):
-            # somente respostas humanas/bot vao pra Z-API
-            pass
-        # Extrai destinatario
+        # ── Dedup: Chatwoot as vezes dispara o webhook 2x pro mesmo evento ──
+        msg_id = body.get("id")
+        if msg_id:
+            now = _t.time()
+            cache = getattr(_send_outgoing_to_zapi, "_seen", None)
+            if cache is None:
+                cache = {}
+                _send_outgoing_to_zapi._seen = cache
+            # Purge >60s
+            for k in list(cache.keys()):
+                if now - cache[k] > 60:
+                    del cache[k]
+            if msg_id in cache:
+                logger.info("[OUT-CRM] dedup skip msg_id=%s", msg_id)
+                return {"ok": True, "skipped": "duplicate"}
+            cache[msg_id] = now
+
+        # ── Destinatario ──
         conv = body.get("conversation", {}) or {}
         meta = conv.get("meta", {}) or {}
         contact = (meta.get("sender") or {})
-        phone = contact.get("phone_number") or contact.get("identifier") or ""
-        phone = (phone or "").lstrip("+").replace(" ", "")
+        phone = (contact.get("phone_number") or contact.get("identifier") or "").lstrip("+").replace(" ", "")
         if not phone:
-            logger.warning("_send_outgoing_to_zapi: sem phone, body=%s", str(body)[:200])
+            logger.warning("_send_outgoing_to_zapi: sem phone")
             return {"ok": False, "error": "no_phone"}
+
         content = (body.get("content") or "").strip()
-        if not content:
+        attachments = body.get("attachments") or []
+
+        if not content and not attachments:
             return {"ok": False, "error": "empty_content"}
-        # Acha instancia Z-API ativa do user. get_instances() retorna list de dict (com tokens mascarados),
-        # entao buscamos o objeto completo via get_instance(id, tenant_id).
+
+        # ── Acha instancia Z-API ──
         from ..whatsapp_agent import get_wa_manager
         mgr = get_wa_manager()
         dict_instances = mgr.get_instances(user_id or "")
@@ -1464,34 +1479,62 @@ def _send_outgoing_to_zapi(body: dict, user_id: str = "") -> dict:
         if not zapi_dicts:
             logger.warning("_send_outgoing_to_zapi: user %s sem instancia Z-API ativa", user_id)
             return {"ok": False, "error": "no_zapi_instance"}
-        inst_id = zapi_dicts[0].get("id")
-        inst = mgr.get_instance(inst_id, user_id or "") if user_id else None
+        inst = mgr.get_instance(zapi_dicts[0].get("id"), user_id or "")
         if not inst:
-            logger.warning("_send_outgoing_to_zapi: nao foi possivel carregar instancia %s do user %s", inst_id, user_id)
             return {"ok": False, "error": "instance_load_failed"}
         instance_id = inst.zapi_instance_id
         token = inst.zapi_token
         client_token = getattr(inst, "zapi_client_token", "") or os.getenv("ZAPI_CLIENT_TOKEN", "")
         if not (instance_id and token and client_token):
-            logger.warning("_send_outgoing_to_zapi: credenciais Z-API incompletas instance=%s token_set=%s client_token_set=%s",
-                           bool(instance_id), bool(token), bool(client_token))
             return {"ok": False, "error": "missing_zapi_credentials"}
-        url = f"https://api.z-api.io/instances/{instance_id}/token/{token}/send-text"
-        data = _j.dumps({"phone": phone, "message": content}).encode("utf-8")
-        req = _ur.Request(url, data=data, method="POST",
-                          headers={"Content-Type": "application/json", "Client-Token": client_token})
-        try:
-            with _ur.urlopen(req, timeout=20) as resp:
-                resp_data = _j.loads(resp.read().decode())
-            logger.info("[OUT-CRM] user=%s phone=%s msg=%r resp=%s", user_id, phone, content[:60], resp_data)
-            return {"ok": True, "response": resp_data}
-        except _ue.HTTPError as e:
-            body_text = (e.read().decode() if e.fp else "")[:200]
-            logger.error("_send_outgoing_to_zapi: HTTP %s %s", e.code, body_text)
-            return {"ok": False, "error": f"http_{e.code}", "detail": body_text}
-        except Exception as e:
-            logger.exception("_send_outgoing_to_zapi: send failed: %s", e)
-            return {"ok": False, "error": str(e)}
+
+        headers = {"Content-Type": "application/json", "Client-Token": client_token}
+        base = f"https://api.z-api.io/instances/{instance_id}/token/{token}"
+        results = []
+
+        def _post(url, payload):
+            try:
+                req = _ur.Request(url, data=_j.dumps(payload).encode("utf-8"), method="POST", headers=headers)
+                with _ur.urlopen(req, timeout=25) as r:
+                    return {"ok": True, "resp": _j.loads(r.read().decode())}
+            except _ue.HTTPError as e:
+                body_text = (e.read().decode() if e.fp else "")[:200]
+                return {"ok": False, "error": "http_" + str(e.code), "detail": body_text}
+            except Exception as e:
+                return {"ok": False, "error": str(e)[:150]}
+
+        # ── Envia cada attachment ──
+        for idx, att in enumerate(attachments):
+            atype = (att.get("file_type") or att.get("type") or "").lower()
+            url = att.get("data_url") or att.get("url") or ""
+            if not url:
+                continue
+            # Caption apenas no primeiro attachment (se tiver content)
+            caption = content if idx == 0 else ""
+            if "audio" in atype:
+                res = _post(base + "/send-audio", {"phone": phone, "audio": url, "waveform": True})
+            elif "image" in atype:
+                payload = {"phone": phone, "image": url}
+                if caption: payload["caption"] = caption
+                res = _post(base + "/send-image", payload)
+            elif "video" in atype:
+                payload = {"phone": phone, "video": url}
+                if caption: payload["caption"] = caption
+                res = _post(base + "/send-video", payload)
+            else:  # file/document
+                payload = {"phone": phone, "document": url, "fileName": att.get("filename") or "arquivo", "extension": (att.get("extension") or "pdf")}
+                if caption: payload["caption"] = caption
+                res = _post(base + "/send-document/" + (att.get("extension") or "pdf"), payload)
+            results.append({"type": atype, "res": res})
+            logger.info("[OUT-CRM] user=%s phone=%s att=%s ok=%s", user_id, phone, atype, res.get("ok"))
+
+        # Se teve attachment com caption, texto ja foi incluido. Se so texto, envia agora.
+        if content and not attachments:
+            res = _post(base + "/send-text", {"phone": phone, "message": content})
+            results.append({"type": "text", "res": res})
+            logger.info("[OUT-CRM] user=%s phone=%s text=%r ok=%s", user_id, phone, content[:60], res.get("ok"))
+
+        return {"ok": True, "results": results}
     except Exception as e:
         logger.exception("_send_outgoing_to_zapi: top-level exception: %s", e)
         return {"ok": False, "error": str(e)}
