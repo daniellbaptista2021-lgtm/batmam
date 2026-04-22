@@ -1,11 +1,14 @@
 """BYOK (Bring Your Own Key) routes — onboarding, API key management, usage dashboard."""
 
 from __future__ import annotations
+import logging
 import time
 from typing import Any
 
 from fastapi import Request as _Req
 from fastapi.responses import JSONResponse as _JR, HTMLResponse as _HR
+
+logger = logging.getLogger("clow.byok")
 
 
 def register_byok_routes(app) -> None:
@@ -219,6 +222,18 @@ def register_byok_routes(app) -> None:
             except Exception:
                 pass
             db.execute("UPDATE users SET accepted_terms_at=? WHERE id=?", (time.time(), user["id"]))
+
+        # ─── Auto-provision Chatwoot account isolada (Plano A: SSO, sem senha visivel) ───
+        # Defensivo: signup nao falha se Chatwoot estiver fora do ar — fallback no SSO endpoint.
+        try:
+            from ..services.onboarding import provision_user
+            prov = provision_user(user["id"], email, name)
+            if prov.get("error"):
+                logger.warning(f"signup: provision Chatwoot falhou pra user={user['id']}: {prov.get('error')}")
+            else:
+                logger.info(f"signup: provision Chatwoot OK user={user['id']} account={prov.get('chatwoot_account_id')}")
+        except Exception as _prov_e:
+            logger.exception(f"signup: provision Chatwoot exception user={user['id']}: {_prov_e}")
 
         from .auth import _create_session, _SESSION_TTL
         token = _create_session(user)
