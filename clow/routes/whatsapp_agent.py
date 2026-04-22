@@ -193,7 +193,22 @@ def register_whatsapp_agent_routes(app) -> None:
             meta_waba_id=body.get("meta_waba_id", ""),
             meta_access_token=body.get("meta_access_token", ""),
             meta_verify_token=body.get("meta_verify_token", ""),
+            zapi_client_token=body.get("zapi_client_token", ""),
         )
+        if result.get("success") and provider == "zapi" and body.get("zapi_client_token"):
+            try:
+                from ..services.onboarding import register_zapi_webhook
+                inst_id = (result.get("instance") or {}).get("id", "")
+                wh = "https://clow.pvcorretor01.com.br/api/v1/whatsapp/webhook/" + inst_id
+                rwh = register_zapi_webhook(
+                    body.get("zapi_instance_id", ""),
+                    body.get("zapi_token", ""),
+                    body.get("zapi_client_token", ""),
+                    wh,
+                )
+                result["zapi_webhook_registered"] = bool(rwh.get("ok"))
+            except Exception:
+                result["zapi_webhook_registered"] = False
         # Auto-sync com Chatwoot: cria inbox + webhook + bot_config
         if result.get("success") and result.get("instance"):
             inst = result["instance"]

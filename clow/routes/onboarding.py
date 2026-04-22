@@ -177,7 +177,11 @@ def register_onboarding_routes(app) -> None:
         ctype = body.get("type", "")
         if ctype == "zapi":
             from ..services.onboarding import test_zapi_connection
-            return _JR(test_zapi_connection(body.get("instance_id", ""), body.get("token", "")))
+            return _JR(test_zapi_connection(
+                body.get("instance_id", ""),
+                body.get("token", ""),
+                body.get("client_token", ""),
+            ))
         elif ctype == "meta":
             from ..services.onboarding import test_meta_connection
             return _JR(test_meta_connection(body.get("phone_number_id", ""), body.get("access_token", "")))
@@ -231,16 +235,30 @@ def register_onboarding_routes(app) -> None:
             else:
                 webhook_url_info = f"{clow_url}/api/v1/meta/webhook/{wh_token}"
 
-        # Save credentials
+        # Save credentials (inclui client_token p/ Z-API)
         creds = save_whatsapp_credentials(uid, ctype, {
             "instance_id": body.get("instance_id", ""),
             "token": body.get("token", ""),
+            "client_token": body.get("client_token", ""),
             "phone_number_id": body.get("phone_number_id", ""),
             "access_token": body.get("access_token", ""),
             "status": "connected",
             "chatwoot_inbox_id": inbox_id,
             "webhook_token": conn["webhook_token"] if conn else "",
         })
+
+        # Auto-registra webhook na Z-API (cliente nao precisa configurar manualmente)
+        if ctype == "zapi" and webhook_url_info and body.get("client_token"):
+            try:
+                from ..services.onboarding import register_zapi_webhook
+                register_zapi_webhook(
+                    body.get("instance_id", ""),
+                    body.get("token", ""),
+                    body.get("client_token", ""),
+                    webhook_url_info,
+                )
+            except Exception:
+                pass  # nao bloqueia save
 
         # Create bot config (inactive, prompt empty — will be filled in step 3)
         if inbox_id:

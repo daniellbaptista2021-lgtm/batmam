@@ -51,6 +51,7 @@ class WhatsAppInstance:
     meta_waba_id: str = ""
     meta_access_token: str = ""
     meta_verify_token: str = ""
+    zapi_client_token: str = ""
 
     @property
     def webhook_url(self) -> str:
@@ -78,6 +79,7 @@ class WhatsAppInstance:
             "meta_waba_id": self.meta_waba_id,
             "meta_access_token": self.meta_access_token[:8] + "..." if self.meta_access_token else "",
             "meta_verify_token": self.meta_verify_token,
+            "zapi_client_token": self.zapi_client_token[:8] + "..." if self.zapi_client_token else "",
         }
 
     def save(self) -> None:
@@ -94,6 +96,7 @@ class WhatsAppInstance:
             "meta_waba_id": self.meta_waba_id,
             "meta_access_token": self.meta_access_token,
             "meta_verify_token": self.meta_verify_token,
+            "zapi_client_token": self.zapi_client_token,
         }
         cfg.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -113,7 +116,8 @@ class WhatsAppAgentManager:
 
     def create_instance(self, tenant_id: str, name: str, zapi_instance_id: str, zapi_token: str, system_prompt: str = "",
                         provider: str = "zapi", meta_phone_number_id: str = "", meta_waba_id: str = "",
-                        meta_access_token: str = "", meta_verify_token: str = "") -> dict:
+                        meta_access_token: str = "", meta_verify_token: str = "",
+                        zapi_client_token: str = "") -> dict:
         can, msg = self.can_add_instance(tenant_id)
         if not can:
             return {"error": msg}
@@ -126,6 +130,7 @@ class WhatsAppAgentManager:
             meta_waba_id=meta_waba_id,
             meta_access_token=meta_access_token,
             meta_verify_token=meta_verify_token,
+            zapi_client_token=zapi_client_token,
         )
         inst.save()
         log_action("whatsapp_instance_created", f"{inst.id} for {tenant_id}")
@@ -482,13 +487,16 @@ class WhatsAppAgentManager:
         except Exception as e:
             return {"connected": False, "error": str(e)[:150]}
 
-    def test_connection(self, zapi_instance_id: str, zapi_token: str) -> dict:
+    def test_connection(self, zapi_instance_id: str, zapi_token: str, zapi_client_token: str = "") -> dict:
         try:
             url = f"https://api.z-api.io/instances/{zapi_instance_id}/token/{zapi_token}/status"
-            req = Request(url, headers={"Content-Type": "application/json"})
+            headers = {"Content-Type": "application/json"}
+            if zapi_client_token:
+                headers["Client-Token"] = zapi_client_token
+            req = Request(url, headers=headers)
             resp = urlopen(req, timeout=15)
             data = json.loads(resp.read().decode())
-            return {"connected": True, "status": data}
+            return {"connected": bool(data.get("connected")), "status": data}
         except Exception as e:
             return {"connected": False, "error": str(e)[:150]}
 

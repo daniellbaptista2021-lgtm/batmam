@@ -688,6 +688,7 @@ def save_whatsapp_credentials(user_id: str, ctype: str, data: dict) -> dict:
     payload = {
         "instance_id": data.get("instance_id", ""),
         "token": data.get("token", ""),
+        "client_token": data.get("client_token", ""),
         "phone_number_id": data.get("phone_number_id", ""),
         "access_token": data.get("access_token", ""),
         "status": data.get("status", "pending"),

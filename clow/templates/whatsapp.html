@@ -263,6 +263,11 @@ a{color:var(--p);text-decoration:none}
           <input id="newZapiToken" placeholder="Seu Token da Z-API">
           <div class="hint">Encontre em painel.z-api.io &rarr; sua instancia &rarr; Token</div>
         </div>
+        <div class="field">
+          <label>Client-Token (Token Secret)</label>
+          <input id="newZapiClientToken" placeholder="Account Security Token (obrigatorio)">
+          <div class="hint">Encontre em app.z-api.io &rarr; Account &rarr; Security Token</div>
+        </div>
         <div style="margin-top:14px;padding:14px;background:rgba(155,89,252,.04);border:1px solid rgba(155,89,252,.12);border-radius:10px">
           <div style="font-size:12px;font-weight:700;color:var(--p);margin-bottom:8px">&#128279; Configuracao do Webhook</div>
           <div style="font-size:11px;color:var(--t2);line-height:1.7;margin-bottom:10px">
@@ -512,7 +517,8 @@ async function saveNewInst(){
     }else{
       body.zapi_instance_id=$('newZapiId').value.trim();
       body.zapi_token=$('newZapiToken').value.trim();
-      if(!body.zapi_instance_id||!body.zapi_token){toast('Preencha Instance ID e Token','err');$('btnSave').disabled=false;$('btnSave').textContent='Salvar e Conectar';return;}
+      body.zapi_client_token=$('newZapiClientToken')?$('newZapiClientToken').value.trim():'';
+      if(!body.zapi_instance_id||!body.zapi_token||!body.zapi_client_token){toast('Preencha Instance ID, Token e Client-Token','err');$('btnSave').disabled=false;$('btnSave').textContent='Salvar e Conectar';return;}
       body.provider='zapi';
 
     }

@@ -117,8 +117,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t1);min-height:100
 
     <!-- Z-API form -->
     <div class="form-section" id="formZapi">
-      <div class="field"><label>Instance ID</label><input type="text" id="zapiId" placeholder="3EF47A29C3407180CF13C22309410E11"></div>
-      <div class="field"><label>Token</label><input type="text" id="zapiToken" placeholder="3F58BF302142429BA7FAD499"></div>
+      <div class="field"><label>Instance ID</label><input type="text" id="zapiId" placeholder="3EF47A29C3407180CF13C22309410E11"><div class="hint" style="font-size:11px;color:#888;margin-top:4px">app.z-api.io &rarr; Instances &rarr; ID</div></div>
+      <div class="field"><label>Token</label><input type="text" id="zapiToken" placeholder="3F58BF302142429BA7FAD499"><div class="hint" style="font-size:11px;color:#888;margin-top:4px">app.z-api.io &rarr; sua instancia &rarr; Token</div></div>
+      <div class="field"><label>Client-Token (Token Secret)</label><input type="text" id="zapiClientToken" placeholder="Account Security Token"><div class="hint" style="font-size:11px;color:#888;margin-top:4px">app.z-api.io &rarr; Account &rarr; Security Token (obrigatorio)</div></div>
       <div id="zapiErr" class="err hide"></div>
       <div id="zapiOk" class="ok-msg hide"></div>
       <div class="row">
@@ -219,20 +220,21 @@ async function testZapi(){
   btn.disabled=true;btn.innerHTML='<span class="sp"></span> Testando...';
   const iid=document.getElementById('zapiId').value.trim();
   const tok=document.getElementById('zapiToken').value.trim();
-  if(!iid||!tok){err.textContent='Preencha Instance ID e Token';err.classList.remove('hide');btn.disabled=false;btn.textContent='Testar Conexao';return}
+  const cli=document.getElementById('zapiClientToken').value.trim();
+  if(!iid||!tok||!cli){err.textContent='Preencha Instance ID, Token e Client-Token (todos obrigatorios)';err.classList.remove('hide');btn.disabled=false;btn.textContent='Testar Conexao';return}
   try{
-    const r=await fetch('/api/v1/onboarding/whatsapp/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'zapi',instance_id:iid,token:tok})});
+    const r=await fetch('/api/v1/onboarding/whatsapp/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'zapi',instance_id:iid,token:tok,client_token:cli})});
     const d=await r.json();
     if(d.ok){
-      ok.textContent='Conectado! Criando inbox...';ok.classList.remove('hide');
-      const sr=await fetch('/api/v1/onboarding/whatsapp/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'zapi',instance_id:iid,token:tok})});
+      ok.textContent='Conectado! Criando inbox e configurando webhook...';ok.classList.remove('hide');
+      const sr=await fetch('/api/v1/onboarding/whatsapp/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'zapi',instance_id:iid,token:tok,client_token:cli})});
       const sd=await sr.json();
       if(sd.webhook_url){
-        ok.innerHTML='Inbox criada! Configure o webhook da Z-API:<br><code style="font-size:.8rem;color:var(--bl);user-select:all">'+sd.webhook_url+'</code><br><span style="font-size:.78rem;color:var(--tm)">No painel Z-API: webhook de recebimento</span>';
+        ok.innerHTML='Tudo conectado! Webhook configurado automaticamente na Z-API. Voce ja pode receber mensagens.';
       }
-      setTimeout(()=>setStep(3),3000);
+      setTimeout(()=>setStep(3),2500);
     }else{
-      err.textContent='Credenciais invalidas ou WhatsApp desconectado. Verifique na Z-API.';err.classList.remove('hide');
+      err.textContent=d.error||'Credenciais invalidas. Verifique na Z-API.';err.classList.remove('hide');
     }
   }catch(e){err.textContent='Erro: '+e.message;err.classList.remove('hide')}
   btn.disabled=false;btn.textContent='Testar Conexao';

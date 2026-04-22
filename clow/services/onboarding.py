@@ -96,12 +96,40 @@ def create_chatwoot_user(email: str, name: str, account_id: int) -> dict | None:
 
 # ── WhatsApp Connection Tests ────────────────────────────────
 
-def test_zapi_connection(instance_id: str, token: str) -> dict:
-    """Test Z-API credentials by checking instance status."""
+def test_zapi_connection(instance_id: str, token: str, client_token: str = "") -> dict:
+    """Testa credenciais Z-API. client_token = Account Security Token (Z-API exige em todo request)."""
+    if not instance_id:
+        return {"ok": False, "error": "Informe o Instance ID."}
+    if not token:
+        return {"ok": False, "error": "Informe o Token da instancia."}
+    if not client_token:
+        return {"ok": False, "error": "Informe o Client-Token (Account Security Token). Pegue em app.z-api.io > Account > Security Token."}
     url = f"https://api.z-api.io/instances/{instance_id}/token/{token}/status"
-    result = _api("GET", url)
-    connected = result.get("connected", False)
-    return {"ok": connected, "status": "connected" if connected else "disconnected", "raw": result}
+    result = _api("GET", url, headers={"Client-Token": client_token})
+    raw_err = (result.get("error") or "").lower()
+    if "instance not found" in raw_err:
+        return {"ok": False, "error": "Instance ID nao encontrado. Confira no painel app.z-api.io > Instances. Atencao: confunde-se O com 0."}
+    if "client-token" in raw_err or "client_token" in raw_err:
+        return {"ok": False, "error": "Client-Token invalido. Pegue o correto em app.z-api.io > Account > Security Token."}
+    if "unauthorized" in raw_err or "401" in raw_err or "403" in raw_err:
+        return {"ok": False, "error": "Token da instancia invalido ou sem permissao."}
+    if result.get("error"):
+        return {"ok": False, "error": "Z-API: " + str(result["error"])}
+    connected = bool(result.get("connected", False))
+    if not connected:
+        return {"ok": False, "status": "disconnected", "error": "Instancia existe mas o WhatsApp nao esta pareado. Escaneie o QR no painel da Z-API.", "raw": result}
+    return {"ok": True, "status": "connected", "raw": result}
+
+
+def register_zapi_webhook(instance_id: str, token: str, client_token: str, webhook_url: str) -> dict:
+    """Configura URL de webhook on-message-received na Z-API."""
+    if not (instance_id and token and client_token and webhook_url):
+        return {"ok": False, "error": "missing_args"}
+    url = f"https://api.z-api.io/instances/{instance_id}/token/{token}/update-webhook-received"
+    result = _api("POST", url, data={"value": webhook_url}, headers={"Client-Token": client_token, "Content-Type": "application/json"})
+    if result.get("error"):
+        return {"ok": False, "error": result["error"]}
+    return {"ok": True, "webhook_url": webhook_url}
 
 
 def test_meta_connection(phone_number_id: str, access_token: str) -> dict:
