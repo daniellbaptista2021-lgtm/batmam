@@ -902,6 +902,18 @@ window.sendSupportMsg = async function(){
   closeSupportModal();
 };
 
+
+window.pickSupportOption = function(idx){
+  var opts = window._supportOptions || [];
+  var o = opts[idx]; if (!o) return;
+  var t = document.getElementById('supportMsg');
+  if (t) {
+    t.value = o.text;
+    t.focus();
+    if (typeof onSupportInput === 'function') onSupportInput();
+  }
+};
+
 </script>
 
 </body>
