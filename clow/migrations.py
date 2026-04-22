@@ -784,3 +784,12 @@ MIGRATIONS.append((
     ALTER TABLE users ADD COLUMN has_system_clow INTEGER DEFAULT 0;
     """,
 ))
+
+MIGRATIONS.append((
+    20,
+    "Track when Chatwoot login credentials were delivered to the customer (one-time reveal)",
+    """
+    ALTER TABLE chatwoot_connections ADD COLUMN password_delivered_at REAL DEFAULT 0;
+    ALTER TABLE chatwoot_connections ADD COLUMN chatwoot_password_temp TEXT DEFAULT '';
+    """,
+))

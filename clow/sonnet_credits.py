@@ -59,7 +59,7 @@ PACKAGES = {
         "credit_brl": 80.00,
         "daily_msgs": 80,
         "weekly_msgs": 400,
-        "stripe_price_id": "price_1TNxlWD0ns2mNERrohLc9LKT",
+        "stripe_price_id": (config.STRIPE_PRICE_SONNET_BASICO or "price_1TNxlWD0ns2mNERrohLc9LKT"),
         "description": "R$80 em tokens GLM-5.1 — 80 msgs/dia, 400/semana — 90 dias",
     },
     "medio": {
@@ -69,7 +69,7 @@ PACKAGES = {
         "credit_brl": 180.00,
         "daily_msgs": 200,
         "weekly_msgs": 1000,
-        "stripe_price_id": "price_1TNxlXD0ns2mNERrCmbZypMl",
+        "stripe_price_id": (config.STRIPE_PRICE_SONNET_MEDIO or "price_1TNxlXD0ns2mNERrCmbZypMl"),
         "description": "R$180 em tokens GLM-5.1 — 200 msgs/dia, 1000/semana — 90 dias",
     },
     "pro": {
@@ -79,7 +79,7 @@ PACKAGES = {
         "credit_brl": 280.00,
         "daily_msgs": 350,
         "weekly_msgs": 1750,
-        "stripe_price_id": "price_1TNxlYD0ns2mNERrwVYckz1t",
+        "stripe_price_id": (config.STRIPE_PRICE_SONNET_PRO_PACK or "price_1TNxlYD0ns2mNERrwVYckz1t"),
         "description": "R$280 em tokens GLM-5.1 — 350 msgs/dia, 1750/semana — 90 dias",
     },
 }

@@ -39,8 +39,16 @@ def register_settings_routes(app) -> None:
 
     @app.get("/privacidade", tags=["legal"])
     async def privacidade_page():
+        import os as _os
         tpl = Path(__file__).parent.parent / "templates" / "privacidade.html"
-        return _HR(tpl.read_text(encoding="utf-8")) if tpl.exists() else _HR("<h1>Privacidade</h1>")
+        if not tpl.exists():
+            return _HR("<h1>Privacidade</h1>")
+        html = tpl.read_text(encoding="utf-8")
+        privacy_email = _os.getenv("CLOW_PRIVACY_EMAIL", "privacidade@pvcorretor01.com.br")
+        controller_name = _os.getenv("CLOW_CONTROLLER_NAME", "Clow / PV Corretora")
+        html = html.replace("{{PRIVACY_EMAIL}}", privacy_email)
+        html = html.replace("{{CONTROLLER_NAME}}", controller_name)
+        return _HR(html)
 
     # ── Settings Page ─────────────────────────────────────────
 

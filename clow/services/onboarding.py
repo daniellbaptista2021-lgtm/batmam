@@ -168,64 +168,119 @@ def register_bot_webhook(chatwoot_url: str, chatwoot_token: str,
 # ── Full Onboarding Flow ─────────────────────────────────────
 
 def provision_user(user_id: str, email: str, name: str) -> dict:
-    """Full provisioning: Chatwoot account + user + save connection.
-    Returns dict with connection info or error.
+    """Full provisioning: creates an isolated Chatwoot account + admin user
+    for this Clow customer. The Chatwoot password is returned **only on the
+    first successful provisioning call**, so the frontend can show it once
+    and the customer must save it. Subsequent calls return
+    ``password_delivered=True`` without leaking the password again.
     """
     from ..database import (
         get_chatwoot_connection_by_user, create_chatwoot_connection,
         update_chatwoot_connection,
     )
 
-    # Check if already provisioned
     existing = get_chatwoot_connection_by_user(user_id)
     if existing and existing.get("chatwoot_account_id"):
-        return {"ok": True, "connection": existing, "already_provisioned": True}
+        return {
+            "ok": True,
+            "already_provisioned": True,
+            "chatwoot_account_id": existing["chatwoot_account_id"],
+            "chatwoot_login_email": email,
+            "chatwoot_login_url": _cw_external_url(),
+            "password_delivered": bool(existing.get("password_delivered_at")),
+        }
 
-    # 1. Create Chatwoot account
+    # 1. Create Chatwoot account (isolated tenant — never the admin's account)
     account = create_chatwoot_account(name or email.split("@")[0])
     if not account or not account.get("id"):
         return {"error": "Falha ao criar conta no Chatwoot", "detail": str(account)}
 
     account_id = account["id"]
+    if int(account_id) == int(os.getenv("CHATWOOT_ADMIN_ACCOUNT_ID", "1")):
+        # Defensive guard: the Platform API should never hand back the admin
+        # account, but if it ever does (misconfig), refuse to bind a customer
+        # to it instead of leaking the admin's inboxes.
+        logger.error(f"provision_user: refusing to bind user {user_id} to admin account_id={account_id}")
+        return {"error": "Conta Chatwoot retornou ID do admin (configuracao invalida). Contato suporte."}
 
-    # 2. Create Chatwoot user
+    # 2. Create Chatwoot user with random password
     cw_user = create_chatwoot_user(email, name or email.split("@")[0], account_id)
     if not cw_user:
         return {"error": "Falha ao criar usuario no Chatwoot"}
 
-    # 3. Save connection
+    cw_password = cw_user.get("chatwoot_password", "")
     cw_user_id_int = cw_user.get("chatwoot_user_id") or 0
-    if existing:
-        update_chatwoot_connection(user_id,
-            chatwoot_url=_cw_url(),
-            chatwoot_token=cw_user["chatwoot_user_token"],
-            chatwoot_account_id=account_id,
-        )
-        conn = get_chatwoot_connection_by_user(user_id)
-    else:
-        conn = create_chatwoot_connection(
-            user_id=user_id,
-            chatwoot_url=_cw_url(),
-            chatwoot_token=cw_user["chatwoot_user_token"],
-            chatwoot_account_id=account_id,
-        )
-    # Persiste chatwoot_user_id (pra SSO)
+
+    # 3. Persist connection (with password kept temporarily for one-shot reveal)
+    create_chatwoot_connection(
+        user_id=user_id,
+        chatwoot_url=_cw_url(),
+        chatwoot_token=cw_user["chatwoot_user_token"],
+        chatwoot_account_id=account_id,
+        chatwoot_user_token=cw_user["chatwoot_user_token"],
+        chatwoot_user_id=cw_user_id_int,
+        chatwoot_password_temp=cw_password,
+    )
+
+    # 4. Best-effort: deliver credentials by email if SMTP is configured
+    email_sent = _deliver_credentials_email(email, name, cw_password)
+
+    # 5. Mark as delivered immediately so we never expose this password again
+    #    via the API. The frontend gets it ONCE in this response.
     try:
-        from ..database import get_db
-        with get_db() as db:
-            db.execute(
-                "UPDATE chatwoot_connections SET chatwoot_user_id=? WHERE user_id=?",
-                (cw_user_id_int, user_id),
-            )
-            db.commit()
+        from ..database import mark_chatwoot_password_delivered
+        mark_chatwoot_password_delivered(user_id)
     except Exception as e:
-        logger.warning(f"provision_user: cw_user_id update failed: {e}")
+        logger.warning(f"provision_user: mark_password_delivered failed: {e}")
 
     return {
         "ok": True,
-        "connection": conn,
         "chatwoot_account_id": account_id,
         "chatwoot_login_email": email,
-        "chatwoot_login_password": cw_user.get("chatwoot_password", ""),
-        "chatwoot_login_url": "/app/login",
+        "chatwoot_login_password": cw_password,  # one-time reveal
+        "chatwoot_login_url": _cw_external_url(),
+        "password_delivered": True,
+        "email_sent": email_sent,
+        "warning": "Salve esta senha agora. Ela nao sera exibida novamente.",
     }
+
+
+# ── Credentials delivery (email) ─────────────────────────────────
+
+def _deliver_credentials_email(to_email: str, name: str, password: str) -> bool:
+    """Send Chatwoot credentials via SMTP if configured. Returns True on success."""
+    smtp_host = os.getenv("SMTP_HOST", "").strip()
+    smtp_user = os.getenv("SMTP_USER", "").strip()
+    smtp_pass = os.getenv("SMTP_PASSWORD", "").strip()
+    smtp_from = os.getenv("SMTP_FROM", smtp_user).strip()
+    if not (smtp_host and smtp_user and smtp_pass and to_email):
+        return False
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.utils import formataddr
+
+        cw_url = _cw_external_url()
+        body = (
+            f"Ola{(' ' + name) if name else ''},\n\n"
+            f"Sua conta no CRM esta pronta. Acesse o painel para gerenciar\n"
+            f"suas conversas do WhatsApp:\n\n"
+            f"  Link:  {cw_url}\n"
+            f"  Login: {to_email}\n"
+            f"  Senha: {password}\n\n"
+            f"Por seguranca, troque a senha apos o primeiro acesso.\n"
+        )
+        msg = MIMEText(body, "plain", "utf-8")
+        msg["Subject"] = "Suas credenciais do CRM (Chatwoot)"
+        msg["From"] = formataddr(("Clow", smtp_from))
+        msg["To"] = to_email
+
+        port = int(os.getenv("SMTP_PORT", "587"))
+        with smtplib.SMTP(smtp_host, port, timeout=15) as s:
+            s.starttls()
+            s.login(smtp_user, smtp_pass)
+            s.sendmail(smtp_from, [to_email], msg.as_string())
+        return True
+    except Exception as e:
+        logger.warning(f"_deliver_credentials_email failed: {e}")
+        return False

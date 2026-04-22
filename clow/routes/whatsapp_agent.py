@@ -1064,12 +1064,17 @@ def register_whatsapp_agent_routes(app) -> None:
         if not sess:
             return _JR({"error": "Nao autorizado"}, status_code=403)
         try:
-            from ..chatwoot_integration import get_chatwoot_client_for_user, get_chatwoot_client
+            from ..chatwoot_integration import get_chatwoot_client_for_user
             client = get_chatwoot_client_for_user(sess["user_id"])
+            # IMPORTANT: never fall back to the admin client here — that would
+            # leak the admin's inboxes (account_id=1) to the customer. If the
+            # user has not provisioned their own Chatwoot account yet, return
+            # an empty list and prompt them to finish onboarding.
             if not client:
-                client = get_chatwoot_client("bot")
-            if not client:
-                return _JR({"inboxes": [], "error": "Chatwoot nao configurado"})
+                return _JR({
+                    "inboxes": [],
+                    "error": "Chatwoot ainda nao foi provisionado para este usuario. Conclua o onboarding.",
+                })
             inboxes = client.get_inboxes()
             return _JR({"inboxes": inboxes})
         except Exception as e:
@@ -1292,16 +1297,18 @@ def register_whatsapp_agent_routes(app) -> None:
 
 def _chatwoot_bot_reply(conv_id: int, user_message: str, bot_cfg: dict, user_id: str = ""):
     """Fetch conversation history from Chatwoot, call DeepSeek, reply via Chatwoot API."""
-    from ..chatwoot_integration import get_chatwoot_client_for_user, get_chatwoot_client
+    from ..chatwoot_integration import get_chatwoot_client_for_user
     from .. import config as _cfg
 
-    cw_client = None
-    if user_id:
-        cw_client = get_chatwoot_client_for_user(user_id)
+    # The bot must always reply through the customer's own Chatwoot connection.
+    # Falling back to the admin/global client would post the bot's reply on the
+    # admin's account (account_id=1), leaking the admin's inboxes and contacts.
+    cw_client = get_chatwoot_client_for_user(user_id) if user_id else None
     if not cw_client:
-        cw_client = get_chatwoot_client("bot")
-    if not cw_client:
-        logger.error("Chatwoot bot: no client available")
+        logger.error(
+            f"Chatwoot bot: no per-user client for user_id={user_id!r}, conv={conv_id}. "
+            "Refusing to fall back to admin client."
+        )
         return
 
     # Fetch conversation history

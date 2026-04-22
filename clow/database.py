@@ -569,6 +569,225 @@ def list_missions(user_id: str, limit: int = 20) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+# ── Chatwoot multi-tenant connections ─────────────────────────────
+
+def get_chatwoot_connection_by_user(user_id: str) -> dict | None:
+    """Return the active Chatwoot connection for a given Clow user, or None."""
+    if not user_id:
+        return None
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM chatwoot_connections WHERE user_id=? AND active=1 ORDER BY connected_at DESC LIMIT 1",
+            (user_id,),
+        ).fetchone()
+        return dict(row) if row else None
+
+
+def get_chatwoot_connection_by_webhook(webhook_token: str) -> dict | None:
+    """Lookup a connection by webhook_token (used by webhook handlers)."""
+    if not webhook_token:
+        return None
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM chatwoot_connections WHERE webhook_token=? AND active=1 LIMIT 1",
+            (webhook_token,),
+        ).fetchone()
+        return dict(row) if row else None
+
+
+def create_chatwoot_connection(*, user_id: str, chatwoot_url: str,
+                                chatwoot_token: str, chatwoot_account_id: int,
+                                webhook_token: str = "",
+                                chatwoot_user_token: str = "",
+                                chatwoot_user_id: int = 0,
+                                chatwoot_password_temp: str = "") -> dict:
+    """Create a Chatwoot connection row tied to a Clow user."""
+    if not user_id:
+        raise ValueError("user_id is required")
+    if not chatwoot_account_id:
+        raise ValueError("chatwoot_account_id is required and must be non-zero")
+    cid = str(uuid.uuid4())[:12]
+    now = time.time()
+    wh = webhook_token or secrets_token_safe(24)
+    with get_db() as db:
+        db.execute(
+            """INSERT INTO chatwoot_connections
+                  (id, user_id, chatwoot_url, chatwoot_token, chatwoot_account_id,
+                   webhook_token, webhook_id, active, connected_at,
+                   chatwoot_user_token, chatwoot_user_id, chatwoot_password_temp)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (cid, user_id, chatwoot_url, chatwoot_token, int(chatwoot_account_id),
+             wh, 0, 1, now,
+             chatwoot_user_token or chatwoot_token, int(chatwoot_user_id), chatwoot_password_temp),
+        )
+    return get_chatwoot_connection_by_user(user_id)
+
+
+def update_chatwoot_connection(user_id: str, **kwargs) -> bool:
+    """Update mutable fields of a user's Chatwoot connection."""
+    _ALLOWED = {
+        "chatwoot_url", "chatwoot_token", "chatwoot_account_id",
+        "chatwoot_user_token", "chatwoot_user_id", "chatwoot_password_temp",
+        "webhook_id", "active", "evolution_instance",
+        "password_delivered_at", "connection_mode", "is_remote",
+    }
+    fields = {k: v for k, v in kwargs.items() if k in _ALLOWED}
+    if not fields:
+        return False
+    set_parts = []
+    vals = []
+    for fname in sorted(fields):
+        set_parts.append(f"{fname}=?")
+        vals.append(fields[fname])
+    vals.append(user_id)
+    sql = "UPDATE chatwoot_connections SET " + ", ".join(set_parts) + " WHERE user_id=?"
+    with get_db() as db:
+        db.execute(sql, vals)
+    return True
+
+
+def mark_chatwoot_password_delivered(user_id: str) -> bool:
+    """Flag that the one-time login/password has been shown to the customer
+    and clear the temporary password from storage."""
+    with get_db() as db:
+        db.execute(
+            "UPDATE chatwoot_connections SET password_delivered_at=?, chatwoot_password_temp='' WHERE user_id=?",
+            (time.time(), user_id),
+        )
+    return True
+
+
+def secrets_token_safe(nbytes: int = 24) -> str:
+    """Local helper to avoid importing secrets at module top (kept for clarity)."""
+    import secrets as _s
+    return _s.token_urlsafe(nbytes)
+
+
+# ── WhatsApp credentials (per-user, per-channel) ──────────────────
+
+def get_whatsapp_credentials(user_id: str) -> dict | None:
+    """Return the most recently updated WhatsApp credentials row for the user."""
+    if not user_id:
+        return None
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM whatsapp_credentials WHERE user_id=? ORDER BY updated_at DESC LIMIT 1",
+            (user_id,),
+        ).fetchone()
+        return dict(row) if row else None
+
+
+def save_whatsapp_credentials(user_id: str, ctype: str, data: dict) -> dict:
+    """Upsert WhatsApp credentials for a user. ctype = 'zapi' | 'meta'."""
+    if not user_id:
+        raise ValueError("user_id is required")
+    if ctype not in ("zapi", "meta"):
+        raise ValueError("ctype must be 'zapi' or 'meta'")
+    now = time.time()
+    existing = get_whatsapp_credentials(user_id)
+    payload = {
+        "instance_id": data.get("instance_id", ""),
+        "token": data.get("token", ""),
+        "phone_number_id": data.get("phone_number_id", ""),
+        "access_token": data.get("access_token", ""),
+        "status": data.get("status", "pending"),
+        "chatwoot_inbox_id": int(data.get("chatwoot_inbox_id", 0) or 0),
+        "webhook_token": data.get("webhook_token", ""),
+    }
+    with get_db() as db:
+        if existing:
+            db.execute(
+                """UPDATE whatsapp_credentials
+                      SET type=?, instance_id=?, token=?, phone_number_id=?, access_token=?,
+                          status=?, chatwoot_inbox_id=?, webhook_token=?, updated_at=?
+                    WHERE user_id=?""",
+                (ctype, payload["instance_id"], payload["token"], payload["phone_number_id"],
+                 payload["access_token"], payload["status"], payload["chatwoot_inbox_id"],
+                 payload["webhook_token"], now, user_id),
+            )
+        else:
+            db.execute(
+                """INSERT INTO whatsapp_credentials
+                      (id, user_id, type, instance_id, token, phone_number_id, access_token,
+                       status, created_at, updated_at, chatwoot_inbox_id, webhook_token)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (str(uuid.uuid4())[:12], user_id, ctype, payload["instance_id"], payload["token"],
+                 payload["phone_number_id"], payload["access_token"], payload["status"],
+                 now, now, payload["chatwoot_inbox_id"], payload["webhook_token"]),
+            )
+    return get_whatsapp_credentials(user_id)
+
+
+# ── Chatwoot bot configs (per-inbox, owned by user) ───────────────
+
+def list_chatwoot_bot_configs(user_id: str = "") -> list[dict]:
+    """List bot configs. If user_id is provided, scope to that user only."""
+    with get_db() as db:
+        if user_id:
+            rows = db.execute(
+                "SELECT * FROM chatwoot_bot_configs WHERE user_id=? ORDER BY id DESC",
+                (user_id,),
+            ).fetchall()
+        else:
+            rows = db.execute("SELECT * FROM chatwoot_bot_configs ORDER BY id DESC").fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_chatwoot_bot_config(inbox_id: int, user_id: str = "") -> dict | None:
+    """Get bot config for an inbox. If user_id given, enforce ownership."""
+    with get_db() as db:
+        if user_id:
+            row = db.execute(
+                "SELECT * FROM chatwoot_bot_configs WHERE inbox_id=? AND user_id=? LIMIT 1",
+                (int(inbox_id), user_id),
+            ).fetchone()
+        else:
+            row = db.execute(
+                "SELECT * FROM chatwoot_bot_configs WHERE inbox_id=? LIMIT 1",
+                (int(inbox_id),),
+            ).fetchone()
+        return dict(row) if row else None
+
+
+def upsert_chatwoot_bot_config(*, inbox_id: int, inbox_name: str = "",
+                                system_prompt: str = "", active: bool = True,
+                                model: str = "deepseek-chat",
+                                human_handoff: bool = True,
+                                user_id: str = "",
+                                max_tokens: int = 1024,
+                                context_size: int = 20) -> dict:
+    """Insert or update a per-inbox bot config row."""
+    if not inbox_id:
+        raise ValueError("inbox_id is required")
+    now = time.time()
+    with get_db() as db:
+        existing = db.execute(
+            "SELECT id FROM chatwoot_bot_configs WHERE inbox_id=? LIMIT 1",
+            (int(inbox_id),),
+        ).fetchone()
+        if existing:
+            db.execute(
+                """UPDATE chatwoot_bot_configs
+                      SET inbox_name=?, system_prompt=?, active=?, model=?,
+                          max_tokens=?, context_size=?, human_handoff=?, user_id=?, updated_at=?
+                    WHERE inbox_id=?""",
+                (inbox_name, system_prompt, 1 if active else 0, model,
+                 int(max_tokens), int(context_size), 1 if human_handoff else 0,
+                 user_id, now, int(inbox_id)),
+            )
+        else:
+            db.execute(
+                """INSERT INTO chatwoot_bot_configs
+                      (inbox_id, inbox_name, system_prompt, active, model,
+                       max_tokens, context_size, created_at, updated_at, human_handoff, user_id)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                (int(inbox_id), inbox_name, system_prompt, 1 if active else 0, model,
+                 int(max_tokens), int(context_size), now, now,
+                 1 if human_handoff else 0, user_id),
+            )
+    return get_chatwoot_bot_config(int(inbox_id))
+
+
 # Init on import
 init_db()
 

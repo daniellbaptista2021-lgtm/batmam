@@ -345,6 +345,55 @@ a{color:var(--p);text-decoration:none}
   .price-inner{padding:18px 18px 22px}
   .price{font-size:1.9rem}
 }
+/* ═══ PHONE MOCKUP (Tudo na palma da mao) ═══ */
+.phone-wrap{display:flex;align-items:center;justify-content:center}
+.phone-frame{
+  position:relative;width:100%;max-width:290px;margin:0 auto;
+  aspect-ratio:464/848;
+  background:linear-gradient(155deg,#2c2c3a 0%,#131318 100%);
+  border-radius:42px;padding:11px;
+  box-shadow:
+    inset 0 0 0 2px rgba(255,255,255,.035),
+    inset 0 2px 6px rgba(255,255,255,.06),
+    0 25px 55px rgba(0,0,0,.6),
+    0 0 80px rgba(155,89,252,.18)
+}
+.phone-frame::before{
+  content:'';position:absolute;top:15px;left:50%;transform:translateX(-50%);
+  width:86px;height:22px;background:#000;border-radius:18px;z-index:3;
+  box-shadow:inset 0 0 0 1px rgba(60,60,70,.6)
+}
+.phone-screen{
+  position:relative;width:100%;height:100%;
+  border-radius:32px;overflow:hidden;background:#000;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.9)
+}
+.phone-screen video{width:100%;height:100%;display:block;object-fit:cover}
+.phone-side{position:absolute;background:#0f0f15;z-index:1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}
+.phone-side.vu{left:-2px;top:21%;width:3px;height:48px;border-radius:2px 0 0 2px}
+.phone-side.vd{left:-2px;top:32%;width:3px;height:48px;border-radius:2px 0 0 2px}
+.phone-side.pw{right:-2px;top:25%;width:3px;height:72px;border-radius:0 2px 2px 0}
+@media (max-width:768px){.phone-frame{max-width:260px}}
+
+/* PiP button (Tudo na palma da mao) */
+.pip-btn{
+  position:absolute;top:-14px;right:-14px;width:40px;height:40px;border-radius:50%;
+  border:none;cursor:pointer;z-index:5;
+  background:linear-gradient(135deg,#9B59FC 0%,#4A9EFF 100%);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 18px rgba(155,89,252,.45),0 0 0 3px rgba(155,89,252,.15);
+  transition:transform .15s ease,box-shadow .15s ease
+}
+.pip-btn:hover{transform:scale(1.08);box-shadow:0 8px 22px rgba(155,89,252,.6),0 0 0 4px rgba(155,89,252,.22)}
+.pip-btn:active{transform:scale(.94)}
+.pip-btn svg{display:block}
+.pip-btn.tip::after{
+  content:'Abrir em janela flutuante';
+  position:absolute;bottom:-30px;right:0;white-space:nowrap;
+  background:#1a1a2a;color:#e8e8f0;font-size:.7rem;padding:4px 8px;border-radius:6px;
+  opacity:0;pointer-events:none;transition:opacity .15s
+}
+.pip-btn:hover.tip::after{opacity:1}
 </style>
 <link rel="stylesheet" href="/static/css/bg.css">
 <script defer src="/static/js/bg.js"></script>
@@ -417,7 +466,7 @@ a{color:var(--p);text-decoration:none}
         <li>Cria sites e landing pages e faz deploy autom&#225;tico</li>
         <li>Escreve e executa c&#243;digo sob demanda</li>
         <li>Cria fluxos n8n completos</li>
-        <li>Instala e configura Chatwoot na sua VPS</li>
+        <li>Instala e configura o CRM na sua VPS</li>
         <li>Conecta em qualquer API com seu token</li>
         <li>Roda comandos no terminal da sua VPS</li>
         <li>Gera banners e designs</li>
@@ -439,7 +488,7 @@ a{color:var(--p);text-decoration:none}
 
     <div class="uc-card">
       <div class="uc-icon" style="font-size:24px">&#128202;</div>
-      <h4>CRM via Chatwoot</h4>
+      <h4>CRM integrado</h4>
       <p>CRM profissional instalado na sua VPS em 5 minutos.</p>
       <ul class="pillar-list">
         <li>Instala&#231;&#227;o autom&#225;tica com 1 comando</li>
@@ -470,7 +519,7 @@ a{color:var(--p);text-decoration:none}
   <p class="sub">Do pedido ao resultado em menos de 2 minutos. Tudo pelo celular.</p>
   <div class="demo-frame" style="padding:0;background:#000;overflow:hidden">
     <video controls playsinline preload="metadata" poster="/static/brand/logo.png" style="width:100%;height:100%;display:block;object-fit:contain">
-      <source src="/static/videos/demo.mp4" type="video/mp4">
+      <source src="/static/videos/demo.mp4?v=2" type="video/mp4">
     </video>
   </div>
 </section>
@@ -535,10 +584,10 @@ a{color:var(--p);text-decoration:none}
   </div>
 </section>
 
-<!-- ════ CRM VIA CHATWOOT ════ -->
+<!-- ════ CRM INTEGRADO ════ -->
 <section class="section">
   <h2>CRM profissional &#8212; <span>instalado pra voc&#234;</span></h2>
-  <p class="sub">O Clow configura o Chatwoot na sua VPS com 1 comando. Voc&#234; gerencia pelo computador ou celular.</p>
+  <p class="sub">O Clow configura o CRM na sua VPS com 1 comando. Voc&#234; gerencia pelo computador ou celular.</p>
   <div class="features">
 
     <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div><div><h4>Instala&#231;&#227;o autom&#225;tica</h4><p>O Clow gera um script personalizado. Roda 1 comando na VPS e pronto: infraestrutura dedicada, banco, SSL — tudo configurado.</p></div></div>
@@ -551,10 +600,10 @@ a{color:var(--p);text-decoration:none}
 
     <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg></div><div><h4>Dashboard no Clow</h4><p>M&#233;tricas em tempo real sem sair do Clow: conversas por dia, por canal, hor&#225;rios de pico, satisfa&#231;&#227;o.</p></div></div>
 
-    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg></div><div><h4>App no celular</h4><p>Instale o PWA do Chatwoot no celular e atenda seus clientes de qualquer lugar, a qualquer hora.</p></div></div>
+    <div class="feat"><div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg></div><div><h4>App no celular</h4><p>Instale o app do CRM no celular e atenda seus clientes de qualquer lugar, a qualquer hora.</p></div></div>
 
   </div>
-  <p style="text-align:center;color:var(--tm);font-size:.78rem;margin-top:20px">O Chatwoot &#233; gratuito e roda na sua VPS. Custo: apenas a VPS (a partir de R$20/m&#234;s na Hostinger).</p>
+  <p style="text-align:center;color:var(--tm);font-size:.78rem;margin-top:20px">O CRM &#233; gratuito e roda na sua VPS. Custo: apenas a VPS (a partir de R$20/m&#234;s na Hostinger).</p>
 </section>
 
 <!-- ════ PARA QUEM ════ -->
@@ -617,10 +666,63 @@ a{color:var(--p);text-decoration:none}
   </div>
 </section>
 
+<!-- ════ FEATURES SHOWCASE (mobile) ════ -->
+<section class="demo">
+  <h2>Tudo na <span>palma da m&#227;o</span></h2>
+  <p class="sub">A plataforma completa no seu celular. Pe&#231;a, configure e automatize &#8212; tudo pelo chat.</p>
+  <div class="two-col" style="text-align:left">
+
+    <div class="two-col-features">
+      <div class="wf-item">
+        <h4>&#128241; App instal&#225;vel no celular</h4>
+        <p>PWA direto do navegador. Sem baixar da loja, sem atualiza&#231;&#227;o &#8212; abre como app nativo e fica no seu bolso.</p>
+      </div>
+      <div class="wf-item">
+        <h4>&#128187; Landing pages em 1 pedido</h4>
+        <p>Descreva seu neg&#243;cio pelo chat e receba a p&#225;gina pronta, responsiva e publicada online.</p>
+      </div>
+      <div class="wf-item">
+        <h4>&#9997;&#65039; Copywriting profissional</h4>
+        <p>Textos pra an&#250;ncio, e-mail, roteiro de v&#237;deo e proposta comercial &#8212; gerados em segundos.</p>
+      </div>
+      <div class="wf-item">
+        <h4>&#129302; Automa&#231;&#245;es sem c&#243;digo</h4>
+        <p>Conecte WhatsApp, planilhas, CRM e APIs em fluxos inteligentes &#8212; s&#243; descrevendo o que voc&#234; quer.</p>
+      </div>
+      <div class="wf-item">
+        <h4>&#128202; Dashboard unificado</h4>
+        <p>Leads, funil, conversas e campanhas num lugar s&#243;. Acompanhe tudo de qualquer dispositivo.</p>
+      </div>
+      <div class="wf-item">
+        <h4>&#128172; Tudo em portugu&#234;s, pelo chat</h4>
+        <p>Fale com o Clow como fala com um funcion&#225;rio. Ele executa e te mostra o resultado na hora.</p>
+      </div>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone-frame">
+        <button type="button" class="pip-btn tip" aria-label="Picture-in-Picture" onclick="clowTogglePip(this)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><rect x="12.5" y="12" width="7.5" height="5.5" rx="1" fill="currentColor" stroke="none"/></svg>
+        </button>
+
+        <span class="phone-side vu"></span>
+        <span class="phone-side vd"></span>
+        <span class="phone-side pw"></span>
+        <div class="phone-screen">
+          <video controls playsinline preload="metadata" poster="/static/videos/features-poster.jpg?v=1">
+            <source src="/static/videos/features.mp4?v=1" type="video/mp4">
+          </video>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
 <!-- ════ PRICING ════ -->
 <section class="section" id="planos">
   <h2>Escolha seu <span>plano</span></h2>
-  <p class="sub">Powered by DeepSeek V3.2 &#8226; At&#233; <strong style="color:var(--p)">90 milh&#245;es</strong> de tokens/m&#234;s &#8226; Sem custo extra por token &#8226; Cart&#227;o e boleto<br><span style="font-size:.85rem">Sem fidelidade &#8226; Cancele quando quiser</span></p>
+  <p class="sub">Powered by IA de &#250;ltima gera&#231;&#227;o &#8226; At&#233; <strong style="color:var(--p)">90 milh&#245;es</strong> de tokens/m&#234;s &#8226; Sem custo extra por token &#8226; Cart&#227;o e boleto<br><span style="font-size:.85rem">Sem fidelidade &#8226; Cancele quando quiser</span></p>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;max-width:1100px">
 
     <!-- ONE -->
@@ -631,7 +733,7 @@ a{color:var(--p);text-decoration:none}
       <div class="price-sub">1 WhatsApp com IA + plataforma</div>
       <div class="price-value">Ideal pra aut&#244;nomos e pequenos neg&#243;cios.</div>
       <ul class="price-list">
-        <li>DeepSeek V3.2 &#8212; IA mais avan&#231;ada do mercado</li>
+        <li>IA de &#250;ltima gera&#231;&#227;o &#8212; a mais avan&#231;ada do mercado</li>
         <li>Agente aut&#244;nomo com execu&#231;&#227;o real</li>
         <li><strong style="color:var(--t1)">30M tokens/m&#234;s</strong> <span style="font-size:.65rem;color:var(--tm)">(1M/dia)</span></li>
         <li>1.800 requisi&#231;&#245;es/dia</li>
@@ -654,13 +756,13 @@ a{color:var(--p);text-decoration:none}
       <div class="price-sub">2 WhatsApp + CRM + n8n</div>
       <div class="price-value">Atende mais, fatura mais, sem contratar.</div>
       <ul class="price-list">
-        <li>DeepSeek V3.2 com racioc&#237;nio aut&#244;nomo</li>
+        <li>IA de &#250;ltima gera&#231;&#227;o com racioc&#237;nio aut&#244;nomo</li>
         <li><strong style="color:var(--t1)">54M tokens/m&#234;s</strong> <span style="font-size:.65rem;color:var(--tm)">(1,8M/dia)</span></li>
         <li>2.880 requisi&#231;&#245;es/dia</li>
         <li class="wa-green">2 n&#250;meros de WhatsApp com IA</li>
-        <li>CRM Chatwoot instalado</li>
+        <li>CRM instalado</li>
         <li>Cria sites e faz deploy no Vercel</li>
-        <li>Instala Chatwoot na sua VPS</li>
+        <li>Instala o CRM na sua VPS</li>
         <li>8 fluxos n8n prontos</li>
         <li>Follow-up autom&#225;tico</li>
         <li>Relat&#243;rio di&#225;rio no WhatsApp</li>
@@ -678,7 +780,7 @@ a{color:var(--p);text-decoration:none}
       <div class="price-value">Equipe de at&#233; 5 pessoas. Opera&#231;&#227;o completa.</div>
       <ul class="price-list">
         <li>Tudo do SMART incluso</li>
-        <li>DeepSeek V3.2 + modo racioc&#237;nio avan&#231;ado</li>
+        <li>IA de &#250;ltima gera&#231;&#227;o + modo racioc&#237;nio avan&#231;ado</li>
         <li><strong style="color:var(--t1)">75M tokens/m&#234;s</strong> <span style="font-size:.65rem;color:var(--tm)">(2,5M/dia)</span></li>
         <li>4.800 requisi&#231;&#245;es/dia</li>
         <li class="wa-green">3 n&#250;meros de WhatsApp com IA</li>
@@ -701,7 +803,7 @@ a{color:var(--p);text-decoration:none}
       <div class="price-value">Opera&#231;&#227;o em escala. Estrutura empresarial.</div>
       <ul class="price-list">
         <li>Tudo do PROFISSIONAL incluso</li>
-        <li>DeepSeek V3.2 m&#225;xima performance</li>
+        <li>IA de &#250;ltima gera&#231;&#227;o m&#225;xima performance</li>
         <li><strong style="color:var(--t1)">90M tokens/m&#234;s</strong> <span style="font-size:.65rem;color:var(--tm)">(3M/dia)</span></li>
         <li>7.200 requisi&#231;&#245;es/dia</li>
         <li class="wa-green">5 n&#250;meros de WhatsApp com IA</li>
@@ -716,6 +818,77 @@ a{color:var(--p);text-decoration:none}
       <a href="/checkout/business" target="_blank" rel="noopener noreferrer" class="cta" style="width:100%;padding:10px;font-size:.82rem;display:block;text-align:center;text-decoration:none;color:inherit">Assinar BUSINESS</a>
     </div></div>
   </div>
+</section>
+
+<!-- ════ SONNET ADDON (pre-pago opcional) ════ -->
+<section class="section" id="sonnet-addon">
+  <h2>IA ainda <span>mais poderosa</span></h2>
+  <p class="sub">Cr&#233;dito pr&#233;-pago opcional para <strong style="color:var(--t1)">tarefas complexas</strong> &#8212; programa&#231;&#227;o, an&#225;lises profundas, documentos longos.<br>
+    <span style="font-size:.85rem;color:var(--tm)">Complementa o plano principal &#8226; Cr&#233;ditos com 90 dias de validade &#8226; Cobran&#231;a por mensagem real</span></p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;max-width:900px">
+
+    <!-- BASICO -->
+    <div class="price-wrap"><div class="price-inner">
+      <div class="plan-label">Cr&#233;dito pr&#233;-pago</div>
+      <div class="plan-title">&#8734; Sonnet B&#225;sico</div>
+      <div class="price">R$&nbsp;150<small>/pacote</small></div>
+      <div class="price-sub">R$ 80 em cr&#233;ditos &#8226; 90 dias</div>
+      <div class="price-value">Pra experimentar e uso leve.</div>
+      <ul class="price-list">
+        <li>IA premium com racioc&#237;nio profundo</li>
+        <li><strong style="color:var(--t1)">80 mensagens/dia</strong></li>
+        <li>400 mensagens/semana</li>
+        <li>Janelas rolantes (reset autom&#225;tico)</li>
+        <li>Valida 90 dias a partir da compra</li>
+        <li>Sem mensalidade &#8212; pague uma vez</li>
+      </ul>
+      <a href="/app/settings#sonnet-addons" class="cta" style="width:100%;padding:10px;font-size:.82rem;display:block;text-align:center;text-decoration:none;color:inherit">Contratar B&#225;sico</a>
+    </div></div>
+
+    <!-- MEDIO -->
+    <div class="price-wrap popular">
+      <div class="popular-badge">&#9733; Melhor custo-benef&#237;cio</div>
+      <div class="price-inner">
+      <div class="plan-label">Cr&#233;dito pr&#233;-pago</div>
+      <div class="plan-title">&#8734; Sonnet M&#233;dio</div>
+      <div class="price">R$&nbsp;250<small>/pacote</small></div>
+      <div class="price-sub">R$ 180 em cr&#233;ditos &#8226; 90 dias</div>
+      <div class="price-value">Pra quem usa quase todo dia.</div>
+      <ul class="price-list">
+        <li>IA premium com racioc&#237;nio profundo</li>
+        <li><strong style="color:var(--t1)">200 mensagens/dia</strong></li>
+        <li>1.000 mensagens/semana</li>
+        <li>2,5&#215; mais cr&#233;dito que o B&#225;sico</li>
+        <li>Valida 90 dias a partir da compra</li>
+        <li>Sem mensalidade &#8212; pague uma vez</li>
+      </ul>
+      <a href="/app/settings#sonnet-addons" class="cta" style="width:100%;padding:10px;font-size:.82rem;display:block;text-align:center;text-decoration:none;color:inherit">Contratar M&#233;dio</a>
+    </div></div>
+
+    <!-- PRO -->
+    <div class="price-wrap"><div class="price-inner">
+      <div class="plan-label">Cr&#233;dito pr&#233;-pago</div>
+      <div class="plan-title">&#8734; Sonnet Pro</div>
+      <div class="price">R$&nbsp;350<small>/pacote</small></div>
+      <div class="price-sub">R$ 280 em cr&#233;ditos &#8226; 90 dias</div>
+      <div class="price-value">Uso intenso, volume alto.</div>
+      <ul class="price-list">
+        <li>IA premium com racioc&#237;nio profundo</li>
+        <li><strong style="color:var(--t1)">350 mensagens/dia</strong></li>
+        <li>1.750 mensagens/semana</li>
+        <li>3,5&#215; mais cr&#233;dito que o B&#225;sico</li>
+        <li>Valida 90 dias a partir da compra</li>
+        <li>Sem mensalidade &#8212; pague uma vez</li>
+      </ul>
+      <a href="/app/settings#sonnet-addons" class="cta" style="width:100%;padding:10px;font-size:.82rem;display:block;text-align:center;text-decoration:none;color:inherit">Contratar Pro</a>
+    </div></div>
+
+  </div>
+
+  <p style="text-align:center;color:var(--tm);font-size:.75rem;margin-top:24px;max-width:720px;margin-left:auto;margin-right:auto">
+    &#9888;&#65039; O Sonnet &#233; um <strong>addon complementar</strong> ao seu plano. Recomendado quando voc&#234; precisa de uma IA mais robusta pra tarefas que a IA do seu plano principal n&#227;o resolve t&#227;o bem.
+  </p>
 </section>
 
 <!-- ════ AUTOMACOES / FLUXOS ════ -->
@@ -774,7 +947,7 @@ a{color:var(--p);text-decoration:none}
 
     <details class="faq-item">
       <summary>O que &#233; o Clow?</summary>
-      <p>O Clow &#233; um agente de IA aut&#244;nomo que executa tarefas reais pela sua empresa. Diferente de chatbots comuns, ele cria sites, escreve c&#243;digo, instala sistemas, cria fluxos de automa&#231;&#227;o e conecta APIs &#8212; tudo pelo chat, em portugu&#234;s. Powered by DeepSeek V3.2, o modelo open-source mais avan&#231;ado do mundo.</p>
+      <p>O Clow &#233; um agente de IA aut&#244;nomo que executa tarefas reais pela sua empresa. Diferente de chatbots comuns, ele cria sites, escreve c&#243;digo, instala sistemas, cria fluxos de automa&#231;&#227;o e conecta APIs &#8212; tudo pelo chat, em portugu&#234;s. Powered by IA de &#250;ltima gera&#231;&#227;o, uma das mais avan&#231;adas do mundo.</p>
     </details>
 
     <details class="faq-item">
@@ -788,23 +961,23 @@ a{color:var(--p);text-decoration:none}
     </details>
 
     <details class="faq-item">
-      <summary>O que e o Chatwoot?</summary>
-      <p>Chatwoot e um CRM gratuito e completo pra gerenciar conversas. O Clow instala na sua VPS em 5 minutos. Voce atende pelo computador ou celular. WhatsApp, Instagram, Facebook, Email &#8212; tudo num lugar so.</p>
+      <summary>O que e o CRM?</summary>
+      <p>&#201; um CRM gratuito e completo pra gerenciar conversas. O Clow instala na sua VPS em 5 minutos. Voce atende pelo computador ou celular. WhatsApp, Instagram, Facebook, Email &#8212; tudo num lugar so.</p>
     </details>
 
     <details class="faq-item">
-      <summary>Preciso de uma VPS pro Chatwoot?</summary>
+      <summary>Preciso de uma VPS pro CRM?</summary>
       <p>Recomendamos sim, a partir de R$20/mes (Hostinger, Contabo). Tambem funciona no seu computador com infraestrutura dedicada Desktop. O Clow faz a instalacao pra voce com 1 comando.</p>
     </details>
 
     <details class="faq-item">
-      <summary>O CRM Chatwoot est&#225; inclu&#237;do?</summary>
-      <p>Sim, a partir do plano SMART (R$ 177,90/m&#234;s). O Clow instala o Chatwoot na sua VPS automaticamente com 1 comando. Voc&#234; gerencia todas as conversas pelo computador ou celular.</p>
+      <summary>O CRM est&#225; inclu&#237;do?</summary>
+      <p>Sim, a partir do plano SMART (R$ 177,90/m&#234;s). O Clow instala o CRM na sua VPS automaticamente com 1 comando. Voc&#234; gerencia todas as conversas pelo computador ou celular.</p>
     </details>
 
     <details class="faq-item">
       <summary>Tem custo por mensagem ou por token de IA?</summary>
-      <p>N&#227;o. Powered by DeepSeek V3.2 incluso no plano. Voc&#234; paga mensalidade fixa sem surpresas na fatura.</p>
+      <p>N&#227;o. Powered by IA de &#250;ltima gera&#231;&#227;o inclusa no plano. Voc&#234; paga mensalidade fixa sem surpresas na fatura.</p>
     </details>
 
     <details class="faq-item">
@@ -829,7 +1002,7 @@ a{color:var(--p);text-decoration:none}
 <footer class="footer">
   <img src="/static/brand/logo.png" alt="Clow">
   <p style="font-size:1rem;font-weight:600;color:var(--t1);margin-bottom:4px">Clow AI</p>
-  <p style="font-size:.82rem;color:var(--tm);margin-bottom:20px">O agente de IA que trabalha pela sua empresa. Powered by DeepSeek V3.2.</p>
+  <p style="font-size:.82rem;color:var(--tm);margin-bottom:20px">O agente de IA que trabalha pela sua empresa. Powered by IA de &#250;ltima gera&#231;&#227;o.</p>
   <p><a href="/termos" style="color:var(--tm)">Termos de Uso</a> &#8226; <a href="/privacidade" style="color:var(--tm)">Pol&#237;tica de Privacidade</a></p>
 </footer>
 
