@@ -1455,13 +1455,20 @@ def _send_outgoing_to_zapi(body: dict, user_id: str = "") -> dict:
         content = (body.get("content") or "").strip()
         if not content:
             return {"ok": False, "error": "empty_content"}
-        # Acha instancia Z-API ativa do user
+        # Acha instancia Z-API ativa do user. get_instances() retorna list de dict (com tokens mascarados),
+        # entao buscamos o objeto completo via get_instance(id, tenant_id).
         from ..whatsapp_agent import get_wa_manager
-        instances = [i for i in get_wa_manager().get_instances(user_id or "") if getattr(i, "active", True) and (getattr(i, "provider", "zapi") == "zapi")]
-        if not instances:
+        mgr = get_wa_manager()
+        dict_instances = mgr.get_instances(user_id or "")
+        zapi_dicts = [i for i in dict_instances if i.get("active", True) and i.get("provider", "zapi") == "zapi"]
+        if not zapi_dicts:
             logger.warning("_send_outgoing_to_zapi: user %s sem instancia Z-API ativa", user_id)
             return {"ok": False, "error": "no_zapi_instance"}
-        inst = instances[0]
+        inst_id = zapi_dicts[0].get("id")
+        inst = mgr.get_instance(inst_id, user_id or "") if user_id else None
+        if not inst:
+            logger.warning("_send_outgoing_to_zapi: nao foi possivel carregar instancia %s do user %s", inst_id, user_id)
+            return {"ok": False, "error": "instance_load_failed"}
         instance_id = inst.zapi_instance_id
         token = inst.zapi_token
         client_token = getattr(inst, "zapi_client_token", "") or os.getenv("ZAPI_CLIENT_TOKEN", "")
