@@ -60,7 +60,7 @@ PACKAGES = {
         "daily_msgs": 80,
         "weekly_msgs": 400,
         "stripe_price_id": (config.STRIPE_PRICE_SONNET_BASICO or "price_1TNxlWD0ns2mNERrohLc9LKT"),
-        "description": "R$80 em tokens GLM-5.1 — 80 msgs/dia, 400/semana — 90 dias",
+        "description": "80 mensagens/dia, 400/semana — válido 90 dias. Ideal para programação leve, análises pontuais e documentos curtos.",
     },
     "medio": {
         "id": "medio",
@@ -70,7 +70,7 @@ PACKAGES = {
         "daily_msgs": 200,
         "weekly_msgs": 1000,
         "stripe_price_id": (config.STRIPE_PRICE_SONNET_MEDIO or "price_1TNxlXD0ns2mNERrCmbZypMl"),
-        "description": "R$180 em tokens GLM-5.1 — 200 msgs/dia, 1000/semana — 90 dias",
+        "description": "200 mensagens/dia, 1.000/semana — válido 90 dias. Para uso frequente em programação, análises e documentos longos.",
     },
     "pro": {
         "id": "pro",
@@ -80,7 +80,7 @@ PACKAGES = {
         "daily_msgs": 350,
         "weekly_msgs": 1750,
         "stripe_price_id": (config.STRIPE_PRICE_SONNET_PRO_PACK or "price_1TNxlYD0ns2mNERrwVYckz1t"),
-        "description": "R$280 em tokens GLM-5.1 — 350 msgs/dia, 1750/semana — 90 dias",
+        "description": "350 mensagens/dia, 1.750/semana — válido 90 dias. Volume alto para programação intensa e projetos complexos.",
     },
 }
 
@@ -349,13 +349,24 @@ def create_checkout_session(user_id: str, email: str, package_id: str, success_u
         mode="payment",
         payment_method_types=["card"],
         customer_email=email,
-        line_items=[{"price": pkg["stripe_price_id"], "quantity": 1}],
+        line_items=[{
+            "price_data": {
+                "currency": "brl",
+                "unit_amount": int(round(pkg["price_brl"] * 100)),
+                "product_data": {
+                    "name": pkg["name"],
+                    "description": pkg["description"],
+                },
+            },
+            "quantity": 1,
+        }],
         success_url=success_url,
         cancel_url=cancel_url,
         metadata={
             "user_id": user_id,
             "package_id": package_id,
             "product_type": "sonnet_credit",
+            "stripe_price_id_ref": pkg["stripe_price_id"],
         },
     )
     return {"id": session.id, "url": session.url}
