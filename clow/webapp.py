@@ -12,6 +12,8 @@ Features:
 
 from __future__ import annotations
 import logging
+from .security import install_redact_filter as _install_redact_filter
+_install_redact_filter()
 import os
 import time
 from pathlib import Path

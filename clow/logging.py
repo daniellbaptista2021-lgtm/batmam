@@ -19,6 +19,7 @@ Configuracao em settings.json:
 """
 
 from __future__ import annotations
+from .security.redact import redact as _redact
 import json
 import logging
 import logging.handlers

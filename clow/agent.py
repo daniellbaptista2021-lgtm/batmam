@@ -32,6 +32,7 @@ from .hooks import HookRunner
 from .mcp import MCPManager
 from .plugins import PluginManager
 from .logging import log_action
+from .security.redact import redact as _redact
 from .checkpoints import save_checkpoint, extract_target_files, is_write_tool_call
 from .learner import load_learned_context
 from .orchestrator import (
@@ -1387,6 +1388,12 @@ class Agent:
         for tc_data in sequential_calls:
             results.append(self._execute_single_tool(tc_data, turn))
 
+        # redact all outputs — never let credentials leak back to LLM or logs
+        for _tr in results:
+            try:
+                _tr.output = _redact(_tr.output)
+            except Exception:
+                pass
         return results
 
     def _execute_single_tool(self, tc_data: dict, turn: Turn) -> ToolResult:
