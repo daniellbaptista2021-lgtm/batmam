@@ -289,6 +289,9 @@
 
   async function purchaseSonnet(packageId) {
     const btn = document.querySelector(`.sonnet-pkg[data-pkg="${packageId}"] .sonnet-pkg-btn`);
+    // Pre-abre aba sincronicamente dentro do click handler — evita popup blocker.
+    // Em PWA standalone, abre no browser do sistema (Safari/Chrome), nao no app.
+    const stripeWin = window.open('about:blank', '_blank');
     if (btn) { btn.disabled = true; btn.textContent = 'Processando...'; }
 
     try {
@@ -300,12 +303,25 @@
       });
       const data = await r.json();
       if (data.checkout_url) {
-        window.location.href = data.checkout_url;
+        if (stripeWin && !stripeWin.closed) {
+          stripeWin.location.href = data.checkout_url;
+          stripeWin.focus();
+          showToast('Abrindo pagamento em nova aba...');
+        } else {
+          // Pop-up bloqueado: tenta de novo (usuario pode liberar manualmente)
+          const w2 = window.open(data.checkout_url, '_blank');
+          if (!w2) {
+            showToast('Pop-ups bloqueados. Permita pop-ups deste site e tente novamente.');
+          }
+        }
+        if (btn) { btn.disabled = false; btn.textContent = 'Comprar'; }
       } else {
+        if (stripeWin && !stripeWin.closed) stripeWin.close();
         showToast('Erro: ' + (data.message || 'Falha ao criar checkout'));
         if (btn) { btn.disabled = false; btn.textContent = 'Comprar'; }
       }
     } catch (e) {
+      if (stripeWin && !stripeWin.closed) stripeWin.close();
       showToast('Erro de conexão. Tente novamente.');
       if (btn) { btn.disabled = false; btn.textContent = 'Comprar'; }
     }
