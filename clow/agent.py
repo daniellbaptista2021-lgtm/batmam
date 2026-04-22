@@ -42,6 +42,46 @@ from . import config
 # Tools que sao read-only e podem rodar em paralelo
 READ_ONLY_TOOLS = {"read", "glob", "grep", "web_search", "web_fetch", "task_list", "task_get"}
 
+# Tools restritas a admin — cliente NAO pode usar.
+# Essas tools permitem ler/escrever no servidor inteiro, executar shell, acessar credenciais,
+# ou interagir com integracoes da conta admin (Meta Ads, Canva, Supabase, etc.).
+ADMIN_ONLY_TOOLS = frozenset({
+    # Filesystem / shell
+    "read", "write", "edit", "bash", "glob", "grep", "notebook_edit",
+    # HTTP arbitrario (pode extrair credenciais)
+    "http_request", "web_fetch",
+    # Integracoes da conta admin (acesso as chaves do .env)
+    "meta_ads", "canva_tools", "supabase_query",
+    # Infra / deploy
+    "docker_manage", "ssh_vps", "deploy_tools", "git_ops", "git_advanced",
+    "cron_tools", "remote_trigger", "config_tool", "mcp_tools",
+    # DB / workflows do admin
+    "database_tools", "n8n_workflow",
+    # Captura / browser
+    "snip_tool", "browser", "scraper",
+    # Sub-agent (poderia ser usado pra spawnar com outras tools)
+    "agent",
+})
+
+
+# ── Security helper: is this user_id an admin? Cached per-process. ──
+_admin_cache: dict[str, bool] = {}
+def _is_user_admin(user_id: str | None) -> bool:
+    if not user_id:
+        return False  # no user_id = treat as non-admin (safer)
+    if user_id in _admin_cache:
+        return _admin_cache[user_id]
+    try:
+        from .database import get_db
+        with get_db() as _db:
+            row = _db.execute("SELECT is_admin FROM users WHERE id=?", (user_id,)).fetchone()
+        result = bool(row and row[0])
+    except Exception:
+        result = False
+    _admin_cache[user_id] = result
+    return result
+
+
 # Padroes para auto-memory
 CORRECTION_PATTERNS = [
     r"(?:nao|n\u00e3o)\s+(?:fa\u00e7a|faz|faca)\s+(?:isso|isto)",
@@ -1243,6 +1283,19 @@ class Agent:
         # Step 4: Cap at 42 tools max (potencia maxima)
         available = set(self.registry.names())
         final = allowed & available
+
+        # Step 4b: SECURITY — bloqueia admin-only tools pra usuarios nao-admin.
+        # Critico: sem isso o cliente pode ler /root/.clow/app/.env, usar meta_ads
+        # do admin, executar bash, etc.
+        if not _is_user_admin(self.user_id):
+            blocked = final & ADMIN_ONLY_TOOLS
+            if blocked:
+                log_action(
+                    "security",
+                    f"blocked admin tools for non-admin user_id={self.user_id}: {sorted(blocked)}",
+                    session_id=self.session.id,
+                )
+            final = final - ADMIN_ONLY_TOOLS
         if len(final) > 42:
             # Prioritize core tools + most recently used
             core = final & set(self.CORE_TOOLS)
@@ -1264,7 +1317,38 @@ class Agent:
 
     def _execute_tool_calls(self, tool_calls_data: list[dict], turn: Turn) -> list[ToolResult]:
         """Executa tool calls — paralelo para read-only, sequencial para write."""
-        results: list[ToolResult] = []
+        # SECURITY: deny admin-only tools for non-admin users (defense in depth)
+        if not _is_user_admin(self.user_id):
+            filtered = []
+            for tc in tool_calls_data:
+                if tc.get("name") in ADMIN_ONLY_TOOLS:
+                    log_action(
+                        "security_denied",
+                        f"non-admin user_id={self.user_id} tried tool={tc.get('name')}",
+                        session_id=self.session.id,
+                    )
+                    results_deny = ToolResult(
+                        call_id=tc.get("call_id", ""),
+                        name=tc.get("name", ""),
+                        status="denied",
+                        output=f"[SECURITY] Tool '{tc.get('name')}' requires admin access. Access denied.",
+                    )
+                    # Will be added below
+                    filtered.append((tc, results_deny))
+                else:
+                    filtered.append((tc, None))
+            # Separate: those with deny result go straight to results
+            pre_denied: list[ToolResult] = []
+            allowed: list[dict] = []
+            for tc, deny in filtered:
+                if deny is not None:
+                    pre_denied.append(deny)
+                else:
+                    allowed.append(tc)
+            tool_calls_data = allowed
+            results: list[ToolResult] = list(pre_denied)
+        else:
+            results: list[ToolResult] = []
 
         # Separa read-only das write tools
         parallel_calls: list[dict] = []
