@@ -106,15 +106,19 @@ def test_zapi_connection(instance_id: str, token: str, client_token: str = "") -
         return {"ok": False, "error": "Informe o Client-Token (Account Security Token). Pegue em app.z-api.io > Account > Security Token."}
     url = f"https://api.z-api.io/instances/{instance_id}/token/{token}/status"
     result = _api("GET", url, headers={"Client-Token": client_token})
-    raw_err = (result.get("error") or "").lower()
-    if "instance not found" in raw_err:
+    # _api retorna {"error": int_code, "message": body_str} em HTTP error
+    err_code = result.get("error")
+    msg = str(result.get("message") or "").lower()
+    if "instance not found" in msg:
         return {"ok": False, "error": "Instance ID nao encontrado. Confira no painel app.z-api.io > Instances. Atencao: confunde-se O com 0."}
-    if "client-token" in raw_err or "client_token" in raw_err:
+    if "client-token" in msg or "client_token" in msg:
         return {"ok": False, "error": "Client-Token invalido. Pegue o correto em app.z-api.io > Account > Security Token."}
-    if "unauthorized" in raw_err or "401" in raw_err or "403" in raw_err:
+    if err_code in (401, 403) or "unauthorized" in msg:
         return {"ok": False, "error": "Token da instancia invalido ou sem permissao."}
-    if result.get("error"):
-        return {"ok": False, "error": "Z-API: " + str(result["error"])}
+    if err_code:
+        # outras falhas — mostra mensagem da Z-API se houver
+        body = result.get("message") or str(err_code)
+        return {"ok": False, "error": "Z-API (" + str(err_code) + "): " + str(body)[:200]}
     connected = bool(result.get("connected", False))
     if not connected:
         return {"ok": False, "status": "disconnected", "error": "Instancia existe mas o WhatsApp nao esta pareado. Escaneie o QR no painel da Z-API.", "raw": result}
