@@ -1272,6 +1272,12 @@ def register_whatsapp_agent_routes(app) -> None:
         message = body.get("body", "") or (body.get("text", {}).get("message", "") if isinstance(body.get("text"), dict) else body.get("text", ""))
         from_me = body.get("fromMe", False)
         is_group = body.get("isGroup", False)
+        # Extrai info do contato do payload Z-API
+        sender_name = (body.get("senderName") or body.get("chatName") or body.get("pushName") or "").strip()
+        # Telefones do Brasil: Z-API as vezes manda sem nome quando o contato nunca foi salvo
+        if sender_name and sender_name == phone:
+            sender_name = ""
+        sender_photo = body.get("senderPhoto") or body.get("photo") or ""
 
         if from_me or is_group or not message or not phone:
             return _JR({"status": "ignored"})
@@ -1291,7 +1297,7 @@ def register_whatsapp_agent_routes(app) -> None:
             cw_token = conn.get("chatwoot_user_token") or conn["chatwoot_token"]
             client = ChatwootClient(conn["chatwoot_url"], conn["chatwoot_account_id"], cw_token)
             # Find or create contact + conversation
-            contact = client.find_or_create_contact(phone)
+            contact = client.find_or_create_contact(phone, name=sender_name, avatar_url=sender_photo)
             if contact and contact.get("id"):
                 convo = client.find_or_create_conversation(contact["id"], creds["chatwoot_inbox_id"])
                 if convo and convo.get("id"):

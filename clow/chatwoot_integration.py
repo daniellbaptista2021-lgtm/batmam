@@ -48,22 +48,48 @@ class ChatwootClient:
         contacts = result.get("payload", [])
         return contacts[0] if contacts else None
 
-    def create_contact(self, phone: str, name: str = "") -> dict:
+    def create_contact(self, phone: str, name: str = "", avatar_url: str = "") -> dict:
         """Create a new contact."""
         if not name:
             name = f"WhatsApp {phone[-4:]}"
-        return self._api("POST", "contacts", {
+        payload = {
             "name": name,
             "phone_number": f"+{phone.lstrip('+')}",
             "identifier": phone,
-        })
+        }
+        if avatar_url:
+            payload["avatar_url"] = avatar_url
+        return self._api("POST", "contacts", payload)
 
-    def find_or_create_contact(self, phone: str, name: str = "") -> dict:
-        """Find existing contact or create new one."""
+    def update_contact(self, contact_id: int, name: str = "", avatar_url: str = "") -> dict:
+        """Update a contact's name and/or avatar."""
+        payload = {}
+        if name:
+            payload["name"] = name
+        if avatar_url:
+            payload["avatar_url"] = avatar_url
+        if not payload:
+            return {}
+        return self._api("PATCH", f"contacts/{contact_id}", payload)
+
+    def find_or_create_contact(self, phone: str, name: str = "", avatar_url: str = "") -> dict:
+        """Find existing contact or create new one. If existing has generic 'WhatsApp XXXX' name,
+        update with the real name when provided."""
         contact = self.find_contact_by_phone(phone)
         if contact:
+            # Se tem nome real novo e o atual e generico, atualiza
+            current_name = (contact.get("name") or "").strip()
+            is_generic = current_name.startswith("WhatsApp ") and current_name[-4:].isdigit()
+            if name and (is_generic or not current_name):
+                try:
+                    upd = self.update_contact(contact["id"], name=name, avatar_url=avatar_url)
+                    updated = upd.get("payload") or upd
+                    if updated and updated.get("id"):
+                        return updated
+                except Exception:
+                    pass
             return contact
-        return self.create_contact(phone, name)
+        return self.create_contact(phone, name, avatar_url)
 
     def get_conversations_for_contact(self, contact_id: int) -> list:
         """Get all conversations for a contact."""
