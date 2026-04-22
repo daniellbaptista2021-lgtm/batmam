@@ -7,7 +7,7 @@
 // - Bypass total de qualquer path do Chatwoot/CRM
 // ============================================================
 
-const CACHE_NAME = 'system-clow-v9-selfheal';
+const CACHE_NAME = 'system-clow-v10-support';
 const urlsToCache = [
   '/static/icon.svg',
   '/static/manifest.json'
