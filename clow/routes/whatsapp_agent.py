@@ -1018,8 +1018,32 @@ def register_whatsapp_agent_routes(app) -> None:
     # ── Chatwoot Webhook (multi-tenant) ─────────────────────────
 
     def _handle_chatwoot_event(body: dict, user_id: str = ""):
-        """Core logic for processing a Chatwoot webhook event. Returns status string."""
+        """Core logic for processing a Chatwoot webhook event. Returns status string.
+        Dedup: Chatwoot frequentemente dispara o mesmo webhook 2-5x (event_id repetido).
+        Sem dedup, o bot responde multiplas vezes a mesma mensagem -> loop."""
         event = body.get("event", "")
+
+        # Anti-loop: dedup por (event + id) com TTL 120s
+        try:
+            ev_id = body.get("id") or body.get("message", {}).get("id") or body.get("conversation", {}).get("id")
+            if ev_id:
+                import time as _t
+                cache = getattr(_handle_chatwoot_event, "_seen", None)
+                if cache is None:
+                    cache = {}
+                    _handle_chatwoot_event._seen = cache
+                now = _t.time()
+                # purge >120s
+                for k in list(cache.keys()):
+                    if now - cache[k] > 120:
+                        del cache[k]
+                key = f"{event}:{ev_id}"
+                if key in cache:
+                    logger.info("[chatwoot-webhook] dedup skip %s", key)
+                    return "duplicate"
+                cache[key] = now
+        except Exception:
+            pass
 
         if event == "conversation_updated":
             convo = body.get("conversation", {})
@@ -1035,7 +1059,8 @@ def register_whatsapp_agent_routes(app) -> None:
                         client = get_chatwoot_client("global")
                     if client and "bot" not in labels:
                         from ..chatwoot_integration import reactivate_bot
-                        reactivate_bot(client, convo_id, send_greeting=True)
+                        # send_greeting=False: re-ativa label sem enviar greeting de novo (evita loop em conversation_updated recorrente)
+                        reactivate_bot(client, convo_id, send_greeting=False)
                 except Exception as e:
                     logger.warning(f"Chatwoot webhook reactivate_bot error: {e}")
             return "ok"
