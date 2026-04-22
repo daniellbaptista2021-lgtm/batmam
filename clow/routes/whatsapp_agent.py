@@ -1156,8 +1156,8 @@ def register_whatsapp_agent_routes(app) -> None:
         if from_me or is_group or not message or not phone:
             return _JR({"status": "ignored"})
 
-        from ..database import get_chatwoot_connection_by_token, get_whatsapp_credentials
-        conn = get_chatwoot_connection_by_token(user_token)
+        from ..database import get_chatwoot_connection_by_webhook, get_whatsapp_credentials
+        conn = get_chatwoot_connection_by_webhook(user_token)
         if not conn:
             return _JR({"status": "invalid_token"}, status_code=404)
 

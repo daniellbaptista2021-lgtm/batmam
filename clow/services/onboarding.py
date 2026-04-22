@@ -136,7 +136,7 @@ def register_zapi_webhook(instance_id: str, token: str, client_token: str, webho
     if not (instance_id and token and client_token and webhook_url):
         return {"ok": False, "error": "missing_args"}
     url = f"https://api.z-api.io/instances/{instance_id}/token/{token}/update-webhook-received"
-    result = _api("POST", url, data={"value": webhook_url}, headers={"Client-Token": client_token, "Content-Type": "application/json"})
+    result = _api("PUT", url, data={"value": webhook_url}, headers={"Client-Token": client_token, "Content-Type": "application/json"})
     if result.get("error"):
         return {"ok": False, "error": result["error"]}
     return {"ok": True, "webhook_url": webhook_url}
@@ -193,14 +193,28 @@ def register_chatwoot_webhook(chatwoot_url: str, chatwoot_token: str,
 
 def register_bot_webhook(chatwoot_url: str, chatwoot_token: str,
                           account_id: int, webhook_token: str) -> dict:
-    """Register Clow bot webhook in user's Chatwoot account."""
+    """Register Clow bot webhook in user's Chatwoot account (idempotente)."""
     clow_url = os.getenv("CLOW_EXTERNAL_URL", "https://clow.pvcorretor01.com.br")
     webhook_url = f"{clow_url}/api/v1/chatwoot/webhook/{webhook_token}"
     url = f"{chatwoot_url}/api/v1/accounts/{account_id}/webhooks"
-    return _api("POST", url, {
+    # Check if already exists (evita 422 "Url has already been taken")
+    try:
+        existing = _api("GET", url, headers={"api_access_token": chatwoot_token})
+        hooks = existing.get("payload", {}).get("webhooks", []) or existing.get("data", [])
+        for h in hooks:
+            if webhook_token in (h.get("url") or "") or (h.get("url") == webhook_url):
+                return {"ok": True, "webhook_id": h.get("id"), "already_existed": True}
+    except Exception:
+        pass
+    result = _api("POST", url, {
         "url": webhook_url,
         "subscriptions": ["message_created", "conversation_updated"],
     }, {"api_access_token": chatwoot_token})
+    # Tolera 422 com mensagem de duplicata (race condition ou check-miss)
+    err = str(result.get("message") or result.get("error") or "").lower()
+    if "already been taken" in err or "already_been_taken" in err:
+        return {"ok": True, "already_existed": True, "note": "422 duplicate tolerated"}
+    return result
 
 
 # ── Full Onboarding Flow ─────────────────────────────────────
