@@ -699,21 +699,21 @@ def save_whatsapp_credentials(user_id: str, ctype: str, data: dict) -> dict:
         if existing:
             db.execute(
                 """UPDATE whatsapp_credentials
-                      SET type=?, instance_id=?, token=?, phone_number_id=?, access_token=?,
+                      SET type=?, instance_id=?, token=?, client_token=?, phone_number_id=?, access_token=?,
                           status=?, chatwoot_inbox_id=?, webhook_token=?, updated_at=?
                     WHERE user_id=?""",
-                (ctype, payload["instance_id"], payload["token"], payload["phone_number_id"],
-                 payload["access_token"], payload["status"], payload["chatwoot_inbox_id"],
-                 payload["webhook_token"], now, user_id),
+                (ctype, payload["instance_id"], payload["token"], payload["client_token"],
+                 payload["phone_number_id"], payload["access_token"], payload["status"],
+                 payload["chatwoot_inbox_id"], payload["webhook_token"], now, user_id),
             )
         else:
             db.execute(
                 """INSERT INTO whatsapp_credentials
-                      (id, user_id, type, instance_id, token, phone_number_id, access_token,
+                      (id, user_id, type, instance_id, token, client_token, phone_number_id, access_token,
                        status, created_at, updated_at, chatwoot_inbox_id, webhook_token)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (str(uuid.uuid4())[:12], user_id, ctype, payload["instance_id"], payload["token"],
-                 payload["phone_number_id"], payload["access_token"], payload["status"],
+                 payload["client_token"], payload["phone_number_id"], payload["access_token"], payload["status"],
                  now, now, payload["chatwoot_inbox_id"], payload["webhook_token"]),
             )
     return get_whatsapp_credentials(user_id)

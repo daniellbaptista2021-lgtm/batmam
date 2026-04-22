@@ -247,6 +247,26 @@ def register_onboarding_routes(app) -> None:
             "webhook_token": conn["webhook_token"] if conn else "",
         })
 
+        # Cria tambem WhatsAppInstance (filesystem) pra aparecer em /app/whatsapp
+        try:
+            import time as _t
+            from ..whatsapp_agent import get_wa_manager as _wa
+            _wa().create_instance(
+                tenant_id=uid,
+                name=("WhatsApp Z-API" if ctype == "zapi" else "WhatsApp Meta"),
+                zapi_instance_id=(body.get("instance_id", "") if ctype == "zapi" else ("meta-" + body.get("phone_number_id", ""))),
+                zapi_token=(body.get("token", "") if ctype == "zapi" else "meta"),
+                system_prompt="",
+                provider=ctype,
+                meta_phone_number_id=body.get("phone_number_id", ""),
+                meta_access_token=body.get("access_token", ""),
+                meta_verify_token=("clow_" + str(int(_t.time()))),
+                zapi_client_token=body.get("client_token", ""),
+            )
+        except Exception as _e:
+            import logging as _lg
+            _lg.getLogger("clow.onboarding").warning("wa_manager.create_instance failed in onboarding: %s", _e)
+
         # Auto-registra webhook na Z-API (cliente nao precisa configurar manualmente)
         if ctype == "zapi" and webhook_url_info and body.get("client_token"):
             try:
