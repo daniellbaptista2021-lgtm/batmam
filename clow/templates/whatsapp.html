@@ -253,6 +253,14 @@ a{color:var(--p);text-decoration:none}
 
       <!-- Z-API fields -->
       <div id="zapiFields" style="display:none">
+        <div class="field" style="background:rgba(155,89,252,.06);border:1px solid rgba(155,89,252,.18);border-radius:10px;padding:12px;margin-bottom:12px">
+          <label style="color:#9B59FC;font-weight:700">URL do Webhook (cole na Z-API)</label>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <input type="text" id="waZapiWebhookUrl" readonly style="flex:1;font-family:monospace;font-size:11px" value="Carregando...">
+            <button type="button" onclick="copyWaZapiWebhook()" style="padding:8px 12px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:11px;font-weight:700">Copiar</button>
+          </div>
+          <div class="hint" style="font-size:11px;margin-top:6px">Cole no painel Z-API &rarr; sua instancia &rarr; Webhooks &rarr; "URL para recebimento". Sistema tambem configura automaticamente apos salvar (se Client-Token estiver correto).</div>
+        </div>
         <div class="field">
           <label>Instance ID</label>
           <input id="newZapiId" placeholder="Seu Instance ID da Z-API">
@@ -342,7 +350,7 @@ function selectProv(p,el){
   el.classList.add('selected');
   $('metaFields').style.display=p==='meta'?'block':'none';
   $('evoFields').style.display=p==='evolution'?'block':'none';
-  $('zapiFields').style.display=p==='zapi'?'block':'none';
+  $('zapiFields').style.display=p==='zapi'?'block':'none'; if(p==='zapi'){ try{ loadWaWebhookUrl(); }catch(e){} }
 }
 
 /* Load instances */
@@ -575,6 +583,25 @@ async function saveNewInst(){
 
 /* Init */
 loadInstances();
+
+async function loadWaWebhookUrl(){
+  try{
+    const r = await fetch('/api/v1/onboarding/webhook-info',{credentials:'same-origin'});
+    const d = await r.json();
+    const f = document.getElementById('waZapiWebhookUrl');
+    if(d && d.ok && d.zapi_webhook){ if(f) f.value = d.zapi_webhook; }
+    else { if(f) f.value = 'Webhook indisponivel - faca o onboarding primeiro.'; }
+  }catch(e){ const f = document.getElementById('waZapiWebhookUrl'); if(f) f.value = 'Erro: ' + e.message; }
+}
+function copyWaZapiWebhook(){
+  const f = document.getElementById('waZapiWebhookUrl');
+  if(!f || !f.value || f.value.indexOf('http') !== 0) return;
+  f.select(); document.execCommand('copy');
+  const old = event.target.textContent;
+  event.target.textContent = 'Copiado!';
+  setTimeout(function(){event.target.textContent = old}, 1500);
+}
+
 </script>
 </body>
 </html>

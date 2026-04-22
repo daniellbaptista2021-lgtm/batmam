@@ -194,6 +194,7 @@ function setStep(n){
 
 function selectProvider(type){
   selectedType=type;
+  if(type==='zapi'){ try{ loadWebhookUrl(); }catch(e){} }
   document.getElementById('provZapi').classList.toggle('selected',type==='zapi');
   document.getElementById('provMeta').classList.toggle('selected',type==='meta');
   document.getElementById('formZapi').classList.toggle('active',type==='zapi');
