@@ -823,6 +823,68 @@ window.resetCrmPassword = async function(){
   } catch(e){ alert('Erro: ' + e.message); }
 };
 
+
+// SUPORTE WHATSAPP — modal
+window.openSupportModal = function(){
+  var m = document.getElementById('supportModal');
+  if (m) { m.style.display='flex'; return; }
+  m = document.createElement('div');
+  m.id = 'supportModal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(10,10,20,.85);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;font-family:inherit';
+  m.innerHTML =
+    '<div style="background:#0a0a14;border:1px solid rgba(155,89,252,.3);border-radius:16px;padding:28px;max-width:480px;width:100%;color:#e8e4f0;box-shadow:0 30px 80px rgba(0,0,0,.7)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          '<div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">ℹ</div>' +
+          '<h3 style="font-size:18px;font-weight:700;margin:0;background:linear-gradient(135deg,#9B59FC,#4A9EFF);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Suporte Clow</h3>' +
+        '</div>' +
+        '<button onclick="closeSupportModal()" style="background:rgba(255,255,255,.08);border:none;color:#e8e4f0;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px;line-height:1">×</button>' +
+      '</div>' +
+      '<p style="font-size:13px;color:#9898B8;margin-bottom:18px;line-height:1.5">Descreva sua dificuldade abaixo. Te respondemos pelo WhatsApp em instantes.</p>' +
+      '<textarea id="supportMsg" placeholder="Ex: Nao consigo conectar meu WhatsApp Z-API..." oninput="onSupportInput()" style="width:100%;min-height:120px;padding:12px;background:rgba(0,0,0,.4);border:1px solid rgba(155,89,252,.2);border-radius:10px;color:#fff;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;outline:none"></textarea>' +
+      '<div id="supportError" style="color:#ff6b6b;font-size:12px;margin-top:8px;display:none"></div>' +
+      '<button id="supportSendBtn" onclick="sendSupportMsg()" disabled style="width:100%;margin-top:14px;padding:13px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:14px;cursor:pointer;opacity:0.5;pointer-events:none;transition:opacity .2s">Enviar para o Suporte</button>' +
+    '</div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ var t=document.getElementById('supportMsg'); if(t) t.focus(); }, 50);
+};
+
+window.closeSupportModal = function(){
+  var m = document.getElementById('supportModal');
+  if (m) m.remove();
+};
+
+window.onSupportInput = function(){
+  var t = document.getElementById('supportMsg');
+  var b = document.getElementById('supportSendBtn');
+  var err = document.getElementById('supportError');
+  if (err) err.style.display = 'none';
+  var v = (t && t.value || '').trim();
+  var ok = v.length >= 5;
+  if (b) {
+    b.disabled = !ok;
+    b.style.opacity = ok ? '1' : '0.5';
+    b.style.pointerEvents = ok ? 'auto' : 'none';
+  }
+};
+
+window.sendSupportMsg = function(){
+  var t = document.getElementById('supportMsg');
+  var err = document.getElementById('supportError');
+  var v = (t && t.value || '').trim();
+  if (v.length < 5) {
+    if (err) { err.textContent = 'Descreva sua dificuldade com pelo menos 5 caracteres.'; err.style.display = 'block'; }
+    return;
+  }
+  var who = (window._clowUserName || window._clowUserEmail || 'Usuario Clow');
+  var email = (window._clowUserEmail || '');
+  var text = 'Ola, sou ' + who + (email ? ' (' + email + ')' : '') + '.\nSou cliente Clow e preciso de ajuda:\n\n' + v;
+  var phone = '5521990423520';
+  var url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(text);
+  window.open(url, '_blank', 'noopener');
+  closeSupportModal();
+};
+
 </script>
 
 </body>
