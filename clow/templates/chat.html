@@ -324,24 +324,9 @@
     var _cwPoll=setInterval(function(){
       if(cwCheckLoaded() || _cwLoaded){clearInterval(_cwPoll)}
     },500);
-    // SSO: tenta pegar URL de login automatico via SSO
-    // Se obtem sso_url, iframe abre DIRETO na conta do user (sem digitar email/senha)
-    var targetUrl = CHATWOOT_URL;
-    try{
-      var ssoR = await fetch('/api/v1/addons/crm/sso-url',{credentials:'same-origin'});
-      if(ssoR.ok){
-        var ssoD = await ssoR.json();
-        if(ssoD.ok && ssoD.sso_url){
-          targetUrl = ssoD.sso_url;
-        }else if(window._cwIsAdmin === false){
-          targetUrl = '/app/login';
-        }
-      }else if(window._cwIsAdmin === false){
-        targetUrl = '/app/login';
-      }
-    }catch(e){
-      if(window._cwIsAdmin === false){ targetUrl = '/app/login'; }
-    }
+    // SSO-BOUNCE: faz flow SSO server-side, seta cookie de sessao same-origin no Clow
+    // e redireciona o iframe direto pro dashboard. Persiste login entre reaberturas do modal.
+    var targetUrl = '/api/v1/addons/crm/sso-bounce';
     if(f.src==='about:blank'||f.getAttribute('src')==='about:blank'||!f.src){
       f.src=targetUrl;
     }else{
