@@ -103,21 +103,7 @@ def register_addon_routes(app) -> None:
             ).fetchone()
 
         if not row:
-            # ─── Fallback just-in-time: provisiona Chatwoot pra users antigos / signup que falhou ───
-            try:
-                from ..services.onboarding import provision_user
-                prov = provision_user(sess["user_id"], sess.get("email", ""), sess.get("name", ""))
-                if prov.get("error"):
-                    return _JR({"error": f"Falha ao provisionar CRM: {prov.get('error')}"}, status_code=500)
-                with get_db() as db:
-                    row = db.execute(
-                        "SELECT chatwoot_url, chatwoot_account_id, chatwoot_user_id FROM chatwoot_connections WHERE user_id=? AND active=1 ORDER BY connected_at DESC LIMIT 1",
-                        (sess["user_id"],),
-                    ).fetchone()
-                if not row:
-                    return _JR({"error": "CRM provisionado mas connection nao gravada"}, status_code=500)
-            except Exception as _e:
-                return _JR({"error": f"Erro no provision just-in-time: {_e}"}, status_code=500)
+            return _JR({"error": "CRM nao configurado. Complete o onboarding primeiro."}, status_code=404)
 
         cw_url, account_id, cw_user_id = row[0], row[1], row[2]
         if not cw_user_id:
