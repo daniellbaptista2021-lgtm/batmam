@@ -37,6 +37,40 @@ _debounce_timers: dict[str, threading.Timer] = {}
 _debounce_lock = threading.Lock()
 DEBOUNCE_SECONDS = 8
 
+# ── Non-text fallback (audio/imagem/video/documento/sticker) ───────────
+# Aplicado a TODAS as instancias (Z-API e Meta), independente de system_prompt.
+# Rate-limit por telefone pra nao spammar se cliente mandar varias midias seguidas.
+NON_TEXT_REPLY = (
+    "Oi! Ainda nao consigo entender audios, imagens, videos ou documentos 😊 "
+    "Me manda sua duvida *por texto* que te respondo aqui na hora!"
+)
+NON_TEXT_COOLDOWN_SECONDS = 180
+_non_text_cooldown: dict[str, float] = {}
+_non_text_lock = threading.Lock()
+
+def _should_send_non_text_reply(instance_id: str, phone: str) -> bool:
+    """Rate-limit: so envia o aviso de 'so entendo texto' a cada NON_TEXT_COOLDOWN_SECONDS por telefone."""
+    now = time.time()
+    key = f"{instance_id}:{phone}"
+    with _non_text_lock:
+        last = _non_text_cooldown.get(key, 0.0)
+        if now - last < NON_TEXT_COOLDOWN_SECONDS:
+            return False
+        _non_text_cooldown[key] = now
+    return True
+
+def _send_non_text_reply(inst, phone: str) -> None:
+    """Envia mensagem padrao pedindo texto. Silencioso em caso de erro."""
+    try:
+        from ..whatsapp_agent import get_wa_manager
+        mgr = get_wa_manager()
+        if getattr(inst, "provider", "zapi") == "meta":
+            mgr._send_meta(inst, phone, NON_TEXT_REPLY)
+        else:
+            mgr._send_zapi(inst, phone, NON_TEXT_REPLY)
+    except Exception as e:
+        logger.warning(f"non-text reply send failed: inst={getattr(inst, 'id', '?')} phone={phone[-4:] if phone else '?'} err={e}")
+
 
 
 import os as _os_meta
@@ -669,7 +703,7 @@ def register_whatsapp_agent_routes(app) -> None:
 
         if mode == "subscribe":
             from ..whatsapp_agent import get_wa_manager
-            inst = get_wa_manager().get_instance(connection_id)
+            inst = get_wa_manager().get_instance(connection_id, allow_webhook=True)
             if inst and inst.meta_verify_token == token:
                 from fastapi.responses import PlainTextResponse
                 return PlainTextResponse(challenge)
@@ -709,7 +743,7 @@ def register_whatsapp_agent_routes(app) -> None:
                 return _JR({"status": "no_messages"})
 
             from ..whatsapp_agent import get_wa_manager
-            inst = get_wa_manager().get_instance(connection_id)
+            inst = get_wa_manager().get_instance(connection_id, allow_webhook=True)
             if not inst or not inst.active or inst.provider != "meta":
                 return _JR({"status": "inactive"})
 
@@ -719,8 +753,11 @@ def register_whatsapp_agent_routes(app) -> None:
 
                 if msg_type == "text":
                     text = msg.get("text", {}).get("body", "")
-                elif msg_type in ("image", "audio", "video", "document"):
-                    text = f"[{msg_type} recebido]"
+                elif msg_type in ("image", "audio", "video", "document", "sticker", "voice"):
+                    # Non-text: canned reply direto, sem LLM (economiza tokens + resposta consistente)
+                    if phone and getattr(inst, "auto_reply_enabled", True) and _should_send_non_text_reply(connection_id, phone):
+                        _send_non_text_reply(inst, phone)
+                    continue
                 else:
                     continue
 
@@ -793,23 +830,30 @@ def register_whatsapp_agent_routes(app) -> None:
         msg_type = body.get("type", "")
         moment = body.get("momment", 0) or body.get("moment", 0)
 
-        # Filters
-        if from_me or is_group or msg_type != "chat" or not message or not phone:
+        # Filter junk: own messages, groups, missing sender
+        if from_me or is_group or not phone:
             return _JR({"status": "ignored"})
 
-        # Skip old messages (> 5 min)
-        if moment and (time.time() - moment) > 300:
-            return _JR({"status": "too_old"})
-
-        # Validate instance exists
+        # Validate instance exists (allow_webhook: rota publica sem tenant_id)
         from ..whatsapp_agent import get_wa_manager
-        inst = get_wa_manager().get_instance(instance_id)
+        inst = get_wa_manager().get_instance(instance_id, allow_webhook=True)
         if not inst or not inst.active:
             return _JR({"status": "inactive"})
 
         # Validate Z-API instance ID matches
         if body.get("instanceId") and body["instanceId"] != inst.zapi_instance_id:
             return _JR({"status": "instance_mismatch"})
+
+        # Non-text (audio, imagem, video, documento, sticker, ptt, etc):
+        # canned reply pedindo texto, sem passar pro LLM.
+        if msg_type != "chat" or not message:
+            if getattr(inst, "auto_reply_enabled", True) and _should_send_non_text_reply(instance_id, phone):
+                _send_non_text_reply(inst, phone)
+            return _JR({"status": "non_text_handled"})
+
+        # Skip old messages (> 5 min)
+        if moment and (time.time() - moment) > 300:
+            return _JR({"status": "too_old"})
 
         # Debounce: accumulate messages for 8 seconds
         key = f"{instance_id}:{phone}"
