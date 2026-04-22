@@ -186,14 +186,6 @@ def register_addon_routes(app) -> None:
         token = _os.getenv("CHATWOOT_PLATFORM_TOKEN", "")
         if not (cw_url and token):
             return _HR("Config servidor ausente.", status_code=500)
-        # Email do user
-        try:
-            user = get_user_by_id(sess["user_id"])
-            email = (user or {}).get("email") or sess.get("email", "")
-        except Exception:
-            email = sess.get("email", "")
-        if not email:
-            return _HR("Email nao encontrado.", status_code=500)
         # 1) Gera SSO token fresco
         try:
             r = _ur.Request(
@@ -205,13 +197,15 @@ def register_addon_routes(app) -> None:
         except Exception as e:
             return _HR("Falha SSO Platform: " + str(e)[:120], status_code=500)
         sso_url = sso_data.get("url", "")
-        # Extract sso_auth_token param
+        # Extract sso_auth_token AND email from the URL returned by Platform API
+        # (the email in the URL is the Chatwoot user email, which may differ from Clow session email)
         from urllib.parse import urlparse, parse_qs
         parsed = urlparse(sso_url)
         q = parse_qs(parsed.query)
         sso_auth_token = (q.get("sso_auth_token") or [""])[0]
-        if not sso_auth_token:
-            return _HR("Nao extraiu sso_auth_token.", status_code=500)
+        email = (q.get("email") or [""])[0]
+        if not sso_auth_token or not email:
+            return _HR("SSO token/email nao extraidos.", status_code=500)
         # 2) POST /auth/sign_in com sso_auth_token — devolve headers de auth
         try:
             body = _j.dumps({"email": email, "sso_auth_token": sso_auth_token}).encode("utf-8")
