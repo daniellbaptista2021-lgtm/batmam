@@ -43,44 +43,13 @@ from . import config
 # Tools que sao read-only e podem rodar em paralelo
 READ_ONLY_TOOLS = {"read", "glob", "grep", "web_search", "web_fetch", "task_list", "task_get"}
 
-# Tools restritas a admin — cliente NAO pode usar.
-# Essas tools permitem ler/escrever no servidor inteiro, executar shell, acessar credenciais,
-# ou interagir com integracoes da conta admin (Meta Ads, Canva, Supabase, etc.).
-ADMIN_ONLY_TOOLS = frozenset({
-    # Filesystem / shell
-    "read", "write", "edit", "bash", "glob", "grep", "notebook_edit",
-    # HTTP arbitrario (pode extrair credenciais)
-    "http_request", "web_fetch",
-    # Integracoes da conta admin (acesso as chaves do .env)
-    "meta_ads", "canva_tools", "supabase_query",
-    # Infra / deploy
-    "docker_manage", "ssh_vps", "deploy_tools", "git_ops", "git_advanced",
-    "cron_tools", "remote_trigger", "config_tool", "mcp_tools",
-    # DB / workflows do admin
-    "database_tools", "n8n_workflow",
-    # Captura / browser
-    "snip_tool", "browser", "scraper",
-    # Sub-agent (poderia ser usado pra spawnar com outras tools)
-    "agent",
-})
-
-
-# ── Security helper: is this user_id an admin? Cached per-process. ──
-_admin_cache: dict[str, bool] = {}
-def _is_user_admin(user_id: str | None) -> bool:
-    if not user_id:
-        return False  # no user_id = treat as non-admin (safer)
-    if user_id in _admin_cache:
-        return _admin_cache[user_id]
-    try:
-        from .database import get_db
-        with get_db() as _db:
-            row = _db.execute("SELECT is_admin FROM users WHERE id=?", (user_id,)).fetchone()
-        result = bool(row and row[0])
-    except Exception:
-        result = False
-    _admin_cache[user_id] = result
-    return result
+# ADMIN_ONLY_TOOLS, _is_user_admin movidos pra clow/security/roles.py
+# (single source of truth — usados aqui via re-export pra manter compat)
+from .security.roles import (
+    ADMIN_ONLY_TOOLS,
+    is_user_admin as _is_user_admin,
+    filter_tools_for_role as _filter_tools_for_role,
+)
 
 
 # Padroes para auto-memory
@@ -1263,7 +1232,19 @@ class Agent:
             return []
 
         if not config.CLOW_TOOL_PRUNING:
-            return self.registry.openai_tools()
+            # SECURITY: mesmo sem pruning, NUNCA expor admin-only pra tenant_user.
+            all_tools = self.registry.openai_tools()
+            if not _is_user_admin(self.user_id):
+                all_tools = [
+                    t for t in all_tools
+                    if (t.get('function', {}).get('name') or t.get('name')) not in ADMIN_ONLY_TOOLS
+                ]
+                log_action(
+                    'security',
+                    f'CLOW_TOOL_PRUNING=False mas tenant_user — admin-only removidas',
+                    session_id=self.session.id,
+                )
+            return all_tools
 
         # Step 1: Core tools (9 — always available)
         allowed = set(self.CORE_TOOLS)

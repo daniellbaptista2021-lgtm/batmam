@@ -588,9 +588,10 @@ def register_chat_routes(app: FastAPI) -> None:
                     user_id=user_id,
                 )
             else:
-                # Usuarios tem acesso total as ferramentas de criacao
-                # (bash, write, edit, deploy, etc) — forca total para produtividade.
-                # Sessoes sao efemeras (limpas diariamente).
+                # Tenant_user: filtragem de tools admin-only e feita em
+                # agent.py:_get_active_tools + _execute_tool_calls.
+                # auto_approve=True so afeta confirmacao interativa — a
+                # seguranca real vem do allowlist em security/roles.py.
                 agent = Agent(
                     cwd=os.getcwd(), model=model_id, api_key=user_api_key or None,
                     auto_approve=True, session=session_obj,
