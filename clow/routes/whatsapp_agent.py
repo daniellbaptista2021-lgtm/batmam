@@ -1068,7 +1068,14 @@ def register_whatsapp_agent_routes(app) -> None:
         if event == "message_created":
             msg_type = body.get("message_type")
             # OUTGOING: agent humano respondeu no Chatwoot -> enviar pro WhatsApp via Z-API
+            # Skip para account_id=1 (Daniel admin) — bridge.js ja cuida dessa conta
             if msg_type == "outgoing":
+                _inbox = (body.get("inbox") or {})
+                _acct = (body.get("account") or {})
+                _acct_id = _acct.get("id") or (body.get("conversation") or {}).get("account_id") or _inbox.get("account_id")
+                if _acct_id == 1:
+                    logger.info("[chatwoot-webhook] outgoing da account 1 (admin) — bridge.js cuida, skip")
+                    return "outgoing_skipped_account_1"
                 _send_outgoing_to_zapi(body, user_id=user_id)
                 return "outgoing_sent"
             if msg_type != "incoming":
