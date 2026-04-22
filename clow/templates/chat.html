@@ -52,7 +52,7 @@
 
     <!-- CRM (abre Chatwoot embutido em modal) -->
     <div class="sb-sec" id="crmBlock" style="padding:0 12px">
-      <button type="button" onclick="openChatwootModal()" aria-label="Abrir CRM Chatwoot" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(155,89,252,.06);border:1px solid rgba(155,89,252,.12);border-radius:10px;color:#9B59FC;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;transition:all .2s" onmouseover="this.style.background='rgba(155,89,252,.12)'" onmouseout="this.style.background='rgba(155,89,252,.06)'">
+      <button type="button" onclick="openChatwootInNewTab(this)" aria-label="Abrir CRM Chatwoot em nova aba" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(155,89,252,.06);border:1px solid rgba(155,89,252,.12);border-radius:10px;color:#9B59FC;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;transition:all .2s" onmouseover="this.style.background='rgba(155,89,252,.12)'" onmouseout="this.style.background='rgba(155,89,252,.06)'">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9B59FC" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
         Ver CRM completo
       </button>
@@ -382,6 +382,40 @@
     }
   });
 })();
+
+// === CRM em NOVA ABA via SSO (cookies first-party funcionam, sem iframe) ===
+window.openChatwootInNewTab = async function(btn){
+  // Pre-abre aba sincronicamente no click pra escapar do popup blocker
+  var w = window.open('about:blank','_blank');
+  if(btn){ var oldT = btn.textContent; btn.textContent = 'Abrindo CRM...'; btn.style.opacity='.7'; setTimeout(function(){ btn.textContent=oldT; btn.style.opacity=''; }, 3000); }
+  try{
+    var r = await fetch('/api/v1/addons/crm/sso-url',{credentials:'same-origin'});
+    if(!r.ok){
+      if(w && !w.closed) w.close();
+      alert('Nao foi possivel abrir o CRM agora. Tente novamente em alguns segundos.');
+      return;
+    }
+    var d = await r.json();
+    if(!d.ok || !d.sso_url){
+      if(w && !w.closed) w.close();
+      alert('CRM ainda nao foi provisionado. Recarregue a pagina e tente de novo.');
+      return;
+    }
+    // Usa a URL ORIGINAL do Chatwoot (ads.pvcorretor01) NAO a reescrita /cw/ —
+    // cookies first-party funcionam normalmente em aba nova.
+    var ssoUrl = d.sso_url || '';
+    if(ssoUrl.indexOf('/cw/') !== -1){
+      ssoUrl = ssoUrl.replace('https://clow.pvcorretor01.com.br/cw', 'https://ads.pvcorretor01.com.br');
+    }
+    if(w && !w.closed){ w.location.href = ssoUrl; w.focus(); }
+    else { window.open(ssoUrl,'_blank'); }
+  }catch(e){
+    if(w && !w.closed) w.close();
+    console.error('openChatwootInNewTab',e);
+    alert('Erro de conexao ao abrir o CRM.');
+  }
+};
+
 </script>
 <div id="sysClowModal" role="dialog" aria-modal="true" aria-label="System Clow">
   <div class="sc-box">
