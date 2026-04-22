@@ -471,6 +471,13 @@ class Agent:
                 if user_instructions:
                     dynamic_parts.append("\n# Instrucoes do Usuario\n" + user_instructions)
 
+        # SECURITY: tenant_user (nao-admin) recebe guardrail explicito
+        # antes do prompt de negocio. Defesa em profundidade junto com
+        # filtro de tools (security/roles.py).
+        if self.user_id and not _is_user_admin(self.user_id):
+            from .security.roles import TENANT_USER_GUARDRAIL
+            dynamic_parts.append(TENANT_USER_GUARDRAIL)
+
         self._system_dynamic = "\n".join(dynamic_parts)
 
         full_system = system_content
