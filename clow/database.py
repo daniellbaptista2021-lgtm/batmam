@@ -797,3 +797,94 @@ _admin_pass = os.getenv("CLOW_ADMIN_PASSWORD", "")
 if _admin_email and _admin_pass and not get_user_by_email(_admin_email):
     create_user(_admin_email, _admin_pass, "Admin")
 del _admin_email, _admin_pass
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Delete user com cascade (descobre tabelas com user_id automaticamente)
+# Tambem chama Chatwoot Platform API pra deletar a Account isolada se existir
+# ═══════════════════════════════════════════════════════════════════════════
+
+def delete_user_cascade(user_id: str) -> dict:
+    """Deleta user + todos os dados relacionados em tabelas com coluna user_id.
+    Tambem deleta a Account isolada no Chatwoot via Platform API.
+    Retorna {ok, tables_cleaned, chatwoot_account_deleted}.
+    """
+    import os, urllib.request, urllib.error, json as _j, logging
+    log = logging.getLogger("clow.database")
+    if not user_id:
+        return {"ok": False, "error": "user_id vazio"}
+
+    cleaned = []
+    cw_account_id = None
+    cw_deleted = False
+
+    with get_db() as db:
+        # Captura chatwoot_account_id antes de deletar (pra limpar no Chatwoot)
+        try:
+            row = db.execute(
+                "SELECT chatwoot_account_id FROM chatwoot_connections WHERE user_id=? LIMIT 1",
+                (user_id,)
+            ).fetchone()
+            if row and row[0]:
+                cw_account_id = int(row[0])
+        except Exception as _e:
+            log.warning("delete_user_cascade: lookup chatwoot_account failed: %s", _e)
+
+        # Descobre todas as tabelas que tem coluna user_id
+        try:
+            tables = [r[0] for r in db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            ).fetchall()]
+        except Exception as _e:
+            return {"ok": False, "error": "list_tables_failed: " + str(_e)}
+
+        for t in tables:
+            if t == "users":
+                continue
+            try:
+                cols = [c[1] for c in db.execute("PRAGMA table_info(" + t + ")").fetchall()]
+            except Exception:
+                continue
+            if "user_id" in cols:
+                try:
+                    cur = db.execute("DELETE FROM " + t + " WHERE user_id=?", (user_id,))
+                    if cur.rowcount > 0:
+                        cleaned.append({"table": t, "rows": cur.rowcount})
+                except Exception as _e:
+                    log.warning("delete_user_cascade: failed to clean %s: %s", t, _e)
+
+        # Deleta o user
+        try:
+            cur = db.execute("DELETE FROM users WHERE id=?", (user_id,))
+            db.commit()
+            if cur.rowcount == 0:
+                return {"ok": False, "error": "user_not_found", "tables_cleaned": cleaned}
+        except Exception as _e:
+            return {"ok": False, "error": "delete_user_failed: " + str(_e), "tables_cleaned": cleaned}
+
+    # Cleanup remoto: Chatwoot Platform API DELETE /platform/api/v1/accounts/{id}
+    if cw_account_id and cw_account_id != 1:
+        cw_url = os.getenv("CHATWOOT_URL", "").rstrip("/")
+        token = os.getenv("CHATWOOT_PLATFORM_TOKEN", "")
+        if cw_url and token:
+            try:
+                req = urllib.request.Request(
+                    cw_url + "/platform/api/v1/accounts/" + str(cw_account_id),
+                    method="DELETE",
+                    headers={"api_access_token": token},
+                )
+                with urllib.request.urlopen(req, timeout=15) as resp:
+                    if resp.status in (200, 204):
+                        cw_deleted = True
+            except urllib.error.HTTPError as _e:
+                log.warning("delete_user_cascade: chatwoot account DELETE %s -> %s", cw_account_id, _e.code)
+            except Exception as _e:
+                log.warning("delete_user_cascade: chatwoot account DELETE exception: %s", _e)
+
+    return {
+        "ok": True,
+        "tables_cleaned": cleaned,
+        "chatwoot_account_id": cw_account_id,
+        "chatwoot_account_deleted": cw_deleted,
+    }
+

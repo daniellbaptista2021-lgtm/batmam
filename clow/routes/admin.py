@@ -76,6 +76,25 @@ def register_admin_routes(app: FastAPI) -> None:
             logger.exception(f"admin.create_user: provision Chatwoot exception user={user['id']}: {_e}")
         return JSONResponse({"ok": True, "user": user})
 
+
+    @app.delete("/api/v1/admin/users/{user_id}")
+    async def api_admin_delete_user(user_id: str, request: Request):
+        sess = _get_user_session(request)
+        if not sess or not sess.get("is_admin"):
+            return JSONResponse({"error": "Acesso negado"}, status_code=403)
+        # Defesa: nunca permite admin deletar a si mesmo nem o user_id=1
+        if user_id == sess.get("user_id"):
+            return JSONResponse({"error": "Voce nao pode apagar sua propria conta admin"}, status_code=400)
+        from ..database import delete_user_cascade
+        try:
+            result = delete_user_cascade(user_id)
+        except Exception as _e:
+            logger.exception("api_admin_delete_user exception: %s", _e)
+            return JSONResponse({"error": str(_e)}, status_code=500)
+        if not result.get("ok"):
+            return JSONResponse(result, status_code=400)
+        return JSONResponse(result)
+
     # ── API: Missions ────────────────────────────────────────────────
 
     @app.post("/api/v1/missions/plan")
