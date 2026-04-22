@@ -50,9 +50,9 @@
 
     <div class="sb-sec"><button class="sb-new" onclick="newConv()" aria-label="Iniciar nova conversa">+ Nova Conversa</button></div>
 
-    <!-- CRM (abre Chatwoot embutido em modal) -->
+    <!-- CRM Clow (abre embutido em modal) -->
     <div class="sb-sec" id="crmBlock" style="padding:0 12px">
-      <button type="button" onclick="openChatwootModal()" aria-label="Abrir CRM Chatwoot" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(155,89,252,.06);border:1px solid rgba(155,89,252,.12);border-radius:10px;color:#9B59FC;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;transition:all .2s" onmouseover="this.style.background='rgba(155,89,252,.12)'" onmouseout="this.style.background='rgba(155,89,252,.06)'">
+      <button type="button" onclick="openChatwootModal()" aria-label="Abrir CRM Clow" style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(155,89,252,.06);border:1px solid rgba(155,89,252,.12);border-radius:10px;color:#9B59FC;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left;transition:all .2s" onmouseover="this.style.background='rgba(155,89,252,.12)'" onmouseout="this.style.background='rgba(155,89,252,.06)'">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9B59FC" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
         Ver CRM completo
       </button><button type="button" onclick="showCrmCreds()" aria-label="Mostrar login e senha do CRM" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 14px;margin-top:6px;background:rgba(74,158,255,.06);border:1px solid rgba(74,158,255,.15);border-radius:10px;color:#4A9EFF;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;text-align:left"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a4 4 0 014-4h8a4 4 0 014 4v2"/></svg>Ver login/senha do CRM</button>
@@ -176,31 +176,31 @@
   #chatwootModal #chatwootFrame{padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:content-box}
 }
 </style>
-<div id="chatwootModal" role="dialog" aria-modal="true" aria-label="CRM Chatwoot">
+<div id="chatwootModal" role="dialog" aria-modal="true" aria-label="CRM Clow">
   <div class="cw-box">
     <div class="cw-bar">
       <button type="button" class="cw-back" onclick="closeChatwootModal()" aria-label="Voltar ao Clow">&larr; Clow</button>
-      <div class="cw-ttl"><span class="cw-dot"></span>CRM Chatwoot</div>
+      <div class="cw-ttl"><span class="cw-dot"></span>CRM Clow</div>
       <button type="button" class="cw-x" onclick="closeChatwootModal()" aria-label="Fechar">&times;</button>
     </div>
     <div class="cw-body">
       <div class="cw-loader" id="cwLoader">
         <div class="cw-spin"></div>
-        <div class="cw-msg" id="cwLoaderMsg">Carregando CRM Chatwoot...</div>
+        <div class="cw-msg" id="cwLoaderMsg">Carregando CRM Clow...</div>
         <div class="cw-fallback" id="cwFallback">
           <a href="/cw/" target="_blank" rel="noopener">Abrir em nova aba &rarr;</a>
-          <div class="cw-hint">O navegador bloqueou o carregamento do CRM dentro do Clow.</div>
+          <div class="cw-hint">O navegador bloqueou o carregamento do CRM Clow.</div>
           <button type="button" data-clow-reset-btn onclick="clowForceReset()" style="margin-top:14px;padding:10px 20px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">↻ Atualizar CRM (limpar cache do app)</button>
           <div class="cw-hint" style="font-size:11px;color:#505068;margin-top:8px">Use este botao se o CRM nao abrir mesmo apos recarregar. Vai limpar service workers e caches e recarregar o app.</div>
         </div>
       </div>
-      <iframe id="chatwootFrame" src="about:blank" title="CRM Chatwoot" allow="clipboard-read; clipboard-write; microphone; camera; autoplay; fullscreen; geolocation"></iframe>
+      <iframe id="chatwootFrame" src="about:blank" title="CRM Clow" allow="clipboard-read; clipboard-write; microphone; camera; autoplay; fullscreen; geolocation"></iframe>
     </div>
   </div>
 </div>
 <script>
 (function(){
-  // URL same-origin via reverse proxy do nginx (/cw/ → Chatwoot em ads.pvcorretor01.com.br)
+  // URL same-origin via reverse proxy do nginx (/cw/ -> CRM backend)
   // Same-origin evita bloqueio de cookies third-party em iOS PWA e Safari ITP.
   var CHATWOOT_URL='/cw/';
   var _cwRaf=null, _cwTimeout=null, _cwLoaded=false;
@@ -237,7 +237,7 @@
         '<a href="/app/onboarding" style="background:linear-gradient(135deg,#9B59FC,#4A9EFF);color:#fff;border:none;border-radius:10px;padding:13px 28px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;text-decoration:none;display:inline-block">Configurar agora \u2192</a>'+
         '<button onclick="this.closest(\x27div#cwNotConfModal\x27).remove()" style="background:transparent;color:#9898B8;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:13px 22px;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit">Depois</button>'+
       '</div>'+
-      '<p style="color:#505068;font-size:11px;line-height:1.5;margin-top:22px">\u{1F4A1} Ao configurar, voce recebe sua conta Chatwoot propria, sua instancia WhatsApp, seus contatos e conversas \u2014 tudo isolado dos outros clientes.</p>'+
+      '<p style="color:#505068;font-size:11px;line-height:1.5;margin-top:22px">\u{1F4A1} Ao configurar, voce recebe seu CRM Clow proprio, sua instancia WhatsApp, seus contatos e conversas \u2014 tudo isolado dos outros clientes.</p>'+
     '</div>';
     d.addEventListener('click',function(e){if(e.target===d)d.remove();});
     document.body.appendChild(d);
@@ -267,7 +267,7 @@
           cwShowNotConfigured(sd.message || 'Voce ainda nao configurou seu CRM.');
           return;
         }
-        // Cliente: limpeza agressiva de qualquer sessao residual do Chatwoot
+        // Cliente: limpeza agressiva de sessao residual
         if(!sd.is_admin){
           try{ await fetch('/cw/auth/sign_out',{credentials:'same-origin',method:'DELETE'}); }catch(e){}
           // Expira cookies visiveis via JS (os HttpOnly ja sao limpos pelo nginx via Set-Cookie)
@@ -292,7 +292,7 @@
     cwApplySize();
     // reset fallback ui
     var fb=document.getElementById('cwFallback');if(fb)fb.classList.remove('show');
-    var msg=document.getElementById('cwLoaderMsg');if(msg)msg.textContent='Carregando CRM Chatwoot...';
+    var msg=document.getElementById('cwLoaderMsg');if(msg)msg.textContent='Carregando CRM Clow...';
     var spin=document.querySelector('#cwLoader .cw-spin');if(spin)spin.style.display='';
     cwShowLoader(true);
     _cwLoaded=false;
@@ -324,7 +324,7 @@
     var _cwPoll=setInterval(function(){
       if(cwCheckLoaded() || _cwLoaded){clearInterval(_cwPoll)}
     },500);
-    // SSO: tenta pegar URL de login automatico via Platform API do Chatwoot
+    // SSO: tenta pegar URL de login automatico via SSO
     // Se obtem sso_url, iframe abre DIRETO na conta do user (sem digitar email/senha)
     var targetUrl = CHATWOOT_URL;
     try{
@@ -563,7 +563,7 @@
     {
       selector: '#crmBlock',
       title: 'CRM completo embutido',
-      text: 'Seu Chatwoot com atendimento ao cliente, etiquetas, follow-up e kanban — tudo dentro do Clow.',
+      text: 'Seu CRM Clow com atendimento ao cliente, etiquetas, follow-up e kanban — tudo dentro do Clow.',
       position: 'right'
     },
     {
@@ -796,10 +796,10 @@ window.showCrmCredsModal = function(info){
   m.style.cssText = 'position:fixed;inset:0;background:rgba(10,10,20,.85);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;font-family:inherit';
   m.innerHTML = '<div style="background:#0a0a14;border:1px solid rgba(155,89,252,.3);border-radius:16px;padding:28px;max-width:440px;width:100%;color:#e8e4f0;box-shadow:0 30px 80px rgba(0,0,0,.6)">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
-      '<h3 style="font-size:17px;font-weight:700;margin:0">Login do CRM Chatwoot</h3>' +
+      '<h3 style="font-size:17px;font-weight:700;margin:0">Login do CRM Clow</h3>' +
       '<button onclick="document.getElementById(\'crmCredsModal\').remove()" style="background:rgba(255,255,255,.08);border:none;color:#e8e4f0;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px">×</button>' +
     '</div>' +
-    '<p style="font-size:13px;color:#9898B8;margin-bottom:20px;line-height:1.5">Use estas credenciais para entrar manualmente no Chatwoot. Acessivel pela tela de login que aparece no botao CRM.</p>' +
+    '<p style="font-size:13px;color:#9898B8;margin-bottom:20px;line-height:1.5">Use estas credenciais para entrar manualmente no CRM Clow.</p>' +
     '<div style="margin-bottom:14px">' +
       '<label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#585878;display:block;margin-bottom:6px">Email</label>' +
       '<div style="display:flex;gap:8px">' +
@@ -814,7 +814,7 @@ window.showCrmCredsModal = function(info){
       '</div>' +
     '</div>' +
     '<button onclick="resetCrmPassword()" style="width:100%;padding:12px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:14px;cursor:pointer">Gerar nova senha</button>' +
-    '<a href="' + (info.login_url||'#') + '" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:12px;color:#4A9EFF;font-size:12px;text-decoration:none">Abrir Chatwoot em nova aba</a>' +
+    '' +
   '</div>';
   document.body.appendChild(m);
 };

@@ -1042,6 +1042,10 @@ def register_whatsapp_agent_routes(app) -> None:
 
         if event == "message_created":
             msg_type = body.get("message_type")
+            # OUTGOING: agent humano respondeu no Chatwoot -> enviar pro WhatsApp via Z-API
+            if msg_type == "outgoing":
+                _send_outgoing_to_zapi(body, user_id=user_id)
+                return "outgoing_sent"
             if msg_type != "incoming":
                 return "not_incoming"
             sender = body.get("sender", {})
@@ -1106,8 +1110,8 @@ def register_whatsapp_agent_routes(app) -> None:
             body = await request.json()
         except Exception:
             return _JR({"status": "invalid"}, status_code=400)
-        from ..database import get_chatwoot_connection_by_token
-        conn = get_chatwoot_connection_by_token(user_token)
+        from ..database import get_chatwoot_connection_by_webhook
+        conn = get_chatwoot_connection_by_webhook(user_token)
         if not conn:
             return _JR({"status": "invalid_token"}, status_code=404)
         status = _handle_chatwoot_event(body, user_id=conn["user_id"])
@@ -1327,8 +1331,8 @@ def register_whatsapp_agent_routes(app) -> None:
             if not messages:
                 return _JR({"status": "no_messages"})
 
-            from ..database import get_chatwoot_connection_by_token, get_whatsapp_credentials
-            conn = get_chatwoot_connection_by_token(user_token)
+            from ..database import get_chatwoot_connection_by_webhook, get_whatsapp_credentials
+            conn = get_chatwoot_connection_by_webhook(user_token)
             if not conn:
                 return _JR({"status": "invalid_token"}, status_code=404)
 
@@ -1425,6 +1429,65 @@ def register_whatsapp_agent_routes(app) -> None:
                     env_summary[k] = v
         return _JR({"services": services, "env": env_summary})
 
+
+
+
+def _send_outgoing_to_zapi(body: dict, user_id: str = "") -> dict:
+    """Quando agent humano envia mensagem no CRM (Chatwoot), envia pro WhatsApp via Z-API.
+    Usa o client_token da instancia do user (ou env fallback).
+    """
+    import os, json as _j, urllib.request as _ur, urllib.error as _ue
+    try:
+        # Anti-loop: ignora msgs enviadas pelo proprio bot/sistema
+        sender = body.get("sender", {}) or {}
+        if sender.get("type") not in ("user", "agent_bot"):
+            # somente respostas humanas/bot vao pra Z-API
+            pass
+        # Extrai destinatario
+        conv = body.get("conversation", {}) or {}
+        meta = conv.get("meta", {}) or {}
+        contact = (meta.get("sender") or {})
+        phone = contact.get("phone_number") or contact.get("identifier") or ""
+        phone = (phone or "").lstrip("+").replace(" ", "")
+        if not phone:
+            logger.warning("_send_outgoing_to_zapi: sem phone, body=%s", str(body)[:200])
+            return {"ok": False, "error": "no_phone"}
+        content = (body.get("content") or "").strip()
+        if not content:
+            return {"ok": False, "error": "empty_content"}
+        # Acha instancia Z-API ativa do user
+        from ..whatsapp_agent import get_wa_manager
+        instances = [i for i in get_wa_manager().get_instances(user_id or "") if getattr(i, "active", True) and (getattr(i, "provider", "zapi") == "zapi")]
+        if not instances:
+            logger.warning("_send_outgoing_to_zapi: user %s sem instancia Z-API ativa", user_id)
+            return {"ok": False, "error": "no_zapi_instance"}
+        inst = instances[0]
+        instance_id = inst.zapi_instance_id
+        token = inst.zapi_token
+        client_token = getattr(inst, "zapi_client_token", "") or os.getenv("ZAPI_CLIENT_TOKEN", "")
+        if not (instance_id and token and client_token):
+            logger.warning("_send_outgoing_to_zapi: credenciais Z-API incompletas instance=%s token_set=%s client_token_set=%s",
+                           bool(instance_id), bool(token), bool(client_token))
+            return {"ok": False, "error": "missing_zapi_credentials"}
+        url = f"https://api.z-api.io/instances/{instance_id}/token/{token}/send-text"
+        data = _j.dumps({"phone": phone, "message": content}).encode("utf-8")
+        req = _ur.Request(url, data=data, method="POST",
+                          headers={"Content-Type": "application/json", "Client-Token": client_token})
+        try:
+            with _ur.urlopen(req, timeout=20) as resp:
+                resp_data = _j.loads(resp.read().decode())
+            logger.info("[OUT-CRM] user=%s phone=%s msg=%r resp=%s", user_id, phone, content[:60], resp_data)
+            return {"ok": True, "response": resp_data}
+        except _ue.HTTPError as e:
+            body_text = (e.read().decode() if e.fp else "")[:200]
+            logger.error("_send_outgoing_to_zapi: HTTP %s %s", e.code, body_text)
+            return {"ok": False, "error": f"http_{e.code}", "detail": body_text}
+        except Exception as e:
+            logger.exception("_send_outgoing_to_zapi: send failed: %s", e)
+            return {"ok": False, "error": str(e)}
+    except Exception as e:
+        logger.exception("_send_outgoing_to_zapi: top-level exception: %s", e)
+        return {"ok": False, "error": str(e)}
 
 def _chatwoot_bot_reply(conv_id: int, user_message: str, bot_cfg: dict, user_id: str = ""):
     """Fetch conversation history from Chatwoot, call DeepSeek, reply via Chatwoot API."""
