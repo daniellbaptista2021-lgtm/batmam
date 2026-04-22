@@ -10,3 +10,10 @@ from .roles import (
     ADMIN_ONLY_TOOLS, TENANT_USER_TOOLS, TENANT_USER_STRICT_ALLOWLIST,
     filter_tools_for_role, is_user_admin, clear_admin_cache,
 )
+from .tenant_credentials import (
+    set_secret as set_tenant_secret,
+    get_secret as get_tenant_secret,
+    get_scope as get_tenant_scope,
+    delete_secret as delete_tenant_secret,
+    list_providers as list_tenant_providers,
+)
