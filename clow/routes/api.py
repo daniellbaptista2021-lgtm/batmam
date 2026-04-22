@@ -148,7 +148,7 @@ def register_api_routes(app: FastAPI) -> None:
         user_convs = list_conversations(sess["user_id"])
         if not any(c["id"] == conv_id for c in user_convs):
             return JSONResponse({"error": "Conversa nao encontrada"}, status_code=404)
-        msgs = get_messages(conv_id)
+        msgs = get_messages(conv_id, sess["user_id"])
         return JSONResponse({"messages": msgs})
 
     @app.delete("/api/v1/conversations/{conv_id}")

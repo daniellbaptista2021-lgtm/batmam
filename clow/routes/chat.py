@@ -551,7 +551,7 @@ def register_chat_routes(app: FastAPI) -> None:
         session_obj = None
         if conv_id:
             from ..database import get_messages as _get_messages
-            prev_messages = _get_messages(conv_id, limit=50)
+            prev_messages = _get_messages(conv_id, user_id, limit=50)
             if prev_messages:
                 # Converter mensagens da conversa para formato da Session
                 session_messages = []

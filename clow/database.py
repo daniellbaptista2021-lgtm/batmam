@@ -478,11 +478,21 @@ def save_message(conv_id: str, role: str, content: str, file_data: dict = None):
         db.execute("UPDATE conversations SET updated_at=? WHERE id=?", (time.time(), conv_id))
 
 
-def get_messages(conv_id: str, limit: int = 100) -> list[dict]:
+def get_messages(conv_id: str, user_id: str, limit: int = 100) -> list[dict]:
+    """SECURITY: user_id e obrigatorio. JOIN garante que so retorna msgs de
+    conversas que pertencem ao user_id. Sem isso, tenant A passando conv_id
+    do tenant B veria o historico dele.
+    """
+    if not user_id:
+        return []
     with get_db() as db:
         rows = db.execute(
-            "SELECT role, content, file_data, created_at FROM messages WHERE conversation_id=? ORDER BY created_at ASC LIMIT ?",
-            (conv_id, limit)).fetchall()
+            """SELECT m.role, m.content, m.file_data, m.created_at
+               FROM messages m
+               JOIN conversations c ON c.id = m.conversation_id
+               WHERE m.conversation_id = ? AND c.user_id = ?
+               ORDER BY m.created_at ASC LIMIT ?""",
+            (conv_id, user_id, limit)).fetchall()
     result = []
     for r in rows:
         d = dict(r)
