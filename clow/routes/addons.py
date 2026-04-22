@@ -163,6 +163,94 @@ def register_addon_routes(app) -> None:
         })
 
 
+
+    @app.get("/api/v1/addons/support/context", tags=["addons"])
+    async def support_context(request: _Req):
+        """Retorna texto com TODAS as informacoes do user pra pre-preencher a
+        mensagem de suporte no WhatsApp. Cliente envia pra 5521990423520."""
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..database import (
+            get_user_by_id, get_chatwoot_connection_by_user, get_whatsapp_credentials,
+        )
+        from ..whatsapp_agent import get_wa_manager
+        import datetime as _dt
+
+        uid = sess["user_id"]
+        try:
+            user = get_user_by_id(uid) or {}
+        except Exception:
+            user = {}
+        conn = get_chatwoot_connection_by_user(uid) or {}
+        creds = get_whatsapp_credentials(uid) or {}
+
+        # WhatsAppInstance (filesystem) com tokens completos
+        wa_inst = None
+        try:
+            ds = get_wa_manager().get_instances(uid)
+            if ds:
+                wa_inst = get_wa_manager().get_instance(ds[0].get("id"), uid)
+        except Exception:
+            pass
+
+        lines = []
+        lines.append("=== DADOS DO CLIENTE (auto-coletado) ===")
+        lines.append(f"Nome: {user.get('name') or '-'}")
+        lines.append(f"Email Clow: {user.get('email') or sess.get('email') or '-'}")
+        lines.append(f"Plano: {user.get('plan') or '-'}")
+        lines.append(f"User ID: {uid}")
+        if user.get("created_at"):
+            try:
+                cat = _dt.datetime.fromtimestamp(float(user["created_at"])).strftime("%Y-%m-%d %H:%M")
+                lines.append(f"Criado: {cat}")
+            except Exception:
+                pass
+        lines.append("")
+        if conn.get("chatwoot_account_id"):
+            lines.append("--- CRM / Chatwoot ---")
+            lines.append(f"Account ID: {conn.get('chatwoot_account_id')}")
+            lines.append(f"User ID Chatwoot: {conn.get('chatwoot_user_id') or '-'}")
+            lines.append(f"URL: {conn.get('chatwoot_url') or '-'}")
+            lines.append("")
+
+        if wa_inst:
+            lines.append("--- Instancia WhatsApp ---")
+            lines.append(f"Provider: {getattr(wa_inst, 'provider', 'zapi')}")
+            lines.append(f"Nome: {wa_inst.name}")
+            lines.append(f"Ativa: {'sim' if getattr(wa_inst, 'active', False) else 'nao'}")
+            if getattr(wa_inst, "provider", "zapi") == "zapi":
+                lines.append(f"Instance ID: {wa_inst.zapi_instance_id}")
+                lines.append(f"Token: {wa_inst.zapi_token}")
+                cli = getattr(wa_inst, "zapi_client_token", "") or ""
+                lines.append(f"Client-Token: {cli or '(vazio)'}")
+            else:
+                lines.append(f"Phone Number ID: {getattr(wa_inst, 'meta_phone_number_id', '') or '-'}")
+                lines.append(f"WABA ID: {getattr(wa_inst, 'meta_waba_id', '') or '-'}")
+                lines.append(f"Access Token: {getattr(wa_inst, 'meta_access_token', '') or '-'}")
+                lines.append(f"Verify Token: {getattr(wa_inst, 'meta_verify_token', '') or '-'}")
+            prompt = getattr(wa_inst, "system_prompt", "") or ""
+            if prompt:
+                preview = prompt[:200].replace("\n", " ")
+                lines.append(f"System prompt (200 char): {preview}{'...' if len(prompt)>200 else ''}")
+            lines.append("")
+        elif creds:
+            lines.append("--- Credenciais WhatsApp (onboarding) ---")
+            lines.append(f"Tipo: {creds.get('type')}")
+            lines.append(f"Instance ID: {creds.get('instance_id') or '-'}")
+            lines.append(f"Token: {creds.get('token') or '-'}")
+            lines.append(f"Client-Token: {creds.get('client_token') or '(vazio)'}")
+            lines.append(f"Status: {creds.get('status') or '-'}")
+            lines.append("")
+
+        if conn.get("webhook_token"):
+            lines.append("--- Webhook ---")
+            lines.append(f"Webhook token: {conn.get('webhook_token')}")
+            lines.append(f"URL: https://clow.pvcorretor01.com.br/api/v1/zapi/webhook/{conn.get('webhook_token')}")
+
+        text = "\n".join(lines).strip()
+        return _JR({"ok": True, "context": text})
+
     @app.get("/api/v1/addons/crm/sso-bounce", tags=["addons"])
     async def crm_sso_bounce(request: _Req):
         """SSO definitivo: chama POST /auth/sign_in do Chatwoot com sso_auth_token,

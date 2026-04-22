@@ -868,20 +868,37 @@ window.onSupportInput = function(){
   }
 };
 
-window.sendSupportMsg = function(){
+window.sendSupportMsg = async function(){
   var t = document.getElementById('supportMsg');
   var err = document.getElementById('supportError');
+  var btn = document.getElementById('supportSendBtn');
   var v = (t && t.value || '').trim();
   if (v.length < 5) {
     if (err) { err.textContent = 'Descreva sua dificuldade com pelo menos 5 caracteres.'; err.style.display = 'block'; }
     return;
   }
-  var who = (window._clowUserName || window._clowUserEmail || 'Usuario Clow');
-  var email = (window._clowUserEmail || '');
-  var text = 'Ola, sou ' + who + (email ? ' (' + email + ')' : '') + '.\nSou cliente Clow e preciso de ajuda:\n\n' + v;
+  if (btn) { btn.textContent = 'Preparando...'; btn.disabled = true; btn.style.opacity='.6'; btn.style.pointerEvents='none'; }
+  // Pre-abre aba sincronicamente no click pra escapar do popup blocker
+  var waWin = window.open('about:blank', '_blank');
+  var ctx = '';
+  try {
+    var r = await fetch('/api/v1/addons/support/context', {credentials:'same-origin'});
+    if (r.ok) {
+      var d = await r.json();
+      if (d && d.context) ctx = d.context;
+    }
+  } catch(e){}
+  // Se contexto falhou, usa fallback minimo
+  if (!ctx) {
+    var who = (window._clowUserName || window._clowUserEmail || 'Usuario Clow');
+    var email = (window._clowUserEmail || '');
+    ctx = 'Cliente: ' + who + (email ? ' (' + email + ')' : '');
+  }
+  var text = '[Suporte Clow] Preciso de ajuda:\n\n' + v + '\n\n' + ctx;
   var phone = '5521990423520';
   var url = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(text);
-  window.open(url, '_blank', 'noopener');
+  if (waWin && !waWin.closed) { waWin.location.href = url; waWin.focus(); }
+  else { window.open(url, '_blank', 'noopener'); }
   closeSupportModal();
 };
 
