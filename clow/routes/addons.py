@@ -83,6 +83,85 @@ def register_addon_routes(app) -> None:
             "message": None if active else "Nao autorizado — contrate o System Clow",
         })
 
+
+    @app.get("/api/v1/addons/crm/credentials", tags=["addons"])
+    async def crm_credentials(request: _Req):
+        """Retorna email do CRM Chatwoot. Senha so' via reset-password."""
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..database import get_chatwoot_connection_by_user, get_user_by_id
+        conn = get_chatwoot_connection_by_user(sess["user_id"])
+        if not conn:
+            return _JR({"error": "CRM nao provisionado"}, status_code=404)
+        try:
+            user = get_user_by_id(sess["user_id"])
+            email = (user or {}).get("email") or sess.get("email", "")
+        except Exception:
+            email = sess.get("email", "")
+        return _JR({
+            "ok": True,
+            "email": email,
+            "login_url": "https://ads.pvcorretor01.com.br/app/login",
+            "iframe_url": "https://clow.pvcorretor01.com.br/cw/app/login",
+            "has_password": bool(conn.get("chatwoot_password_temp")),
+            "password_delivered": bool(conn.get("password_delivered_at")),
+        })
+
+    @app.post("/api/v1/addons/crm/reset-password", tags=["addons"])
+    async def crm_reset_password(request: _Req):
+        """Gera nova senha aleatoria, atualiza no Chatwoot via Platform API."""
+        sess = _get_user_session(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..database import get_chatwoot_connection_by_user, get_db
+        import os as _os, secrets as _sec, string as _str, urllib.request as _ur, urllib.error as _ue, json as _j, random as _rnd, time as _t
+        conn = get_chatwoot_connection_by_user(sess["user_id"])
+        if not conn:
+            return _JR({"error": "CRM nao provisionado"}, status_code=404)
+        cw_user_id = conn.get("chatwoot_user_id")
+        if not cw_user_id:
+            return _JR({"error": "chatwoot_user_id nao mapeado"}, status_code=500)
+        chars = _str.ascii_letters + _str.digits
+        special = "!@#%&*+-_"
+        pw_chars = [_sec.choice(chars) for _ in range(12)] + [_sec.choice(special), _sec.choice(special)]
+        _rnd.shuffle(pw_chars)
+        new_pw = "".join(pw_chars)
+        cw_url = (_os.getenv("CHATWOOT_URL", "") or "").rstrip("/")
+        token = _os.getenv("CHATWOOT_PLATFORM_TOKEN", "")
+        if not (cw_url and token):
+            return _JR({"error": "CHATWOOT_URL/TOKEN ausente"}, status_code=500)
+        try:
+            req = _ur.Request(
+                cw_url + "/platform/api/v1/users/" + str(cw_user_id),
+                method="PUT",
+                data=_j.dumps({"password": new_pw}).encode("utf-8"),
+                headers={"api_access_token": token, "Content-Type": "application/json"},
+            )
+            with _ur.urlopen(req, timeout=15) as resp:
+                _j.loads(resp.read().decode())
+        except _ue.HTTPError as e:
+            body = e.read().decode()[:200] if e.fp else ""
+            return _JR({"error": "Chatwoot " + str(e.code) + ": " + body}, status_code=500)
+        except Exception as e:
+            return _JR({"error": "Falha: " + str(e)}, status_code=500)
+        try:
+            with get_db() as db:
+                db.execute(
+                    "UPDATE chatwoot_connections SET chatwoot_password_temp=?, password_delivered_at=? WHERE user_id=?",
+                    (new_pw, _t.time(), sess["user_id"]),
+                )
+                db.commit()
+        except Exception as _e:
+            logger.warning("crm_reset_password: db update failed: %s", _e)
+        return _JR({
+            "ok": True,
+            "email": sess.get("email", ""),
+            "password": new_pw,
+            "login_url": "https://ads.pvcorretor01.com.br/app/login",
+            "warning": "Salve esta senha agora. Ela nao sera exibida novamente.",
+        })
+
     # ─── SSO: gerar URL de login automatico no Chatwoot ──────────────
     @app.get("/api/v1/addons/crm/sso-url", tags=["addons"])
     async def crm_sso_url(request: _Req):
