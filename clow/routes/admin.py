@@ -8,6 +8,8 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+import logging
+logger = logging.getLogger("clow.admin")
 from .auth import _get_user_session
 from ..database import (
     get_admin_stats, list_users, update_user, create_user,
@@ -64,6 +66,14 @@ def register_admin_routes(app: FastAPI) -> None:
             return JSONResponse({"error": "Email ja cadastrado"}, status_code=400)
         if plan != "free":
             update_user(user["id"], plan=plan)
+        # ─── Auto-provision Chatwoot pra novo user criado pelo admin ───
+        try:
+            from ..services.onboarding import provision_user
+            prov = provision_user(user["id"], email, name or email.split("@")[0])
+            if prov.get("error"):
+                logger.warning(f"admin.create_user: provision Chatwoot falhou pra user={user['id']}: {prov.get('error')}")
+        except Exception as _e:
+            logger.exception(f"admin.create_user: provision Chatwoot exception user={user['id']}: {_e}")
         return JSONResponse({"ok": True, "user": user})
 
 

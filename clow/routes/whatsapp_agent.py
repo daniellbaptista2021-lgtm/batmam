@@ -145,6 +145,122 @@ def _process_meta_carol(instance_id, phone, message):
         pass
 
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Helpers internos — auto-sync com Chatwoot e auditoria
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _wa_audit(user_id: str, is_admin: bool, ok: bool, reason,
+              instance_id: str, request) -> None:
+    """Log de auditoria pra acessos a instancia WhatsApp. Defensivo: nunca quebra request."""
+    try:
+        ip = ""
+        ua = ""
+        try:
+            ip = request.headers.get("x-real-ip") or (request.client.host if request.client else "")
+            ua = (request.headers.get("user-agent", "") or "")[:160]
+        except Exception:
+            pass
+        status = "ok" if ok else "denied"
+        admin_tag = "admin" if is_admin else "user"
+        logger.info(
+            "[wa-audit] %s %s user=%s inst=%s reason=%s ip=%s ua=%s",
+            status, admin_tag, user_id, instance_id, reason or "-", ip, ua
+        )
+    except Exception as _e:
+        logger.debug("_wa_audit failed: %s", _e)
+
+
+def _sync_wa_to_chatwoot(user_id: str, instance_id: str, name: str,
+                         provider: str = "zapi",
+                         zapi_instance_id: str = "",
+                         zapi_token: str = "",
+                         meta_phone_number_id: str = "") -> dict:
+    """
+    Apos criar instancia de WhatsApp no Clow, espelha no Chatwoot do cliente:
+      1. Garante chatwoot_connection (provisiona just-in-time se necessario)
+      2. Cria inbox API no Chatwoot do cliente
+      3. Registra webhook do bot
+      4. Cria bot_config inicial (vazio, inativo — usuario ativa via system prompt)
+    Defensivo: retorna dict com error em caso de falha, NUNCA levanta excecao.
+    """
+    try:
+        from ..database import (
+            get_chatwoot_connection_by_user,
+            upsert_chatwoot_bot_config,
+            get_db,
+        )
+        from ..services.onboarding import (
+            create_chatwoot_inbox, register_chatwoot_webhook, provision_user,
+        )
+    except Exception as _imp:
+        logger.exception("_sync_wa_to_chatwoot import failed: %s", _imp)
+        return {"ok": False, "error": "import_failed: " + str(_imp)}
+
+    conn = get_chatwoot_connection_by_user(user_id)
+    if not conn or not conn.get("chatwoot_account_id"):
+        try:
+            with get_db() as _db:
+                row = _db.execute("SELECT email, name FROM users WHERE id=?", (user_id,)).fetchone()
+            email = row[0] if row else ""
+            uname = (row[1] if row else "") or (email.split("@")[0] if email else user_id)
+            prov = provision_user(user_id, email, uname)
+            if prov.get("error"):
+                return {"ok": False, "error": "provision_failed: " + str(prov.get("error"))}
+            conn = get_chatwoot_connection_by_user(user_id)
+        except Exception as _e:
+            logger.exception("_sync_wa_to_chatwoot JIT provision exception: %s", _e)
+            return {"ok": False, "error": "jit_provision_exception: " + str(_e)}
+
+    if not conn or not conn.get("chatwoot_account_id"):
+        return {"ok": False, "error": "no_chatwoot_connection"}
+
+    cw_url = conn.get("chatwoot_url") or ""
+    cw_token = conn.get("chatwoot_user_token") or conn.get("chatwoot_token") or ""
+    acc_id = conn.get("chatwoot_account_id")
+    wh_token = conn.get("webhook_token") or ""
+    if not (cw_url and cw_token and acc_id and wh_token):
+        return {"ok": False, "error": "incomplete_chatwoot_connection"}
+
+    if provider == "meta":
+        masked = (meta_phone_number_id or "")[-6:] or "meta"
+        inbox_name = (name or "WhatsApp") + " (Meta ..." + masked + ")"
+    else:
+        masked = (zapi_instance_id or instance_id or "")[-8:] or "zapi"
+        inbox_name = (name or "WhatsApp") + " (Z-API ..." + masked + ")"
+
+    inbox_id = 0
+    try:
+        inbox = create_chatwoot_inbox(cw_url, cw_token, acc_id, inbox_name, wh_token)
+        if inbox and inbox.get("id"):
+            inbox_id = inbox["id"]
+    except Exception as _e:
+        logger.exception("_sync_wa_to_chatwoot create_inbox exception: %s", _e)
+        return {"ok": False, "error": "create_inbox_exception: " + str(_e)}
+
+    try:
+        register_chatwoot_webhook(cw_url, cw_token, acc_id, wh_token)
+    except Exception as _e:
+        logger.warning("_sync_wa_to_chatwoot register_webhook nonfatal: %s", _e)
+
+    if inbox_id:
+        try:
+            upsert_chatwoot_bot_config(
+                inbox_id=inbox_id,
+                inbox_name=inbox_name,
+                system_prompt="",
+                active=False,
+                human_handoff=True,
+                user_id=user_id,
+            )
+        except Exception as _e:
+            logger.warning("_sync_wa_to_chatwoot upsert_bot_config nonfatal: %s", _e)
+
+    logger.info("[wa-sync] user=%s instance=%s -> inbox=%s account=%s",
+                user_id, instance_id, inbox_id, acc_id)
+    return {"ok": True, "inbox_id": inbox_id, "chatwoot_account_id": acc_id, "inbox_name": inbox_name}
+
+
 def register_whatsapp_agent_routes(app) -> None:
 
     from .auth import _get_user_session
