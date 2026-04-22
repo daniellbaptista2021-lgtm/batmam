@@ -783,6 +783,23 @@ window.showCrmCredsModal = function(info){
   m = document.createElement('div');
   m.id = 'crmCredsModal';
   m.style.cssText = 'position:fixed;inset:0;background:rgba(10,10,20,.85);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;font-family:inherit';
+  var QUICK_OPTIONS = [
+    {icon:'📱', label:'Conectar WhatsApp (Z-API)', text:'Estou com dificuldade pra conectar meu WhatsApp via Z-API. Preciso de ajuda pra pegar os tokens e configurar.'},
+    {icon:'🌐', label:'Conectar WhatsApp (Meta oficial)', text:'Quero conectar o WhatsApp via Meta Business oficial. Preciso de ajuda com o Phone Number ID, Access Token e a configuracao do webhook.'},
+    {icon:'💬', label:'Entrar no CRM / CRM pede login', text:'Quando abro o CRM ele pede login e senha. Preciso entrar automaticamente ou pegar as credenciais corretas.'},
+    {icon:'🤖', label:'Bot nao responde', text:'Configurei o bot mas ele nao esta respondendo as mensagens dos clientes. Preciso de ajuda pra ativar.'},
+    {icon:'🔁', label:'Mensagens duplicadas', text:'As mensagens estao chegando duplicadas nos clientes ou no CRM. Preciso investigar.'},
+    {icon:'⚙️', label:'Configurar agente IA', text:'Quero ajuda pra configurar o system prompt do agente IA pro meu negocio (persona, regras, o que ele deve falar).'},
+    {icon:'💳', label:'Duvida sobre plano/cobranca', text:'Tenho uma duvida sobre plano, cobranca ou creditos. Pode me ajudar?'},
+    {icon:'❓', label:'Outro assunto', text:''}
+  ];
+  window._supportOptions = QUICK_OPTIONS;
+  var chipsHtml = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">';
+  for (var qi=0; qi<QUICK_OPTIONS.length; qi++){
+    var _o = QUICK_OPTIONS[qi];
+    chipsHtml += '<button type="button" onclick="pickSupportOption(' + qi + ')" style="background:rgba(155,89,252,.08);border:1px solid rgba(155,89,252,.28);color:#c9b4ff;padding:7px 11px;border-radius:20px;font-size:11px;font-family:inherit;cursor:pointer;transition:all .15s">' + _o.icon + ' ' + _o.label + '</button>';
+  }
+  chipsHtml += '</div>';
   m.innerHTML = '<div style="background:#0a0a14;border:1px solid rgba(155,89,252,.3);border-radius:16px;padding:28px;max-width:440px;width:100%;color:#e8e4f0;box-shadow:0 30px 80px rgba(0,0,0,.6)">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
       '<h3 style="font-size:17px;font-weight:700;margin:0">Login do CRM Clow</h3>' +
@@ -832,7 +849,7 @@ window.openSupportModal = function(){
   m.id = 'supportModal';
   m.style.cssText = 'position:fixed;inset:0;background:rgba(10,10,20,.85);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;font-family:inherit';
   m.innerHTML =
-    '<div style="background:#0a0a14;border:1px solid rgba(155,89,252,.3);border-radius:16px;padding:28px;max-width:480px;width:100%;color:#e8e4f0;box-shadow:0 30px 80px rgba(0,0,0,.7)">' +
+    '<div style="background:#0a0a14;border:1px solid rgba(155,89,252,.3);border-radius:16px;padding:28px;max-width:560px;width:100%;color:#e8e4f0;box-shadow:0 30px 80px rgba(0,0,0,.7);max-height:92vh;overflow-y:auto">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
         '<div style="display:flex;align-items:center;gap:10px">' +
           '<div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#9B59FC,#4A9EFF);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700">ℹ</div>' +
