@@ -96,6 +96,32 @@ def create_chatwoot_user(email: str, name: str, account_id: int) -> dict | None:
 
 # ── WhatsApp Connection Tests ────────────────────────────────
 
+
+
+def set_chatwoot_account_locale(account_id: int, locale: str = "pt_BR") -> bool:
+    """Seta locale da Account no Chatwoot via Platform API (pt_BR default).
+    Defensivo: retorna False em qualquer falha, nao levanta."""
+    if not account_id:
+        return False
+    token = _cw_platform_token()
+    if not token:
+        return False
+    url = f"{_cw_url()}/platform/api/v1/accounts/{account_id}"
+    try:
+        import urllib.request as _ur, urllib.error as _ue, json as _j
+        req = _ur.Request(
+            url, method="PATCH",
+            data=_j.dumps({"locale": locale}).encode("utf-8"),
+            headers={"api_access_token": token, "Content-Type": "application/json"},
+        )
+        with _ur.urlopen(req, timeout=10) as resp:
+            _j.loads(resp.read().decode())
+        return True
+    except Exception as e:
+        logger.warning(f"set_chatwoot_account_locale account={account_id}: {e}")
+        return False
+
+
 def test_zapi_connection(instance_id: str, token: str, client_token: str = "") -> dict:
     """Testa credenciais Z-API. client_token = Account Security Token (Z-API exige em todo request)."""
     if not instance_id:
@@ -248,6 +274,11 @@ def provision_user(user_id: str, email: str, name: str) -> dict:
         return {"error": "Falha ao criar conta no Chatwoot", "detail": str(account)}
 
     account_id = account["id"]
+    # Set pt_BR locale (cliente sempre ve CRM em portugues)
+    try:
+        set_chatwoot_account_locale(account_id, "pt_BR")
+    except Exception as _e:
+        logger.warning(f"provision_user: locale set failed: {_e}")
     if int(account_id) == int(os.getenv("CHATWOOT_ADMIN_ACCOUNT_ID", "1")):
         # Defensive guard: the Platform API should never hand back the admin
         # account, but if it ever does (misconfig), refuse to bind a customer
