@@ -162,6 +162,88 @@ def register_addon_routes(app) -> None:
             "warning": "Salve esta senha agora. Ela nao sera exibida novamente.",
         })
 
+
+    @app.get("/api/v1/addons/crm/sso-bounce", tags=["addons"])
+    async def crm_sso_bounce(request: _Req):
+        """SSO pre-flight: faz o server-side dance do SSO, captura cookie da sessao
+        Chatwoot e retorna HTML que seta cookie no browser + redireciona pro CRM
+        ja logado. Elimina pedir login toda hora no iframe."""
+        from fastapi.responses import HTMLResponse as _HR
+        sess = _get_user_session(request)
+        if not sess:
+            return _HR("Nao autenticado. <a href='/login'>Login</a>", status_code=401)
+        from ..database import get_chatwoot_connection_by_user
+        import os as _os, json as _j, urllib.request as _ur, urllib.error as _ue
+        import http.cookiejar as _cj
+        conn = get_chatwoot_connection_by_user(sess["user_id"])
+        if not conn:
+            return _HR("CRM nao provisionado.", status_code=404)
+        cw_user_id = conn.get("chatwoot_user_id")
+        acct_id = conn.get("chatwoot_account_id")
+        if not (cw_user_id and acct_id):
+            return _HR("CRM incompleto.", status_code=500)
+        cw_url = (_os.getenv("CHATWOOT_URL", "") or "").rstrip("/")
+        token = _os.getenv("CHATWOOT_PLATFORM_TOKEN", "")
+        if not (cw_url and token):
+            return _HR("Config servidor ausente.", status_code=500)
+        # 1) Gera SSO URL fresca via Platform API
+        try:
+            req = _ur.Request(
+                cw_url + "/platform/api/v1/users/" + str(cw_user_id) + "/login",
+                headers={"api_access_token": token},
+            )
+            with _ur.urlopen(req, timeout=10) as r:
+                sso_data = _j.loads(r.read().decode())
+            sso_url = sso_data.get("url", "")
+        except Exception as e:
+            return _HR("Falha ao gerar SSO: " + str(e)[:150], status_code=500)
+        if not sso_url:
+            return _HR("SSO URL vazia.", status_code=500)
+        # 2) Follow SSO URL server-side capturando cookies
+        cj = _cj.CookieJar()
+        opener = _ur.build_opener(_ur.HTTPCookieProcessor(cj))
+        session_cookie = None
+        try:
+            req2 = _ur.Request(sso_url, headers={"User-Agent": "Mozilla/5.0 Clow-SSO"})
+            with opener.open(req2, timeout=15) as r2:
+                r2.read()
+            for c in cj:
+                if c.name == "_chatwoot_session":
+                    session_cookie = c.value
+                    break
+        except _ue.HTTPError as e:
+            for c in cj:
+                if c.name == "_chatwoot_session":
+                    session_cookie = c.value
+                    break
+            if not session_cookie:
+                return _HR("SSO dance falhou: HTTP " + str(e.code), status_code=500)
+        except Exception as e:
+            return _HR("SSO dance exception: " + str(e)[:200], status_code=500)
+        if not session_cookie:
+            return _HR("Nao foi possivel capturar cookie de sessao.", status_code=500)
+        # 3) Responde com Set-Cookie pro dominio clow + HTML que redireciona iframe
+        dashboard_url = "/cw/app/accounts/" + str(acct_id) + "/dashboard"
+        html_body = (
+            "<!DOCTYPE html><html><head><meta charset='utf-8'>"
+            "<title>CRM Clow</title>"
+            "<style>body{background:#0a0a14;color:#e8e4f0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}</style>"
+            "</head><body><div>Entrando no CRM...</div>"
+            "<script>setTimeout(function(){window.location.replace(" + _j.dumps(dashboard_url) + ")}, 100);</script>"
+            "</body></html>"
+        )
+        resp = _HR(html_body, status_code=200)
+        resp.set_cookie(
+            key="_chatwoot_session",
+            value=session_cookie,
+            max_age=86400,
+            path="/",
+            secure=True,
+            httponly=True,
+            samesite="none",
+        )
+        return resp
+
     # ─── SSO: gerar URL de login automatico no Chatwoot ──────────────
     @app.get("/api/v1/addons/crm/sso-url", tags=["addons"])
     async def crm_sso_url(request: _Req):
