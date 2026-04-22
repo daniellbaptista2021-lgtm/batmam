@@ -279,6 +279,25 @@ def register_onboarding_routes(app) -> None:
             "type": ctype,
         })
 
+
+    @app.get("/api/v1/onboarding/webhook-info", tags=["onboarding"])
+    async def onboarding_webhook_info(request: _Req):
+        """Retorna as webhook URLs do usuario para Z-API e Meta. Cliente precisa
+        configurar isso no painel respectivo (auto-config tambem ocorre no save)."""
+        sess = _auth(request)
+        if not sess:
+            return _JR({"error": "Nao autenticado"}, status_code=401)
+        from ..database import get_chatwoot_connection_by_user
+        conn = get_chatwoot_connection_by_user(_tenant(sess))
+        wh_token = (conn or {}).get("webhook_token") or ""
+        base = "https://clow.pvcorretor01.com.br"
+        return _JR({
+            "ok": bool(wh_token),
+            "webhook_token": wh_token,
+            "zapi_webhook": f"{base}/api/v1/zapi/webhook/{wh_token}" if wh_token else "",
+            "meta_webhook": f"{base}/api/v1/meta/webhook/{wh_token}" if wh_token else "",
+        })
+
     @app.get("/api/v1/onboarding/whatsapp/credentials", tags=["onboarding"])
     async def onboarding_whatsapp_get(request: _Req):
         sess = _auth(request)
